@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -705,6 +706,134 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
   });
 
+  testWidgets(
+    'wallet history rows stay compact when the visible facts fit on two lines',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(360, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('wallet-history-entry-tx-1'));
+      await tester.scrollUntilVisible(
+        card,
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(card, findsOneWidget);
+      expect(find.text('Internal transfer'), findsOneWidget);
+      expect(find.text('+500,000 TOMAN'), findsOneWidget);
+      expect(
+        tester.getSize(card).height,
+        lessThan(100),
+        reason:
+            'When title, date and amount fit, a compact wallet row should not reserve a third line.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wallet history cards avoid duplicate reference text and expose date to assistive tech',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final card = find.byKey(
+          const ValueKey('wallet-history-entry-tx-1'),
+        );
+        await tester.scrollUntilVisible(
+          card,
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final tile = tester.widget<ListTile>(
+          find.descendant(of: card, matching: find.byType(ListTile)),
+        );
+        final subtitle = tile.subtitle as Text;
+        expect(subtitle.data, isNotEmpty);
+        expect(subtitle.data, isNot(contains('انتقال داخلی')));
+        expect(subtitle.data, isNot(contains('\n')));
+
+        final rowSemantics = find.ancestor(
+          of: card,
+          matching: find.byType(Semantics),
+        ).first;
+        final semanticLabel = tester.getSemantics(rowSemantics).label;
+        expect(
+          semanticLabel,
+          contains(subtitle.data),
+          reason: 'The date shown in the ledger row must also be present in its grouped screen-reader label.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
   testWidgets('wallet transaction rows expose grouped finance semantics',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
@@ -1348,6 +1477,64 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'wallet action labels do not truncate at 1.5x on a compact viewport',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // This fixture enables withdrawal; deposit is disabled by its backend capability state.
+      for (final label in ['Withdraw', 'History']) {
+        final finder = find.text(label);
+        expect(finder, findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(finder);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '$label must remain fully readable at 1.5x in a 320dp wallet.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'wallet transaction detail amounts retain semantic foregrounds in light and dark themes',

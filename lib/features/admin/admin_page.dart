@@ -265,8 +265,17 @@ class _AdminPageState extends State<AdminPage>
                   ),
                 const SizedBox(height: 10),
                 FutureBuilder<HopeAdminSummary>(
-                    future: _summary,
-                    builder: (context, s) => _summaryGrid(context, s.data)),
+                  future: _summary,
+                  builder: (context, s) {
+                    if (s.connectionState == ConnectionState.waiting) {
+                      return _summaryGrid(context, null);
+                    }
+                    if (s.hasError) {
+                      return _errorState(context, s.error, retry: _reload);
+                    }
+                    return _summaryGrid(context, s.data);
+                  },
+                ),
                 const SizedBox(height: 8),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
@@ -319,7 +328,7 @@ class _AdminPageState extends State<AdminPage>
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _actionBusy ? null : _showGrantAdminDialog,
-                    icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                    icon: const Icon(HopeV2Icons.admin, size: 20),
                     label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
                   ),
                 ],
@@ -392,7 +401,7 @@ class _AdminPageState extends State<AdminPage>
         future: _users,
         builder: (context, snapshot) {
           final admins = (snapshot.data ?? const <HopeAdminUser>[])
-              .where((u) => u.role.toUpperCase() == 'ADMIN')
+              .where((u) => u.role.trim().toUpperCase() == 'ADMIN')
               .toList(growable: false);
           return PremiumPanel(
             padding: const EdgeInsets.all(14),
@@ -401,7 +410,33 @@ class _AdminPageState extends State<AdminPage>
               const SizedBox(height: 6),
               Text(_t('افزودن، لغو نقش و خروج اجباری نشست‌های مدیران فقط در اختیار مالک است.', 'Promoting admins, revoking their role, and forcing session revocation are owner-only controls.')),
               const SizedBox(height: 10),
-              if (admins.isEmpty) Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
+              if (snapshot.connectionState == ConnectionState.waiting)
+                Semantics(
+                  liveRegion: true,
+                  child: Padding(
+                    key: const ValueKey('admin-management-loading'),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(_t('در حال بارگذاری مدیران', 'Loading administrators')),
+                      ],
+                    ),
+                  ),
+                )
+              else if (snapshot.hasError)
+                KeyedSubtree(
+                  key: const ValueKey('admin-management-error'),
+                  child: _errorState(context, snapshot.error, retry: _reload),
+                )
+              else if (admins.isEmpty)
+                Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
               else ...admins.map((u) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -412,8 +447,8 @@ class _AdminPageState extends State<AdminPage>
                   trailing: u.id == _currentAdminId
                       ? Chip(label: Text(_t('مالک فعلی', 'Current owner')))
                       : Wrap(spacing: 6, children: [
-                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(Icons.logout)),
-                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(Icons.remove_moderator_outlined)),
+                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(HopeV2Icons.logout)),
+                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(HopeV2Icons.removeRole)),
                         ]),
                 ),
               )),
@@ -487,24 +522,60 @@ class _AdminPageState extends State<AdminPage>
         'icon': HopeV2Icons.completed,
       },
     ];
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
-    return GridView.extent(
-      maxCrossAxisExtent: 340,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.45,
-      children: items.map((item) {
-        final key = item['key']! as String;
-        return PremiumStatCard(
-          label: item['label']! as String,
-          value: '${m?[key] ?? 0}',
-          icon: item['icon']!,
-          accent: Theme.of(context).colorScheme.primary,
-          compact: MediaQuery.sizeOf(context).width < 600,
+    Widget summaryCard(Map<String, Object> item, {required bool compact}) {
+      final key = item['key']! as String;
+      return PremiumStatCard(
+        label: item['label']! as String,
+        value: m == null ? '—' : '${m[key] ?? 0}',
+        icon: item['icon']!,
+        accent: Theme.of(context).colorScheme.primary,
+        compact: compact,
+      );
+    }
+
+    return LayoutBuilder(
+      key: m == null ? const ValueKey('admin-summary-loading') : null,
+      builder: (context, constraints) {
+        if (enlargedText) {
+          const gap = 10.0;
+          final columns =
+              (constraints.maxWidth / (340 + gap)).ceil().clamp(1, 4).toInt();
+          final cardWidth =
+              (constraints.maxWidth - gap * (columns - 1)) / columns;
+          // Longer labels need room to wrap; fixed-aspect compact tiles hide
+          // meaningful text at enlarged system scales.
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: [
+              for (final item in items)
+                SizedBox(
+                  width: cardWidth,
+                  child: summaryCard(item, compact: false),
+                ),
+            ],
+          );
+        }
+
+        return GridView.extent(
+          maxCrossAxisExtent: 340,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.45,
+          children: items
+              .map(
+                (item) => summaryCard(
+                  item,
+                  compact: MediaQuery.sizeOf(context).width < 600,
+                ),
+              )
+              .toList(),
         );
-      }).toList(),
+      },
     );
   }
   Widget _errorState(BuildContext context, Object? error,

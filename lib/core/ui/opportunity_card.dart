@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 import '../marketplace/job.dart';
 import '../router/app_routes.dart';
@@ -81,14 +80,19 @@ class OpportunityCard extends StatelessWidget {
   String? _knownCompactReasonLabel(BuildContext context, List<String> reasons) =>
       hopeFirstRecommendationReasonLabel(context, reasons);
 
-  Widget? _compactMatchReasonTag(BuildContext context, List<String> reasons) {
+  Widget? _compactMatchReasonTag(
+    BuildContext context,
+    List<String> reasons, {
+    bool allowWrap = false,
+  }) {
     final label = _knownCompactReasonLabel(context, reasons);
     if (label == null || label.trim().isEmpty) return null;
     return PremiumTag(
       key: const ValueKey('opportunity-card-match-reason'),
       icon: HopeV2Icons.insights,
       label: label,
-      color: HopeV2Colors.secondary,
+      color: HopeV2SemanticColors.info(context),
+      allowWrap: allowWrap,
     );
   }
 
@@ -432,8 +436,7 @@ class OpportunityCard extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: HugeIcon(
-            icon: icon,
+          child: HopeIcon( icon,
             size: 16,
             color: action,
             strokeWidth: 1.9,
@@ -492,6 +495,7 @@ class OpportunityCard extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
     final percent = HopeDisplayFormatter.matchPercentage(score);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return ClipRRect(
       borderRadius: BorderRadius.circular(HopeV2Radii.lg),
       child: SizedBox(
@@ -553,7 +557,7 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            if (showTitle && hasMedia)
+            if (showTitle && hasMedia && !enlargedText)
               PositionedDirectional(
                 start: 12,
                 end: 12,
@@ -655,7 +659,7 @@ class OpportunityCard extends StatelessWidget {
         ? ''
         : hopeCategoryLabel(context, categoryValue);
     final match = _matchLabel(context);
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (enlargedText)
@@ -714,7 +718,7 @@ class OpportunityCard extends StatelessWidget {
                       child: PremiumTag(
                         icon: HopeV2Icons.match,
                         label: match,
-                        color: HopeV2Colors.success,
+                        color: HopeV2SemanticColors.info(context),
                         inverse: true,
                       ),
                     ),
@@ -725,8 +729,9 @@ class OpportunityCard extends StatelessWidget {
         SizedBox(height: enlargedText ? 2 : 4),
         Text(
           title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          maxLines: enlargedText ? null : 2,
+          softWrap: true,
+          overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontSize: 14,
             height: 1.18,
@@ -738,8 +743,9 @@ class OpportunityCard extends StatelessWidget {
           Text(
             category,
             key: const ValueKey('opportunity-card-compact-grid-category'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 1,
+            softWrap: true,
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontSize: enlargedText ? 10.5 : 11.5,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -756,8 +762,9 @@ class OpportunityCard extends StatelessWidget {
               child: Text(
                 city,
                 key: const ValueKey('opportunity-card-compact-grid-location'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: enlargedText ? null : 1,
+                softWrap: true,
+                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
               ),
             ),
@@ -783,6 +790,17 @@ class OpportunityCard extends StatelessWidget {
         ],
       ],
     );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Natural-height cards remain fully expanded in a Wrap. If a parent
+        // imposes a finite tile height, large-text content becomes scrollable
+        // rather than overflowing or truncating its title/financial range.
+        if (enlargedText && constraints.hasBoundedHeight) {
+          return SingleChildScrollView(child: content);
+        }
+        return content;
+      },
+    );
   }
 
   Widget _compact(
@@ -795,6 +813,7 @@ class OpportunityCard extends StatelessWidget {
     HopeCopy copy,
   ) {
     final locationColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final media = ClipRRect(
       key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
@@ -822,8 +841,9 @@ class OpportunityCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: enlargedText ? null : 2,
+                softWrap: true,
+                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -839,8 +859,9 @@ class OpportunityCard extends StatelessWidget {
                     child: Text(
                       city,
                       key: const ValueKey('opportunity-card-compact-location'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: enlargedText ? null : 1,
+                      softWrap: true,
+                      overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: locationColor,
                             fontSize: 12,
@@ -884,7 +905,8 @@ class OpportunityCard extends StatelessWidget {
     required List<String> reasons,
   }) {
     final hasMedia = mediaUrl?.trim().isNotEmpty == true;
-    final matchReasonTag = _compactMatchReasonTag(context, reasons);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final matchReasonTag = _compactMatchReasonTag(context, reasons, allowWrap: enlargedText);
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
@@ -898,15 +920,16 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: score,
           featured: true,
-          showTitle: hasMedia,
+          showTitle: hasMedia && !enlargedText,
         ),
-        if (!hasMedia) ...[
+        if (!hasMedia || enlargedText) ...[
           const SizedBox(height: 8),
           Text(
             title,
             key: const ValueKey('opportunity-featured-fallback-title'),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 2,
+            softWrap: true,
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontSize: MediaQuery.sizeOf(context).width <
                           HopeV2Breakpoints.medium
@@ -931,6 +954,7 @@ class OpportunityCard extends StatelessWidget {
                       ? copy.copy_mission_fb4c5e1
                       : copy.copy_job_ce2feba,
                   color: primary,
+                  allowWrap: enlargedText,
                 ),
                 if (matchReasonTag != null) matchReasonTag,
                 if (company != null)
@@ -938,17 +962,20 @@ class OpportunityCard extends StatelessWidget {
                     icon: HopeV2Icons.profile,
                     label: company,
                     color: HopeV2Colors.muted,
+                    allowWrap: enlargedText,
                   ),
                 if (mode != null && mode != city)
                   PremiumTag(
                     icon: HopeV2Icons.workshop,
                     label: mode,
                     color: secondaryAccent(context),
+                    allowWrap: enlargedText,
                   ),
                 PremiumTag(
                   icon: HopeV2Icons.location,
                   label: city,
                   color: secondaryAccent(context),
+                  allowWrap: enlargedText,
                 ),
               ],
             );
@@ -958,8 +985,10 @@ class OpportunityCard extends StatelessWidget {
                 : Text(
                     _formatAmount(amount, context),
                     key: const ValueKey('opportunity-card-standard-budget'),
-                    maxLines: 3,
-                    overflow: TextOverflow.clip,
+                    maxLines: enlargedText ? null : 3,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.clip,
                     softWrap: true,
                     textAlign: TextAlign.end,
                     style: HopeV2Type.metric(context).copyWith(
@@ -1162,6 +1191,7 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final mediaSize = compactViewport ? 56.0 : 68.0;
     final categoryValue = _categoryValue();
     final category = categoryValue == null
@@ -1169,7 +1199,7 @@ class OpportunityCard extends StatelessWidget {
         : hopeCategoryLabel(context, categoryValue);
     final match = _matchLabel(context);
     final mode = _workMode(context);
-    final matchReasonTag = _compactMatchReasonTag(context, reasons);
+    final matchReasonTag = _compactMatchReasonTag(context, reasons, allowWrap: enlargedText);
     // Keep the first scan-line calm on phone widths. Type, specialized
     // visibility, category and match remain the highest-signal metadata;
     // secondary rationale is available lower in the card when space allows.
@@ -1178,24 +1208,28 @@ class OpportunityCard extends StatelessWidget {
         icon: job.isMission ? HopeV2Icons.mission : HopeV2Icons.job,
         label: job.isMission ? copy.copy_mission_fb4c5e1 : copy.copy_job_ce2feba,
         color: primary,
+        allowWrap: enlargedText,
       ),
       if (job.visibility == 'SPECIALIZED')
         PremiumTag(
           icon: HopeV2Icons.secure,
           label: copy.copy_specialized_5d1ca04,
           color: HopeV2Colors.warning,
+          allowWrap: enlargedText,
         ),
       if (category.isNotEmpty)
         PremiumTag(
           icon: HopeV2Icons.category,
           label: category,
           color: HopeV2Colors.muted,
+          allowWrap: enlargedText,
         ),
       if (match != null)
         PremiumTag(
           icon: HopeV2Icons.match,
           label: match,
-          color: HopeV2Colors.success,
+          color: HopeV2SemanticColors.info(context),
+          allowWrap: enlargedText,
         ),
       if (matchReasonTag != null) matchReasonTag,
     ];
@@ -1233,31 +1267,27 @@ class OpportunityCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SingleChildScrollView(
+                  Wrap(
                     key: const ValueKey('opportunity-featured-scan-tag-rail'),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final tag in visibleTags)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(
-                              end: HopeV2Spacing.xs,
-                            ),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: compactViewport ? 92 : 130),
-                              child: tag,
-                            ),
+                    spacing: HopeV2Spacing.xs,
+                    runSpacing: 3,
+                    children: [
+                      for (final tag in visibleTags)
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compactViewport ? 92 : 130,
                           ),
-                      ],
-                    ),
+                          child: tag,
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 5),
                   Text(
                     title,
                     key: const ValueKey('opportunity-featured-scan-title'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontSize: compactViewport ? 15 : 16,
                           height: 1.12,
@@ -1300,14 +1330,23 @@ class OpportunityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize:
+                        enlargedText ? MainAxisSize.max : MainAxisSize.min,
                     children: [
-                      Text(
-                        _t(context, 'مشاهده جزئیات', 'View details'),
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: HopeV2SemanticColors.textPrimary(context),
-                              fontWeight: FontWeight.w900,
-                            ),
+                      Flexible(
+                        fit: enlargedText ? FlexFit.tight : FlexFit.loose,
+                        child: Text(
+                          _t(context, 'مشاهده جزئیات', 'View details'),
+                          maxLines: enlargedText ? null : 1,
+                          softWrap: true,
+                          overflow: enlargedText
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: HopeV2SemanticColors.textPrimary(context),
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
                       ),
                       const SizedBox(width: 4),
                       _actionAffordance(context),
@@ -1336,8 +1375,9 @@ class OpportunityCard extends StatelessWidget {
     final company = _companyName();
     final mode = _workMode(context);
     final match = _matchLabel(context);
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final matchReasonTag = showMatchRationale
-        ? _compactMatchReasonTag(context, reasons)
+        ? _compactMatchReasonTag(context, reasons, allowWrap: enlargedText)
         : null;
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -1368,12 +1408,14 @@ class OpportunityCard extends StatelessWidget {
             icon: HopeV2Icons.category,
             label: hopeCategoryLabel(context, _categoryValue()!),
             color: HopeV2Colors.muted,
+            allowWrap: enlargedText,
           ),
         if (job.visibility == 'SPECIALIZED')
           PremiumTag(
             icon: HopeV2Icons.secure,
             label: copy.copy_specialized_5d1ca04,
             color: HopeV2Colors.warning,
+            allowWrap: enlargedText,
           ),
       ],
     );
@@ -1428,6 +1470,7 @@ class OpportunityCard extends StatelessWidget {
                                   ? HopeV2Icons.mission
                                   : HopeV2Icons.job,
                               color: primary,
+                              allowWrap: enlargedText,
                             ),
                           ),
                         ),
@@ -1441,7 +1484,8 @@ class OpportunityCard extends StatelessWidget {
                               child: PremiumTag(
                                 icon: HopeV2Icons.match,
                                 label: match,
-                                color: HopeV2Colors.success,
+                                color: HopeV2SemanticColors.info(context),
+                                allowWrap: enlargedText,
                               ),
                             ),
                           ),
@@ -1461,8 +1505,9 @@ class OpportunityCard extends StatelessWidget {
                   const SizedBox(height: HopeV2Spacing.xs),
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w900,
                           height: 1.12,
@@ -1472,8 +1517,11 @@ class OpportunityCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       company,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: enlargedText ? null : 1,
+                      softWrap: true,
+                      overflow: enlargedText
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -1489,8 +1537,7 @@ class OpportunityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              HugeIcon(
-                icon: HopeV2Icons.payments,
+              HopeIcon( HopeV2Icons.payments,
                 size: 15,
                 color: primary,
                 strokeWidth: 1.8,
@@ -1542,8 +1589,10 @@ class OpportunityCard extends StatelessWidget {
                         : (job.isMission
                             ? copy.copy_view_and_act_on_mission
                             : copy.copy_view_details_and_act),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: TextStyle(
                       color: HopeV2SemanticColors.textPrimary(context),
                       fontWeight: FontWeight.w900,
@@ -1566,23 +1615,37 @@ class OpportunityCard extends StatelessWidget {
     Color color, {
     bool emphasize = false,
   }) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final metadataMaxWidth = enlargedText
+        ? (MediaQuery.sizeOf(context).width * 0.62)
+            .clamp(180.0, 260.0)
+            .toDouble()
+        : 260.0;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 260),
+      constraints: BoxConstraints(maxWidth: metadataMaxWidth),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        // At enlarged text sizes, metadata occupies the available line width
+        // so the label wraps inside the card instead of sizing the Row to its
+        // intrinsic text width. Keep compact intrinsic sizing at normal scale.
+        mainAxisSize:
+            enlargedText ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          HugeIcon(
-            icon: icon,
+          HopeIcon(
+            icon,
             size: 15,
             color: color,
             strokeWidth: 1.8,
           ),
           const SizedBox(width: 5),
           Flexible(
+            fit: enlargedText ? FlexFit.tight : FlexFit.loose,
             child: Text(
               label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: enlargedText ? null : 1,
+              softWrap: true,
+              overflow: enlargedText
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: emphasize ? color : null,
                     fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
@@ -1606,6 +1669,7 @@ class OpportunityCard extends StatelessWidget {
   }) {
     final compactViewport =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final reasonLabels = reasons
         .map((reason) => _reason(context, reason))
         .whereType<String>()
@@ -1670,23 +1734,27 @@ class OpportunityCard extends StatelessWidget {
                             ? HopeV2Icons.mission
                             : HopeV2Icons.job,
                         color: primary,
+                        allowWrap: enlargedText,
                       ),
                       if (matchPercent != null)
                         PremiumTag(
+                          key: const ValueKey('opportunity-card-expanded-match-score'),
                           icon: HopeV2Icons.match,
                           label: '${HopeDisplayFormatter.percent(
                             matchPercent.round(),
                             locale: Localizations.localeOf(context).languageCode,
                           )} ${_t(context, 'تطابق', 'match')}',
-                          color: HopeV2Colors.success,
+                          color: HopeV2SemanticColors.info(context),
+                          allowWrap: enlargedText,
                         ),
                     ],
                   ),
                   const SizedBox(height: HopeV2Spacing.sm),
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 2,
+                    softWrap: true,
+                    overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ],
@@ -1703,18 +1771,21 @@ class OpportunityCard extends StatelessWidget {
               icon: HopeV2Icons.location,
               label: city,
               color: secondaryAccent(context),
+              allowWrap: enlargedText,
             ),
             if (_categoryValue() != null)
               PremiumTag(
                 icon: HopeV2Icons.category,
                 label: hopeCategoryLabel(context, _categoryValue()!),
                 color: HopeV2Colors.muted,
+                allowWrap: enlargedText,
               ),
             if (job.visibility == 'SPECIALIZED')
               PremiumTag(
                 icon: HopeV2Icons.secure,
                 label: copy.copy_specialized_5d1ca04,
                 color: HopeV2Colors.warning,
+                allowWrap: enlargedText,
               ),
           ],
         ),
@@ -1733,8 +1804,7 @@ class OpportunityCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                HugeIcon(
-                  icon: HopeV2Icons.payments,
+                HopeIcon( HopeV2Icons.payments,
                   color: primary,
                   size: 19,
                   strokeWidth: 1.9,
@@ -1754,9 +1824,13 @@ class OpportunityCard extends StatelessWidget {
                       Text(
                         _formatAmount(amount, context),
                         key: const ValueKey('opportunity-card-expanded-budget'),
-                        maxLines: compactViewport ? 3 : 2,
+                        maxLines: enlargedText
+                            ? null
+                            : (compactViewport ? 3 : 2),
                         softWrap: true,
-                        overflow: TextOverflow.clip,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.clip,
                         style: HopeV2Type.metric(context).copyWith(
                           fontSize: compactViewport ? 14 : 18,
                           height: compactViewport ? 1.15 : 1.05,
@@ -1787,6 +1861,7 @@ class OpportunityCard extends StatelessWidget {
                     icon: HopeV2Icons.completed,
                     label: label,
                     color: primary,
+                    allowWrap: enlargedText,
                   ),
                 )
                 .toList(growable: false),
@@ -1796,8 +1871,11 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(height: HopeV2Spacing.md),
           Text(
             job.description.trim(),
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 5,
+            softWrap: true,
+            overflow: enlargedText
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
@@ -1881,6 +1959,49 @@ class _CategoryFallbackPainter extends CustomPainter {
     circle(31, 82, 25, soft);
     circle(126, 13, 2.2, fill);
     circle(198, 78, 2.2, fill);
+
+    // Kinetic editorial duotone layer: category accent paired with HOPE indigo
+    // and teal. These ornaments are decorative only and never encode status.
+    final motionColor = dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction;
+    final infoColor = dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondaryStrong;
+    final motionFill = Paint()
+      ..color = motionColor.withValues(alpha: dark ? .16 : .09);
+    final motionStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..color = motionColor.withValues(alpha: dark ? .43 : .28);
+    final infoStroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.25
+      ..strokeCap = StrokeCap.round
+      ..color = infoColor.withValues(alpha: dark ? .42 : .30);
+    final slash = Path()
+      ..moveTo(-8, 78)
+      ..lineTo(36, 31)
+      ..lineTo(51, 31)
+      ..lineTo(7, 80)
+      ..close()
+      ..moveTo(268, 93)
+      ..lineTo(307, 51)
+      ..lineTo(326, 51)
+      ..lineTo(288, 93)
+      ..close();
+    canvas.drawPath(slash, motionFill);
+    final trajectory = Path()
+      ..moveTo(-12, 68)
+      ..cubicTo(47, 12, 94, 101, 154, 53)
+      ..cubicTo(206, 13, 259, 13, 334, 30);
+    canvas.drawPath(trajectory, infoStroke);
+    canvas.drawArc(
+      Rect.fromCircle(center: const Offset(284, 45), radius: 25),
+      -.9,
+      2.05,
+      false,
+      motionStroke,
+    );
+    circle(303, 24, 3.2, Paint()..color = infoColor.withValues(alpha: .82));
+    circle(26, 24, 2.5, Paint()..color = motionColor.withValues(alpha: .72));
 
     switch (style) {
       case _CategoryArtworkStyle.software:

@@ -1,8 +1,8 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -29,6 +29,8 @@ void main() {
     final light = AppTheme.light().colorScheme;
     expect(light.primary, AppColors.primaryAction);
     expect(light.onPrimary, AppColors.surface);
+    expect(light.tertiary, HopeV2TonalPalettes.forest.shade600);
+    expect(light.onTertiary, AppColors.surface);
     expect(
       _contrastRatio(light.onPrimary, light.primary),
       greaterThanOrEqualTo(4.5),
@@ -37,6 +39,8 @@ void main() {
     final dark = AppTheme.dark().colorScheme;
     expect(dark.primary, AppColors.primaryDark);
     expect(dark.onPrimary, AppColors.ink);
+    expect(dark.tertiary, HopeV2TonalPalettes.forest.shade300);
+    expect(dark.onTertiary, HopeV2TonalPalettes.forest.shade900);
     expect(
       _contrastRatio(dark.onPrimary, dark.primary),
       greaterThanOrEqualTo(4.5),
@@ -409,12 +413,46 @@ void main() {
     expect(text.maxLines, 1);
   });
 
-  test('HOPE action icon vocabulary is backed by Hugeicons data', () {
-    expect(HopeV2Icons.search, isA<List<List>>());
-    expect(HopeV2Icons.menu, isA<List<List>>());
-    expect(HopeV2Icons.refresh, isA<List<List>>());
-    expect(HopeV2Icons.add, isA<List<List>>());
-    expect(HopeV2Icons.notifications, isA<List<List>>());
+  test('HOPE action icon vocabulary uses the Cupertino font package consistently', () {
+    final icons = <IconData>[
+      HopeV2Icons.home,
+      HopeV2Icons.homeSelected,
+      HopeV2Icons.workshop,
+      HopeV2Icons.wallet,
+      HopeV2Icons.profile,
+      HopeV2Icons.search,
+      HopeV2Icons.menu,
+      HopeV2Icons.refresh,
+      HopeV2Icons.add,
+      HopeV2Icons.notifications,
+      HopeV2Icons.mission,
+      HopeV2Icons.activity,
+      HopeV2Icons.activitySelected,
+      HopeV2Icons.insights,
+      HopeV2Icons.partial,
+      HopeV2Icons.description,
+      HopeV2Icons.assign,
+      HopeV2Icons.protectedFunds,
+      HopeV2Icons.transferIn,
+      HopeV2Icons.transferOut,
+      HopeV2Icons.verified,
+      HopeV2Icons.error,
+      HopeV2Icons.empty,
+      HopeV2Icons.offline,
+      HopeV2Icons.history,
+      HopeV2Icons.deadline,
+      HopeV2Icons.deposit,
+      HopeV2Icons.withdraw,
+    ];
+    expect(icons, isNotEmpty);
+    expect(
+      icons.every(
+        (icon) =>
+            icon.fontFamily == CupertinoIcons.iconFont &&
+            icon.fontPackage == CupertinoIcons.iconFontPackage,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('premium filter chip exposes disabled and loading states',
@@ -534,7 +572,7 @@ void main() {
     }
   });
 
-  testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
+  testWidgets('HopeIconTile renders canonical Cupertino action tokens',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -550,9 +588,9 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.search), findsOneWidget);
   });
-  testWidgets('compatibility status and empty-state primitives accept canonical icons',
+  testWidgets('status and empty-state primitives accept canonical Cupertino icons',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -575,7 +613,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsWidgets);
+    expect(find.byType(Icon), findsWidgets);
   });
 
 
@@ -1059,5 +1097,78 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+
+  test('icon accents distribute the HOPE multi-accent genome by product role', () {
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.light),
+      HopeV2TonalPalettes.forest.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.dark),
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.message, brightness: Brightness.light),
+      HopeV2TonalPalettes.info.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.profile, brightness: Brightness.dark),
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.featured, brightness: Brightness.light),
+      HopeV2TonalPalettes.featured.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.pending, brightness: Brightness.dark),
+      HopeV2TonalPalettes.warning.shade200,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.error, brightness: Brightness.light),
+      HopeV2TonalPalettes.danger.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.home, brightness: Brightness.light),
+      HopeV2Colors.primaryAction,
+    );
+  });
+
+  testWidgets('default icon tiles render green, teal, clay and trust accents by role',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              HopeIconTile(HopeV2Icons.wallet),
+              HopeIconTile(HopeV2Icons.message),
+              HopeIconTile(HopeV2Icons.featured),
+              HopeIconTile(HopeV2Icons.profile),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.wallet)).color,
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.message)).color,
+      HopeV2TonalPalettes.info.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.featured)).color,
+      HopeV2TonalPalettes.featured.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.profile)).color,
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
 }

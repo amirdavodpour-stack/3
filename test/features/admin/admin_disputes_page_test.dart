@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/admin/admin_repository.dart';
@@ -124,4 +125,68 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'admin dispute card preserves a long opportunity title at 1.5x text scale',
+    (tester) async {
+      const longTitle =
+          'Senior workplace dispute resolution and financial settlement workflow across multiple partner teams';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _AdminDisputesRepository()
+        ..disputes = [
+          {
+            'id': 'long-title-dispute',
+            'jobTitle': longTitle,
+            'workerName': 'Worker',
+            'ownerName': 'Employer',
+            'aiDecision': 'HOLD',
+            'status': 'REVIEWING',
+            'paymentStatus': 'HELD',
+          },
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Provider<AdminRepository>.value(
+            value: repository,
+            child: const AdminDisputesPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(longTitle);
+      expect(titleFinder, findsOneWidget);
+      final title = tester.widget<Text>(titleFinder);
+      expect(
+        title.maxLines,
+        isNull,
+        reason:
+            'Admin dispute titles must retain their full wording at enlarged system text.',
+      );
+      expect(title.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

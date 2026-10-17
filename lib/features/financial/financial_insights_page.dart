@@ -332,8 +332,8 @@ class _Metric extends StatelessWidget {
         children: [
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+            overflow: TextOverflow.visible,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? HopeV2Colors.darkMuted
@@ -344,9 +344,8 @@ class _Metric extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            maxLines: 2,
             softWrap: true,
-            overflow: TextOverflow.clip,
+            overflow: TextOverflow.visible,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
@@ -591,17 +590,17 @@ class _BarChart extends StatelessWidget {
           children: [
             _FinancialLegendItem(
               color: inflow,
-              icon: Icons.call_received_rounded,
+              icon: HopeV2Icons.transferIn,
               label: english ? 'Inflow' : 'ورودی',
             ),
             _FinancialLegendItem(
               color: outflow,
-              icon: Icons.call_made_rounded,
+              icon: HopeV2Icons.transferOut,
               label: english ? 'Outflow' : 'خروجی',
             ),
             _FinancialLegendItem(
               color: reserved,
-              icon: Icons.lock_outline_rounded,
+              icon: HopeV2Icons.secure,
               label: english ? 'Reserved' : 'رزرو شده',
             ),
           ],
@@ -663,7 +662,7 @@ class _BarChart extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Icon(
-                                  Icons.swipe_rounded,
+                                  HopeV2Icons.roleSwitch,
                                   size: 16,
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),

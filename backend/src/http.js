@@ -155,23 +155,57 @@ export async function readMultipartSingleFile(req) {
     const content = body.subarray(headerEnd + 4, nextBoundary);
     if (!content.length) throw new HttpError(400, 'EMPTY_FILE', 'Uploaded file is empty');
     if (content.length > config.maxUploadBytes) throw new HttpError(413, 'FILE_TOO_LARGE', 'File is too large');
-    const declaredType = contentType.toLowerCase();
+    const rawSafeName = path.basename(disposition[2]).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const rawExtension = path.extname(rawSafeName);
+    // Bound the filename/key length while preserving the extension needed for
+    // allowlist inference and route-level MIME/extension consistency checks.
+    const safeName = rawSafeName.length <= 180
+      ? rawSafeName
+      : `${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}${rawExtension}`;
+    const extension = path.extname(safeName).toLowerCase();
+    const inferredType = new Map([
+      ['.pdf', 'application/pdf'],
+      ['.png', 'image/png'],
+      ['.jpg', 'image/jpeg'],
+      ['.jpeg', 'image/jpeg'],
+      ['.webp', 'image/webp'],
+      ['.txt', 'text/plain'],
+      ['.text', 'text/plain'],
+      ['.log', 'text/plain'],
+      ['.m4a', 'audio/mp4'],
+      ['.mp4', 'audio/mp4'],
+      ['.mp3', 'audio/mpeg'],
+      ['.wav', 'audio/wav'],
+      ['.wave', 'audio/wav'],
+    ]).get(extension);
+    const incomingType = contentType.trim().toLowerCase();
+    // Some multipart clients report application/octet-stream even when the
+    // file extension identifies a supported upload. Infer only from this
+    // fixed allowlist; content signatures below still have to match.
+    const declaredType = (incomingType === '' || incomingType === 'application/octet-stream')
+      ? (inferredType || incomingType)
+      : incomingType;
+    const mp3Frame = content.length >= 2 && content[0] === 0xff &&
+      (content[1] & 0xe0) === 0xe0 && (content[1] & 0x18) !== 0x08;
     const signatureOk = (declaredType === 'application/pdf' && content.subarray(0, 4).toString() === '%PDF') ||
       (declaredType === 'image/png' && content.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) ||
       (declaredType === 'image/jpeg' && content.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) ||
       (declaredType === 'image/webp' && content.subarray(0, 4).toString() === 'RIFF' && content.subarray(8, 12).toString() === 'WEBP') ||
-      (declaredType === 'text/plain' && !content.subarray(0, 4096).includes(0));
-    if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain'].includes(declaredType) || !signatureOk) {
+      (declaredType === 'text/plain' && !content.subarray(0, 4096).includes(0)) ||
+      (declaredType === 'audio/mp4' && content.length >= 12 && content.subarray(4, 8).toString() === 'ftyp') ||
+      (declaredType === 'audio/mpeg' && (content.subarray(0, 3).toString() === 'ID3' || mp3Frame)) ||
+      (declaredType === 'audio/wav' && content.length >= 12 &&
+        content.subarray(0, 4).toString() === 'RIFF' && content.subarray(8, 12).toString() === 'WAVE');
+    if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav'].includes(declaredType) || !signatureOk) {
       throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported or invalid file content');
     }
-    const safeName = path.basename(disposition[2]).replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = `${crypto.randomUUID()}-${safeName}`;
     // Reuse the already-created temp file for the extracted payload. This is
     // important: the object storage layer must receive the file bytes, not the
     // surrounding multipart envelope. Keeping one path also guarantees that the
     // route's finally block removes the exact temporary file after upload.
     await fs.promises.writeFile(tempPath, content);
-    return { key, filename: safeName, contentType, size: content.length, path: tempPath };
+    return { key, filename: safeName, contentType: declaredType, size: content.length, path: tempPath };
   } catch (error) {
     try { await fs.promises.unlink(tempPath); } catch {}
     throw error;

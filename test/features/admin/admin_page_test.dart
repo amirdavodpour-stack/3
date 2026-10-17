@@ -17,10 +17,13 @@ import 'package:provider/provider.dart';
 class _FakeAdmin implements AdminRepository {
   _FakeAdmin({this.failJobs = false, this.primaryAdmin = false});
 
-  /// Only [listJobs] can fail (it powers the initially-active tab, whose
-  /// FutureBuilder observes the error future from the very first frame, so
-  /// no unobserved async error can be raised).
+  /// The active Jobs tab observes its future immediately, so this fake can
+  /// surface errors there without leaving unhandled async errors.
   bool failJobs = false;
+  bool failSummary = false;
+  bool failUsers = false;
+  Completer<HopeAdminSummary>? summaryGate;
+  Completer<List<HopeAdminUser>>? usersGate;
   final bool primaryAdmin;
 
   /// When true the next state-mutating action throws (error-path coverage).
@@ -44,7 +47,11 @@ class _FakeAdmin implements AdminRepository {
   List<HopeAdminAuditEvent> audit = const [];
 
   @override
-  Future<HopeAdminSummary> getSummary() async => summary;
+  Future<HopeAdminSummary> getSummary() async {
+    if (summaryGate != null) return summaryGate!.future;
+    if (failSummary) throw Exception('summary down');
+    return summary;
+  }
 
   @override
   Future<List<HopeJob>> listJobs() async {
@@ -65,6 +72,8 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<List<HopeAdminUser>> listUsers() async {
     calls.add('users');
+    if (usersGate != null) return usersGate!.future;
+    if (failUsers) throw Exception('users down');
     return users;
   }
 
@@ -205,6 +214,8 @@ Future<void> _pump(
   _FakeAdmin repo, {
   double width = 900,
   double height = 2400,
+  double textScale = 1,
+  bool settle = true,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -212,6 +223,13 @@ Future<void> _pump(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
+    builder: (context, child) {
+      final media = MediaQuery.of(context);
+      return MediaQuery(
+        data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      );
+    },
     locale: const Locale('en'),
     supportedLocales: const [Locale('en'), Locale('fa')],
     localizationsDelegates: const [
@@ -222,7 +240,7 @@ Future<void> _pump(
     ],
     home: Provider<AdminRepository>.value(value: repo, child: const AdminPage()),
   ));
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
 Future<void> _openTab(WidgetTester tester, String label) async {
@@ -372,6 +390,98 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'admin summary metric cards adapt height and retain labels at 1.5x text scale',
+    (tester) async {
+      await _pump(
+        tester,
+        _FakeAdmin(),
+        width: 390,
+        height: 844,
+        textScale: 1.5,
+      );
+
+      final stats = find.byType(PremiumStatCard);
+      expect(stats, findsNWidgets(6));
+      expect(
+        tester.getSize(stats.first).height,
+        greaterThan(80),
+        reason: 'Enlarged text must not be forced into the short fixed-aspect summary cells.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'admin dashboard distinguishes loading and failure from empty/zero, then recovers on retry',
+    (tester) async {
+      final summaryGate = Completer<HopeAdminSummary>();
+      final usersGate = Completer<List<HopeAdminUser>>();
+      final repo = _FakeAdmin(primaryAdmin: true)
+        ..summaryGate = summaryGate
+        ..usersGate = usersGate;
+
+      await _pump(tester, repo, settle: false);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('admin-summary-loading')), findsOneWidget);
+      expect(find.byKey(const ValueKey('admin-management-loading')), findsOneWidget);
+      expect(find.text('No administrators found.'), findsNothing);
+      expect(find.text('0'), findsNothing,
+          reason: 'Loading metrics must not masquerade as real zero counts.');
+
+      summaryGate.completeError(Exception('summary unavailable'));
+      usersGate.completeError(Exception('administrator list unavailable'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('admin-summary-loading')), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-loading')), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-error')), findsOneWidget);
+      expect(find.text('Retry'), findsNWidgets(2));
+      expect(find.text('No administrators found.'), findsNothing,
+          reason: 'A failed list request must not be presented as an empty administrator list.');
+
+      repo
+        ..summaryGate = null
+        ..usersGate = null
+        ..summary = const HopeAdminSummary(values: {
+          'users': 701,
+          'published_opportunities': 5,
+          'missions': 2,
+          'jobs': 3,
+          'pending_applications': 1,
+          'audit_events': 9,
+        })
+        ..users = [
+          const HopeAdminUser(
+            id: 'owner-1',
+            displayName: 'Owner',
+            email: 'owner@example.com',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            primaryAdmin: true,
+          ),
+          const HopeAdminUser(
+            id: 'admin-2',
+            displayName: 'Ops',
+            email: 'ops@example.com',
+            role: ' ADMIN ',
+            status: 'ACTIVE',
+          ),
+        ];
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Retry').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('701'), findsOneWidget);
+      expect(find.text('Ops'), findsOneWidget);
+      expect(find.text('No administrators found.'), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-error')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {

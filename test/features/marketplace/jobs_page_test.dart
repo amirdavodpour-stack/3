@@ -13,6 +13,7 @@ import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,6 +110,23 @@ class _Repo implements MarketplaceRepository {
 
   @override
   Future<void> publishOpportunity(String id) async {}
+}
+
+class _LoadingExploreRepo extends _Repo {
+  final Completer<List<HopeJob>> pendingJobs =
+      Completer<List<HopeJob>>();
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) => pendingJobs.future;
 }
 
 class _RankedExploreRepo extends _Repo {
@@ -339,6 +357,80 @@ void main() {
       expect(repo.opportunityCalls, 2);
       expect(find.byKey(const ValueKey('explore-retry-opportunities')), findsNothing);
       expect(find.text('طراحی اپ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wide Explore opportunity cards size to content instead of square grid cells',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(OpportunityCard);
+      expect(cards, findsWidgets);
+      expect(
+        tester.getSize(cards.first).height,
+        lessThanOrEqualTo(320),
+        reason: 'Wide Explore opportunity cards should not reserve a fixed-aspect grid cell when their content is short.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Explore loading placeholders match horizontal compact cards on phones',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'Phone Explore loading should reserve a horizontal compact summary, not a tall image-first card.',
+        );
+        expect(
+          tester.getSize(skeletons.at(index)).width,
+          greaterThan(300),
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Explore loading follows the padded content width at the 420dp breakpoint',
+    (tester) async {
+      tester.view.physicalSize = const Size(440, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'A 440dp window loses 28dp to the compact page frame, so its 412dp content uses the horizontal phone card layout.',
+        );
+      }
       expect(tester.takeException(), isNull);
     },
   );

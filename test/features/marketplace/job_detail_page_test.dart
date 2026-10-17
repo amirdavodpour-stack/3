@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -559,6 +560,82 @@ void main() {
     expect(widget.maxLines, 2);
     expect(widget.overflow, TextOverflow.ellipsis);
   });
+
+  testWidgets(
+    'Job Detail hero expands to preserve long titles at 1.5x system text',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final titleFinder = find.text(title);
+      final heroFinder = find.byType(PremiumHero);
+      expect(titleFinder, findsOneWidget);
+      expect(heroFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'At enlarged system text, the Job Detail hero must show the entire opportunity title instead of clipping it to two lines.',
+      );
+      final titleRect = tester.getRect(titleFinder);
+      final heroRect = tester.getRect(heroFinder);
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(heroRect.bottom),
+        reason: 'The expanded title must remain inside the hero surface.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Job Detail snapshot facts fully wrap long values at 1.5x text scale',
+    (tester) async {
+      const longLocation =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      await _pump(
+        tester,
+        job: _job(city: longLocation),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+
+      final decisionStrip = find.byKey(
+        const ValueKey('opportunity-decision-strip'),
+      );
+      expect(decisionStrip, findsOneWidget);
+      await tester.ensureVisible(decisionStrip);
+      await tester.pumpAndSettle();
+
+      final valueFinder = find.descendant(
+        of: decisionStrip,
+        matching: find.text(longLocation),
+      );
+      expect(valueFinder, findsOneWidget);
+      final value = tester.widget<Text>(valueFinder);
+      expect(
+        value.maxLines,
+        isNull,
+        reason:
+            'Snapshot facts must not truncate the real location at enlarged system text.',
+      );
+      expect(value.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {

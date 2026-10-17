@@ -9,6 +9,8 @@ rm -f "$log_file"
 : > "$log_file"
 
 RUNTIME_SERIAL="${ANDROID_SERIAL:-emulator-5554}"
+TALKBACK_PACKAGE="${HOPE_TALKBACK_PACKAGE:-com.android.talkback}"
+TALKBACK_SERVICE_COMPONENT="${TALKBACK_PACKAGE}/com.google.android.marvin.talkback.TalkBackService"
 export ANDROID_SERIAL="$RUNTIME_SERIAL"
 source "${GITHUB_WORKSPACE:-$PWD}/tools/android-runtime-device-recovery.sh"
 hope_android_device_ready "$RUNTIME_SERIAL"
@@ -198,6 +200,7 @@ validate_capture_set() {
   local source
   local screenshot_magic
   local screenshot_hash
+  local native_screenshot_hash
   declare -A seen_screenshot_hashes=()
 
   for marker in "$@"; do
@@ -214,6 +217,24 @@ validate_capture_set() {
     fi
 
     screenshot_hash="$(sha256sum "$source" | awk '{print $1}')"
+    native_screenshot_hash=""
+    if [ "$log_path" != "/dev/null" ] && [ -r "$log_path" ]; then
+      native_screenshot_hash="$(grep -F "HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=" "$log_path" |
+        sed -nE 's/.*:sha256=([0-9a-f]{64}).*/\1/p' | tail -n 1 || true)"
+    fi
+    if [ -n "$native_screenshot_hash" ]; then
+      if [ "$native_screenshot_hash" != "$screenshot_hash" ]; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-host-digest-mismatch:native=$native_screenshot_hash:host=$screenshot_hash" >&2
+        return 1
+      fi
+      echo "HOPE_HOST_CAPTURE_DIGEST_MATCH:$marker:$screenshot_hash"
+    else
+      echo "HOPE_HOST_CAPTURE_DIGEST_UNAVAILABLE:$marker"
+      if [ "$log_path" != "/dev/null" ]; then
+        echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-digest-missing" >&2
+        return 1
+      fi
+    fi
     if [ -n "${seen_screenshot_hashes[$screenshot_hash]+x}" ]; then
       echo "HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:duplicate-png-hash:$screenshot_hash:matches:${seen_screenshot_hashes[$screenshot_hash]}" >&2
       return 1
@@ -361,7 +382,7 @@ run_host_batch_session() {
   # scoped to this debug evidence lane; product builds retain their normal renderer.
   HOPE_SCREENSHOT_OUTPUT_ROOT="$evidence_dir" \
   timeout --foreground --signal=TERM --kill-after="${ADB_KILL_AFTER_SECONDS}s" "${RUNTIME_TEST_TIMEOUT_SECONDS}s" \
-  flutter drive --no-pub --no-dds --no-enable-impeller \
+  flutter drive --keep-app-running --no-pub --no-dds --no-enable-impeller \
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
@@ -384,7 +405,12 @@ run_host_batch_session() {
     capture_status=1
     echo "HOPE_HOST_RUNTIME_SESSION_TIMEOUT:driver-connect:$mode" >&2
     kill "$process_pid" >/dev/null 2>&1 || true
+  elif ! assert_hope_focused "$mode" || ! assert_hope_rendered "$mode"; then
+    capture_status=1
+    echo "HOPE_HOST_RUNTIME_FOCUS_OR_SURFACE_FAILED:$mode" >&2
+    kill "$process_pid" >/dev/null 2>&1 || true
   else
+    echo "HOPE_HOST_RUNTIME_FOCUS_AND_SURFACE_VERIFIED:$mode"
     # integration_test's onScreenshot callback owns the host-side PNG write.
     # Waiting on each marker here creates a race with the Flutter Driver
     # command/response cycle. The final capture-set validator below checks all
@@ -510,6 +536,10 @@ else
       echo "HOPE_HOST_RUNTIME_TAIL_RECOVERY_START:baseline-auth-tail"
       hope_android_device_ready "$RUNTIME_SERIAL"
       run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true
+      # Preserve native marker + SHA-256 evidence for auth PNGs rewritten by recovery.
+      if [ -s "$runner_temp/hope-baseline-d-runtime.log" ]; then
+        cat "$runner_temp/hope-baseline-d-runtime.log" >> "$runner_temp/hope-baseline-runtime.log"
+      fi
     fi
   fi
 
@@ -637,8 +667,25 @@ fi
 # Then run the same screen set with real TalkBack attached, emitting no PNG payloads.
 talkback_setup_status=0
 if ! bash tools/hope-enable-talkback.sh; then
-  echo "HOPE_TALKBACK_SETUP_FAILED: the required TalkBack service could not be installed and bound." >&2
+  echo "HOPE_TALKBACK_SETUP_FAILED: TalkBack must be bound with touch exploration enabled." >&2
   talkback_setup_status=1
+fi
+if [[ "$talkback_setup_status" -eq 0 ]]; then
+  if ! hope_android_app_activity_ready "$RUNTIME_SERIAL" com.hope.marketplace \
+    "build/app/outputs/flutter-apk/app-debug.apk" > "$evidence_dir/hope-talkback-return-to-app.txt" 2>&1; then
+    cat "$evidence_dir/hope-talkback-return-to-app.txt" >&2 || true
+    echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: launcher activity could not be resolved and foregrounded after TalkBack setup." >&2
+    capture_android_diagnostics talkback-return
+    talkback_setup_status=1
+  else
+    cat "$evidence_dir/hope-talkback-return-to-app.txt"
+    if ! assert_hope_focused talkback-return; then
+      echo "HOPE_TALKBACK_FOREGROUND_RETURN_FAILED: MainActivity did not gain verified foreground focus after TalkBack setup." >&2
+      talkback_setup_status=1
+    else
+      echo "HOPE_RUNTIME_APP_FOREGROUND_AFTER_TALKBACK:true"
+    fi
+  fi
 fi
 semantics_status=0
 if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
@@ -648,7 +695,8 @@ if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
   if [ "$CAPTURE_LOCALE" = "fa" ]; then scroll_suffix="fa-rtl"; fi
   semantics_scroll_end_screens=(
     "home-$scroll_suffix" "jobs-$scroll_suffix" "job-detail-$scroll_suffix"
-    "transactions-$scroll_suffix" "wallet-$scroll_suffix" "profile-$scroll_suffix"
+    "transactions-$scroll_suffix" "transaction-detail-$scroll_suffix"
+    "wallet-$scroll_suffix" "profile-$scroll_suffix" "create-job-$scroll_suffix"
   )
   if [ "$semantics_status" -eq 0 ] && ! validate_scroll_end_set "baseline-$CAPTURE_LOCALE" "$runner_temp/hope-semantics-only-runtime.log" "${semantics_scroll_end_screens[@]}"; then semantics_status=1; fi
 
@@ -735,8 +783,35 @@ talkback_service_bound=false
 if [[ "$(tr -d '\r\n' < "$evidence_dir/talkback-service-bound.txt" 2>/dev/null || true)" == "true" ]]; then
   talkback_service_bound=true
 fi
+talkback_touch_exploration_enabled=false
+if [[ "$(tr -d '\r\n' < "$evidence_dir/touch-exploration-enabled.txt" 2>/dev/null || true)" == "true" ]]; then
+  talkback_touch_exploration_enabled=true
+fi
 talkback_semantics_screens=0
 talkback_semantics_output="$(grep -h 'HOPE_T10_SEMANTICS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+talkback_target_bounds_screens=0
+talkback_target_bounds_checked=0
+talkback_target_bounds_failures=0
+talkback_target_bounds_min_width_dp=0
+talkback_target_bounds_min_height_dp=0
+talkback_target_bounds_pass_output="$(grep -h 'HOPE_T10_TARGET_BOUNDS_PASS:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+talkback_target_bounds_fail_output="$(grep -h 'HOPE_T10_TARGET_BOUNDS_FAIL:' "$runner_temp"/hope-semantics*-runtime.log 2>/dev/null || true)"
+if [[ -n "$talkback_target_bounds_pass_output" ]]; then
+  talkback_target_bounds_screens="$(printf '%s\n' "$talkback_target_bounds_pass_output" | sed -n 's/.*HOPE_T10_TARGET_BOUNDS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
+  talkback_target_bounds_checked="$(printf '%s\n' "$talkback_target_bounds_pass_output" | sed -n 's/.*targets=\([0-9][0-9]*\):.*/\1/p' | awk '{ total += $1 } END { print total + 0 }')"
+  target_bounds_with_controls="$(printf '%s\n' "$talkback_target_bounds_pass_output" | grep -E 'targets=[1-9][0-9]*:' || true)"
+  if [[ -n "$target_bounds_with_controls" ]]; then
+    talkback_target_bounds_min_width_dp="$(printf '%s\n' "$target_bounds_with_controls" | sed -n 's/.*minWidthDp=\([0-9.]*\).*/\1/p' | sort -n | head -n 1)"
+    talkback_target_bounds_min_height_dp="$(printf '%s\n' "$target_bounds_with_controls" | sed -n 's/.*minHeightDp=\([0-9.]*\).*/\1/p' | sort -n | head -n 1)"
+  fi
+fi
+if [[ -n "$talkback_target_bounds_fail_output" ]]; then
+  talkback_target_bounds_failures="$(printf '%s\n' "$talkback_target_bounds_fail_output" | wc -l | tr -d ' ')"
+fi
+talkback_target_bounds_minimum_size_ok=false
+if awk -v width="$talkback_target_bounds_min_width_dp" -v height="$talkback_target_bounds_min_height_dp" 'BEGIN { exit !(width >= 48 && height >= 48) }'; then
+  talkback_target_bounds_minimum_size_ok=true
+fi
 if [[ -n "$talkback_semantics_output" ]]; then
   talkback_semantics_screens="$(printf '%s\n' "$talkback_semantics_output" | sed -n 's/.*HOPE_T10_SEMANTICS_PASS:\([^:]*\).*/\1/p' | grep -v '^scroll-end-' | sort -u | wc -l | tr -d ' ')"
 fi
@@ -750,8 +825,8 @@ talkback_apk_sha256="$(tr -d '\r\n' < "$evidence_dir/talkback-apk-sha256.txt" 2>
 talkback_required=false
 if [[ "${HOPE_TALKBACK_REQUIRED:-0}" == "1" ]]; then
   talkback_required=true
-  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 6 ]]; then
-    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens" >&2
+  if [[ "$talkback_setup_status" -ne 0 || "$talkback_enabled" != "true" || "$talkback_service_bound" != "true" || "$talkback_touch_exploration_enabled" != "true" || "$talkback_semantics_screens" -ne 25 || "$scroll_end_screens" -ne 8 || "$talkback_target_bounds_screens" -ne 25 || "$talkback_target_bounds_checked" -lt 1 || "$talkback_target_bounds_failures" -ne 0 || "$talkback_target_bounds_minimum_size_ok" != "true" ]]; then
+    echo "HOPE_T10_ACCEPTANCE_FAILED: setup=$talkback_setup_status enabled=$talkback_enabled bound=$talkback_service_bound touch_exploration=$talkback_touch_exploration_enabled semantics=$talkback_semantics_screens scroll_end=$scroll_end_screens target_bounds_screens=$talkback_target_bounds_screens target_bounds_checked=$talkback_target_bounds_checked target_bounds_failures=$talkback_target_bounds_failures target_min_width_dp=$talkback_target_bounds_min_width_dp target_min_height_dp=$talkback_target_bounds_min_height_dp" >&2
     test_status=1
   fi
 fi
@@ -805,8 +880,14 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "talkback_required": $talkback_required,
   "talkback_enabled": $talkback_enabled,
   "talkback_service_bound": $talkback_service_bound,
-  "talkback_package": "com.android.talkback",
-  "talkback_service_component": "com.android.talkback/com.google.android.marvin.talkback.TalkBackService",
+  "talkback_touch_exploration_enabled": $talkback_touch_exploration_enabled,
+  "talkback_target_bounds_screens": $talkback_target_bounds_screens,
+  "talkback_target_bounds_checked": $talkback_target_bounds_checked,
+  "talkback_target_bounds_failures": $talkback_target_bounds_failures,
+  "talkback_target_bounds_min_width_dp": $talkback_target_bounds_min_width_dp,
+  "talkback_target_bounds_min_height_dp": $talkback_target_bounds_min_height_dp,
+  "talkback_package": "$TALKBACK_PACKAGE",
+  "talkback_service_component": "$TALKBACK_SERVICE_COMPONENT",
   "talkback_source_sha": "$talkback_source_sha",
   "talkback_apk_sha256": "$talkback_apk_sha256",
   "talkback_semantics_screens": $talkback_semantics_screens,

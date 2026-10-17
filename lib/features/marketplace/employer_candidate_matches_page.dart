@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 import '../../core/marketplace/employer_candidate_matching_repository.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_display_formatters.dart';
+import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 
 class EmployerCandidateMatchesPage extends StatelessWidget {
@@ -26,11 +26,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
         fractionDigits: fractionDigits,
       );
 
-  String _candidateScoreLabel(BuildContext context, num score) => _percent(
-        context,
-        score,
-        fractionDigits: score == score.roundToDouble() ? 0 : 1,
-      );
+  String _candidateScoreLabel(BuildContext context, num score) {
+    final normalized = HopeDisplayFormatter.matchPercentage(score);
+    if (normalized == null) return '—';
+    return _percent(
+      context,
+      normalized,
+      fractionDigits: normalized == normalized.roundToDouble() ? 0 : 1,
+    );
+  }
 
   String? _reason(BuildContext context, String value) {
     final code = value.trim().toUpperCase();
@@ -56,11 +60,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     _ => key,
   };
 
+  double? _componentValue(HopeEmployerCandidateMatch candidate, String key) =>
+      candidate.components[key] ??
+      (key == 'salary' ? candidate.components['compensation'] : null);
+
   Widget _componentBreakdown(BuildContext context, HopeEmployerCandidateMatch candidate) {
     const keys = ['skills', 'experience', 'location', 'salary'];
     final values = <MapEntry<String, double>>[];
     for (final key in keys) {
-      final value = candidate.components[key];
+      final value = _componentValue(candidate, key);
       if (value != null) values.add(MapEntry(key, value <= 1 ? value : value / 100));
     }
     if (values.isEmpty) return const SizedBox.shrink();
@@ -124,9 +132,88 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     );
   }
 
+  Widget _candidateOverviewContent(
+    BuildContext context, {
+    required HopeEmployerCandidateMatch best,
+    required String? gapValue,
+    required bool enlargedText,
+    required int candidateCount,
+  }) {
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _t(context, 'بهترین تطابق', 'Best fit'),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? HopeV2Colors.darkMuted
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          best.displayName,
+          maxLines: enlargedText ? null : 1,
+          softWrap: true,
+          overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+      ],
+    );
+    final scoreTag = PremiumTag(
+      key: const ValueKey('candidate-comparison-best-score'),
+      icon: HopeV2Icons.match,
+      label: _candidateScoreLabel(context, best.score),
+      color: Theme.of(context).colorScheme.primary,
+    );
+    final gapTag = candidateCount > 1 && gapValue != null
+        ? PremiumTag(
+            label: _t(
+              context,
+              'اختلاف $gapValue واحد درصد',
+              '$gapValue percentage-point gap',
+            ),
+            color: HopeV2Colors.secondary,
+          )
+        : null;
+
+    if (enlargedText) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          identity,
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 7,
+            runSpacing: 6,
+            children: [
+              scoreTag,
+              if (gapTag != null) gapTag,
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: identity),
+        scoreTag,
+        if (gapTag != null) ...[
+          const SizedBox(width: 7),
+          gapTag,
+        ],
+      ],
+    );
+  }
+
   Widget _comparisonMatrix(BuildContext context) {
     final candidates = data.candidates.take(3).toList(growable: false);
     const keys = ['skills', 'experience', 'location', 'salary'];
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final widths = <int, TableColumnWidth>{
       0: const FixedColumnWidth(86),
     };
@@ -155,8 +242,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
               : null,
           child: Text(
             value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            maxLines: enlargedText ? null : 2,
+            softWrap: true,
+            overflow: enlargedText
+                ? TextOverflow.visible
+                : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: heading
                       ? HopeV2SemanticColors.textPrimary(context)
@@ -169,7 +259,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     }
 
     String valueFor(HopeEmployerCandidateMatch candidate, String key) {
-      final value = candidate.components[key];
+      final value = _componentValue(candidate, key);
       if (value != null) {
         final normalized = value <= 1 ? value * 100 : value;
         return _percent(context, normalized.clamp(0.0, 100.0).round());
@@ -266,6 +356,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return PremiumPageFrame(
       page: HopePageId.candidateMatches,
       domain: HopeProductDomain.intelligence,
@@ -293,64 +384,32 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           Builder(
             builder: (context) {
               final best = data.candidates.first;
-              final gap = data.candidates.length > 1
-                  ? (best.score - data.candidates[1].score)
-                      .abs()
-                      .clamp(0.0, 100.0)
-                  : 0.0;
-              final gapValue = HopeDisplayFormatter.integer(
-                gap.round(),
-                locale: Localizations.localeOf(context).languageCode,
-              );
+              final bestScore =
+                  HopeDisplayFormatter.matchPercentage(best.score);
+              final secondScore = data.candidates.length > 1
+                  ? HopeDisplayFormatter.matchPercentage(
+                      data.candidates[1].score,
+                    )
+                  : null;
+              final gap = bestScore != null && secondScore != null
+                  ? (bestScore - secondScore).abs().clamp(0.0, 100.0)
+                  : null;
+              final gapValue = gap == null
+                  ? null
+                  : HopeDisplayFormatter.integer(
+                      gap.round(),
+                      locale: Localizations.localeOf(context).languageCode,
+                    );
               return PremiumPanel(
                 key: const ValueKey('candidate-comparison-overview'),
                 quiet: true,
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _t(context, 'بهترین تطابق', 'Best fit'),
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? HopeV2Colors.darkMuted
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            best.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PremiumTag(
-                      key: const ValueKey('candidate-comparison-best-score'),
-                      icon: HopeV2Icons.match,
-                      label: _candidateScoreLabel(context, best.score),
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    if (data.candidates.length > 1) ...[
-                      const SizedBox(width: 7),
-                      PremiumTag(
-                        label: _t(
-                          context,
-                          'اختلاف $gapValue واحد درصد',
-                          '$gapValue percentage-point gap',
-                        ),
-                        color: HopeV2Colors.secondary,
-                      ),
-                    ],
-                  ],
+                child: _candidateOverviewContent(
+                  context,
+                  best: best,
+                  gapValue: gapValue,
+                  enlargedText: enlargedText,
+                  candidateCount: data.candidates.length,
                 ),
               );
             },
@@ -387,7 +446,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: onRetry,
-                  icon: const HugeIcon(icon: HopeV2Icons.refresh, size: 18),
+                  icon: const HopeIcon( HopeV2Icons.refresh, size: 18),
                   label: Text(_t(context, 'به‌روزرسانی', 'Refresh')),
                 ),
               ],
@@ -436,8 +495,11 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                                 candidate.displayName.isEmpty
                                     ? _t(context, 'کارگر', 'Worker')
                                     : candidate.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: enlargedText ? null : 1,
+                                softWrap: true,
+                                overflow: enlargedText
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
@@ -501,8 +563,15 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         candidate.skills!.trim(),
-                        maxLines: MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText
+                            ? null
+                            : MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium
+                                ? 1
+                                : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

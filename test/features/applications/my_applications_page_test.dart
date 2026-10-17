@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/applications/my_applications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -233,6 +235,203 @@ void main() {
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('UNKNOWN_APPLICATION_STATE'), findsNothing);
   });
+
+  testWidgets(
+    'application card keeps timeline and withdrawal action within the compact 1.5x layout',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title =
+          'Senior product design lead for editorial systems and accessibility';
+      const application = HopeApplication(
+        id: 'dense-app',
+        jobId: 'job-1',
+        jobTitle: title,
+        jobCity: 'Frankfurt am Main',
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      expect(titleFinder, findsOneWidget);
+      final cardFinder = find.ancestor(
+        of: titleFinder,
+        matching: find.byType(PremiumPanel),
+      );
+      expect(cardFinder, findsOneWidget);
+      final timelineStage = find.byKey(
+        const ValueKey('application-timeline-dense-app-PENDING'),
+      );
+      final timelineWrap = find.ancestor(
+        of: timelineStage,
+        matching: find.byType(Wrap),
+      );
+      expect(timelineWrap, findsOneWidget);
+      expect(
+        tester.getSize(timelineWrap).height,
+        lessThanOrEqualTo(145),
+        reason: 'Full stage labels may wrap up to three lines on enlarged text, while keeping the timeline within a compact two-row budget.',
+      );
+      expect(
+        tester.getSize(cardFinder).height,
+        lessThanOrEqualTo(390),
+        reason: 'A compact application card should keep its full timeline and actions content-sized at 1.5x text.',
+      );
+      expect(find.byTooltip('Withdraw'), findsOneWidget);
+      expect(find.text('View opportunity'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact application cards preserve full opportunity titles at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title = 'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      const application = HopeApplication(
+        id: 'full-title-app',
+        jobId: 'job-1',
+        jobTitle: title,
+        jobCity: 'Frankfurt am Main',
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      expect(titleFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'On a scrollable page, a long application title should wrap naturally instead of being truncated at large text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'application location names preserve full wording at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const longCity =
+          'Northern Metropolitan Administrative and Financial District';
+      const application = HopeApplication(
+        id: 'long-city-app',
+        jobId: 'job-1',
+        jobTitle: 'Product designer',
+        jobCity: longCity,
+        jobKind: 'JOB',
+        resumeText: '',
+        skills: '',
+        status: 'PENDING',
+        createdAt: null,
+        updatedAt: null,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _FakeProfileRepository(application),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityFinder = find.text(longCity);
+      expect(cityFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(cityFinder).didExceedMaxLines,
+        isFalse,
+        reason:
+            'A long opportunity location should wrap naturally on the application card instead of being clipped by a one-line tag.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('applications load failure shows explicit error state with retry',
       (tester) async {
@@ -464,6 +663,67 @@ void main() {
           reason: 'The ${entry.value} marker needs a visible stage label.',
         );
         expect(find.descendant(of: label, matching: find.text(entry.value)), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'application timeline labels do not truncate at 1.5x text on a compact viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Provider<ApplicationRegistry>.value(
+              value: ApplicationRegistry(
+                profile: _ManyApplicationsRepository(),
+              ),
+              child: const MyApplicationsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      const stages = <String, String>{
+        'PENDING': 'Pending',
+        'SHORTLISTED': 'Shortlist',
+        'FORWARDED': 'Forwarded',
+        'INTERVIEW': 'Interview',
+        'OFFERED': 'Offer',
+        'ACCEPTED': 'Accepted',
+      };
+      for (final entry in stages.entries) {
+        final label = find.byKey(
+          ValueKey('application-timeline-pending-app-${entry.key}'),
+        );
+        expect(label, findsOneWidget);
+        final textFinder = find.descendant(
+          of: label,
+          matching: find.text(entry.value),
+        );
+        final paragraph = tester.renderObject<RenderParagraph>(textFinder);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '${entry.value} must remain fully visible when system text is scaled to 1.5x.',
+        );
       }
       expect(tester.takeException(), isNull);
     },

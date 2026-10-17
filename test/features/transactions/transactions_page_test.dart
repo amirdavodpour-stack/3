@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -35,9 +38,12 @@ class _Transactions implements TransactionRepository {
   List<HopeJob> jobs = const [];
   bool paymentUnavailable = false;
   bool failList = false;
+  Completer<List<HopeJob>>? listCompleter;
   @override
   Future<List<HopeJob>> listMyJobs() async {
     if (failList) throw StateError('activity unavailable');
+    final pending = listCompleter;
+    if (pending != null) return pending.future;
     return jobs;
   }
   @override
@@ -84,6 +90,8 @@ Future<void> _pump(
   double height = 2400,
   double textScale = 1,
   Locale locale = const Locale('fa'),
+  bool settle = true,
+  bool disableAnimations = false,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -111,6 +119,7 @@ Future<void> _pump(
     home: MediaQuery(
       data: MediaQueryData.fromView(tester.view).copyWith(
         textScaler: TextScaler.linear(textScale),
+        disableAnimations: disableAnimations,
       ),
       child: MultiProvider(
         providers: [ChangeNotifierProvider.value(value: auth)],
@@ -118,12 +127,21 @@ Future<void> _pump(
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
-HopeJob _job(String id, {String status = 'OPEN'}) => HopeJob.fromMap({
+HopeJob _job(
+  String id, {
+  String status = 'OPEN',
+  String? title,
+}) =>
+    HopeJob.fromMap({
       'id': id,
-      'title': 'پروژه $id',
+      'title': title ?? 'پروژه $id',
       'description': '',
       'status': status,
       'kind': 'MISSION',
@@ -258,6 +276,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Work Center initial loading uses a content-shaped skeleton instead of a spinner',
+    (tester) async {
+      final repo = _Transactions()
+        ..listCompleter = Completer<List<HopeJob>>();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        settle: false,
+        disableAnimations: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('work-center-loading-skeleton')),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
+
   testWidgets('empty authenticated transactions show the empty state',
       (tester) async {
     final repo = _Transactions()..jobs = [];
@@ -295,6 +339,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Work Center metrics reflow and preserve full labels at 1.5x in RTL and LTR',
+    (tester) async {
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final repo = _Transactions()
+          ..jobs = [
+            _job('metric-active', status: 'IN_PROGRESS'),
+            _job('metric-settled', status: 'COMPLETED'),
+          ];
+        await _pump(
+          tester,
+          repo,
+          width: 320,
+          height: 640,
+          textScale: 1.5,
+          locale: locale,
+        );
+
+        final metrics = find.byKey(const ValueKey('work-center-metrics'));
+        expect(metrics, findsOneWidget);
+        final metricTexts = tester.widgetList<Text>(
+          find.descendant(of: metrics, matching: find.byType(Text)),
+        ).toList(growable: false);
+        expect(metricTexts, hasLength(6));
+        expect(
+          metricTexts.every(
+            (text) =>
+                text.maxLines == null &&
+                text.overflow == TextOverflow.visible &&
+                text.softWrap == true,
+          ),
+          isTrue,
+          reason:
+              'Work Center summary labels and counts must remain fully readable at 1.5x in ${locale.languageCode}.',
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      }
+    },
+  );
+
   testWidgets('compact work-center metrics hide secondary captions on narrow screens',
       (tester) async {
     final repo = _Transactions()
@@ -325,6 +412,81 @@ void main() {
     await _pump(tester, repo);
     expect(find.byType(BackdropFilter), findsNothing);
   });
+
+  testWidgets(
+    'Work Center keeps the full opportunity title at 1.5x system text',
+    (tester) async {
+      const title =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      final repo = _Transactions()
+        ..jobs = [
+          _job(
+            'long-work-center-title',
+            status: 'IN_PROGRESS',
+            title: title,
+          ),
+        ];
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+      );
+
+      final titleFinder = find.text(title);
+      await tester.scrollUntilVisible(
+        titleFinder,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(titleFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'The Work Center card should allow its complete project title to wrap at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact Work Center cards omit repeated lifecycle helper copy',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('compact-lifecycle-copy', status: 'IN_PROGRESS')];
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        locale: const Locale('en'),
+      );
+
+      final lifecycle = find.byKey(
+        const ValueKey('work-center-lifecycle-compact-lifecycle-copy'),
+      );
+      await tester.scrollUntilVisible(
+        lifecycle,
+        180,
+        scrollable: find.byType(Scrollable).last,
+        maxScrolls: 35,
+      );
+      await tester.pumpAndSettle();
+
+      expect(lifecycle, findsOneWidget);
+      expect(find.text('Work flow'), findsOneWidget);
+      expect(
+        find.text('Follow the current collaboration state at a glance.'),
+        findsNothing,
+        reason:
+            'The generic lifecycle helper sentence repeats in every compact job card and consumes vertical space without adding job-specific information.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('loaded work center uses dense header hierarchy', (tester) async {
     final repo = _Transactions()

@@ -13,6 +13,9 @@ export async function listDeletableUserUploadKeys(userId) {
       WHERE u.uploaded_by=$1
         AND NOT EXISTS (
           SELECT 1 FROM evidence e WHERE e.uri=('storage://' || u.storage_key)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM chat_message_attachments a WHERE a.upload_id=u.id
         )`,
     [userId],
   );

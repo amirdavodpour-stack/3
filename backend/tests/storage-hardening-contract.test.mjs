@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const root = new URL('../', import.meta.url);
 const read = (file) => fs.readFileSync(new URL(file, root), 'utf8');
 const storageRoutes = read('src/routes/storage_routes.js');
+const http = read('src/http.js');
 const storageRepository = read('src/repository/storage.js');
 const cleanupWorker = read('src/storage_cleanup_worker.js');
 const server = read('src/server.js');
@@ -13,11 +14,21 @@ const envExample = read('.env.example');
 const liveWorkflow = read('../.github/workflows/supabase-storage-live.yml');
 const rlsIntegration = read('tests/supabase-storage-rls.test.mjs');
 
-for (const name of ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain']) {
+for (const name of ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav']) {
   test(`storage route allows declared MIME type: ${name}`, () => {
     assert.match(storageRoutes, new RegExp(name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')));
   });
 }
+
+test('multipart parser validates audio signatures and infers MIME only from an allowlisted filename extension', () => {
+  assert.match(http, /\['\.m4a', 'audio\/mp4'\]/);
+  assert.match(http, /\['\.mp3', 'audio\/mpeg'\]/);
+  assert.match(http, /\['\.wav', 'audio\/wav'\]/);
+  assert.match(http, /incomingType === 'application\/octet-stream'/);
+  assert.match(http, /content\.subarray\(4, 8\)\.toString\(\) === 'ftyp'/);
+  assert.match(http, /content\.subarray\(0, 3\)\.toString\(\) === 'ID3'/);
+  assert.match(http, /content\.subarray\(8, 12\)\.toString\(\) === 'WAVE'/);
+});
 
 test('storage routes enforce filename/content-type consistency and bounded presigned intents', () => {
   assert.match(storageRoutes, /validateFilenameForContentType/);

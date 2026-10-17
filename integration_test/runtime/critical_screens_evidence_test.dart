@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart' show MatrixUtils;
+import 'package:flutter/rendering.dart' show RenderView;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -886,7 +888,6 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 
 const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
 
-var _runtimeHasCapturedScreenshot = false;
 const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);
 
 Future<void> _captureHopeNativeScreenshot(
@@ -923,6 +924,24 @@ Future<void> _captureHopeNativeScreenshot(
   binding.reportData!['screenshots'] = screenshots;
 }
 
+Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
+  // SemanticsNode.rect is in the node's own coordinate system. Compose node
+  // transforms up to the root and undo the RenderView root transform so these
+  // bounds are expressed in actual logical viewport coordinates (dp).
+  var transform = Matrix4.identity();
+  SemanticsNode? current = node;
+  while (current != null) {
+    final nodeTransform = current.transform;
+    if (nodeTransform != null) {
+      transform = nodeTransform * transform as Matrix4;
+    }
+    current = current.parent;
+  }
+  final rootInverse = Matrix4.copy(renderView.configuration.toMatrix())..invert();
+  transform = rootInverse * transform as Matrix4;
+  return MatrixUtils.transformRect(transform, node.rect);
+}
+
 Future<void> _captureRuntimeScreenshot(
   String marker, {
   required WidgetTester tester,
@@ -936,9 +955,19 @@ Future<void> _captureRuntimeScreenshot(
       if (root == null) {
         throw StateError('T10 semantics tree is missing for $marker.');
       }
+      final renderView = tester.binding.renderViews.firstWhere(
+        (view) => identical(view.owner?.semanticsOwner, root.owner),
+        orElse: () => throw StateError(
+          'T10 could not find the RenderView for semantics tree $marker.',
+        ),
+      );
       var nodeCount = 0;
       var labelledNodeCount = 0;
       var actionableNodeCount = 0;
+      var undersizedTargetCount = 0;
+      var minimumTapTargetWidth = double.infinity;
+      var minimumTapTargetHeight = double.infinity;
+      final undersizedTargetExamples = <String>[];
       final pending = <SemanticsNode>[root];
       while (pending.isNotEmpty) {
         final node = pending.removeLast();
@@ -951,6 +980,26 @@ Future<void> _captureRuntimeScreenshot(
         }
         if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
+          final targetBounds = _globalSemanticsNodeBounds(node, renderView);
+          if (targetBounds.width < minimumTapTargetWidth) {
+            minimumTapTargetWidth = targetBounds.width;
+          }
+          if (targetBounds.height < minimumTapTargetHeight) {
+            minimumTapTargetHeight = targetBounds.height;
+          }
+          if (targetBounds.isEmpty ||
+              targetBounds.width < 48 ||
+              targetBounds.height < 48) {
+            undersizedTargetCount++;
+            if (undersizedTargetExamples.length < 8) {
+              final targetLabel = data.label.trim().isEmpty
+                  ? 'unlabelled'
+                  : data.label.trim().replaceAll(RegExp(r'\s+'), ' ');
+              undersizedTargetExamples.add(
+                '$targetLabel:${targetBounds.width.toStringAsFixed(1)}x${targetBounds.height.toStringAsFixed(1)}',
+              );
+            }
+          }
         }
         pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
@@ -962,6 +1011,21 @@ Future<void> _captureRuntimeScreenshot(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
       }
+      if (undersizedTargetCount > 0) {
+        final examples = undersizedTargetExamples.join('; ');
+        print(
+          'HOPE_T10_TARGET_BOUNDS_FAIL:$marker:undersized=$undersizedTargetCount:examples=$examples',
+        );
+        throw StateError(
+          'T10 target bounds below 48dp for $marker: '
+          'undersized=$undersizedTargetCount examples=$examples.',
+        );
+      }
+      final minimumWidth = actionableNodeCount == 0 ? 0.0 : minimumTapTargetWidth;
+      final minimumHeight = actionableNodeCount == 0 ? 0.0 : minimumTapTargetHeight;
+      print(
+        'HOPE_T10_TARGET_BOUNDS_PASS:$marker:targets=$actionableNodeCount:minWidthDp=${minimumWidth.toStringAsFixed(1)}:minHeightDp=${minimumHeight.toStringAsFixed(1)}',
+      );
       print(
         'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
       );
@@ -983,7 +1047,7 @@ Future<void> _captureRuntimeScreenshot(
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: _runtimeHasCapturedScreenshot,
+      forceFreshFrame: marker.startsWith('register-') || marker.startsWith('password-reset-'),
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
@@ -992,7 +1056,6 @@ Future<void> _captureRuntimeScreenshot(
         );
       },
     );
-    _runtimeHasCapturedScreenshot = true;
     print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
     print('HOPE_SCREENSHOT_READY:$marker');
   } finally {
@@ -1003,6 +1066,7 @@ Future<void> _captureRuntimeScreenshot(
 bool _runtimeNeedsScrollEnd(String marker) {
   const auditedPages = <String>{
     'home', 'jobs', 'job-detail', 'transactions', 'wallet', 'profile',
+    'transaction-detail', 'create-job',
   };
   final localeSuffix = _captureLocale == 'en' ? '-en-ltr' : '-fa-rtl';
   return !marker.startsWith('responsive-') &&
@@ -1161,7 +1225,28 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 Future<void> _waitForRuntimeRegisterGoogleCta(WidgetTester tester) async {
   final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
   for (var attempt = 0; attempt < 6; attempt++) {
-    if (googleButton.evaluate().isNotEmpty) return;
+    if (googleButton.evaluate().isNotEmpty) {
+      await tester.ensureVisible(googleButton);
+      await tester.pump();
+
+      final element = tester.element(googleButton);
+      final viewport = Offset.zero & MediaQuery.sizeOf(element);
+      final bounds = tester.getRect(googleButton);
+      final visibleBounds = bounds.intersect(viewport);
+      final renderBox = tester.renderObject<RenderBox>(googleButton);
+      if (!renderBox.attached ||
+          !renderBox.hasSize ||
+          renderBox.size.isEmpty ||
+          visibleBounds.width + 0.5 < bounds.width ||
+          visibleBounds.height + 0.5 < bounds.height) {
+        throw StateError(
+          'Register Google CTA exists but is not fully painted inside the capture viewport: '
+          'button=$bounds viewport=$viewport visible=$visibleBounds.',
+        );
+      }
+      print('HOPE_RUNTIME_REGISTER_GOOGLE_CTA_VISIBLE:$bounds');
+      return;
+    }
     await tester.pump();
   }
   throw StateError(
@@ -1225,6 +1310,22 @@ Future<void> _captureRuntimeScreen(
   // already commits the initial target frame, so keep the capture boundary
   // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
+    final localeMarker = locale.languageCode == 'fa' ? 'fa-rtl' : 'en-ltr';
+    final expectedMarker = 'password-reset-$localeMarker';
+    if (marker != expectedMarker) {
+      throw StateError(
+        'Password Reset capture marker mismatch: expected $expectedMarker, got $marker.',
+      );
+    }
+    expect(find.byType(PasswordResetPage), findsOneWidget,
+        reason: 'Password Reset must be mounted before native capture.');
+    expect(find.byType(RegisterPage), findsNothing,
+        reason: 'Registration content must never be labelled as Password Reset evidence.');
+    expect(find.byType(TextField), findsOneWidget,
+        reason: 'Password Reset runtime surface must contain exactly one email field.');
+    expect(find.byType(FilledButton), findsOneWidget,
+        reason: 'Password Reset runtime surface must expose its submit action.');
+    print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {

@@ -105,6 +105,9 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compactDeviceLayout =
+        MediaQuery.sizeOf(context).width < 380 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return Scaffold(
       body: PremiumPageFrame(
         padding: const EdgeInsets.fromLTRB(14, 6, 14, 24),
@@ -155,8 +158,43 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
               ),
             if (!_loading && _error == null) const SizedBox(height: 8),
             if (_loading)
-              const PremiumPanel(
-                child: SizedBox(height: 72, child: Center(child: CircularProgressIndicator())),
+              Semantics(
+                container: true,
+                liveRegion: true,
+                label: _t('در حال بارگذاری دستگاه‌های اعلان', 'Loading notification devices'),
+                child: PremiumPanel(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const SkeletonBox(
+                        width: 36,
+                        height: 36,
+                        radius: HopeV2Radii.md,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SkeletonBox(height: 14, width: 112),
+                            SizedBox(height: 6),
+                            SkeletonBox(height: 10, width: 76),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const SkeletonBox(
+                        width: 64,
+                        height: 28,
+                        radius: HopeV2Radii.md,
+                      ),
+                    ],
+                  ),
+                ),
               )
             else if (_error != null)
               PremiumPanel(
@@ -202,39 +240,91 @@ class _NotificationDevicesPageState extends State<NotificationDevicesPage> {
                 child: Column(
                   children: _devices.map((device) {
                     final busy = _busyId == device.id;
+                    final leading = HopeIconTile(
+                      _icon(device.platform),
+                      size: 36,
+                      filled: true,
+                    );
+                    final title = Text(
+                      _platformLabel(device.platform),
+                      softWrap: true,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    );
+                    final status = PremiumTag(
+                      icon: device.enabled
+                          ? HopeV2Icons.completed
+                          : HopeV2Icons.pending,
+                      label: device.enabled
+                          ? _t('فعال', 'Enabled')
+                          : _t('غیرفعال', 'Disabled'),
+                      color: device.enabled
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline,
+                    );
+                    final action = device.enabled
+                        ? TextButton(
+                            onPressed: busy ? null : () => _disable(device),
+                            child: busy
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(_t('غیرفعال کنید', 'Disable')),
+                          )
+                        : null;
+
+                    if (compactDeviceLayout) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                leading,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      title,
+                                      const SizedBox(height: 6),
+                                      Align(
+                                        alignment:
+                                            AlignmentDirectional.centerStart,
+                                        child: status,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (action != null)
+                              Align(
+                                alignment: AlignmentDirectional.centerEnd,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: action,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
+
                     return ListTile(
-                      leading: HopeIconTile(_icon(device.platform), size: 36, filled: true),
-                      title: Text(
-                        _platformLabel(device.platform),
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          PremiumTag(
-                            icon: device.enabled
-                                ? HopeV2Icons.completed
-                                : HopeV2Icons.pending,
-                            label: device.enabled
-                                ? _t('فعال', 'Enabled')
-                                : _t('غیرفعال', 'Disabled'),
-                            color: device.enabled
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outline,
-                          ),
-                        ],
-                      ),
-                      trailing: device.enabled
-                          ? TextButton(
-                              onPressed: busy ? null : () => _disable(device),
-                              child: busy
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : Text(_t('غیرفعال کنید', 'Disable')),
-                            )
-                          : null,
+                      leading: leading,
+                      title: title,
+                      subtitle: Row(children: [status]),
+                      trailing: action,
                     );
                   }).toList(),
                 ),

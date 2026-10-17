@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/application/application_registry.dart';
 import 'package:hope_mobile/core/marketplace/saved_search_repository.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/features/jobs/saved_searches_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -29,6 +30,8 @@ HopeSavedSearch _search(
 
 class _SequencedSavedSearchRepository implements SavedSearchRepository {
   int calls = 0;
+  bool holdInitialLoad = false;
+  final Completer<List<HopeSavedSearch>> initialLoad = Completer<List<HopeSavedSearch>>();
   List<HopeSavedSearch>? itemsOverride;
   final List<String> deletedIds = [];
   final Completer<List<HopeSavedSearch>> firstRefresh =
@@ -38,6 +41,7 @@ class _SequencedSavedSearchRepository implements SavedSearchRepository {
   Future<List<HopeSavedSearch>> list() {
     calls += 1;
     if (calls == 1) {
+      if (holdInitialLoad) return initialLoad.future;
       return Future.value(
         itemsOverride ?? [_search('initial', 'Initial search')],
       );
@@ -74,6 +78,34 @@ Widget _host(_SequencedSavedSearchRepository repository) {
 }
 
 void main() {
+  testWidgets(
+    'saved-search initial loading previews compact row skeletons instead of a tall spinner',
+    (tester) async {
+      final repository = _SequencedSavedSearchRepository()
+        ..holdInitialLoad = true;
+      await tester.pumpWidget(_host(repository));
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('saved-search-loading-skeleton')),
+        findsOneWidget,
+      );
+      expect(find.byType(SkeletonBox), findsNWidgets(5));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      repository.initialLoad.complete([
+        _search('initial', 'Initial search'),
+      ]);
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('saved-search-loading-skeleton')),
+        findsNothing,
+      );
+      expect(find.text('Initial search'), findsWidgets);
+    },
+  );
+
   testWidgets(
     'Saved Search create action stays beside page content instead of floating below it',
     (tester) async {
