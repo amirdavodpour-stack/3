@@ -188,13 +188,15 @@ class _EvidenceTransactionRepository implements TransactionRepository {
         providerRef: 'internal-ledger',
         job: _transactionJob,
         fees: const HopePaymentFees(
+          // Keep the rendered runtime evidence aligned with backend/src/financial.js:
+          // MISSION charges 10% to each side; the platform fee is their sum.
           baseAmount: '1500000',
-          employerFee: '30000',
-          workerFee: '15000',
-          platformFee: '15000',
-          employerCharge: '1530000',
-          providerPayout: '1485000',
-          policyVersion: 'v1',
+          employerFee: '150000',
+          workerFee: '150000',
+          platformFee: '300000',
+          employerCharge: '1650000',
+          providerPayout: '1350000',
+          policyVersion: '2026-08-v1',
           currency: 'TOMAN',
         ),
       );
@@ -1617,6 +1619,18 @@ void main() {
   }
   print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
   print('HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale');
+
+  test('runtime transaction screenshot fixture follows the backend MISSION fee contract', () {
+    final fees = _EvidenceTransactionRepository()._payment.fees!;
+    expect(fees.baseAmount, '1500000');
+    expect(fees.employerFee, '150000');
+    expect(fees.workerFee, '150000');
+    expect(fees.platformFee, '300000');
+    expect(fees.employerCharge, '1650000');
+    expect(fees.providerPayout, '1350000');
+    expect(fees.policyVersion, '2026-08-v1');
+    expect(fees.currency, 'TOMAN');
+  });
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
