@@ -265,6 +265,8 @@ void main() {
     expect(formatBalanceTrendAxisLabel('2026-05', 'en'), 'May');
     expect(formatBalanceTrendAxisLabel('2026-05', 'fa'), 'اردیبهشت');
     expect(formatBalanceTrendAxisLabel('2026-08-01', 'fa'), 'مرداد');
+    expect(formatBalanceTrendAxisLabel('2026-10', 'en'), 'Oct');
+    expect(formatBalanceTrendAxisLabel('2026-13', 'en'), '2026-13');
     expect(formatBalanceTrendAxisLabel('not-a-date', 'fa'), 'not-a-date');
   });
 

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 
 import '../../core/financial/financial_insights_repository.dart';
@@ -546,7 +545,11 @@ String formatBalanceTrendAxisLabel(String rawDate, String locale) {
     return rawDate;
   }
   if (!locale.toLowerCase().startsWith('fa')) {
-    return DateFormat('MMM', locale).format(DateTime(year, month, 1));
+    const gregorianMonths = <String>[
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return gregorianMonths[month - 1];
   }
   final solar = _gregorianToSolarHijri(year, month, day);
   const solarMonths = <String>[

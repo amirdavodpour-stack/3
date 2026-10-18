@@ -310,9 +310,20 @@ void main() {
         final report = find.byKey(
           const ValueKey('opportunity-report-action'),
         );
-        expect(report, findsOneWidget);
-        await tester.ensureVisible(report);
+        final detailList = find.byKey(
+          const ValueKey('opportunity-detail-content-list'),
+        );
+        await tester.scrollUntilVisible(
+          report,
+          120,
+          scrollable: find.descendant(
+            of: detailList,
+            matching: find.byType(Scrollable),
+          ).first,
+          maxScrolls: 80,
+        );
         await tester.pumpAndSettle();
+        expect(report, findsOneWidget);
         final renderedButtonSize = tester.getSize(report);
         expect(
           renderedButtonSize.width,
