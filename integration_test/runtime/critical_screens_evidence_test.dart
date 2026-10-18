@@ -1117,6 +1117,10 @@ Future<void> _captureRuntimeScreenshot(
       var undersizedTargetCount = 0;
       var minimumTapTargetWidth = double.infinity;
       var minimumTapTargetHeight = double.infinity;
+      // Matrix inversion can represent an exact 48dp rect as
+      // 47.999999999999986dp. Ignore only floating-point noise, not any
+      // materially undersized accessibility target.
+      const tapTargetBoundsToleranceDp = 1e-6;
       final undersizedTargetExamples = <String>[];
       final pending = <SemanticsNode>[root];
       while (pending.isNotEmpty) {
@@ -1138,8 +1142,8 @@ Future<void> _captureRuntimeScreenshot(
             minimumTapTargetHeight = targetBounds.height;
           }
           if (targetBounds.isEmpty ||
-              targetBounds.width < 48 ||
-              targetBounds.height < 48) {
+              targetBounds.width < 48 - tapTargetBoundsToleranceDp ||
+              targetBounds.height < 48 - tapTargetBoundsToleranceDp) {
             undersizedTargetCount++;
             if (undersizedTargetExamples.length < 8) {
               final targetLabel = data.label.trim().isEmpty
