@@ -672,4 +672,37 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'transaction status action keeps a 48dp tap target in compact RTL layouts',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('tap-target', status: 'IN_PROGRESS')];
+      await _pump(repo: repo, tester: tester, width: 390, height: 844);
+      final label = find.text('مشاهده وضعیت معامله');
+      await tester.scrollUntilVisible(
+        label,
+        160,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+
+      final action = find.ancestor(
+        of: label,
+        matching: find.byType(OutlinedButton),
+      );
+      expect(action, findsOneWidget);
+      final button = tester.widget<OutlinedButton>(action);
+      expect(
+        button.style?.minimumSize?.resolve(const {})?.height,
+        greaterThanOrEqualTo(48),
+        reason: 'The transaction status action must not inherit a compact theme density that shrinks its target below 48dp.',
+      );
+      expect(
+        button.style?.visualDensity?.resolve(const {}),
+        VisualDensity.standard,
+      );
+    },
+  );
+
 }
