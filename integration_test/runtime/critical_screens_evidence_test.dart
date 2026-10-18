@@ -975,6 +975,66 @@ Future<void> _captureRuntimeScreenshot(
   required WidgetTester tester,
 }) async {
   SemanticsHandle? semanticsHandle;
+
+  // The T10 widget regression scrolls the report control fully into view before
+  // measuring its semantics rect. Match that condition in Android runtime
+  // evidence: a node intersected by the viewport edge can have a clipped rect
+  // even when its underlying 48dp hit surface is correct. Restore the original
+  // offset after this semantics-only measurement so capture positioning stays
+  // deterministic.
+  ScrollableState? reportTargetScrollable;
+  double? reportTargetInitialOffset;
+  Future<void> restoreReportTargetScroll() async {
+    final scrollable = reportTargetScrollable;
+    final initialOffset = reportTargetInitialOffset;
+    if (scrollable == null ||
+        initialOffset == null ||
+        !scrollable.position.hasPixels ||
+        !scrollable.position.hasContentDimensions) {
+      return;
+    }
+    final position = scrollable.position;
+    final restoredOffset = initialOffset
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+    position.jumpTo(restoredOffset);
+    await tester.pump();
+  }
+
+  final shouldRevealReportTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      marker.contains('job-detail') &&
+      !marker.startsWith('scroll-end-');
+  if (shouldRevealReportTarget) {
+    final reportTarget = find.byKey(
+      const ValueKey('opportunity-report-semantic-target'),
+    );
+    if (reportTarget.evaluate().isEmpty) {
+      throw StateError(
+        'T10 report semantic target missing before bounds audit for $marker.',
+      );
+    }
+    final scrollableAncestor = find.ancestor(
+      of: reportTarget,
+      matching: find.byType(Scrollable),
+    );
+    if (scrollableAncestor.evaluate().isEmpty) {
+      throw StateError(
+        'T10 report semantic target has no Scrollable ancestor for $marker.',
+      );
+    }
+    reportTargetScrollable = tester.state<ScrollableState>(
+      scrollableAncestor.first,
+    );
+    reportTargetInitialOffset = reportTargetScrollable!.position.pixels;
+    await tester.ensureVisible(reportTarget);
+    await tester.pumpAndSettle();
+    print(
+      'HOPE_T10_TARGET_REVEALED:$marker:initialOffset=$reportTargetInitialOffset:visibleOffset=${reportTargetScrollable!.position.pixels}',
+    );
+  }
+
   if (_talkbackRequired && _semanticsOnly && !marker.startsWith('scroll-end-')) {
     semanticsHandle = tester.ensureSemantics();
     try {
@@ -1075,10 +1135,17 @@ Future<void> _captureRuntimeScreenshot(
         'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
       );
     } catch (_) {
+      try {
+        await restoreReportTargetScroll();
+      } catch (_) {
+        // Preserve the primary target-bounds failure if scroll restoration
+        // itself cannot complete after a failed semantics audit.
+      }
       semanticsHandle.dispose();
       rethrow;
     }
   }
+  await restoreReportTargetScroll();
   if (_semanticsOnly) {
     // Never write a screenshot in the TalkBack-bound pass: focus outlines must
     // not be mixed into the clean visual-baseline image set.
