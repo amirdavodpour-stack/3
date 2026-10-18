@@ -143,7 +143,12 @@ grep -Fq '"financial-insights-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"job-satisfaction-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"candidate-matches-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"chat-fa-rtl"' "tools/hope-wallet-runtime-evidence.sh"
-grep -Fq 'CAPTURED_BASELINE_SCREENS=19' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'CAPTURED_BASELINE_SCREENS="$(find "$evidence_dir" -maxdepth 1' "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq 'CAPTURED_RESPONSIVE_SCREENS="$(find "$evidence_dir" -maxdepth 1' "tools/hope-wallet-runtime-evidence.sh"
+if grep -Fq 'CAPTURED_BASELINE_SCREENS=19' "tools/hope-wallet-runtime-evidence.sh" || grep -Fq 'CAPTURED_RESPONSIVE_SCREENS=6' "tools/hope-wallet-runtime-evidence.sh"; then
+  echo "FAIL: artifact metadata must count actual screenshots, not hard-coded expected counts" >&2
+  exit 1
+fi
 grep -Fq "'candidate-matches': () => EmployerCandidateMatchesPage(" "$runtime_driver"
 grep -Fq "'chat': () => ChatPage(" "$runtime_driver"
 grep -Fq "'job-satisfaction': () => const JobSatisfactionPage(" "$runtime_driver"
