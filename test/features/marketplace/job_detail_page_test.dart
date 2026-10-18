@@ -14,6 +14,7 @@ import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
@@ -218,6 +219,7 @@ Future<void> _pump(
   double height = 3400,
   double textScale = 1.0,
   double? bottomSafeAreaInset,
+  ThemeData? theme,
   Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -244,7 +246,7 @@ Future<void> _pump(
       Provider<UploadQueue>.value(value: _FakeQueue()),
     ],
     child: MaterialApp(
-      theme: ThemeData.light(),
+      theme: theme ?? ThemeData.light(),
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
@@ -290,6 +292,38 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
+
+  testWidgets(
+    'T10 report opportunity control exposes a full-height semantic action',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
+      await _pump(
+        tester,
+        job: _job(),
+        width: 390,
+        height: 1800,
+        locale: const Locale('fa'),
+        theme: AppTheme.dark(),
+      );
+
+      final report = find.byKey(
+        const ValueKey('opportunity-report-action'),
+      );
+      expect(report, findsOneWidget);
+
+      final node = tester.getSemantics(report);
+      final data = node.getSemanticsData();
+      expect(data.label, 'گزارش فرصت');
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+      expect(
+        node.rect.height,
+        greaterThanOrEqualTo(48),
+        reason: 'The report action must expose a real 48dp semantic tap target.',
+      );
+    },
+  );
 
   testWidgets(
     'Wave 36 known job categories stay localized across hero and decision strip',
