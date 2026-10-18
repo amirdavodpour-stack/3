@@ -24,6 +24,16 @@ test -f "$premium"
 test -f "$home"
 test -f "$runtime_driver"
 
+workflow=".github/workflows/hope-ui-wave-1-static.yml"
+grep -Fq 'timeout-minutes: 25' "$workflow"
+grep -Fq 'name: Prepare Android compile SDK components' "$workflow"
+grep -Fq 'platforms;android-36' "$workflow"
+grep -Fq 'build-tools;36.0.0' "$workflow"
+grep -Fq 'ndk;28.2.13676358' "$workflow"
+grep -Fq 'name: Compile Android debug APK (Kotlin/Gradle)' "$workflow"
+grep -Fq 'flutter build apk --debug --no-pub' "$workflow"
+grep -Fq 'test -s build/app/outputs/flutter-apk/app-debug.apk' "$workflow"
+
 sh test/runtime/editorial_media_fixture_source_test.sh
 sh test/runtime/editorial_media_fixture_scope_test.sh
 
