@@ -1226,30 +1226,23 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: Semantics(
-                        key: const ValueKey('opportunity-report-action'),
-                        container: true,
-                        excludeSemantics: true,
-                        button: true,
-                        label: _t('گزارش فرصت', 'Report opportunity'),
-                        onTap: _reportJob,
-                        child: SizedBox(
-                            height: HopeV2Touch.minimum,
-                            child: TextButton.icon(
-                              onPressed: _reportJob,
-                              style: TextButton.styleFrom(
-                                minimumSize: Size(0, HopeV2Touch.minimum),
-                                tapTargetSize: MaterialTapTargetSize.padded,
-                              ),
-                              icon: const HopeIcon(
-                                HopeV2Icons.notifications,
-                                size: 18,
-                              ),
-                              label: Text(
-                                _t('گزارش فرصت', 'Report opportunity'),
-                              ),
-                            ),
+                      child: SizedBox(
+                        height: HopeV2Touch.minimum,
+                        child: TextButton.icon(
+                          key: const ValueKey('opportunity-report-action'),
+                          onPressed: _reportJob,
+                          style: TextButton.styleFrom(
+                            minimumSize: Size(0, HopeV2Touch.minimum),
+                            tapTargetSize: MaterialTapTargetSize.padded,
                           ),
+                          icon: const HopeIcon(
+                            HopeV2Icons.notifications,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _t('گزارش فرصت', 'Report opportunity'),
+                          ),
+                        ),
                       ),
                     ),
                   if (canViewFinance)

@@ -5,6 +5,8 @@ evidence_dir="${GITHUB_WORKSPACE:-$PWD}/docs/audit/evidence/android-runtime"
 runner_temp="${RUNNER_TEMP:-/tmp}"
 log_file="$runner_temp/hope-critical-screens-runtime.log"
 mkdir -p "$evidence_dir"
+# Every artifact describes this run only; do not count stale screenshots.
+find "$evidence_dir" -maxdepth 1 -type f -name '*.png' -delete
 rm -f "$log_file"
 : > "$log_file"
 
@@ -25,6 +27,11 @@ DRAW_CHECK_TIMEOUT_SECONDS="${HOPE_DRAW_CHECK_TIMEOUT_SECONDS:-20}"
 DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"
 RUNTIME_TEST_TIMEOUT_SECONDS="${HOPE_RUNTIME_TEST_TIMEOUT_SECONDS:-900}"
 RUNTIME_SHUTDOWN_GRACE_SECONDS="${HOPE_RUNTIME_SHUTDOWN_GRACE_SECONDS:-30}"
+BODY_COMPLETION_TIMEOUT_SECONDS="${HOPE_RUNTIME_BODY_COMPLETION_TIMEOUT_SECONDS:-90}"
+if [[ ! "$BODY_COMPLETION_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Invalid HOPE_RUNTIME_BODY_COMPLETION_TIMEOUT_SECONDS: $BODY_COMPLETION_TIMEOUT_SECONDS" >&2
+  exit 2
+fi
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
 CAPTURE_TEXT_SCALE="${HOPE_CAPTURE_TEXT_SCALE:-1.0}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
@@ -419,7 +426,10 @@ run_host_batch_session() {
   fi
 
   local completion_status=1
-  local completion_deadline=$((SECONDS + 60))
+  # The prior exact-head baseline completed its capture set, but its completion
+  # marker arrived ~87ms after the old 60-second deadline. Keep the wait bounded
+  # while allowing slow native PixelCopy/Driver teardown to flush the final marker.
+  local completion_deadline=$((SECONDS + BODY_COMPLETION_TIMEOUT_SECONDS))
   while (( SECONDS < completion_deadline )); do
     if grep -Fq -- 'HOPE_RUNTIME_TEST_BODY_COMPLETE' "$log_path"; then
       completion_status=0
@@ -751,21 +761,15 @@ adb shell getprop ro.product.model > "$evidence_dir/device-model.txt" 2>&1 || tr
 adb shell wm size > "$evidence_dir/viewport.txt" 2>&1 || true
 printf '%s\n' '720x1280 physical pixels' > "$evidence_dir/responsive-viewport.txt"
 printf '%s\n' '360x640 logical dp at 320 dpi' > "$evidence_dir/responsive-logical-viewport.txt"
+CAPTURED_BASELINE_SCREENS="$(find "$evidence_dir" -maxdepth 1 -type f -name '*.png' ! -name 'scroll-end-*' ! -name 'responsive-*' | wc -l | tr -d ' ')"
+CAPTURED_RESPONSIVE_SCREENS="$(find "$evidence_dir" -maxdepth 1 -type f -name 'responsive-*.png' | wc -l | tr -d ' ')"
 if [ "$CAPTURE_HOME_ONLY" = "1" ]; then
-  CAPTURED_BASELINE_SCREENS=1
-  CAPTURED_RESPONSIVE_SCREENS=0
   CAPTURED_LOCALE_LABEL="fa-RTL home-only"
 elif [ "$CAPTURE_LOCALE" = "fa" ]; then
-  CAPTURED_BASELINE_SCREENS=19
-  CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="fa-RTL"
 elif [ "$CAPTURE_LOCALE" = "en" ]; then
-  CAPTURED_BASELINE_SCREENS=19
-  CAPTURED_RESPONSIVE_SCREENS=6
   CAPTURED_LOCALE_LABEL="en-LTR"
 else
-  CAPTURED_BASELINE_SCREENS=30
-  CAPTURED_RESPONSIVE_SCREENS=12
   CAPTURED_LOCALE_LABEL="fa-RTL,en-LTR"
 fi
 

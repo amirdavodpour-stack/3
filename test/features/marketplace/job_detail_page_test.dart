@@ -324,6 +324,11 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(report, findsOneWidget);
+        expect(
+          tester.widget(report),
+          isA<TextButton>(),
+          reason: 'The keyed report target must be the actual actionable control, not a wrapper whose bounds can diverge from TalkBack.',
+        );
         final renderedButtonSize = tester.getSize(report);
         expect(
           renderedButtonSize.width,
