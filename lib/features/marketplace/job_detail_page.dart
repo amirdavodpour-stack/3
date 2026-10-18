@@ -1226,21 +1226,30 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: SizedBox(
-                        height: HopeV2Touch.minimum,
-                        child: TextButton.icon(
-                          key: const ValueKey('opportunity-report-action'),
-                          onPressed: _reportJob,
-                          style: TextButton.styleFrom(
-                            minimumSize: Size(0, HopeV2Touch.minimum),
-                            tapTargetSize: MaterialTapTargetSize.padded,
-                          ),
-                          icon: const HopeIcon(
-                            HopeV2Icons.notifications,
-                            size: 18,
-                          ),
-                          label: Text(
-                            _t('گزارش فرصت', 'Report opportunity'),
+                      child: Semantics(
+                        key: const ValueKey('opportunity-report-semantic-target'),
+                        container: true,
+                        button: true,
+                        label: _t('گزارش فرصت', 'Report opportunity'),
+                        onTap: loading ? null : _reportJob,
+                        child: ExcludeSemantics(
+                          child: SizedBox(
+                            height: HopeV2Touch.minimum,
+                            child: TextButton.icon(
+                              key: const ValueKey('opportunity-report-action'),
+                              onPressed: loading ? null : _reportJob,
+                              style: TextButton.styleFrom(
+                                minimumSize: Size(0, HopeV2Touch.minimum),
+                                tapTargetSize: MaterialTapTargetSize.padded,
+                              ),
+                              icon: const HopeIcon(
+                                HopeV2Icons.notifications,
+                                size: 18,
+                              ),
+                              label: Text(
+                                _t('گزارش فرصت', 'Report opportunity'),
+                              ),
+                            ),
                           ),
                         ),
                       ),
