@@ -1010,9 +1010,57 @@ Future<void> _captureRuntimeScreenshot(
     final reportTarget = find.byKey(
       const ValueKey('opportunity-report-semantic-target'),
     );
+    // The report action is a late ListView child and may not exist in the
+    // element tree until the lazy sliver is scrolled near the end. Build it
+    // first with the same vertical scrollable used by scroll-end evidence.
     if (reportTarget.evaluate().isEmpty) {
+      final candidates = find.byType(Scrollable).evaluate().where((element) {
+        if (element is! StatefulElement) return false;
+        final state = element.state;
+        return state is ScrollableState &&
+            state.position.axisDirection == AxisDirection.down;
+      }).toList(growable: false);
+      Element? selectedElement;
+      ScrollableState? selectedState;
+      var greatestExtent = -1.0;
+      for (final element in candidates) {
+        final state = (element as StatefulElement).state as ScrollableState;
+        final position = state.position;
+        if (position.viewportDimension > 0 &&
+            position.maxScrollExtent >= greatestExtent) {
+          greatestExtent = position.maxScrollExtent;
+          selectedElement = element;
+          selectedState = state;
+        }
+      }
+      if (selectedElement == null || selectedState == null) {
+        throw StateError(
+          'T10 could not select a vertical Scrollable to materialize the report target for $marker.',
+        );
+      }
+      reportTargetScrollable = selectedState;
+      reportTargetInitialOffset = selectedState.position.pixels;
+      final scrollableFinder = find.byElementPredicate(
+        (element) => identical(element, selectedElement),
+        skipOffstage: false,
+      );
+      try {
+        await tester.scrollUntilVisible(
+          reportTarget,
+          selectedState.position.viewportDimension * 0.68,
+          scrollable: scrollableFinder,
+          maxScrolls: 30,
+        );
+        await tester.pump();
+      } catch (_) {
+        await restoreReportTargetScroll();
+        rethrow;
+      }
+    }
+    if (reportTarget.evaluate().isEmpty) {
+      await restoreReportTargetScroll();
       throw StateError(
-        'T10 report semantic target missing before bounds audit for $marker.',
+        'T10 report semantic target still missing after scrolling the lazy ListView to it for $marker.',
       );
     }
     final scrollableAncestor = find.ancestor(
@@ -1020,16 +1068,25 @@ Future<void> _captureRuntimeScreenshot(
       matching: find.byType(Scrollable),
     );
     if (scrollableAncestor.evaluate().isEmpty) {
+      await restoreReportTargetScroll();
       throw StateError(
         'T10 report semantic target has no Scrollable ancestor for $marker.',
       );
     }
-    reportTargetScrollable = tester.state<ScrollableState>(
+    final targetScrollable = tester.state<ScrollableState>(
       scrollableAncestor.first,
     );
-    reportTargetInitialOffset = reportTargetScrollable!.position.pixels;
-    // This control is clipped at the viewport's lower edge; align its
-    // trailing edge with the viewport so only the minimum scroll is needed.
+    if (reportTargetScrollable == null) {
+      reportTargetScrollable = targetScrollable;
+      reportTargetInitialOffset = targetScrollable.position.pixels;
+    } else if (!identical(reportTargetScrollable, targetScrollable)) {
+      await restoreReportTargetScroll();
+      throw StateError(
+        'T10 report target materialized under a different Scrollable than the one scrolled for $marker.',
+      );
+    }
+    // A child can be built before it is fully visible; align its trailing
+    // edge with the viewport before inspecting the exported semantics rect.
     await Scrollable.ensureVisible(
       tester.element(reportTarget),
       alignment: 1.0,
