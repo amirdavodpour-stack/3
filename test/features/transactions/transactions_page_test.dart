@@ -678,7 +678,7 @@ void main() {
     (tester) async {
       final repo = _Transactions()
         ..jobs = [_job('tap-target', status: 'IN_PROGRESS')];
-      await _pump(repo: repo, tester: tester, width: 390, height: 844);
+      await _pump(tester, repo, width: 390, height: 844);
       final label = find.text('مشاهده وضعیت معامله');
       await tester.scrollUntilVisible(
         label,
