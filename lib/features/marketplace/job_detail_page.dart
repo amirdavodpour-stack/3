@@ -1229,11 +1229,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Semantics(
                         key: const ValueKey('opportunity-report-action'),
                         container: true,
+                        excludeSemantics: true,
                         button: true,
                         label: _t('گزارش فرصت', 'Report opportunity'),
                         onTap: _reportJob,
-                        child: ExcludeSemantics(
-                          child: SizedBox(
+                        child: SizedBox(
                             height: HopeV2Touch.minimum,
                             child: TextButton.icon(
                               onPressed: _reportJob,
@@ -1250,7 +1250,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ),
                             ),
                           ),
-                        ),
                       ),
                     ),
                   if (canViewFinance)

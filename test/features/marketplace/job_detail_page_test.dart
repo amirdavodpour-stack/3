@@ -350,6 +350,36 @@ void main() {
           greaterThanOrEqualTo(48),
           reason: 'The report action must expose a real 48dp semantic height.',
         );
+
+        // Walk the complete semantics tree, not only the keyed parent node. The
+        // runtime Android bridge previously exposed a nested TextButton label
+        // as a second, undersized actionable node.
+        final root =
+            tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+        expect(root, isNotNull);
+        final actionableReportNodes = <SemanticsNode>[];
+        final pendingNodes = <SemanticsNode>[root!];
+        while (pendingNodes.isNotEmpty) {
+          final candidate = pendingNodes.removeLast();
+          final candidateData = candidate.getSemanticsData();
+          if (candidateData.hasAction(SemanticsAction.tap) &&
+              candidateData.label.trim() == 'گزارش فرصت') {
+            actionableReportNodes.add(candidate);
+          }
+          pendingNodes.addAll(candidate.debugListChildrenInOrder(
+            DebugSemanticsDumpOrder.traversalOrder,
+          ));
+        }
+        expect(
+          actionableReportNodes,
+          hasLength(1),
+          reason: 'Report opportunity must expose exactly one semantic tap target.',
+        );
+        expect(
+          actionableReportNodes.single.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'Every exposed report action must preserve the 48dp semantic height.',
+        );
       } finally {
         semantics.dispose();
       }
