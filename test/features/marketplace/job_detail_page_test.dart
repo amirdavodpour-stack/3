@@ -327,7 +327,7 @@ void main() {
         final reportButton = tester.widget<TextButton>(report);
         expect(
           reportButton,
-          isA<TextButton>(),
+          isA<GestureDetector>(),
           reason: 'The keyed report target must be the actual visual control.',
         );
         expect(

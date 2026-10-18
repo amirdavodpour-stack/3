@@ -1226,24 +1226,36 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: SizedBox(
-                        height: HopeV2Touch.minimum,
-                        child: TextButton.icon(
+                      child: Semantics(
+                        label: _t('گزارش فرصت', 'Report opportunity'),
+                        button: true,
+                        child: GestureDetector(
                           key: const ValueKey('opportunity-report-action'),
-                          // Let the native button own its single semantic tap
-                          // action. A separate Semantics(onTap: ...) node was
-                          // measured at the label's intrinsic 21dp text height.
-                          onPressed: loading ? null : _reportJob,
-                          style: TextButton.styleFrom(
-                            minimumSize: Size(0, HopeV2Touch.minimum),
-                            tapTargetSize: MaterialTapTargetSize.padded,
-                          ),
-                          icon: const HopeIcon(
-                            HopeV2Icons.notifications,
-                            size: 18,
-                          ),
-                          label: Text(
-                            _t('گزارش فرصت', 'Report opportunity'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: loading ? null : _reportJob,
+                          child: SizedBox(
+                            height: HopeV2Touch.minimum,
+                            child: ExcludeSemantics(
+                              child: TextButton.icon(
+                                // Keep the visual treatment, but keep this
+                                // inner button out of semantics. GestureDetector
+                                // owns the single tap action on the 48dp box.
+                                onPressed: null,
+                                style: TextButton.styleFrom(
+                                  minimumSize: Size(0, HopeV2Touch.minimum),
+                                  tapTargetSize: MaterialTapTargetSize.padded,
+                                  disabledForegroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                ),
+                                icon: const HopeIcon(
+                                  HopeV2Icons.notifications,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  _t('گزارش فرصت', 'Report opportunity'),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
