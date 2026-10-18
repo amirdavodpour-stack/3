@@ -151,8 +151,9 @@ require_line "$test_file" "targetBounds.width.toStringAsPrecision(17)"
 require_line "$test_file" "targetBounds.height.toStringAsPrecision(17)"
 require_line "$test_file" "_semanticsTransformChain(node)"
 require_line "$test_file" "rootMatrix="
-require_line "$test_file" "targetBounds.width < 48 ||"
-require_line "$test_file" "targetBounds.height < 48"
+require_line "$test_file" "const tapTargetBoundsToleranceDp = 1e-6;"
+require_line "$test_file" "targetBounds.width < 48 - tapTargetBoundsToleranceDp ||"
+require_line "$test_file" "targetBounds.height < 48 - tapTargetBoundsToleranceDp"
 
 echo "PASS: Android runtime screenshot baseline contract is locked."
 
