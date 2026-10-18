@@ -360,6 +360,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     PremiumPaymentSummary(payment: payment),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
+                      key: const ValueKey('transaction-status-semantic-target'),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 48),
                         tapTargetSize: MaterialTapTargetSize.padded,

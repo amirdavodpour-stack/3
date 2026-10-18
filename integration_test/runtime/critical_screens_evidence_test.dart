@@ -982,11 +982,11 @@ Future<void> _captureRuntimeScreenshot(
   // even when its underlying 48dp hit surface is correct. Restore the original
   // offset after this semantics-only measurement so capture positioning stays
   // deterministic.
-  ScrollableState? reportTargetScrollable;
-  double? reportTargetInitialOffset;
-  Future<void> restoreReportTargetScroll() async {
-    final scrollable = reportTargetScrollable;
-    final initialOffset = reportTargetInitialOffset;
+  ScrollableState? auditedTargetScrollable;
+  double? auditedTargetInitialOffset;
+  Future<void> restoreAuditedTargetScroll() async {
+    final scrollable = auditedTargetScrollable;
+    final initialOffset = auditedTargetInitialOffset;
     if (scrollable == null ||
         initialOffset == null ||
         !scrollable.position.hasPixels ||
@@ -1006,14 +1006,19 @@ Future<void> _captureRuntimeScreenshot(
       _semanticsOnly &&
       marker.contains('job-detail') &&
       !marker.startsWith('scroll-end-');
-  if (shouldRevealReportTarget) {
-    final reportTarget = find.byKey(
-      const ValueKey('opportunity-report-semantic-target'),
-    );
-    // The report action is a late ListView child and may not exist in the
+  final shouldRevealTransactionTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      marker.startsWith('transactions-') &&
+      !marker.startsWith('scroll-end-');
+  if (shouldRevealReportTarget || shouldRevealTransactionTarget) {
+    final auditedTarget = shouldRevealReportTarget
+        ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
+        : find.byKey(const ValueKey('transaction-status-semantic-target'));
+    // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it
     // first with the same vertical scrollable used by scroll-end evidence.
-    if (reportTarget.evaluate().isEmpty) {
+    if (auditedTarget.evaluate().isEmpty) {
       final candidates = find.byType(Scrollable).evaluate().where((element) {
         if (element is! StatefulElement) return false;
         final state = element.state;
@@ -1035,65 +1040,65 @@ Future<void> _captureRuntimeScreenshot(
       }
       if (selectedElement == null || selectedState == null) {
         throw StateError(
-          'T10 could not select a vertical Scrollable to materialize the report target for $marker.',
+          'T10 could not select a vertical Scrollable to materialize the audited target for $marker.',
         );
       }
-      reportTargetScrollable = selectedState;
-      reportTargetInitialOffset = selectedState.position.pixels;
+      auditedTargetScrollable = selectedState;
+      auditedTargetInitialOffset = selectedState.position.pixels;
       final scrollableFinder = find.byElementPredicate(
         (element) => identical(element, selectedElement),
         skipOffstage: false,
       );
       try {
         await tester.scrollUntilVisible(
-          reportTarget,
+          auditedTarget,
           selectedState.position.viewportDimension * 0.68,
           scrollable: scrollableFinder,
           maxScrolls: 30,
         );
         await tester.pump();
       } catch (_) {
-        await restoreReportTargetScroll();
+        await restoreAuditedTargetScroll();
         rethrow;
       }
     }
-    if (reportTarget.evaluate().isEmpty) {
-      await restoreReportTargetScroll();
+    if (auditedTarget.evaluate().isEmpty) {
+      await restoreAuditedTargetScroll();
       throw StateError(
-        'T10 report semantic target still missing after scrolling the lazy ListView to it for $marker.',
+        'T10 audited semantic target still missing after scrolling the lazy ListView to it for $marker.',
       );
     }
     final scrollableAncestor = find.ancestor(
-      of: reportTarget,
+      of: auditedTarget,
       matching: find.byType(Scrollable),
     );
     if (scrollableAncestor.evaluate().isEmpty) {
-      await restoreReportTargetScroll();
+      await restoreAuditedTargetScroll();
       throw StateError(
-        'T10 report semantic target has no Scrollable ancestor for $marker.',
+        'T10 audited semantic target has no Scrollable ancestor for $marker.',
       );
     }
     final targetScrollable = tester.state<ScrollableState>(
       scrollableAncestor.first,
     );
-    if (reportTargetScrollable == null) {
-      reportTargetScrollable = targetScrollable;
-      reportTargetInitialOffset = targetScrollable.position.pixels;
-    } else if (!identical(reportTargetScrollable, targetScrollable)) {
-      await restoreReportTargetScroll();
+    if (auditedTargetScrollable == null) {
+      auditedTargetScrollable = targetScrollable;
+      auditedTargetInitialOffset = targetScrollable.position.pixels;
+    } else if (!identical(auditedTargetScrollable, targetScrollable)) {
+      await restoreAuditedTargetScroll();
       throw StateError(
-        'T10 report target materialized under a different Scrollable than the one scrolled for $marker.',
+        'T10 audited target materialized under a different Scrollable than the one scrolled for $marker.',
       );
     }
     // A child can be built before it is fully visible; align its trailing
     // edge with the viewport before inspecting the exported semantics rect.
     await Scrollable.ensureVisible(
-      tester.element(reportTarget),
+      tester.element(auditedTarget),
       alignment: 1.0,
     );
     await tester.pump();
     print(
-      'HOPE_T10_TARGET_REVEALED:$marker:initialOffset=$reportTargetInitialOffset:visibleOffset=${reportTargetScrollable!.position.pixels}',
+      'HOPE_T10_TARGET_REVEALED:$marker:initialOffset=$auditedTargetInitialOffset:visibleOffset=${auditedTargetScrollable!.position.pixels}',
     );
   }
 
@@ -1202,7 +1207,7 @@ Future<void> _captureRuntimeScreenshot(
       );
     } catch (_) {
       try {
-        await restoreReportTargetScroll();
+        await restoreAuditedTargetScroll();
       } catch (_) {
         // Preserve the primary target-bounds failure if scroll restoration
         // itself cannot complete after a failed semantics audit.
@@ -1211,7 +1216,7 @@ Future<void> _captureRuntimeScreenshot(
       rethrow;
     }
   }
-  await restoreReportTargetScroll();
+  await restoreAuditedTargetScroll();
   if (_semanticsOnly) {
     // Never write a screenshot in the TalkBack-bound pass: focus outlines must
     // not be mixed into the clean visual-baseline image set.

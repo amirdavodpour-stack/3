@@ -688,11 +688,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final action = find.ancestor(
-        of: label,
-        matching: find.byType(OutlinedButton),
+      final action = find.byKey(
+        const ValueKey('transaction-status-semantic-target'),
       );
       expect(action, findsOneWidget);
+      expect(find.descendant(of: action, matching: label), findsOneWidget);
+      await Scrollable.ensureVisible(
+        tester.element(action),
+        alignment: 1.0,
+      );
+      await tester.pumpAndSettle();
+
       final button = tester.widget<OutlinedButton>(action);
       expect(
         button.style?.minimumSize?.resolve(const {})?.height,
