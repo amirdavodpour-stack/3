@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -674,7 +675,7 @@ void main() {
 
 
   testWidgets(
-    'transaction status action keeps a 48dp tap target in compact RTL layouts',
+    'transaction status action exposes an actual 48dp semantic tap target in compact RTL layouts',
     (tester) async {
       final repo = _Transactions()
         ..jobs = [_job('tap-target', status: 'IN_PROGRESS')];
@@ -696,12 +697,43 @@ void main() {
       expect(
         button.style?.minimumSize?.resolve(const {})?.height,
         greaterThanOrEqualTo(48),
-        reason: 'The transaction status action must not inherit a compact theme density that shrinks its target below 48dp.',
+        reason: 'The transaction status action must set a minimum height of 48dp.',
       );
+      expect(button.style?.visualDensity, VisualDensity.standard);
       expect(
-        button.style?.visualDensity,
-        VisualDensity.standard,
+        tester.getSize(action).height,
+        greaterThanOrEqualTo(48),
+        reason: 'The rendered button box must be at least 48dp high, not just configure a style minimum.',
       );
+
+      final semanticsHandle = tester.ensureSemantics();
+      try {
+        await tester.pump();
+        final root = tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+        expect(root, isNotNull);
+        SemanticsNode? semanticAction;
+        final pending = <SemanticsNode>[root!];
+        while (pending.isNotEmpty) {
+          final node = pending.removeLast();
+          final data = node.getSemanticsData();
+          if (data.label.trim() == 'مشاهده وضعیت معامله' &&
+              data.hasAction(SemanticsAction.tap)) {
+            semanticAction = node;
+          }
+          pending.addAll(
+            node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder),
+          );
+        }
+        expect(semanticAction, isNotNull,
+            reason: 'The transaction action must remain a labelled, tappable semantic node.');
+        expect(
+          semanticAction!.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The accessibility semantics bounds must include the full 48dp tap target.',
+        );
+      } finally {
+        semanticsHandle.dispose();
+      }
     },
   );
 
