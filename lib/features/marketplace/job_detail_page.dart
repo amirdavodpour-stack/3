@@ -1237,10 +1237,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             height: HopeV2Touch.minimum,
                             child: TextButton.icon(
                               key: const ValueKey('opportunity-report-action'),
-                              onPressed: loading ? null : _reportJob,
+                              // The enclosing 48dp Semantics node owns the
+                              // single accessible tap action. Keeping this
+                              // visual-only button non-actionable prevents the
+                              // Android/TalkBack bridge from exposing its
+                              // intrinsic-height label as a second tap target.
+                              onPressed: null,
                               style: TextButton.styleFrom(
                                 minimumSize: Size(0, HopeV2Touch.minimum),
                                 tapTargetSize: MaterialTapTargetSize.padded,
+                                disabledForegroundColor:
+                                    Theme.of(context).colorScheme.primary,
                               ),
                               icon: const HopeIcon(
                                 HopeV2Icons.notifications,
