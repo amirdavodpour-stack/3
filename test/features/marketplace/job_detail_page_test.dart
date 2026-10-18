@@ -327,10 +327,16 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(report, findsOneWidget);
+        final reportButton = tester.widget<TextButton>(report);
         expect(
-          tester.widget(report),
+          reportButton,
           isA<TextButton>(),
-          reason: 'The keyed report target must be the actual actionable control, not a wrapper whose bounds can diverge from TalkBack.',
+          reason: 'The keyed report target must be the actual visual control.',
+        );
+        expect(
+          reportButton.onPressed,
+          isNull,
+          reason: 'Only the enclosing 48dp Semantics node may own the report tap action; a nested TextButton action can leak an undersized TalkBack target.',
         );
         final renderedButtonSize = tester.getSize(report);
         expect(
