@@ -547,6 +547,7 @@ class PremiumIconButton extends StatelessWidget {
     this.color,
     this.selected = false,
     this.semanticsIdentifier,
+    this.targetSize = HopeV2Touch.minimum,
   });
 
   final Object icon;
@@ -557,6 +558,7 @@ class PremiumIconButton extends StatelessWidget {
 
   /// Stable native-accessibility/test identifier for this action.
   final String? semanticsIdentifier;
+  final double targetSize;
 
   @override
   Widget build(BuildContext context) {
@@ -586,8 +588,8 @@ class PremiumIconButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Radii.button),
           child: Ink(
-            width: HopeV2Touch.minimum,
-            height: HopeV2Touch.minimum,
+            width: targetSize,
+            height: targetSize,
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(HopeV2Radii.button),

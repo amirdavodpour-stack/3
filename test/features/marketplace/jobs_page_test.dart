@@ -480,7 +480,7 @@ void main() {
           const ValueKey('hope-opportunity-refinement-launcher'),
         ),
       ),
-      const Size(48, 48),
+      const Size(50, 50),
     );
     expect(
       find.byKey(const ValueKey('hope-opportunity-refinement-active-count')),
@@ -587,7 +587,7 @@ void main() {
 
       expect((filter.top - search.top).abs(), lessThan(5));
       expect((resultCount.top - search.top).abs(), lessThan(10));
-      expect(filter.size, const Size(48, 48));
+      expect(filter.size, const Size(50, 50));
       expect(kindFilter.height, greaterThanOrEqualTo(48));
       expect(kindFilter.top - filter.bottom, lessThan(20));
       expect(
