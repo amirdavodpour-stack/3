@@ -1030,7 +1030,10 @@ Future<void> _captureRuntimeScreenshot(
     reportTargetInitialOffset = reportTargetScrollable!.position.pixels;
     // This control is clipped at the viewport's lower edge; align its
     // trailing edge with the viewport so only the minimum scroll is needed.
-    await tester.ensureVisible(reportTarget, alignment: 1.0);
+    await Scrollable.ensureVisible(
+      tester.element(reportTarget),
+      alignment: 1.0,
+    );
     await tester.pump();
     print(
       'HOPE_T10_TARGET_REVEALED:$marker:initialOffset=$reportTargetInitialOffset:visibleOffset=${reportTargetScrollable!.position.pixels}',
