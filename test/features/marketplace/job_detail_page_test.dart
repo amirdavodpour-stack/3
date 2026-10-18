@@ -346,10 +346,10 @@ void main() {
         expect(semanticTarget, findsOneWidget);
         final semanticWidget = tester.widget<Semantics>(semanticTarget);
         expect(semanticWidget.container, isTrue);
-        expect(semanticWidget.button, isTrue);
-        expect(semanticWidget.label, 'گزارش فرصت');
+        expect(semanticWidget.properties.button, isTrue);
+        expect(semanticWidget.properties.label, 'گزارش فرصت');
         expect(
-          semanticWidget.onTap,
+          semanticWidget.properties.onTap,
           isNotNull,
           reason: 'The independent semantic container must own the accessible tap action.',
         );
