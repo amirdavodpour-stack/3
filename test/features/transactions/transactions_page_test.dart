@@ -699,7 +699,7 @@ void main() {
         reason: 'The transaction status action must not inherit a compact theme density that shrinks its target below 48dp.',
       );
       expect(
-        button.style?.visualDensity?.resolve(const {}),
+        button.style?.visualDensity,
         VisualDensity.standard,
       );
     },
