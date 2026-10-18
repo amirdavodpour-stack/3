@@ -297,31 +297,33 @@ void main() {
     'T10 report opportunity control exposes a full-height semantic action',
     (tester) async {
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
+      try {
+        await _pump(
+          tester,
+          job: _job(),
+          width: 390,
+          height: 1800,
+          locale: const Locale('fa'),
+          theme: AppTheme.dark(),
+        );
 
-      await _pump(
-        tester,
-        job: _job(),
-        width: 390,
-        height: 1800,
-        locale: const Locale('fa'),
-        theme: AppTheme.dark(),
-      );
+        final report = find.byKey(
+          const ValueKey('opportunity-report-action'),
+        );
+        expect(report, findsOneWidget);
 
-      final report = find.byKey(
-        const ValueKey('opportunity-report-action'),
-      );
-      expect(report, findsOneWidget);
-
-      final node = tester.getSemantics(report);
-      final data = node.getSemanticsData();
-      expect(data.label, 'گزارش فرصت');
-      expect(data.hasAction(SemanticsAction.tap), isTrue);
-      expect(
-        node.rect.height,
-        greaterThanOrEqualTo(48),
-        reason: 'The report action must expose a real 48dp semantic tap target.',
-      );
+        final node = tester.getSemantics(report);
+        final data = node.getSemanticsData();
+        expect(data.label, 'گزارش فرصت');
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          node.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report action must expose a real 48dp semantic tap target.',
+        );
+      } finally {
+        semantics.dispose();
+      }
     },
   );
 

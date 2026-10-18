@@ -916,6 +916,10 @@ Widget _buildPage(BuildContext context) {
                               context,
                               HopeCopy.of(context).copy_worker_fee_85a35aa,
                               payment!.fees!.workerFee),
+                          _moneyRow(
+                              context,
+                              _t('کارمزد پلتفرم', 'Platform fee'),
+                              payment!.fees!.platformFee),
                           const Divider(height: 16),
                           _moneyRow(
                               context,

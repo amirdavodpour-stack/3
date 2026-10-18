@@ -97,11 +97,11 @@ class _FakeTx implements TransactionRepository {
           'baseAmount': 1000000,
           'employerFee': 100000,
           'workerFee': 100000,
-          'platformFee': 0,
+          'platformFee': 200000,
           'employerCharge': 1100000,
           'providerPayout': 900000,
-          'policyVersion': 'v1',
-          'currency': 'IRR',
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
         },
       });
 }
@@ -657,11 +657,11 @@ void main() {
           'baseAmount': 1000000,
           'employerFee': 100000,
           'workerFee': 100000,
-          'platformFee': 0,
+          'platformFee': 200000,
           'employerCharge': 1100000,
           'providerPayout': 900000,
-          'policyVersion': 'v1',
-          'currency': 'IRR',
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
         },
       }));
     await _pump(tester, repo);
@@ -673,6 +673,7 @@ void main() {
     expect(find.text('Base amount'), findsOneWidget);
     expect(find.text('Employer fee'), findsOneWidget);
     expect(find.text('Worker fee'), findsOneWidget);
+    expect(find.text('Platform fee'), findsOneWidget);
     expect(find.text('Employer charge'), findsOneWidget);
     expect(find.text('Worker payout'), findsOneWidget);
   });
