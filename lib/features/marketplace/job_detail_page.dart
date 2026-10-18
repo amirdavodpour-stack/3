@@ -1226,37 +1226,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: Semantics(
-                        key: const ValueKey('opportunity-report-semantic-target'),
-                        container: true,
-                        button: true,
-                        label: _t('گزارش فرصت', 'Report opportunity'),
-                        onTap: loading ? null : _reportJob,
-                        child: ExcludeSemantics(
-                          child: SizedBox(
-                            height: HopeV2Touch.minimum,
-                            child: TextButton.icon(
-                              key: const ValueKey('opportunity-report-action'),
-                              // The enclosing 48dp Semantics node owns the
-                              // single accessible tap action. Keeping this
-                              // visual-only button non-actionable prevents the
-                              // Android/TalkBack bridge from exposing its
-                              // intrinsic-height label as a second tap target.
-                              onPressed: null,
-                              style: TextButton.styleFrom(
-                                minimumSize: Size(0, HopeV2Touch.minimum),
-                                tapTargetSize: MaterialTapTargetSize.padded,
-                                disabledForegroundColor:
-                                    Theme.of(context).colorScheme.primary,
-                              ),
-                              icon: const HopeIcon(
-                                HopeV2Icons.notifications,
-                                size: 18,
-                              ),
-                              label: Text(
-                                _t('گزارش فرصت', 'Report opportunity'),
-                              ),
-                            ),
+                      child: SizedBox(
+                        height: HopeV2Touch.minimum,
+                        child: TextButton.icon(
+                          key: const ValueKey('opportunity-report-action'),
+                          // Let the native button own its single semantic tap
+                          // action. A separate Semantics(onTap: ...) node was
+                          // measured at the label's intrinsic 21dp text height.
+                          onPressed: loading ? null : _reportJob,
+                          style: TextButton.styleFrom(
+                            minimumSize: Size(0, HopeV2Touch.minimum),
+                            tapTargetSize: MaterialTapTargetSize.padded,
+                          ),
+                          icon: const HopeIcon(
+                            HopeV2Icons.notifications,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _t('گزارش فرصت', 'Report opportunity'),
                           ),
                         ),
                       ),

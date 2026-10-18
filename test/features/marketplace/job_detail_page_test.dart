@@ -310,9 +310,6 @@ void main() {
         final report = find.byKey(
           const ValueKey('opportunity-report-action'),
         );
-        final semanticTarget = find.byKey(
-          const ValueKey('opportunity-report-semantic-target'),
-        );
         final detailList = find.byKey(
           const ValueKey('opportunity-detail-content-list'),
         );
@@ -335,8 +332,8 @@ void main() {
         );
         expect(
           reportButton.onPressed,
-          isNull,
-          reason: 'Only the enclosing 48dp Semantics node may own the report tap action; a nested TextButton action can leak an undersized TalkBack target.',
+          isNotNull,
+          reason: 'The native TextButton must own the single accessible report action.',
         );
         final renderedButtonSize = tester.getSize(report);
         expect(
@@ -350,8 +347,7 @@ void main() {
           reason: 'The report action must have a rendered 48dp height at compact size.',
         );
 
-        expect(semanticTarget, findsOneWidget);
-        final node = tester.getSemantics(semanticTarget);
+        final node = tester.getSemantics(report);
         final data = node.getSemanticsData();
         expect(data.label, 'گزارش فرصت');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
@@ -366,9 +362,8 @@ void main() {
           reason: 'The explicit report semantic target must expose a real 48dp height.',
         );
 
-        // Walk the complete semantics tree, not only the keyed parent node. The
-        // runtime Android bridge previously exposed a nested TextButton label
-        // as a second, undersized actionable node.
+        // Walk the complete semantics tree to verify that the native button
+        // exposes exactly one actionable node with 48dp semantic bounds.
         final root =
             tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
         expect(root, isNotNull);
