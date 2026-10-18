@@ -360,6 +360,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     PremiumPaymentSummary(payment: payment),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                        tapTargetSize: MaterialTapTargetSize.padded,
+                        visualDensity: VisualDensity.standard,
+                      ),
                       onPressed: () => Navigator.push(
                         context,
                         HopeRoutes.transaction(
