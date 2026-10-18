@@ -1229,6 +1229,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Semantics(
                         key: const ValueKey('opportunity-report-semantic-target'),
                         container: true,
+                        // Keep the 48dp parent bounds as its own semantics node;
+                        // merging descendant semantics can shrink the exported
+                        // TalkBack rect to the inner label's text bounds.
+                        explicitChildNodes: true,
                         label: _t('گزارش فرصت', 'Report opportunity'),
                         button: true,
                         onTap: loading ? null : _reportJob,
