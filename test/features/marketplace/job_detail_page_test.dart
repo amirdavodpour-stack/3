@@ -310,6 +310,9 @@ void main() {
         final report = find.byKey(
           const ValueKey('opportunity-report-action'),
         );
+        final semanticTarget = find.byKey(
+          const ValueKey('opportunity-report-semantic-target'),
+        );
         final detailList = find.byKey(
           const ValueKey('opportunity-detail-content-list'),
         );
@@ -341,19 +344,20 @@ void main() {
           reason: 'The report action must have a rendered 48dp height at compact size.',
         );
 
-        final node = tester.getSemantics(report);
+        expect(semanticTarget, findsOneWidget);
+        final node = tester.getSemantics(semanticTarget);
         final data = node.getSemanticsData();
         expect(data.label, 'گزارش فرصت');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
         expect(
           node.rect.width,
           greaterThanOrEqualTo(48),
-          reason: 'The report action must expose a real 48dp semantic width.',
+          reason: 'The explicit report semantic target must expose a real 48dp width.',
         );
         expect(
           node.rect.height,
           greaterThanOrEqualTo(48),
-          reason: 'The report action must expose a real 48dp semantic height.',
+          reason: 'The explicit report semantic target must expose a real 48dp height.',
         );
 
         // Walk the complete semantics tree, not only the keyed parent node. The
