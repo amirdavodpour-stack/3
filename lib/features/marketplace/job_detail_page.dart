@@ -1227,32 +1227,41 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: Semantics(
+                        key: const ValueKey('opportunity-report-semantic-target'),
+                        container: true,
                         label: _t('گزارش فرصت', 'Report opportunity'),
                         button: true,
+                        onTap: loading ? null : _reportJob,
                         child: GestureDetector(
                           key: const ValueKey('opportunity-report-action'),
                           behavior: HitTestBehavior.opaque,
+                          // The parent Semantics container owns the sole
+                          // accessibility action; this recognizer is pointer-only.
+                          excludeFromSemantics: true,
                           onTap: loading ? null : _reportJob,
                           child: SizedBox(
+                            width: double.infinity,
                             height: HopeV2Touch.minimum,
-                            child: ExcludeSemantics(
-                              child: TextButton.icon(
-                                // Keep the visual treatment, but keep this
-                                // inner button out of semantics. GestureDetector
-                                // owns the single tap action on the 48dp box.
-                                onPressed: null,
-                                style: TextButton.styleFrom(
-                                  minimumSize: Size(0, HopeV2Touch.minimum),
-                                  tapTargetSize: MaterialTapTargetSize.padded,
-                                  disabledForegroundColor:
-                                      Theme.of(context).colorScheme.primary,
-                                ),
-                                icon: const HopeIcon(
-                                  HopeV2Icons.notifications,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  _t('گزارش فرصت', 'Report opportunity'),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ExcludeSemantics(
+                                child: TextButton.icon(
+                                  // Keep the visual treatment, but let the
+                                  // independent 48dp parent own accessibility.
+                                  onPressed: null,
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size(0, HopeV2Touch.minimum),
+                                    tapTargetSize: MaterialTapTargetSize.padded,
+                                    disabledForegroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  icon: const HopeIcon(
+                                    HopeV2Icons.notifications,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    _t('گزارش فرصت', 'Report opportunity'),
+                                  ),
                                 ),
                               ),
                             ),

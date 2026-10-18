@@ -310,6 +310,9 @@ void main() {
         final report = find.byKey(
           const ValueKey('opportunity-report-action'),
         );
+        final semanticTarget = find.byKey(
+          const ValueKey('opportunity-report-semantic-target'),
+        );
         final detailList = find.byKey(
           const ValueKey('opportunity-detail-content-list'),
         );
@@ -333,21 +336,37 @@ void main() {
         expect(
           reportGesture.onTap,
           isNotNull,
-          reason: 'The full-height GestureDetector must own the single accessible report action.',
+          reason: 'The pointer GestureDetector must preserve the report tap callback.',
         );
-        final renderedButtonSize = tester.getSize(report);
+        expect(
+          reportGesture.excludeFromSemantics,
+          isTrue,
+          reason: 'The pointer recognizer must not create a competing accessibility action.',
+        );
+        expect(semanticTarget, findsOneWidget);
+        final semanticWidget = tester.widget<Semantics>(semanticTarget);
+        expect(semanticWidget.container, isTrue);
+        expect(semanticWidget.button, isTrue);
+        expect(semanticWidget.label, 'گزارش فرصت');
+        expect(
+          semanticWidget.onTap,
+          isNotNull,
+          reason: 'The independent semantic container must own the accessible tap action.',
+        );
+
+        final renderedButtonSize = tester.getSize(semanticTarget);
         expect(
           renderedButtonSize.width,
           greaterThanOrEqualTo(48),
-          reason: 'The report gesture surface must have a rendered 48dp width at compact size.',
+          reason: 'The report semantic container must have a rendered 48dp width.',
         );
         expect(
           renderedButtonSize.height,
           greaterThanOrEqualTo(48),
-          reason: 'The report gesture surface must have a rendered 48dp height at compact size.',
+          reason: 'The report semantic container must have a rendered 48dp height.',
         );
 
-        final node = tester.getSemantics(report);
+        final node = tester.getSemantics(semanticTarget);
         final data = node.getSemanticsData();
         expect(data.label, 'گزارش فرصت');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
