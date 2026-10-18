@@ -324,27 +324,27 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(report, findsOneWidget);
-        final reportButton = tester.widget<TextButton>(report);
+        final reportGesture = tester.widget<GestureDetector>(report);
         expect(
-          reportButton,
+          reportGesture,
           isA<GestureDetector>(),
-          reason: 'The keyed report target must be the actual visual control.',
+          reason: 'The keyed report target must be the full-height gesture surface.',
         );
         expect(
-          reportButton.onPressed,
+          reportGesture.onTap,
           isNotNull,
-          reason: 'The native TextButton must own the single accessible report action.',
+          reason: 'The full-height GestureDetector must own the single accessible report action.',
         );
         final renderedButtonSize = tester.getSize(report);
         expect(
           renderedButtonSize.width,
           greaterThanOrEqualTo(48),
-          reason: 'The report action must have a rendered 48dp width at compact size.',
+          reason: 'The report gesture surface must have a rendered 48dp width at compact size.',
         );
         expect(
           renderedButtonSize.height,
           greaterThanOrEqualTo(48),
-          reason: 'The report action must have a rendered 48dp height at compact size.',
+          reason: 'The report gesture surface must have a rendered 48dp height at compact size.',
         );
 
         final node = tester.getSemantics(report);
@@ -354,16 +354,16 @@ void main() {
         expect(
           node.rect.width,
           greaterThanOrEqualTo(48),
-          reason: 'The explicit report semantic target must expose a real 48dp width.',
+          reason: 'The report gesture semantic target must expose a real 48dp width.',
         );
         expect(
           node.rect.height,
           greaterThanOrEqualTo(48),
-          reason: 'The explicit report semantic target must expose a real 48dp height.',
+          reason: 'The report gesture semantic target must expose a real 48dp height.',
         );
 
-        // Walk the complete semantics tree to verify that the native button
-        // exposes exactly one actionable node with 48dp semantic bounds.
+        // Walk the complete semantics tree to verify that the fixed-size
+        // gesture surface exposes exactly one actionable node with 48dp bounds.
         final root =
             tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
         expect(root, isNotNull);
