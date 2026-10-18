@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/financial/financial_insights_repository.dart';
@@ -528,6 +529,69 @@ double _cashFlowAxisMaximum(num maximum) {
   return niceStep * magnitude * 4;
 }
 
+
+/// Formats visible balance-chart ticks independently from their exact semantic dates.
+/// Persian labels use Solar Hijri month names; the accessible chart summary keeps
+/// the original recorded ISO date and value unchanged.
+String formatBalanceTrendAxisLabel(String rawDate, String locale) {
+  final match = RegExp(r'^(\d{4})-(\d{2})(?:-(\d{2}))?$')
+      .firstMatch(rawDate.trim());
+  if (match == null) return rawDate;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3) ?? '1');
+  if (month < 1 || month > 12) return rawDate;
+  final date = DateTime(year, month, day);
+  if (date.year != year || date.month != month || date.day != day) {
+    return rawDate;
+  }
+  if (!locale.toLowerCase().startsWith('fa')) {
+    return DateFormat('MMM', locale).format(DateTime(year, month, 1));
+  }
+  final solar = _gregorianToSolarHijri(year, month, day);
+  const solarMonths = <String>[
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند',
+  ];
+  return solarMonths[solar[1] - 1];
+}
+
+List<int> _gregorianToSolarHijri(int gy, int gm, int gd) {
+  const gregorianMonthDays = <int>[
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+  ];
+  final adjustedYear = gy - 1600;
+  final adjustedMonth = gm - 1;
+  final adjustedDay = gd - 1;
+  var gregorianDayNumber = 365 * adjustedYear +
+      ((adjustedYear + 3) ~/ 4) -
+      ((adjustedYear + 99) ~/ 100) +
+      ((adjustedYear + 399) ~/ 400);
+  for (var index = 0; index < adjustedMonth; index++) {
+    gregorianDayNumber += gregorianMonthDays[index];
+  }
+  final isLeapYear = gy % 4 == 0 && (gy % 100 != 0 || gy % 400 == 0);
+  if (adjustedMonth > 1 && isLeapYear) gregorianDayNumber++;
+  gregorianDayNumber += adjustedDay;
+
+  var jalaliDayNumber = gregorianDayNumber - 79;
+  final jalaliCycles = jalaliDayNumber ~/ 12053;
+  jalaliDayNumber %= 12053;
+  var jy = 979 + 33 * jalaliCycles + 4 * (jalaliDayNumber ~/ 1461);
+  jalaliDayNumber %= 1461;
+  if (jalaliDayNumber >= 366) {
+    jy += (jalaliDayNumber - 1) ~/ 365;
+    jalaliDayNumber = (jalaliDayNumber - 1) % 365;
+  }
+  final jm = jalaliDayNumber < 186
+      ? 1 + jalaliDayNumber ~/ 31
+      : 7 + (jalaliDayNumber - 186) ~/ 30;
+  final jd = jalaliDayNumber < 186
+      ? 1 + jalaliDayNumber % 31
+      : 1 + (jalaliDayNumber - 186) % 30;
+  return <int>[jy, jm, jd];
+}
+
 String _cashFlowAxisLabel(int value, String locale) {
   final fa = locale.toLowerCase().startsWith('fa');
   if (value >= 1000000000) {
@@ -630,14 +694,19 @@ class _BarChart extends StatelessWidget {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     const axisWidth = 70.0;
+                    const axisGap = 8.0;
                     final textScale = MediaQuery.textScalerOf(context).scale(1);
                     final monthWidth = math.max(58.0, 58.0 * textScale);
+                    final chartViewportWidth = math.max(
+                      0.0,
+                      constraints.maxWidth - axisWidth - axisGap,
+                    ).toDouble();
                     final chartWidth = math.max(
-                      constraints.maxWidth - axisWidth,
+                      chartViewportWidth,
                       data.length * monthWidth,
                     ).toDouble();
                     final hasHorizontalOverflow =
-                        chartWidth > constraints.maxWidth - axisWidth;
+                        chartWidth > chartViewportWidth;
                     final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
                     final chartViewportHeight = math.max(
                       1.0,
@@ -741,6 +810,10 @@ class _BarChart extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                              ),
+                              const SizedBox(
+                                key: ValueKey('financial-cashflow-axis-gutter'),
+                                width: axisGap,
                               ),
                               Expanded(
                                 child: SingleChildScrollView(
@@ -969,6 +1042,7 @@ class _LineChart extends StatelessWidget {
         final pointWidth = math.max(64.0, 64.0 * textScale);
         final axisWidth =
             math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
+        const axisGap = 8.0;
         final values = recordedPoints
             .map((point) => point.value!)
             .toList(growable: false);
@@ -996,8 +1070,12 @@ class _LineChart extends StatelessWidget {
           ((scaleMaximum + scaleMinimum) / 2).round(),
           scaleMinimum.round(),
         ];
+        final chartViewportWidth = math.max(
+          0.0,
+          constraints.maxWidth - axisWidth - axisGap,
+        ).toDouble();
         final chartWidth = math.max(
-          math.max(0.0, constraints.maxWidth - axisWidth),
+          chartViewportWidth,
           points.length * pointWidth,
         ).toDouble();
 
@@ -1042,6 +1120,10 @@ class _LineChart extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(
+              key: ValueKey('financial-balance-axis-gutter'),
+              width: axisGap,
+            ),
             Expanded(
               child: SingleChildScrollView(
                 key: const ValueKey('financial-balance-chart-scroll'),
@@ -1074,6 +1156,7 @@ class _LineChart extends StatelessWidget {
                         color,
                         color.withValues(alpha: .12),
                         Directionality.of(context),
+                        Localizations.localeOf(context).languageCode,
                         textScale,
                         scaleMinimum,
                         scaleMaximum,
@@ -1098,6 +1181,7 @@ class _LineChartPainter extends CustomPainter {
     this.color,
     this.fillColor,
     this.textDirection,
+    this.locale,
     this.textScale,
     this.scaleMinimum,
     this.scaleMaximum,
@@ -1108,6 +1192,7 @@ class _LineChartPainter extends CustomPainter {
   final Color color;
   final Color fillColor;
   final TextDirection textDirection;
+  final String locale;
   final double textScale;
   final double scaleMinimum;
   final double scaleMaximum;
@@ -1178,7 +1263,7 @@ class _LineChartPainter extends CustomPainter {
     for (var i = 0; i < points.length; i++) {
       final painter = TextPainter(
         text: TextSpan(
-          text: points[i].date,
+          text: formatBalanceTrendAxisLabel(points[i].date, locale),
           style: TextStyle(
             color: color.withValues(alpha: .92),
             fontSize: (12.0 * textScale).toDouble(),
@@ -1206,6 +1291,7 @@ class _LineChartPainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.fillColor != fillColor ||
       oldDelegate.textDirection != textDirection ||
+      oldDelegate.locale != locale ||
       oldDelegate.textScale != textScale ||
       oldDelegate.scaleMinimum != scaleMinimum ||
       oldDelegate.scaleMaximum != scaleMaximum ||

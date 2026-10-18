@@ -301,8 +301,8 @@ void main() {
         await _pump(
           tester,
           job: _job(),
-          width: 390,
-          height: 1800,
+          width: 360,
+          height: 640,
           locale: const Locale('fa'),
           theme: AppTheme.dark(),
         );
@@ -311,15 +311,33 @@ void main() {
           const ValueKey('opportunity-report-action'),
         );
         expect(report, findsOneWidget);
+        await tester.ensureVisible(report);
+        await tester.pumpAndSettle();
+        final renderedButtonSize = tester.getSize(report);
+        expect(
+          renderedButtonSize.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report action must have a rendered 48dp width at compact size.',
+        );
+        expect(
+          renderedButtonSize.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report action must have a rendered 48dp height at compact size.',
+        );
 
         final node = tester.getSemantics(report);
         final data = node.getSemanticsData();
         expect(data.label, 'گزارش فرصت');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
         expect(
+          node.rect.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report action must expose a real 48dp semantic width.',
+        );
+        expect(
           node.rect.height,
           greaterThanOrEqualTo(48),
-          reason: 'The report action must expose a real 48dp semantic tap target.',
+          reason: 'The report action must expose a real 48dp semantic height.',
         );
       } finally {
         semantics.dispose();

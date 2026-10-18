@@ -261,6 +261,13 @@ class _NonFiniteCashFlowInsightsRepository implements FinancialInsightsRepositor
 }
 
 void main() {
+  test('balance-chart tick labels use compact localized months', () {
+    expect(formatBalanceTrendAxisLabel('2026-05', 'en'), 'May');
+    expect(formatBalanceTrendAxisLabel('2026-05', 'fa'), 'اردیبهشت');
+    expect(formatBalanceTrendAxisLabel('2026-08-01', 'fa'), 'مرداد');
+    expect(formatBalanceTrendAxisLabel('not-a-date', 'fa'), 'not-a-date');
+  });
+
   testWidgets(
     'financial snapshot preserves long metric labels and amounts at 1.5x',
     (tester) async {
