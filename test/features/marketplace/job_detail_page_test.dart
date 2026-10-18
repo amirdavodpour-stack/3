@@ -346,6 +346,11 @@ void main() {
         expect(semanticTarget, findsOneWidget);
         final semanticWidget = tester.widget<Semantics>(semanticTarget);
         expect(semanticWidget.container, isTrue);
+        expect(
+          semanticWidget.explicitChildNodes,
+          isTrue,
+          reason: 'The actionable report node must retain its own semantic bounds instead of merging down to text geometry.',
+        );
         expect(semanticWidget.properties.button, isTrue);
         expect(semanticWidget.properties.label, 'گزارش فرصت');
         expect(
