@@ -693,9 +693,11 @@ void main() {
       );
       expect(action, findsOneWidget);
       expect(find.descendant(of: action, matching: label), findsOneWidget);
+      // Keep the target inset from the viewport boundary, where exported
+      // semantics rectangles can be clipped during accessibility audits.
       await Scrollable.ensureVisible(
         tester.element(action),
-        alignment: 1.0,
+        alignment: 0.8,
       );
       await tester.pumpAndSettle();
 
