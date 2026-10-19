@@ -670,8 +670,9 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               final compact = constraints.maxWidth < 500;
               return ListTile(
                 dense: compact,
+                minTileHeight: compact ? 48 : null,
                 visualDensity: compact
-                    ? const VisualDensity(horizontal: -2, vertical: -1)
+                    ? const VisualDensity(horizontal: -2, vertical: 0)
                     : null,
                 leading: const HopeIconTile(HopeV2Icons.secure),
                 title: Text(
