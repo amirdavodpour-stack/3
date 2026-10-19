@@ -85,6 +85,8 @@ jobs:
         run: bash test/runtime/premium_visual_wave_source_test.sh
       - name: Runtime driver contract
         run: bash tools/tests/hope-runtime-driver-contract.sh
+      - name: Android Emulator package retry contract
+        run: bash test/runtime/android_emulator_install_retry_test.sh
       - name: Test Android runtime golden baseline contract
         run: bash test/runtime/android_runtime_golden_baseline_test.sh
       - name: Android runtime screenshot and TalkBack contract
