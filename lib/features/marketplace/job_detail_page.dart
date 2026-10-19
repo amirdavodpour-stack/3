@@ -1257,7 +1257,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                     minimumSize: Size(0, HopeV2Touch.minimum),
                                     tapTargetSize: MaterialTapTargetSize.padded,
                                     disabledForegroundColor:
-                                        Theme.of(context).colorScheme.primary,
+                                        Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                   icon: const HopeIcon(
                                     HopeV2Icons.notifications,
