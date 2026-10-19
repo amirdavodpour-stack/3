@@ -1163,6 +1163,34 @@ Future<void> _captureRuntimeScreenshot(
       // 47.999999999999986dp. Ignore only floating-point noise, not any
       // materially undersized accessibility target.
       const tapTargetBoundsToleranceDp = 1e-6;
+      if (auditedTargetFinder != null) {
+        // The named target is the regression under test; it must always be
+        // checked directly after reveal, never silently excused as a clipped
+        // boundary node in the broad scan below.
+        final auditedNode = tester.getSemantics(auditedTargetFinder!);
+        final auditedData = auditedNode.getSemanticsData();
+        if (!auditedData.hasAction(SemanticsAction.tap)) {
+          throw StateError(
+            'T10 explicit audited target is missing its tap action for $marker.',
+          );
+        }
+        final auditedBounds = _globalSemanticsNodeBounds(auditedNode, renderView);
+        if (auditedBounds.isEmpty ||
+            auditedBounds.width < 48 - tapTargetBoundsToleranceDp ||
+            auditedBounds.height < 48 - tapTargetBoundsToleranceDp) {
+          throw StateError(
+            'T10 explicit audited target below 48dp for $marker: '
+            'label=${auditedData.label.trim()} '
+            'widthDp=${auditedBounds.width.toStringAsPrecision(17)} '
+            'heightDp=${auditedBounds.height.toStringAsPrecision(17)}.',
+          );
+        }
+        print(
+          'HOPE_T10_AUDITED_TARGET_BOUNDS_PASS:$marker:'
+          'widthDp=${auditedBounds.width.toStringAsFixed(1)}:'
+          'heightDp=${auditedBounds.height.toStringAsFixed(1)}',
+        );
+      }
       final undersizedTargetExamples = <String>[];
       final pending = <SemanticsNode>[root];
       while (pending.isNotEmpty) {
