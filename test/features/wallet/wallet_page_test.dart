@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -21,6 +22,7 @@ class _WalletEnabledCapabilities implements BackendCapabilitiesRepository {
   @override
   Future<BackendCapabilities> load() async => const BackendCapabilities(
         wallet: true,
+        walletTransfer: true,
         walletWithdraw: true,
       );
 }
@@ -304,11 +306,19 @@ void main() {
       await tester.tap(historyStatus);
       await tester.pumpAndSettle();
 
-      expect(find.text('Withdrawal details'), findsOneWidget);
-      expect(find.text('Amount'), findsOneWidget);
-      expect(find.text('Status'), findsOneWidget);
-      expect(find.text('400,000 TOMAN'), findsOneWidget);
-      expect(find.text('Requested'), findsWidgets);
+      final detailsSheet = find.byType(BottomSheet);
+      expect(detailsSheet, findsOneWidget);
+      expect(find.descendant(of: detailsSheet, matching: find.text('Withdrawal details')), findsOneWidget);
+      expect(find.descendant(of: detailsSheet, matching: find.text('Amount')), findsOneWidget);
+      expect(find.descendant(of: detailsSheet, matching: find.text('Status')), findsOneWidget);
+      expect(
+        find.descendant(of: detailsSheet, matching: find.text('400,000 TOMAN')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: detailsSheet, matching: find.text('Requested')),
+        findsWidgets,
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -445,7 +455,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final loadMore = find.widgetWithText(OutlinedButton, 'Load more');
+      final loadMore = find.byKey(
+        const ValueKey('wallet-transactions-load-more'),
+      );
       await tester.scrollUntilVisible(
         loadMore,
         500,
@@ -557,7 +569,7 @@ void main() {
       expect(find.byKey(const ValueKey('wallet-balance-hero')), findsOneWidget);
       expect(find.text('کل موجودی'), findsOneWidget);
       expect(find.text('شامل مبالغ قفل‌شده است'), findsOneWidget);
-      expect(find.text('قفل‌شده'), findsWidgets);
+      expect(find.text('کل قفل‌شده'), findsOneWidget);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);
 
@@ -704,6 +716,134 @@ void main() {
     expect(find.text('Wallet refresh failed'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
   });
+
+  testWidgets(
+    'wallet history rows stay compact when the visible facts fit on two lines',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(360, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('wallet-history-entry-tx-1'));
+      await tester.scrollUntilVisible(
+        card,
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(card, findsOneWidget);
+      expect(find.text('Internal transfer'), findsOneWidget);
+      expect(find.text('+500,000 TOMAN'), findsOneWidget);
+      expect(
+        tester.getSize(card).height,
+        lessThan(100),
+        reason:
+            'When title, date and amount fit, a compact wallet row should not reserve a third line.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wallet history cards avoid duplicate reference text and expose date to assistive tech',
+    (tester) async {
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: auth),
+                Provider<WalletRepository>.value(value: wallet),
+              ],
+              child: WalletPage(repository: wallet),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final card = find.byKey(
+          const ValueKey('wallet-history-entry-tx-1'),
+        );
+        await tester.scrollUntilVisible(
+          card,
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        final tile = tester.widget<ListTile>(
+          find.descendant(of: card, matching: find.byType(ListTile)),
+        );
+        final subtitle = tile.subtitle as Text;
+        expect(subtitle.data, isNotEmpty);
+        expect(subtitle.data, isNot(contains('انتقال داخلی')));
+        expect(subtitle.data, isNot(contains('\n')));
+
+        final rowSemantics = find.ancestor(
+          of: card,
+          matching: find.byType(Semantics),
+        ).first;
+        final semanticLabel = tester.getSemantics(rowSemantics).label;
+        expect(
+          semanticLabel,
+          contains(subtitle.data),
+          reason: 'The date shown in the ledger row must also be present in its grouped screen-reader label.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets('wallet transaction rows expose grouped finance semantics',
       (tester) async {
@@ -871,6 +1011,7 @@ void main() {
         final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
         await tester.pumpWidget(
           MaterialApp(
+            key: ValueKey('wallet-row-color-$brightness-$isCredit'),
             theme: brightness == Brightness.dark
                 ? ThemeData.dark()
                 : ThemeData.light(),
@@ -893,15 +1034,26 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+        final transactionRow = find.byKey(
+          const ValueKey('wallet-history-entry-tx-1'),
+        );
         await tester.scrollUntilVisible(
-          find.text(amountLabel),
+          transactionRow,
           500,
           scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
-        final amountFinder = find.text(amountLabel);
+        final amountFinder = find.descendant(
+          of: transactionRow,
+          matching: find.textContaining('500,000 TOMAN'),
+        );
+        expect(amountFinder, findsOneWidget);
         final amountText = tester.widget<Text>(amountFinder);
+        expect(
+          amountText.data?.startsWith(isCredit ? '+' : '-'),
+          isTrue,
+          reason: 'Signed transaction row must match its direction: ${amountText.data}',
+        );
         final amountContext = tester.element(amountFinder);
         expect(
           amountText.style?.color,
@@ -1065,8 +1217,15 @@ void main() {
     await tester.tap(find.text('Internal transfer').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Other activity'), findsOneWidget);
-    expect(find.text('Ledger entry'), findsNothing);
+    final detailsSheet = find.byType(BottomSheet);
+    expect(detailsSheet, findsOneWidget);
+    expect(
+      find.descendant(
+        of: detailsSheet,
+        matching: find.text('Other activity'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('RECONCILIATION_ENTRY'), findsNothing);
   });
 
@@ -1150,8 +1309,22 @@ void main() {
     await tester.tap(find.text('۴۰۰٬۰۰۰ تومان'));
     await tester.pumpAndSettle();
 
-    expect(find.text('کیف پول داخلی'), findsOneWidget);
-    expect(find.text('internal'), findsNothing);
+    final detailsSheet = find.byType(BottomSheet);
+    expect(detailsSheet, findsOneWidget);
+    expect(
+      find.descendant(
+        of: detailsSheet,
+        matching: find.text('کیف پول داخلی'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: detailsSheet,
+        matching: find.text('internal'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('wallet does not expose raw API errors in action failures',
@@ -1181,6 +1354,9 @@ void main() {
             providers: [
               ChangeNotifierProvider.value(value: auth),
               Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
             ],
             child: WalletPage(repository: wallet),
           ),
@@ -1191,15 +1367,15 @@ void main() {
 
     await tester.tap(find.byTooltip('Wallet actions')); await tester.pumpAndSettle(); await tester.tap(find.text('Transfer'));
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Destination wallet ID'), findsOneWidget);
-    expect(find.bySemanticsLabel('Amount in Toman'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallet-transfer-destination')), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallet-transfer-amount')), findsOneWidget);
 
     await tester.enterText(
-      find.bySemanticsLabel('Destination wallet ID'),
+      find.byKey(const ValueKey('wallet-transfer-destination')),
       'wallet-destination',
     );
     await tester.enterText(
-      find.bySemanticsLabel('Amount in Toman'),
+      find.byKey(const ValueKey('wallet-transfer-amount')),
       '1000',
     );
     await tester.tap(
@@ -1236,6 +1412,9 @@ void main() {
           providers: [
             ChangeNotifierProvider.value(value: auth),
             Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
           ],
           child: WalletPage(repository: wallet),
         ),
@@ -1350,6 +1529,64 @@ void main() {
 
 
   testWidgets(
+    'wallet action labels do not truncate at 1.5x on a compact viewport',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = AuthController(_AuthRepo(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _FakeWallet();
+
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: _WalletEnabledCapabilities(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // This fixture enables withdrawal; deposit is disabled by its backend capability state.
+      for (final label in ['Withdraw', 'History']) {
+        final finder = find.text(label);
+        expect(finder, findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(finder);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: '$label must remain fully readable at 1.5x in a 320dp wallet.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'wallet transaction detail amounts retain semantic foregrounds in light and dark themes',
     (tester) async {
       for (final brightness in [Brightness.light, Brightness.dark]) {
@@ -1360,6 +1597,7 @@ void main() {
           final wallet = _FakeWallet(direction: isCredit ? 'CREDIT' : 'DEBIT');
           await tester.pumpWidget(
             MaterialApp(
+              key: ValueKey('wallet-detail-color-$brightness-$isCredit'),
               theme: brightness == Brightness.dark
                   ? ThemeData.dark()
                   : ThemeData.light(),
@@ -1382,21 +1620,36 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          final amountLabel = isCredit ? '+500,000 TOMAN' : '-500,000 TOMAN';
+          final transactionRow = find.byKey(
+            const ValueKey('wallet-history-entry-tx-1'),
+          );
           await tester.scrollUntilVisible(
-            find.text(amountLabel),
+            transactionRow,
             500,
             scrollable: find.byType(Scrollable).first,
           );
           await tester.pumpAndSettle();
-          await tester.tap(find.text(amountLabel));
+          final transactionTitle = find.descendant(
+            of: transactionRow,
+            matching: find.text('Internal transfer'),
+          );
+          expect(transactionTitle, findsOneWidget);
+          await tester.tap(transactionTitle);
           await tester.pumpAndSettle();
 
+          expect(find.byType(BottomSheet), findsOneWidget);
           final detailAmount = find.byWidgetPredicate(
             (widget) =>
-                widget is SelectableText && widget.data == amountLabel,
+                widget is SelectableText &&
+                (widget.data?.contains('500,000 TOMAN') ?? false),
           );
           expect(detailAmount, findsOneWidget);
+          final detailValue = tester.widget<SelectableText>(detailAmount).data;
+          expect(
+            detailValue?.startsWith(isCredit ? '+' : '-'),
+            isTrue,
+            reason: 'Signed detail amount must match its direction: $detailValue',
+          );
           final detailContext = tester.element(detailAmount);
           expect(
             tester.widget<SelectableText>(detailAmount).style?.color,
@@ -1406,6 +1659,10 @@ void main() {
             reason:
                 'Transaction detail amount must preserve direction semantics in $brightness mode.',
           );
+          final detailSheet = find.byType(BottomSheet);
+          expect(detailSheet, findsOneWidget);
+          Navigator.of(tester.element(detailSheet)).pop();
+          await tester.pumpAndSettle();
         }
       }
     },
@@ -1443,13 +1700,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final reservedStatus = find.text('Reserved');
         await tester.scrollUntilVisible(
-          find.text('Reserved'),
+          reservedStatus,
           500,
           scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reserved'));
+        await tester.tap(reservedStatus);
         await tester.pumpAndSettle();
 
         final detailAmount = find.byWidgetPredicate(
@@ -1464,6 +1722,10 @@ void main() {
           reason:
               'Pending withdrawal detail amount must remain semantically pending in $brightness mode.',
         );
+        final detailSheet = find.byType(BottomSheet);
+        expect(detailSheet, findsOneWidget);
+        Navigator.of(tester.element(detailSheet)).pop();
+        await tester.pumpAndSettle();
       }
     },
   );

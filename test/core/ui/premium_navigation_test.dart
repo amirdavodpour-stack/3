@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -11,28 +10,28 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
+      icon: Icon(HopeV2Icons.home, size: 24),
+      selectedIcon: Icon(HopeV2Icons.homeSelected, size: 24),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.search, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.search, size: 24),
+      icon: Icon(HopeV2Icons.search, size: 24),
+      selectedIcon: Icon(HopeV2Icons.search, size: 24),
       label: 'کاوش',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      icon: Icon(HopeV2Icons.workshop, size: 24),
+      selectedIcon: Icon(HopeV2Icons.workshopSelected, size: 24),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
+      icon: Icon(HopeV2Icons.wallet, size: 24),
+      selectedIcon: Icon(HopeV2Icons.walletSelected, size: 24),
       label: 'کیف پول',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
+      icon: Icon(HopeV2Icons.profile, size: 24),
+      selectedIcon: Icon(HopeV2Icons.profileSelected, size: 24),
       label: 'پروفایل',
     ),
   ];
@@ -89,6 +88,18 @@ void main() {
       ),
     );
     expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
+    final activeRail = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(const ValueKey('hope-navigation-selection-accent')),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    final railDecoration = activeRail.decoration as BoxDecoration;
+    expect(
+      railDecoration.color,
+      HopeV2TonalPalettes.forest.shade700.withValues(alpha: .86),
+      reason: 'The green identity accent should complement, not replace, the indigo selection plate.',
+    );
   });
 
   testWidgets('default dark premium panels use the canonical opaque surface', (tester) async {
@@ -190,6 +201,15 @@ void main() {
     );
     expect(rail.destinations, hasLength(5));
     expect(
+      rail.selectedIconTheme?.color,
+      HopeV2TonalPalettes.forest.shade700,
+      reason: 'Desktop navigation should expose the green identity accent without recoloring labels.',
+    );
+    expect(
+      rail.selectedLabelTextStyle?.color,
+      HopeV2SemanticColors.textPrimary(tester.element(find.byType(NavigationRail))),
+    );
+    expect(
       tester.getSize(find.byType(PremiumNavigationRail)).width,
       greaterThanOrEqualTo(210),
     );
@@ -265,7 +285,7 @@ void main() {
     final button = find.byType(PremiumIconButton);
     expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.refresh), findsOneWidget);
     expect(find.byType(InkWell), findsOneWidget);
   });
 

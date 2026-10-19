@@ -47,6 +47,28 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
       );
 }
 
+class _LongSummaryInsightsRepository implements FinancialInsightsRepository {
+  const _LongSummaryInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '987654321098765432',
+          lockedBalance: '876543210987654321',
+          totalInflow: '765432109876543210',
+          totalOutflow: '654321098765432109',
+          totalReserved: '543210987654321098',
+          netCashFlow: '432109876543210987',
+        ),
+        monthlyCashFlow: [],
+        balanceTrend: [],
+        bySource: [],
+      );
+}
+
 class _EmptyBalanceInsightsRepository implements FinancialInsightsRepository {
   const _EmptyBalanceInsightsRepository();
 
@@ -239,6 +261,75 @@ class _NonFiniteCashFlowInsightsRepository implements FinancialInsightsRepositor
 }
 
 void main() {
+  test('balance-chart tick labels use compact localized months', () {
+    expect(formatBalanceTrendAxisLabel('2026-05', 'en'), 'May');
+    expect(formatBalanceTrendAxisLabel('2026-05', 'fa'), 'اردیبهشت');
+    expect(formatBalanceTrendAxisLabel('2026-08-01', 'fa'), 'مرداد');
+    expect(formatBalanceTrendAxisLabel('2026-10', 'en'), 'Oct');
+    expect(formatBalanceTrendAxisLabel('2026-13', 'en'), '2026-13');
+    expect(formatBalanceTrendAxisLabel('not-a-date', 'fa'), 'not-a-date');
+  });
+
+  testWidgets(
+    'financial snapshot preserves long metric labels and amounts at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _LongSummaryInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final summary = find.byType(PremiumPanel).first;
+      final metricTexts = tester.widgetList<Text>(
+        find.descendant(of: summary, matching: find.byType(Text)),
+      ).where((text) {
+        final value = text.data ?? '';
+        return RegExp(r'-?[\d,]+\s*TOMAN').hasMatch(value) ||
+            const {
+              'Available',
+              'Locked',
+              'Inflow',
+              'Outflow',
+              'Total reserved',
+              'Net cash flow',
+            }.contains(value);
+      }).toList(growable: false);
+
+      expect(metricTexts, hasLength(12));
+      expect(
+        metricTexts.every(
+          (text) => text.maxLines == null && text.overflow == TextOverflow.visible,
+        ),
+        isTrue,
+        reason: 'Large text must never clip a recorded financial label or amount in the summary card.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
     (tester) async {
@@ -1283,17 +1374,17 @@ void main() {
             .color;
 
         expect(
-          legendColor(Icons.call_received_rounded),
+          legendColor(HopeV2Icons.transferIn),
           expectedInflow,
           reason: 'Cash inflow uses the success family, not the brand action hue.',
         );
         expect(
-          legendColor(Icons.call_made_rounded),
+          legendColor(HopeV2Icons.transferOut),
           expectedOutflow,
           reason: 'Cash outflow has a distinct danger/negative-flow series.',
         );
         expect(
-          legendColor(Icons.lock_outline_rounded),
+          legendColor(HopeV2Icons.secure),
           expectedReserved,
           reason: 'Reserved cash uses the amber pending family.',
         );

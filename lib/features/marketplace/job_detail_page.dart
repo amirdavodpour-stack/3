@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -781,8 +780,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 ),
                               )
                           : action,
-                  icon: HugeIcon(
-                    icon: canViewFinance
+                  icon: HopeIcon( canViewFinance
                         ? HopeV2Icons.wallet
                         : isJob
                             ? HopeV2Icons.userAdd
@@ -840,6 +838,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           ? 148
                           : 214,
                   compactHero: denseViewport,
+                  expandForAccessibilityText: true,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -959,7 +958,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const HugeIcon(icon: HopeV2Icons.secure, size: 20),
+                          const HopeIcon( HopeV2Icons.secure, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -983,7 +982,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       alignment: AlignmentDirectional.centerStart,
                       child: OutlinedButton.icon(
                         onPressed: () => _openEmployerCandidateMatches(context, j),
-                        icon: const HugeIcon(icon: HopeV2Icons.match, size: 18),
+                        icon: const HopeIcon( HopeV2Icons.match, size: 18),
                         label: Text(
                           _t(
                             'پذیرندگان بر اساس انطباق',
@@ -1081,7 +1080,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                       onPressed: _candidateBusyId == null
                                           ? () => _compareCandidates(list)
                                           : null,
-                                      icon: const HugeIcon(icon: HopeV2Icons.insights, size: 18),
+                                      icon: const HopeIcon( HopeV2Icons.insights, size: 18),
                                       label: Text(_t('مقایسه', 'Compare')),
                                     ),
                                 ],
@@ -1151,8 +1150,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.userAdd,
+                                                    : const HopeIcon( HopeV2Icons.userAdd,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1178,8 +1176,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.payments,
+                                                    : const HopeIcon( HopeV2Icons.payments,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1205,8 +1202,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.completed,
+                                                    : const HopeIcon( HopeV2Icons.completed,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1230,10 +1226,51 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        onPressed: _reportJob,
-                        icon: const HugeIcon(icon: HopeV2Icons.notifications, size: 18),
-                        label: Text(_t('گزارش فرصت', 'Report opportunity')),
+                      child: Semantics(
+                        key: const ValueKey('opportunity-report-semantic-target'),
+                        container: true,
+                        // Keep the 48dp parent bounds as its own semantics node;
+                        // merging descendant semantics can shrink the exported
+                        // TalkBack rect to the inner label's text bounds.
+                        explicitChildNodes: true,
+                        label: _t('گزارش فرصت', 'Report opportunity'),
+                        button: true,
+                        onTap: loading ? null : _reportJob,
+                        child: GestureDetector(
+                          key: const ValueKey('opportunity-report-action'),
+                          behavior: HitTestBehavior.opaque,
+                          // The parent Semantics container owns the sole
+                          // accessibility action; this recognizer is pointer-only.
+                          excludeFromSemantics: true,
+                          onTap: loading ? null : _reportJob,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: HopeV2Touch.minimum,
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ExcludeSemantics(
+                                child: TextButton.icon(
+                                  // Keep the visual treatment, but let the
+                                  // independent 48dp parent own accessibility.
+                                  onPressed: null,
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size(0, HopeV2Touch.minimum),
+                                    tapTargetSize: MaterialTapTargetSize.padded,
+                                    disabledForegroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  icon: const HopeIcon(
+                                    HopeV2Icons.notifications,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    _t('گزارش فرصت', 'Report opportunity'),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   if (canViewFinance)
@@ -1245,7 +1282,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const HugeIcon(icon: HopeV2Icons.wallet, size: 20),
+                              const HopeIcon( HopeV2Icons.wallet, size: 20),
                               const SizedBox(width: 9),
                               Expanded(
                                 child: Text(
@@ -1310,7 +1347,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          const HugeIcon(icon: HopeV2Icons.message, size: 21),
+                          const HopeIcon( HopeV2Icons.message, size: 21),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(

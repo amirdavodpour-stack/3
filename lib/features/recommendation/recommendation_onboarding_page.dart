@@ -47,6 +47,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
         _complete = response.complete;
         _loading = false;
       });
+      if (response.complete) await _save();
     } catch (error) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -60,6 +61,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
             context,
             message,
             tone: HopeFeedbackTone.error,
+            bottomClearance: 64,
           );
         }
       });
@@ -112,7 +114,14 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
       _jumpToEnd();
       if (response.complete) await _save();
     } catch (error) {
-      if (mounted) HopeFeedback.show(context, apiErrorMessage(error, fallback: 'پاسخ هوش مصنوعی دریافت نشد.'), tone: HopeFeedbackTone.error);
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(error, fallback: 'پاسخ هوش مصنوعی دریافت نشد.'),
+          tone: HopeFeedbackTone.error,
+          bottomClearance: 64,
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -125,7 +134,14 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
       await context.read<RecommendationProfileRepository>().save(_profile);
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) HopeFeedback.show(context, apiErrorMessage(error, fallback: 'پروفایل ذخیره نشد.'), tone: HopeFeedbackTone.error);
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(error, fallback: 'پروفایل ذخیره نشد.'),
+          tone: HopeFeedbackTone.error,
+          bottomClearance: 64,
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -187,7 +203,8 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       itemBuilder: (context, index) {
                         final item = _messages[index];
                         final user = item['role'] == 'user';
-                        return Align(
+                        final content = item['content'] ?? '';
+                        final bubble = Align(
                           alignment: user
                               ? AlignmentDirectional.centerEnd
                               : AlignmentDirectional.centerStart,
@@ -201,11 +218,21 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                                   horizontal: 14,
                                   vertical: 11,
                                 ),
-                                child: Text(item['content'] ?? ''),
+                                child: Text(content),
                               ),
                             ),
                           ),
                         );
+                        if (!user && index == _messages.length - 1) {
+                          return Semantics(
+                            container: true,
+                            excludeSemantics: true,
+                            liveRegion: true,
+                            label: content,
+                            child: bubble,
+                          );
+                        }
+                        return bubble;
                       },
                     ),
                   ),
@@ -238,14 +265,19 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       ),
                       const SizedBox(width: HopeV2Spacing.sm),
                       PremiumIconButton(
-                        icon: HopeV2Icons.arrowRight,
-                        tooltip: isEn ? 'Send' : 'ارسال',
-                        onPressed: (_loading ||
-                                _sending ||
-                                _saving ||
-                                _complete)
+                        icon: _complete
+                            ? HopeV2Icons.retry
+                            : HopeV2Icons.arrowRight,
+                        tooltip: _complete
+                            ? (isEn
+                                ? 'Retry saving'
+                                : 'تلاش دوباره برای ذخیره')
+                            : (isEn ? 'Send' : 'ارسال'),
+                        onPressed: (_loading || _sending || _saving)
                             ? null
-                            : _send,
+                            : _complete
+                                ? _save
+                                : _send,
                       ),
                     ],
                   ),

@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - feat/google-sign-in-2026-09-20
+      - feat/ui-v2-wave-1-execution-2026-10-07
 
 concurrency:
   # Isolate verification by exact commit so a wedged older runner cannot starve the current head.
@@ -20,7 +21,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.action == 'synchronize' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) }}
     name: Wave 1 Flutter + backend + visual guardrails
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -52,6 +53,33 @@ jobs:
         run: bash tools/verify-pubspec-lock-fresh.sh
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
+      - name: Setup Gradle build cache
+        uses: gradle/actions/setup-gradle@0f4528296b4bc09e8ae0fc7be30185a4ab435545 # v6.0.0
+
+      - name: Cache Android compile SDK components
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            /usr/local/lib/android/sdk/platforms/android-36
+            /usr/local/lib/android/sdk/build-tools/36.0.0
+            /usr/local/lib/android/sdk/ndk/28.2.13676358
+          key: hope-android-compile-sdk-api36-ndk28.2-${{ runner.os }}-v1
+      - name: Prepare Android compile SDK components
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+      - name: Compile Android debug APK (Kotlin/Gradle)
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          timeout --foreground --signal=TERM --kill-after=30s 480s flutter build apk --debug --no-pub
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+          echo "PASS: Android debug APK compiled, including MainActivity Kotlin source."
       - name: Contrast guard
         run: python3 tool/contrast_check.py
       - name: Design/runtime source guard
@@ -60,6 +88,10 @@ jobs:
         run: bash test/runtime/premium_visual_wave_source_test.sh
       - name: Runtime driver contract
         run: bash tools/tests/hope-runtime-driver-contract.sh
+      - name: Android Emulator package retry contract
+        run: bash test/runtime/android_emulator_install_retry_test.sh
+      - name: Test Android runtime golden baseline contract
+        run: bash test/runtime/android_runtime_golden_baseline_test.sh
       - name: Android runtime screenshot and TalkBack contract
         run: bash test/runtime/android_screenshot_transport_test.sh
       - name: TalkBack exact-bound-service regression
@@ -74,4 +106,52 @@ jobs:
       - name: HOPE Superwave — one consolidated Flutter regression gate
         if: ${{ !contains(github.event.pull_request.title, '[flutter-preverified]') }}
         timeout-minutes: 8
-        run: timeout --foreground --signal=TERM --kill-after=30s 420s flutter test --no-pub test/core/ui/opportunity_card_test.dart test/core/ui/premium_visual_wave_15_test.dart test/core/ui/hope_signature_components_color_test.dart test/core/ui/hope_display_formatters_test.dart test/core/finance/toman_formatter_test.dart test/features/wallet/wave22_compact_wallet_test.dart test/features/jobs/saved_searches_page_test.dart test/features/transactions/transaction_page_test.dart test/features/marketplace/employer_candidate_matches_page_test.dart test/features/jobs/job_satisfaction_page_test.dart test/core/ui/premium_navigation_test.dart test/core/ui/premium_hero_editorial_density_test.dart test/features/about/about_page_test.dart test/features/privacy/privacy_center_editorial_density_test.dart test/features/transactions/transactions_page_test.dart test/features/marketplace/jobs_page_test.dart test/features/marketplace/create_job_page_test.dart test/features/marketplace/job_detail_page_test.dart test/features/admin/admin_page_test.dart test/features/admin/admin_operations_page_test.dart test/features/admin/admin_disputes_page_test.dart test/features/auth/auth_pages_test.dart test/features/applications/my_applications_page_test.dart test/features/chat/chat_page_test.dart test/features/financial/financial_insights_page_test.dart test/features/home/premium_home_feed_test.dart test/features/home/opportunity_agent_panel_test.dart test/features/profile/wave30_profile_language_scale_test.dart test/features/profile/wave24_compact_dock_test.dart test/features/profile/profile_page_test.dart test/core/ui/premium_payment_summary_test.dart test/features/notifications/notifications_page_test.dart test/features/notifications/notification_devices_page_test.dart test/features/offers/offers_page_test.dart test/core/theme/hope_v2_design_test.dart test/core/ui/wave31_display_consistency_test.dart test/core/config/backend_capabilities_repository_test.dart test/features/wallet/backend_capability_wallet_actions_test.dart && timeout --foreground --signal=TERM --kill-after=30s 120s flutter test --no-pub --plain-name "pending withdrawal summary agrees with the reserved payout row" test/features/wallet/wallet_page_test.dart && timeout --foreground --signal=TERM --kill-after=30s 120s flutter test --no-pub --plain-name "wallet withdraw action label uses a readable semantic foreground" test/features/wallet/wallet_page_test.dart && timeout --foreground --signal=TERM --kill-after=30s 120s flutter test --no-pub --plain-name "wallet initial error state keeps recovery near the first fold" test/features/wallet/wallet_page_test.dart && timeout --foreground --signal=TERM --kill-after=30s 120s flutter test --no-pub --plain-name "wallet uses a compact finance header on narrow surfaces" test/features/wallet/wallet_page_test.dart
+        # One Flutter invocation lets ordinary failing test cases finish and reports failures together.
+        # The full Wallet page file replaces seven chained invocations that a prior failure could skip.
+        run: |
+          timeout --foreground --signal=TERM --kill-after=30s 420s flutter test --no-pub \
+            test/core/ui/opportunity_card_test.dart \
+            test/core/ui/premium_visual_wave_15_test.dart \
+            test/core/ui/hope_signature_components_color_test.dart \
+            test/core/ui/hope_display_formatters_test.dart \
+            test/core/finance/toman_formatter_test.dart \
+            test/features/wallet/wave22_compact_wallet_test.dart \
+            test/features/jobs/saved_searches_page_test.dart \
+            test/features/transactions/transaction_page_test.dart \
+            test/features/marketplace/employer_candidate_matches_page_test.dart \
+            test/features/jobs/job_satisfaction_page_test.dart \
+            test/core/ui/premium_navigation_test.dart \
+            test/core/ui/premium_hero_editorial_density_test.dart \
+            test/features/about/about_page_test.dart \
+            test/features/privacy/privacy_center_editorial_density_test.dart \
+            test/features/transactions/transactions_page_test.dart \
+            test/features/marketplace/jobs_page_test.dart \
+            test/features/marketplace/create_job_page_test.dart \
+            test/features/marketplace/job_detail_page_test.dart \
+            test/features/admin/admin_page_test.dart \
+            test/features/admin/admin_operations_page_test.dart \
+            test/features/admin/admin_disputes_page_test.dart \
+            test/features/auth/auth_pages_test.dart \
+            test/features/applications/my_applications_page_test.dart \
+            test/features/chat/chat_page_test.dart \
+            test/core/chat/chat_voice_bridge_test.dart \
+            test/core/chat/chat_repository_test.dart \
+            test/features/financial/financial_insights_page_test.dart \
+            test/features/home/premium_home_feed_test.dart \
+            test/features/home/opportunity_agent_panel_test.dart \
+            test/features/recommendation/recommendation_onboarding_page_test.dart \
+            test/features/profile/wave30_profile_language_scale_test.dart \
+            test/features/profile/wave24_compact_dock_test.dart \
+            test/features/profile/profile_page_test.dart \
+            test/core/ui/premium_payment_summary_test.dart \
+            test/features/notifications/notifications_page_test.dart \
+            test/features/notifications/notification_devices_page_test.dart \
+            test/features/offers/offers_page_test.dart \
+            test/core/theme/hope_v2_design_test.dart \
+            test/core/ui/hope_async_state_test.dart \
+            test/core/ui/hope_feedback_test.dart \
+            test/core/quality/hope_accessibility_gate_test.dart \
+            test/core/ui/wave31_display_consistency_test.dart \
+            test/core/config/backend_capabilities_repository_test.dart \
+            test/features/wallet/backend_capability_wallet_actions_test.dart \
+            test/features/wallet/wallet_page_test.dart

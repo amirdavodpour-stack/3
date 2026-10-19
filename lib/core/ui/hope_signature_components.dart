@@ -231,9 +231,9 @@ class HopeWalletFlowSignature extends StatelessWidget {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
             !enlargedText;
-    final currencyLabel = wallet.currency == 'TOMAN'
-        ? _t(context, 'تومان داخلی', 'Internal Toman')
-        : wallet.currency;
+    // Every wallet balance in this product is denominated in internal Toman.
+    // Never surface external/backend currency codes such as IRR in the UI.
+    final currencyLabel = _t(context, 'تومان داخلی', 'Internal Toman');
     const compactFa = ['دفترکل', 'رزرو', 'آزادسازی'];
     const compactEn = ['Ledger', 'Hold', 'Release'];
     final steps = <({Object icon, String fa, String en, Color color})>[

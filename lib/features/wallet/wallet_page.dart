@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -268,6 +267,16 @@ class _WalletPageState extends State<WalletPage> {
 
   String _entryTitle(HopeWalletTransaction item) =>
       _referenceTypeLabel(item.referenceType);
+
+  String _transactionSemanticsLabel(HopeWalletTransaction item) {
+    final date = _date(item.createdAt);
+    return [
+      _entryTitle(item),
+      _directionLabel(item.direction),
+      _signedMoney(item),
+      if (date.isNotEmpty) date,
+    ].join('، ');
+  }
 
   Color _directionColor(BuildContext context, bool credit) => credit
       ? HopeV2SemanticColors.incomingAmount(context)
@@ -566,7 +575,7 @@ class _WalletPageState extends State<WalletPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const HugeIcon(icon: HopeV2Icons.pending, size: 20),
+                      const HopeIcon( HopeV2Icons.pending, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(_t(
@@ -667,6 +676,261 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
+  Widget _walletInitialLoadingSkeleton(
+    BuildContext context, {
+    required bool compact,
+    required bool enlargedText,
+  }) {
+    final width = MediaQuery.sizeOf(context).width;
+    final denseViewport = width < 800;
+    final tightViewport = compact || denseViewport;
+
+    Widget metricTile(double cellWidth, int index) => Container(
+          constraints: BoxConstraints(minHeight: compact ? 36 : 40),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 6 : 7,
+            vertical: compact ? 4 : 5,
+          ),
+          decoration: BoxDecoration(
+            color: HopeV2Colors.walletBalanceMetricFill,
+            borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+            border: Border.all(color: HopeV2Colors.walletBalanceMetricBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(
+                height: 9,
+                width: cellWidth * (index.isEven ? .54 : .66),
+                radius: HopeV2Radii.sm,
+              ),
+              const SizedBox(height: 4),
+              SkeletonBox(
+                height: 13,
+                width: cellWidth * (index == 0 ? .72 : .58),
+                radius: HopeV2Radii.sm,
+              ),
+            ],
+          ),
+        );
+
+    Widget transactionRow(String keyName) => PremiumPanel(
+          key: ValueKey(keyName),
+          glass: false,
+          quiet: true,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 14,
+            vertical: compact ? 9 : 12,
+          ),
+          child: Row(
+            children: [
+              SkeletonBox(
+                width: compact ? 34 : 38,
+                height: compact ? 34 : 38,
+                radius: HopeV2Radii.md,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SkeletonBox(height: 12, width: 148),
+                    const SizedBox(height: 6),
+                    const SkeletonBox(height: 10, width: 92),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const SkeletonBox(height: 14, width: 82),
+            ],
+          ),
+        );
+
+    Widget actionTile() => Padding(
+          padding: const EdgeInsets.all(4),
+          child: SkeletonBox(
+            height: compact ? 36 : 40,
+            radius: HopeV2Radii.md,
+          ),
+        );
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: _t('در حال بارگذاری کیف پول', 'Loading wallet'),
+      child: PremiumPageFrame(
+        page: HopePageId.wallet,
+        maxWidth: 1020,
+        padding: EdgeInsets.fromLTRB(
+          tightViewport ? 12 : 16,
+          tightViewport ? 6 : 14,
+          tightViewport ? 12 : 16,
+          tightViewport ? 12 : 20,
+        ),
+        child: ListView(
+          padding: HopeV2Navigation.scrollEndPadding(context),
+          children: [
+            PremiumHeader(
+              key: const ValueKey('wallet-loading-header'),
+              dense: true,
+              page: HopePageId.wallet,
+              domain: HopeProductDomain.finance,
+              eyebrow: _t('کیف پول', 'WALLET'),
+              title: _t('کیف پول داخلی HOPE', 'HOPE internal wallet'),
+              subtitle: denseViewport
+                  ? null
+                  : _t('موجودی و تراکنش‌های تومانی', 'Toman balance and transactions'),
+            ),
+            SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
+            Column(
+              key: const ValueKey('wallet-loading-skeleton'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  key: const ValueKey('wallet-loading-balance-hero'),
+                  padding: EdgeInsets.fromLTRB(
+                    14,
+                    compact ? 10 : 14,
+                    14,
+                    compact ? 10 : 14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(HopeV2Radii.hero),
+                    gradient: const LinearGradient(
+                      begin: AlignmentDirectional.topStart,
+                      end: AlignmentDirectional.bottomEnd,
+                      colors: [
+                        HopeV2Colors.walletBalanceHeroStart,
+                        HopeV2Colors.walletBalanceHeroMiddle,
+                        HopeV2Colors.walletBalanceHeroEnd,
+                      ],
+                      stops: [0, .58, 1],
+                    ),
+                    border: Border.all(
+                      color: HopeV2Colors.primary.withValues(alpha: .24),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const SkeletonBox(
+                            width: 30,
+                            height: 30,
+                            radius: HopeV2Radii.md,
+                          ),
+                          const Spacer(),
+                          const SkeletonBox(
+                            width: 74,
+                            height: 22,
+                            radius: HopeV2Radii.sm,
+                          ),
+                          const SizedBox(width: 6),
+                          const SkeletonBox(
+                            width: 62,
+                            height: 22,
+                            radius: HopeV2Radii.sm,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: denseViewport ? 6 : 10),
+                      const SkeletonBox(
+                        width: 126,
+                        height: 12,
+                        radius: HopeV2Radii.sm,
+                      ),
+                      const SizedBox(height: 5),
+                      const SkeletonBox(
+                        width: 204,
+                        height: 25,
+                        radius: HopeV2Radii.sm,
+                      ),
+                      const SizedBox(height: 10),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const gap = 4.0;
+                          final singleColumn =
+                              enlargedText || constraints.maxWidth < 280;
+                          final cellWidth = singleColumn
+                              ? constraints.maxWidth
+                              : (constraints.maxWidth - gap) / 2;
+                          return Wrap(
+                            spacing: gap,
+                            runSpacing: gap,
+                            children: [
+                              for (var i = 0; i < 4; i++)
+                                SizedBox(
+                                  width: cellWidth,
+                                  child: metricTile(cellWidth, i),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: compact ? 4 : 12),
+                PremiumPanel(
+                  key: const ValueKey('wallet-loading-actions'),
+                  quiet: true,
+                  padding: EdgeInsets.zero,
+                  child: enlargedText && denseViewport
+                      ? Column(
+                          children: [
+                            for (var i = 0; i < 3; i++) ...[
+                              if (i > 0) const SizedBox(height: 6),
+                              actionTile(),
+                            ],
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            for (var i = 0; i < 3; i++) ...[
+                              if (i > 0) const SizedBox(width: 6),
+                              Expanded(child: actionTile()),
+                            ],
+                          ],
+                        ),
+                ),
+                SizedBox(height: compact ? 8 : 12),
+                PremiumSectionHeader(
+                  key: const ValueKey('wallet-loading-history-title'),
+                  domain: HopeProductDomain.finance,
+                  title: _t('تاریخچه کیف پول', 'Wallet history'),
+                  subtitle: compact
+                      ? null
+                      : _t(
+                          'ثبت‌های مالی به ترتیب زمانی، با بارگذاری مرحله‌ای.',
+                          'Financial entries in chronological order, loaded in pages.',
+                        ),
+                ),
+                SizedBox(height: compact ? 8 : 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final filterWidth in const [42.0, 58.0, 58.0, 52.0])
+                      SkeletonBox(
+                        width: filterWidth,
+                        height: 28,
+                        radius: HopeV2Radii.pill,
+                      ),
+                  ],
+                ),
+                SizedBox(height: compact ? 8 : 12),
+                transactionRow('wallet-loading-history-row-0'),
+                const SizedBox(height: 8),
+                transactionRow('wallet-loading-history-row-1'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -688,13 +952,10 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     if (_loading && _wallet == null) {
-      return HopeAsyncState(
-        kind: HopeStateKind.loading,
-        title: _t('در حال بارگذاری', 'Loading wallet'),
-        message: _t(
-          'کیف پول و فعالیت‌های مالی در حال دریافت است.',
-          'Wallet and financial activity are loading.',
-        ),
+      return _walletInitialLoadingSkeleton(
+        context,
+        compact: compact,
+        enlargedText: enlargedText,
       );
     }
 
@@ -879,7 +1140,7 @@ class _WalletPageState extends State<WalletPage> {
           key: ValueKey(item.key),
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 6 : 7,
-            vertical: compact ? 2 : 3,
+            vertical: compact ? 1 : 3,
           ),
           decoration: BoxDecoration(
             color: item.emphasized
@@ -929,7 +1190,7 @@ class _WalletPageState extends State<WalletPage> {
 
       Widget metricsBlock() => LayoutBuilder(
             builder: (context, constraints) {
-              const gap = 4.0;
+              final gap = compact ? 2.0 : 4.0;
               final longMetricCount = items.where((item) => item.value.length > 18).length;
                 final singleColumnMetrics = enlargedText ||
                     constraints.maxWidth < 280 || longMetricCount >= 3;
@@ -956,7 +1217,7 @@ class _WalletPageState extends State<WalletPage> {
           14,
           compact ? 2 : 8,
           14,
-          compact ? 2 : 8,
+          8,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
@@ -1066,6 +1327,8 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     Widget actionsPanel() {
+      final stackActions = enlargedText && denseViewport;
+
       Widget action({
         required Object icon,
         required String fa,
@@ -1078,22 +1341,24 @@ class _WalletPageState extends State<WalletPage> {
             : HopeV2Colors.secondaryDark;
         final enabled = onPressed != null;
 
-        return Expanded(
-          child: Semantics(
-            button: true,
-            enabled: enabled,
-            label: _t(fa, en),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onPressed,
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: HopeV2Touch.minimum,
+        return Semantics(
+          button: true,
+          enabled: enabled,
+          label: _t(fa, en),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(HopeV2Radii.md),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: HopeV2Touch.minimum,
+                ),
+                child: Ink(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
                   ),
-                  child: Ink(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   decoration: BoxDecoration(
                     color: primary
                         ? color.withValues(alpha: .15)
@@ -1138,52 +1403,75 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ),
+        );
+      }
+
+      final actionWidgets = <Widget>[];
+      if (_canDeposit) {
+        actionWidgets.add(
+          action(
+            icon: HopeV2Icons.transferIn,
+            fa: 'واریز',
+            en: 'Deposit',
+            onPressed: canAct ? _openTopUp : null,
+          ),
+        );
+      }
+      if (_canWithdraw) {
+        actionWidgets.add(
+          action(
+            icon: HopeV2Icons.transferOut,
+            fa: 'برداشت',
+            en: 'Withdraw',
+            onPressed: canAct ? _openWithdraw : null,
+            primary: true,
+          ),
+        );
+      }
+      actionWidgets.add(
+        action(
+          icon: HopeV2Icons.completed,
+          fa: 'تاریخچه',
+          en: 'History',
+          onPressed: () {
+            final target = _historyKey.currentContext;
+            if (target != null) {
+              Scrollable.ensureVisible(
+                target,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+              );
+            }
+          },
         ),
       );
-      }
 
       return PremiumPanel(
         key: const ValueKey('wallet-actions-panel'),
         quiet: true,
         padding: EdgeInsets.zero,
-        child: Row(
-          children: [
-            if (_canDeposit) ...[
-              action(
-                icon: HopeV2Icons.transferIn,
-                fa: 'واریز',
-                en: 'Deposit',
-                onPressed: canAct ? _openTopUp : null,
+        child: stackActions
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < actionWidgets.length; index++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == actionWidgets.length - 1 ? 0 : 6,
+                      ),
+                      child: actionWidgets[index],
+                    ),
+                ],
+              )
+            : Row(
+                children: [
+                  for (var index = 0; index < actionWidgets.length; index++) ...[
+                    Expanded(child: actionWidgets[index]),
+                    if (index < actionWidgets.length - 1)
+                      const SizedBox(width: 6),
+                  ],
+                ],
               ),
-              const SizedBox(width: 6),
-            ],
-            if (_canWithdraw) ...[
-              action(
-                icon: HopeV2Icons.transferOut,
-                fa: 'برداشت',
-                en: 'Withdraw',
-                onPressed: canAct ? _openWithdraw : null,
-                primary: true,
-              ),
-              const SizedBox(width: 6),
-            ],
-            action(
-              icon: HopeV2Icons.completed,
-              fa: 'تاریخچه',
-              en: 'History',
-              onPressed: () {
-                final target = _historyKey.currentContext;
-                if (target != null) {
-                  Scrollable.ensureVisible(
-                    target,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                  );
-                }
-              },
-            ),
-          ],
-        ),
       );
     }
 
@@ -1323,7 +1611,7 @@ class _WalletPageState extends State<WalletPage> {
                       SizedBox(height: compact ? 4 : 12),
                       actions,
                       SizedBox(height: compact ? 4 : 12),
-                      if (!compact)
+                      if (!compact || enlargedText)
                         HopeWalletFlowSignature(wallet: wallet),
                     ],
                   );
@@ -1347,7 +1635,11 @@ class _WalletPageState extends State<WalletPage> {
             ),
             SizedBox(
               key: const ValueKey('wallet-history-transition-gap'),
-              height: tightViewport ? 4 : 16,
+              // Short phones spend this gap on first-fold financial content;
+              // taller compact screens retain a small editorial separation.
+              height: compact
+                  ? (MediaQuery.sizeOf(context).height <= 700 ? 0 : 4)
+                  : (tightViewport ? 0 : 16),
             ),
             Container(
               key: _historyKey,
@@ -1382,7 +1674,9 @@ class _WalletPageState extends State<WalletPage> {
                   ),
               ],
             ),
-            SizedBox(height: compact ? 8 : 12),
+            SizedBox(
+              height: tightViewport ? 4 : (compact ? 8 : 12),
+            ),
             if (_visibleTransactions().isEmpty)
               HopeAsyncState(
                 kind: HopeStateKind.empty,
@@ -1401,8 +1695,7 @@ class _WalletPageState extends State<WalletPage> {
                     button: true,
                     explicitChildNodes: false,
                     excludeSemantics: true,
-                    label:
-                        '${_entryTitle(item)}، ${_directionLabel(item.direction)}، ${_signedMoney(item)}',
+                    label: _transactionSemanticsLabel(item),
                     onTap: () => _showTransaction(item),
                     child: ExcludeSemantics(
                       child: PremiumPanel(
@@ -1426,25 +1719,48 @@ class _WalletPageState extends State<WalletPage> {
                             label: _entryTitle(item),
                             child: Text(
                               _entryTitle(item),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: enlargedText ? null : 1,
+                              softWrap: true,
+                              overflow: enlargedText
+                                  ? TextOverflow.visible
+                                  : TextOverflow.ellipsis,
                               style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                           ),
                           subtitle: Text(
-                            '${_date(item.createdAt)}\n${_referenceTypeLabel(item.referenceType)}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            _date(item.createdAt),
+                            maxLines: enlargedText ? null : 1,
+                            softWrap: true,
+                            overflow: enlargedText
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                           ),
-                          isThreeLine: true,
-                          trailing: Text(
-                            '${_signedMoney(item)}',
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: _directionColor(context, item.isCredit),
-                            ),
-                          ),
+                          isThreeLine: enlargedText,
+                          trailing: enlargedText
+                              ? Text(
+                                  _signedMoney(item),
+                                  softWrap: true,
+                                  overflow: TextOverflow.visible,
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: _directionColor(context, item.isCredit),
+                                  ),
+                                )
+                              : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    _signedMoney(item),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: _directionColor(context, item.isCredit),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -1468,7 +1784,7 @@ class _WalletPageState extends State<WalletPage> {
                     : _t('تراکنش‌های بیشتر', 'Load more transactions')),
               ),
             ],
-            if (compact) ...[
+            if (compact && !enlargedText) ...[
               const SizedBox(height: 8),
               HopeWalletFlowSignature(wallet: wallet),
             ],
@@ -1611,6 +1927,7 @@ class _TransferDialogState extends State<_TransferDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
+              key: const ValueKey('wallet-transfer-destination'),
               controller: destination,
               autofocus: true,
               textInputAction: TextInputAction.next,
@@ -1618,6 +1935,7 @@ class _TransferDialogState extends State<_TransferDialog> {
             ),
             const SizedBox(height: 12),
             TextField(
+              key: const ValueKey('wallet-transfer-amount'),
               controller: amount,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],

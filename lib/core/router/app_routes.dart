@@ -76,6 +76,8 @@ abstract final class HopeRoutes {
   static Route<bool?> recommendationOnboarding() => _page(const RecommendationOnboardingPage());
   static Route<void> financialInsights() => _page(const FinancialInsightsPage());
   static Route<void> jobSatisfaction(String jobId) => _page(JobSatisfactionPage(jobId: jobId));
+  static Route<void> chats() => _page(const ChatPage());
+  static Route<void> chatConversation(String conversationId) => _page(ChatPage(conversationId: conversationId));
   static Route<void> jobChat(String jobId) => _page(ChatPage(jobId: jobId));
   static Route<void> adminChat() => _adminPage(const ChatPage(adminRoom: true));
   static Route<WalletPage> wallet({required WalletRepository repository}) =>

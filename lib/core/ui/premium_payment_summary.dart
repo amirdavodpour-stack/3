@@ -127,6 +127,16 @@ class PremiumPaymentSummary extends StatelessWidget {
                 spacing: HopeV2Spacing.md,
                 runSpacing: HopeV2Spacing.sm,
                 children: [
+                  if (fees.employerFee != null)
+                    _Metric(
+                      label: _label(context, 'کارمزد کارفرما', 'Employer fee'),
+                      value: _money(context, fees.employerFee),
+                    ),
+                  if (fees.workerFee != null)
+                    _Metric(
+                      label: _label(context, 'کارمزد کارجو', 'Worker fee'),
+                      value: _money(context, fees.workerFee),
+                    ),
                   if (fees.employerCharge != null)
                     _Metric(
                       label: _label(context, 'مبلغ نهایی', 'Total charge'),

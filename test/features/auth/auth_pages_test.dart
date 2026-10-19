@@ -191,8 +191,13 @@ void main() {
   );
 
   testWidgets(
-    'register shows configured Google sign-in when backend capability is enabled',
+    'register shows configured Google sign-in visibly within a compact viewport',
     (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(await _screen(
         const RegisterPage(),
         googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
@@ -202,8 +207,22 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
+      expect(googleButton, findsOneWidget);
       expect(find.text('یا'), findsOneWidget);
+      final bounds = tester.getRect(googleButton);
+      expect(bounds.left, greaterThanOrEqualTo(0));
+      expect(bounds.right, lessThanOrEqualTo(360));
+      expect(
+        bounds.top,
+        greaterThanOrEqualTo(0),
+        reason: 'The configured Google CTA must not be hidden above the captured frame.',
+      );
+      expect(
+        bounds.bottom,
+        lessThanOrEqualTo(640),
+        reason: 'The configured Google CTA must be visible in the 360x640dp Register viewport.',
+      );
       expect(tester.takeException(), isNull);
     },
   );

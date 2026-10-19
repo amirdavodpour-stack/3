@@ -365,23 +365,249 @@ extension on _TransactionPageState {
     );
   }
 
-  Widget _buildPage(BuildContext context) {
-    if (loading && payment == null) {
-      return Scaffold(
-        body: SafeArea(
-          child: PremiumPageFrame(
-            maxWidth: 980,
-            child: HopeAsyncState(
-              kind: HopeStateKind.loading,
-              title: _t('در حال بارگذاری وضعیت مالی', 'Loading financial status'),
-              message: _t(
-                'آخرین وضعیت کار و پرداخت در حال دریافت است.',
-                'The latest job and payment state is loading.',
-              ),
-            ),
+  Widget _transactionDetailLoadingSkeleton(BuildContext context) {
+  final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+  final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+  final backIcon = Localizations.localeOf(context).languageCode == 'en'
+      ? HopeV2Icons.arrowLeft
+      : HopeV2Icons.arrowRight;
+
+  Widget line({double height = 12, required double width}) => SkeletonBox(
+        height: height,
+        width: width,
+        radius: HopeV2Radii.sm,
+      );
+
+  Widget skeletonPill(double width) => Container(
+        height: 24,
+        width: width,
+        decoration: BoxDecoration(
+          color: HopeV2Surfaces.panelSoft(context),
+          borderRadius: BorderRadius.circular(HopeV2Radii.sm),
+          border: Border.all(
+            color: HopeV2Surfaces.border(context).withValues(alpha: .25),
           ),
         ),
       );
+
+  Widget lifecycleStep() => Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SkeletonBox(
+                  width: 28,
+                  height: 28,
+                  radius: HopeV2Radii.md,
+                ),
+                const SizedBox(width: 6),
+                Expanded(child: line(height: 10, width: 64)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            line(height: 9, width: 52),
+          ],
+        ),
+      );
+
+  return Semantics(
+    key: const ValueKey('transaction-detail-loading-skeleton'),
+    container: true,
+    liveRegion: true,
+    label: _t(
+      'در حال بارگذاری وضعیت مالی',
+      'Loading financial status',
+    ),
+    child: Scaffold(
+      body: SafeArea(
+        child: PremiumPageFrame(
+          maxWidth: 980,
+          padding: EdgeInsets.fromLTRB(
+            compact ? 14 : 20,
+            compact ? 4 : 16,
+            compact ? 14 : 20,
+            compact ? 60 : 72,
+          ),
+          child: Column(
+            children: [
+              PremiumHeader(
+                page: HopePageId.transactionDetail,
+                domain: HopeProductDomain.finance,
+                eyebrow: _t('مالی', 'FINANCE'),
+                title: HopeCopy.of(context).copy_transaction_7e0ea3b,
+                subtitle: compact
+                    ? null
+                    : _t(
+                        'وضعیت پرداخت، مسیر انجام کار و اقدام بعدی را در یک نما ببینید.',
+                        'Review payment state, the work lifecycle, and the next allowed action in one view.',
+                      ),
+                dense: true,
+                trailing: PremiumIconButton(
+                  icon: backIcon,
+                  tooltip: _t('بازگشت', 'Back'),
+                  onPressed: () => Navigator.maybePop(context),
+                ),
+              ),
+              const SizedBox(height: HopeV2Spacing.sm),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: HopeV2Navigation.scrollEndPadding(context),
+                    children: [
+                      ExcludeSemantics(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            PremiumPanel(
+                              key: const ValueKey('transaction-loading-identity'),
+                              quiet: true,
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (enlargedText || compact) ...[
+                                    line(width: compact ? 190 : 280, height: 18),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: [
+                                        skeletonPill(92),
+                                        skeletonPill(36),
+                                      ],
+                                    ),
+                                  ] else
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              line(width: 205, height: 16),
+                                              const SizedBox(height: 7),
+                                              line(width: 142),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        skeletonPill(92),
+                                        const SizedBox(width: 8),
+                                        skeletonPill(36),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            PremiumPanel(
+                              key: const ValueKey('transaction-loading-financial-summary'),
+                              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  line(width: 126, height: 15),
+                                  const SizedBox(height: 6),
+                                  line(width: 174, height: 10),
+                                  const SizedBox(height: 14),
+                                  line(width: compact ? 74 : 86, height: 10),
+                                  const SizedBox(height: 7),
+                                  line(width: compact ? 216 : 286, height: 31),
+                                  const SizedBox(height: 12),
+                                  skeletonPill(126),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            PremiumPanel(
+                              key: const ValueKey('transaction-loading-lifecycle'),
+                              quiet: true,
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  line(width: 132, height: 15),
+                                  const SizedBox(height: 13),
+                                  if (enlargedText || compact) ...[
+                                    for (var index = 0; index < 3; index++) ...[
+                                      Row(
+                                        children: [
+                                          SkeletonBox(
+                                            width: 28,
+                                            height: 28,
+                                            radius: HopeV2Radii.md,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                line(width: 112, height: 11),
+                                                const SizedBox(height: 6),
+                                                line(width: 76, height: 9),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (index != 2) const SizedBox(height: 12),
+                                    ],
+                                  ] else
+                                    Row(
+                                      children: [
+                                        lifecycleStep(),
+                                        const SizedBox(width: 10),
+                                        lifecycleStep(),
+                                        const SizedBox(width: 10),
+                                        lifecycleStep(),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            PremiumPanel(
+                              key: const ValueKey('transaction-loading-details'),
+                              quiet: true,
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  line(width: 118, height: 15),
+                                  const SizedBox(height: 12),
+                                  for (var index = 0; index < 3; index++) ...[
+                                    Row(
+                                      children: [
+                                        Expanded(child: line(width: 104, height: 10)),
+                                        const SizedBox(width: 16),
+                                        line(width: compact ? 112 : 152, height: 12),
+                                      ],
+                                    ),
+                                    if (index != 2) const SizedBox(height: 10),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildPage(BuildContext context) {
+    if (loading && payment == null) {
+      return _transactionDetailLoadingSkeleton(context);
     }
     if (error != null && payment == null) {
       return Scaffold(
@@ -475,8 +701,11 @@ extension on _TransactionPageState {
                       Text(
                         job?.title ??
                             HopeCopy.of(context).copy_transaction_7e0ea3b,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText ? null : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       if (payment?.id == null) ...[
@@ -687,6 +916,10 @@ extension on _TransactionPageState {
                               context,
                               HopeCopy.of(context).copy_worker_fee_85a35aa,
                               payment!.fees!.workerFee),
+                          _moneyRow(
+                              context,
+                              _t('کارمزد پلتفرم', 'Platform fee'),
+                              payment!.fees!.platformFee),
                           const Divider(height: 16),
                           _moneyRow(
                               context,

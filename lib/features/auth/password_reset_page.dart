@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -66,8 +65,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HugeIcon(
-                          icon: Localizations.localeOf(context).languageCode == 'en'
+                        icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
                           size: 21,
@@ -100,7 +98,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
+                            prefixIcon: const Icon(HopeV2Icons.mail, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 14),

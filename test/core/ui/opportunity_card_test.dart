@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
@@ -98,6 +98,80 @@ void main() {
         hasLength(categories.length),
         reason: 'Each supported category needs a distinct fallback icon.',
       );
+    },
+  );
+
+  testWidgets(
+    'opportunity scan location metadata wraps fully at 1.5x text scale',
+    (tester) async {
+      const longCity =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'scan-long-city-large-text',
+        'title': 'Senior product designer for a multilingual platform',
+        'description': 'Long location metadata regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'MISSION',
+        'jobType': 'FIXED',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'recommendationScore': 0.94,
+        'city': longCity,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cityFinder = find.text(longCity);
+      expect(cityFinder, findsOneWidget);
+      final cityText = tester.widget<Text>(cityFinder);
+      expect(
+        cityText.maxLines,
+        isNull,
+        reason:
+            'Opportunity location metadata must not remain one-line ellipsized when text is enlarged.',
+      );
+      expect(cityText.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(cityFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -664,6 +738,17 @@ void main() {
     );
 
     expect(find.text('94% match'), findsOneWidget);
+    final matchTagFinder = find.ancestor(
+      of: find.text('94% match'),
+      matching: find.byType(PremiumTag),
+    );
+    expect(matchTagFinder, findsOneWidget);
+    final matchTag = tester.widget<PremiumTag>(matchTagFinder);
+    expect(
+      matchTag.color,
+      HopeV2SemanticColors.info(tester.element(find.text('94% match'))),
+      reason: 'Match is an informational signal, not a successful lifecycle state.',
+    );
   });
 
   testWidgets('featured job opportunity uses the warm-neutral focal accent',
@@ -846,9 +931,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final matchReasonFinder = find.byKey(
+          const ValueKey('opportunity-card-match-reason'),
+        );
+        expect(matchReasonFinder, findsOneWidget);
+        final matchReasonTag = tester.widget<PremiumTag>(matchReasonFinder);
         expect(
-          find.byKey(const ValueKey('opportunity-card-match-reason')),
-          findsOneWidget,
+          matchReasonTag.color,
+          HopeV2SemanticColors.info(tester.element(matchReasonFinder)),
+          reason: 'Match rationale uses the theme-aware informational color role.',
         );
         expect(
           find.text(locale.languageCode == 'fa' ? 'مهارت مرتبط' : 'Skill match'),
@@ -1455,6 +1546,85 @@ void main() {
   );
 
   testWidgets(
+    'standard, featured, featured-scan and expanded cards preserve full titles at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const title =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+      final job = HopeJob.fromMap({
+        'id': 'all-card-variants-long-title',
+        'title': title,
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Frankfurt am Main',
+      });
+      const variants = [
+        OpportunityCardVariant.standard,
+        OpportunityCardVariant.featured,
+        OpportunityCardVariant.featuredScan,
+        OpportunityCardVariant.expanded,
+      ];
+      final clippedVariants = <String>[];
+
+      for (final variant in variants) {
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: OpportunityCard(job: job, variant: variant),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleFinder = find.text(title);
+        if (titleFinder.evaluate().isEmpty) {
+          clippedVariants.add('${variant.name}: title missing');
+        } else if (tester
+            .renderObject<RenderParagraph>(titleFinder.first)
+            .didExceedMaxLines) {
+          clippedVariants.add(variant.name);
+        }
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '${variant.name} should reflow without layout overflow at 1.5x.',
+        );
+      }
+
+      expect(
+        clippedVariants,
+        isEmpty,
+        reason: 'Large-text titles must not be silently truncated in card variants: ${clippedVariants.join(', ')}',
+      );
+    },
+  );
+
+  testWidgets(
     'Wave 34 compact-grid card remains usable at 1.5x text scale with legible key metadata',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
@@ -1872,7 +2042,7 @@ void main() {
 
 
   testWidgets(
-    'featured scan tags scroll on one line without increasing card height',
+    'featured scan tags wrap within the compact metadata rail without changing row count by visibility',
     (tester) async {
       tester.view.physicalSize = const Size(360, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -1923,10 +2093,18 @@ void main() {
         const ValueKey('opportunity-featured-scan-tag-rail'),
       );
       expect(rail, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(rail).scrollDirection,
-        Axis.horizontal,
+      expect(tester.widget<Wrap>(rail), isA<Wrap>());
+      final tags = find.descendant(
+        of: rail,
+        matching: find.byType(PremiumTag),
       );
+      expect(tags, findsNWidgets(3));
+      final railRect = tester.getRect(rail);
+      for (var index = 0; index < tags.evaluate().length; index++) {
+        final tagRect = tester.getRect(tags.at(index));
+        expect(tagRect.left, greaterThanOrEqualTo(railRect.left));
+        expect(tagRect.right, lessThanOrEqualTo(railRect.right));
+      }
 
       await tester.pumpWidget(host('SPECIALIZED'));
       await tester.pumpAndSettle();
@@ -2130,8 +2308,8 @@ void main() {
             const Size(30, 30),
             reason: 'The decorative cue must stay compact; the card owns the tap target.',
           );
-          final arrow = tester.widget<HugeIcon>(
-            find.descendant(of: affordance, matching: find.byType(HugeIcon)),
+          final arrow = tester.widget<HopeIcon>(
+            find.descendant(of: affordance, matching: find.byType(HopeIcon)),
           );
           expect(
             arrow.icon,
@@ -2331,6 +2509,577 @@ void main() {
         border.top.color,
         HopeV2Colors.darkBorder,
         reason: 'withValues must not replace a deliberately low-opacity neutral border with a 55%-opaque white outline.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'expanded opportunity budget keeps the full range at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-budget-range-large-text',
+        'title': 'طراحی محصول',
+        'description': 'Expanded card large-budget regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'jobType': 'FIXED',
+        'budgetMin': '123456789012',
+        'budgetMax': '987654321098',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final amount = find.byKey(
+        const ValueKey('opportunity-card-expanded-budget'),
+      );
+      expect(amount, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(amount);
+      expect(
+        paragraph.maxLines,
+        isNull,
+        reason: 'Expanded financial ranges must wrap naturally at enlarged text scales.',
+      );
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The full Toman range must remain visible without a line cap.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'featured opportunity budget wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'featured-budget-range-large-text',
+        'title': 'طراحی محصول',
+        'description': 'Featured card large-budget regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'jobType': 'FIXED',
+        'budgetMin': '123456789012',
+        'budgetMax': '987654321098',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.featured,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final amount = find.byKey(
+        const ValueKey('opportunity-card-standard-budget'),
+      );
+      expect(amount, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(amount);
+      expect(
+        paragraph.maxLines,
+        isNull,
+        reason: 'Featured financial ranges must wrap naturally at enlarged text scales.',
+      );
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The complete featured Toman range must remain visible at 2x text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'standard opportunity CTA wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'standard-cta-large-text',
+        'title': 'طراحی محصول',
+        'description': 'CTA wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'MISSION',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1234567',
+        'budgetMax': '7654321',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.standard,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cta = find.byKey(const ValueKey('opportunity-card-cta'));
+      expect(cta, findsOneWidget);
+      final ctaText = find.descendant(of: cta, matching: find.byType(Text));
+      expect(ctaText, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(ctaText);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'The mission CTA must remain fully readable at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'standard opportunity company metadata wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const company =
+          'International Product Design and Engineering Consortium';
+      final job = HopeJob.fromMap({
+        'id': 'standard-company-large-text',
+        'title': 'Product designer',
+        'description': 'Company metadata wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'companyName': company,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.standard,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final companyFinder = find.text(company);
+      expect(companyFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(companyFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Company identity must remain readable instead of ellipsized at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'featured scan match score tag remains fully readable at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'featured-scan-rationale-large-text',
+        'title': 'Product designer',
+        'description': 'Recommendation rationale wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matchScore = find.text('94% match');
+      expect(matchScore, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(matchScore);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Large-text users must be able to read the complete match score tag.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'standard opportunity match score tag wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'standard-match-score-large-text',
+        'title': 'Product designer',
+        'description': 'Standard match-score tag wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.standard,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matchScore = find.text('94% match');
+      expect(matchScore, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(matchScore);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Standard scan cards must preserve the complete match-score tag at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'expanded opportunity match score tag wraps fully at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-match-score-large-text',
+        'title': 'Product designer',
+        'description': 'Expanded match-score tag wrapping regression.',
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scoreTag = find.byKey(
+        const ValueKey('opportunity-card-expanded-match-score'),
+      );
+      expect(scoreTag, findsOneWidget);
+      final matchScore = find.descendant(
+        of: scoreTag,
+        matching: find.byType(Text),
+      );
+      expect(matchScore, findsOneWidget);
+      expect(tester.widget<Text>(matchScore).data, '94% match');
+      final paragraph = tester.renderObject<RenderParagraph>(matchScore);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Expanded cards must keep the full match score visible at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'expanded opportunity description remains fully readable at 2x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const description =
+          'This opportunity needs a product designer to shape accessible financial workflows, define a multilingual editorial system, collaborate with engineering and research, document reusable components, review responsive layouts across compact and large screens, and deliver a complete implementation with clear rationale, acceptance criteria, and handoff notes for the product team.';
+
+      final job = HopeJob.fromMap({
+        'id': 'expanded-description-large-text',
+        'title': 'Product designer',
+        'description': description,
+        'categoryId': 'design',
+        'category': 'Design',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '1200000',
+        'budgetMax': '2400000',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(
+                  width: 224,
+                  child: OpportunityCard(
+                    job: job,
+                    variant: OpportunityCardVariant.expanded,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final descriptionFinder = find.text(description);
+      expect(descriptionFinder, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(descriptionFinder);
+      expect(
+        paragraph.didExceedMaxLines,
+        isFalse,
+        reason: 'Expanded opportunity descriptions must not be silently truncated at 2x text scale.',
       );
       expect(tester.takeException(), isNull);
     },

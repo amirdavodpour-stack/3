@@ -141,7 +141,10 @@ class PremiumNavigationBar extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: primary.withValues(alpha: dark ? .72 : .68),
+                      color: (dark
+                              ? HopeV2TonalPalettes.forest.shade300
+                              : HopeV2TonalPalettes.forest.shade700)
+                          .withValues(alpha: dark ? .92 : .86),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -378,6 +381,18 @@ class PremiumNavigationRail extends StatelessWidget {
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
+            // Keep desktop navigation multi-accent too: green identifies the
+            // selected destination; readable labels remain neutral.
+            selectedIconTheme: IconThemeData(
+              color: dark
+                  ? HopeV2TonalPalettes.forest.shade300
+                  : HopeV2TonalPalettes.forest.shade700,
+              size: 24,
+            ),
+            unselectedIconTheme: IconThemeData(
+              color: HopeV2SemanticColors.navigationLabel(context, selected: false),
+              size: 24,
+            ),
             selectedLabelTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: HopeV2SemanticColors.textPrimary(context),
               fontWeight: FontWeight.w800,
@@ -532,6 +547,7 @@ class PremiumIconButton extends StatelessWidget {
     this.color,
     this.selected = false,
     this.semanticsIdentifier,
+    this.targetSize = HopeV2Touch.minimum,
   });
 
   final Object icon;
@@ -542,6 +558,7 @@ class PremiumIconButton extends StatelessWidget {
 
   /// Stable native-accessibility/test identifier for this action.
   final String? semanticsIdentifier;
+  final double targetSize;
 
   @override
   Widget build(BuildContext context) {
@@ -571,8 +588,8 @@ class PremiumIconButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Radii.button),
           child: Ink(
-            width: HopeV2Touch.minimum,
-            height: HopeV2Touch.minimum,
+            width: targetSize,
+            height: targetSize,
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(HopeV2Radii.button),
@@ -1353,6 +1370,7 @@ class PremiumHero extends StatelessWidget {
     this.semanticLabel,
     this.domain,
     this.page,
+    this.expandForAccessibilityText = false,
   });
   final String eyebrow;
   final String title;
@@ -1367,11 +1385,15 @@ class PremiumHero extends StatelessWidget {
   final String? semanticLabel;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  /// Lets a long title grow naturally only when users enlarge system text.
+  final bool expandForAccessibilityText;
 
   @override
   Widget build(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final accessibilityTitleExpansion = expandForAccessibilityText &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final resolvedDomain = domain ?? page?.spec.domain;
     // Editorial density is content-aware: informational heroes without an
     // action should not reserve the same vertical budget as a conversion hero.
@@ -1395,7 +1417,7 @@ class PremiumHero extends StatelessWidget {
       container: true,
       label: semanticLabel ?? title,
       child: Container(
-        height: heroHeight,
+        height: accessibilityTitleExpansion ? null : heroHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           boxShadow: Theme.of(context).brightness == Brightness.dark
@@ -1404,7 +1426,9 @@ class PremiumHero extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
-          fit: StackFit.expand,
+          fit: accessibilityTitleExpansion
+              ? StackFit.loose
+              : StackFit.expand,
           children: [
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
               Positioned.fill(
@@ -1602,8 +1626,13 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             title,
-                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: accessibilityTitleExpansion
+                                ? null
+                                : (compactHero ? 2 : (dense ? 2 : 3)),
+                            softWrap: true,
+                            overflow: accessibilityTitleExpansion
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: compactHero ? 19 : (dense ? 20 : 21),
@@ -1913,7 +1942,10 @@ class PremiumEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final accent = Theme.of(context).colorScheme.primary;
+    final accent = HopeV2IconAccents.resolve(
+      icon,
+      brightness: Theme.of(context).brightness,
+    );
     return Semantics(
       container: true,
       child: PremiumPanel(
@@ -1924,16 +1956,11 @@ class PremiumEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: dense ? 40 : 46,
-              height: dense ? 40 : 46,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                border: Border.all(color: accent.withValues(alpha: .18)),
-              ),
-              alignment: Alignment.center,
-              child: HopeIcon(icon, size: dense ? 20 : 23, color: accent),
+            HopeKineticGlyph(
+              width: dense ? 44 : 52,
+              height: dense ? 42 : 50,
+              color: accent,
+              child: HopeIcon(icon, size: dense ? 18 : 21, color: accent),
             ),
             SizedBox(height: dense ? 8 : 10),
             Text(
@@ -1976,12 +2003,16 @@ class PremiumTag extends StatelessWidget {
     this.icon,
     this.color,
     this.inverse = false,
+    this.allowWrap = false,
   });
 
   final String label;
   final Object? icon;
   final Color? color;
   final bool inverse;
+  /// Allows labels to grow naturally at enlarged accessibility text scales.
+  /// Defaults to the compact one-line contract for existing callers.
+  final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -2024,8 +2055,11 @@ class PremiumTag extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: allowWrap ? null : 1,
+                softWrap: allowWrap,
+                overflow: allowWrap
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
                   fontSize: 11,
@@ -2287,8 +2321,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 1,
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? HopeV2Colors.darkMuted
@@ -2299,8 +2336,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     value,
-                    maxLines: compact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : (compact ? 2 : 1),
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -2479,15 +2519,42 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 5,
-                    children: [
-                      fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
-                      fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
-                      fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
-                    ],
-                  ),
+                  if (enlargedText)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        fact(
+                          _t(context, 'بودجه', 'Budget'),
+                          budget,
+                          HopeV2Icons.payments,
+                          primary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'دسته‌بندی', 'Category'),
+                          category,
+                          HopeV2Icons.category,
+                          HopeV2Colors.secondary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'مکان', 'Location'),
+                          location,
+                          HopeV2Icons.location,
+                          HopeV2Colors.secondary,
+                        ),
+                      ],
+                    )
+                  else
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 5,
+                      children: [
+                        fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                        fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                        fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                      ],
+                    ),
                   if (matchRationaleTag != null) ...[
                     const SizedBox(height: 6),
                     Align(
@@ -2804,7 +2871,7 @@ class HopeLifecycleRail extends StatelessWidget {
                           ),
                         ),
                         child: HopeIcon(
-                          i < safeCurrent ? Icons.check_rounded : icons[i],
+                          i < safeCurrent ? HopeV2Icons.completed : icons[i],
                           size: i < safeCurrent ? 14 : 13,
                           color: i < safeCurrent
                               ? Theme.of(context).colorScheme.onPrimary

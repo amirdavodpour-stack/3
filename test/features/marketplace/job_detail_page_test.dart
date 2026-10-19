@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -13,6 +14,7 @@ import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
@@ -217,6 +219,7 @@ Future<void> _pump(
   double height = 3400,
   double textScale = 1.0,
   double? bottomSafeAreaInset,
+  ThemeData? theme,
   Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -243,7 +246,7 @@ Future<void> _pump(
       Provider<UploadQueue>.value(value: _FakeQueue()),
     ],
     child: MaterialApp(
-      theme: ThemeData.light(),
+      theme: theme ?? ThemeData.light(),
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
@@ -289,6 +292,133 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
+
+  testWidgets(
+    'T10 report opportunity control exposes a full-height semantic action',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          job: _job(),
+          width: 360,
+          height: 640,
+          locale: const Locale('fa'),
+          theme: AppTheme.dark(),
+        );
+
+        final report = find.byKey(
+          const ValueKey('opportunity-report-action'),
+        );
+        final semanticTarget = find.byKey(
+          const ValueKey('opportunity-report-semantic-target'),
+        );
+        final detailList = find.byKey(
+          const ValueKey('opportunity-detail-content-list'),
+        );
+        await tester.scrollUntilVisible(
+          report,
+          120,
+          scrollable: find.descendant(
+            of: detailList,
+            matching: find.byType(Scrollable),
+          ).first,
+          maxScrolls: 80,
+        );
+        await tester.pumpAndSettle();
+        expect(report, findsOneWidget);
+        final reportGesture = tester.widget<GestureDetector>(report);
+        expect(
+          reportGesture,
+          isA<GestureDetector>(),
+          reason: 'The keyed report target must be the full-height gesture surface.',
+        );
+        expect(
+          reportGesture.onTap,
+          isNotNull,
+          reason: 'The pointer GestureDetector must preserve the report tap callback.',
+        );
+        expect(
+          reportGesture.excludeFromSemantics,
+          isTrue,
+          reason: 'The pointer recognizer must not create a competing accessibility action.',
+        );
+        expect(semanticTarget, findsOneWidget);
+        final semanticWidget = tester.widget<Semantics>(semanticTarget);
+        expect(semanticWidget.container, isTrue);
+        expect(
+          semanticWidget.explicitChildNodes,
+          isTrue,
+          reason: 'The actionable report node must retain its own semantic bounds instead of merging down to text geometry.',
+        );
+        expect(semanticWidget.properties.button, isTrue);
+        expect(semanticWidget.properties.label, 'گزارش فرصت');
+        expect(
+          semanticWidget.properties.onTap,
+          isNotNull,
+          reason: 'The independent semantic container must own the accessible tap action.',
+        );
+
+        final renderedButtonSize = tester.getSize(semanticTarget);
+        expect(
+          renderedButtonSize.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report semantic container must have a rendered 48dp width.',
+        );
+        expect(
+          renderedButtonSize.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report semantic container must have a rendered 48dp height.',
+        );
+
+        final node = tester.getSemantics(semanticTarget);
+        final data = node.getSemanticsData();
+        expect(data.label, 'گزارش فرصت');
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          node.rect.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report gesture semantic target must expose a real 48dp width.',
+        );
+        expect(
+          node.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report gesture semantic target must expose a real 48dp height.',
+        );
+
+        // Walk the complete semantics tree to verify that the fixed-size
+        // gesture surface exposes exactly one actionable node with 48dp bounds.
+        final root =
+            tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+        expect(root, isNotNull);
+        final actionableReportNodes = <SemanticsNode>[];
+        final pendingNodes = <SemanticsNode>[root!];
+        while (pendingNodes.isNotEmpty) {
+          final candidate = pendingNodes.removeLast();
+          final candidateData = candidate.getSemanticsData();
+          if (candidateData.hasAction(SemanticsAction.tap) &&
+              candidateData.label.trim() == 'گزارش فرصت') {
+            actionableReportNodes.add(candidate);
+          }
+          pendingNodes.addAll(candidate.debugListChildrenInOrder(
+            DebugSemanticsDumpOrder.traversalOrder,
+          ));
+        }
+        expect(
+          actionableReportNodes,
+          hasLength(1),
+          reason: 'Report opportunity must expose exactly one semantic tap target.',
+        );
+        expect(
+          actionableReportNodes.single.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'Every exposed report action must preserve the 48dp semantic height.',
+        );
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets(
     'Wave 36 known job categories stay localized across hero and decision strip',
@@ -559,6 +689,82 @@ void main() {
     expect(widget.maxLines, 2);
     expect(widget.overflow, TextOverflow.ellipsis);
   });
+
+  testWidgets(
+    'Job Detail hero expands to preserve long titles at 1.5x system text',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final titleFinder = find.text(title);
+      final heroFinder = find.byType(PremiumHero);
+      expect(titleFinder, findsOneWidget);
+      expect(heroFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'At enlarged system text, the Job Detail hero must show the entire opportunity title instead of clipping it to two lines.',
+      );
+      final titleRect = tester.getRect(titleFinder);
+      final heroRect = tester.getRect(heroFinder);
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(heroRect.bottom),
+        reason: 'The expanded title must remain inside the hero surface.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Job Detail snapshot facts fully wrap long values at 1.5x text scale',
+    (tester) async {
+      const longLocation =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      await _pump(
+        tester,
+        job: _job(city: longLocation),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+
+      final decisionStrip = find.byKey(
+        const ValueKey('opportunity-decision-strip'),
+      );
+      expect(decisionStrip, findsOneWidget);
+      await tester.ensureVisible(decisionStrip);
+      await tester.pumpAndSettle();
+
+      final valueFinder = find.descendant(
+        of: decisionStrip,
+        matching: find.text(longLocation),
+      );
+      expect(valueFinder, findsOneWidget);
+      final value = tester.widget<Text>(valueFinder);
+      expect(
+        value.maxLines,
+        isNull,
+        reason:
+            'Snapshot facts must not truncate the real location at enlarged system text.',
+      );
+      expect(value.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {

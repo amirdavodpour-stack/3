@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart' show MatrixUtils;
+import 'package:flutter/rendering.dart' show RenderView;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -186,13 +188,15 @@ class _EvidenceTransactionRepository implements TransactionRepository {
         providerRef: 'internal-ledger',
         job: _transactionJob,
         fees: const HopePaymentFees(
+          // Keep the rendered runtime evidence aligned with backend/src/financial.js:
+          // MISSION charges 10% to each side; the platform fee is their sum.
           baseAmount: '1500000',
-          employerFee: '30000',
-          workerFee: '15000',
-          platformFee: '15000',
-          employerCharge: '1530000',
-          providerPayout: '1485000',
-          policyVersion: 'v1',
+          employerFee: '150000',
+          workerFee: '150000',
+          platformFee: '300000',
+          employerCharge: '1650000',
+          providerPayout: '1350000',
+          policyVersion: '2026-08-v1',
           currency: 'TOMAN',
         ),
       );
@@ -886,18 +890,19 @@ Future<void> _prepareRuntimeScreenshotSurface(WidgetTester tester) async {
 
 const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');
 
-var _runtimeHasCapturedScreenshot = false;
 const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);
 
 Future<void> _captureHopeNativeScreenshot(
   IntegrationTestWidgetsFlutterBinding binding,
   String marker, {
   required bool forceFreshFrame,
+  required int freshFramesRequired,
 }) async {
   const integrationTestChannel =
       MethodChannel('plugins.flutter.io/integration_test');
   integrationTestChannel.setMethodCallHandler((call) async {
     if (call.method == 'scheduleFrame') {
+      print('HOPE_SCREENSHOT_SCHEDULE_FRAME_RECEIVED:$marker');
       PlatformDispatcher.instance.scheduleFrame();
     }
   });
@@ -905,8 +910,9 @@ Future<void> _captureHopeNativeScreenshot(
   final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(
     'captureScreenshot',
     <String, Object?>{
-      'name': marker,
+      'screenshotName': marker,
       'forceFreshFrame': forceFreshFrame,
+      'freshFramesRequired': freshFramesRequired,
     },
   );
   if (bytes == null || bytes.isEmpty) {
@@ -923,11 +929,216 @@ Future<void> _captureHopeNativeScreenshot(
   binding.reportData!['screenshots'] = screenshots;
 }
 
+String _preciseSemanticsMatrix(Matrix4? matrix) {
+  if (matrix == null) return 'identity';
+  return matrix.storage
+      .map((value) => value.toStringAsPrecision(17))
+      .join(',');
+}
+
+String _semanticsTransformChain(SemanticsNode node) {
+  final transforms = <String>[];
+  SemanticsNode? current = node;
+  while (current != null) {
+    transforms.add(_preciseSemanticsMatrix(current.transform));
+    current = current.parent;
+  }
+  return transforms.join(' <- ');
+}
+
+Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
+  // SemanticsNode.rect is in the node's own coordinate system. Compose node
+  // transforms up to the root and undo the RenderView root transform so these
+  // bounds are expressed in actual logical viewport coordinates (dp).
+  var transform = Matrix4.identity();
+  SemanticsNode? current = node;
+  while (current != null) {
+    final nodeTransform = current.transform;
+    if (nodeTransform != null) {
+      transform = nodeTransform * transform as Matrix4;
+    }
+    current = current.parent;
+  }
+  final rootInverse = Matrix4.copy(renderView.configuration.toMatrix())..invert();
+  transform = rootInverse * transform as Matrix4;
+  return MatrixUtils.transformRect(transform, node.rect);
+}
+
+// Match Flutter's MinimumTapTargetGuideline boundary handling. A semantic
+// rectangle touching an implicit-scroll or view boundary can be clipped even
+// when its underlying hit target is correctly sized. Such nodes are only
+// excluded from the broad tree scan; audited targets are still revealed and
+// measured away from the boundary before the screen can pass.
+// https://github.com/flutter/flutter/blob/main/packages/flutter_test/lib/src/accessibility.dart
+bool _isAtSemanticsBoundary(Rect child, Rect parent) {
+  const minimumGapToBoundary = 0.001;
+  return child.left - parent.left <= minimumGapToBoundary ||
+      parent.right - child.right <= minimumGapToBoundary ||
+      child.top - parent.top <= minimumGapToBoundary ||
+      parent.bottom - child.bottom <= minimumGapToBoundary;
+}
+
+bool _isSemanticsTapTargetAtScrollableBoundary(
+  SemanticsNode node,
+  RenderView renderView,
+) {
+  var paintBounds = node.rect;
+  SemanticsNode? current = node;
+  while (current != null) {
+    final transform = current.transform;
+    if (transform != null) {
+      paintBounds = MatrixUtils.transformRect(transform, paintBounds);
+    }
+    if (current.flagsCollection.hasImplicitScrolling &&
+        _isAtSemanticsBoundary(paintBounds, current.rect)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  final viewRect = Offset.zero & renderView.flutterView.physicalSize;
+  return _isAtSemanticsBoundary(paintBounds, viewRect);
+}
+
+int _runtimeFreshFrameCount(String marker) {
+  if (marker.startsWith('register-')) return 2;
+  if (marker.startsWith('password-reset-')) return 1;
+  return 0;
+}
+
 Future<void> _captureRuntimeScreenshot(
   String marker, {
   required WidgetTester tester,
 }) async {
   SemanticsHandle? semanticsHandle;
+  Finder? auditedTargetFinder;
+
+  // The T10 widget regression scrolls the report control fully into view before
+  // measuring its semantics rect. Match that condition in Android runtime
+  // evidence: a node intersected by the viewport edge can have a clipped rect
+  // even when its underlying 48dp hit surface is correct. Restore the original
+  // offset after this semantics-only measurement so capture positioning stays
+  // deterministic.
+  ScrollableState? auditedTargetScrollable;
+  double? auditedTargetInitialOffset;
+  Future<void> restoreAuditedTargetScroll() async {
+    final scrollable = auditedTargetScrollable;
+    final initialOffset = auditedTargetInitialOffset;
+    if (scrollable == null ||
+        initialOffset == null ||
+        !scrollable.position.hasPixels ||
+        !scrollable.position.hasContentDimensions) {
+      return;
+    }
+    final position = scrollable.position;
+    final restoredOffset = initialOffset
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+    position.jumpTo(restoredOffset);
+    await tester.pump();
+  }
+
+  final shouldRevealReportTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      marker.contains('job-detail') &&
+      !marker.startsWith('scroll-end-');
+  final shouldRevealTransactionTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      marker.startsWith('transactions-') &&
+      !marker.startsWith('scroll-end-');
+  if (shouldRevealReportTarget || shouldRevealTransactionTarget) {
+    final auditedTarget = shouldRevealReportTarget
+        ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
+        : find.byKey(const ValueKey('transaction-status-semantic-target'));
+    auditedTargetFinder = auditedTarget;
+    // An audited action can be a late ListView child and may not exist in the
+    // element tree until the lazy sliver is scrolled near the end. Build it
+    // first with the same vertical scrollable used by scroll-end evidence.
+    if (auditedTarget.evaluate().isEmpty) {
+      final candidates = find.byType(Scrollable).evaluate().where((element) {
+        if (element is! StatefulElement) return false;
+        final state = element.state;
+        return state is ScrollableState &&
+            state.position.axisDirection == AxisDirection.down;
+      }).toList(growable: false);
+      Element? selectedElement;
+      ScrollableState? selectedState;
+      var greatestExtent = -1.0;
+      for (final element in candidates) {
+        final state = (element as StatefulElement).state as ScrollableState;
+        final position = state.position;
+        if (position.viewportDimension > 0 &&
+            position.maxScrollExtent >= greatestExtent) {
+          greatestExtent = position.maxScrollExtent;
+          selectedElement = element;
+          selectedState = state;
+        }
+      }
+      if (selectedElement == null || selectedState == null) {
+        throw StateError(
+          'T10 could not select a vertical Scrollable to materialize the audited target for $marker.',
+        );
+      }
+      auditedTargetScrollable = selectedState;
+      auditedTargetInitialOffset = selectedState.position.pixels;
+      final scrollableFinder = find.byElementPredicate(
+        (element) => identical(element, selectedElement),
+        skipOffstage: false,
+      );
+      try {
+        await tester.scrollUntilVisible(
+          auditedTarget,
+          selectedState.position.viewportDimension * 0.68,
+          scrollable: scrollableFinder,
+          maxScrolls: 30,
+        );
+        await tester.pump();
+      } catch (_) {
+        await restoreAuditedTargetScroll();
+        rethrow;
+      }
+    }
+    if (auditedTarget.evaluate().isEmpty) {
+      await restoreAuditedTargetScroll();
+      throw StateError(
+        'T10 audited semantic target still missing after scrolling the lazy ListView to it for $marker.',
+      );
+    }
+    final scrollableAncestor = find.ancestor(
+      of: auditedTarget,
+      matching: find.byType(Scrollable),
+    );
+    if (scrollableAncestor.evaluate().isEmpty) {
+      await restoreAuditedTargetScroll();
+      throw StateError(
+        'T10 audited semantic target has no Scrollable ancestor for $marker.',
+      );
+    }
+    final targetScrollable = tester.state<ScrollableState>(
+      scrollableAncestor.first,
+    );
+    if (auditedTargetScrollable == null) {
+      auditedTargetScrollable = targetScrollable;
+      auditedTargetInitialOffset = targetScrollable.position.pixels;
+    } else if (!identical(auditedTargetScrollable, targetScrollable)) {
+      await restoreAuditedTargetScroll();
+      throw StateError(
+        'T10 audited target materialized under a different Scrollable than the one scrolled for $marker.',
+      );
+    }
+    // Leave a visible inset between the audited target and the viewport edge
+    // so its exported semantics rectangle is not clipped by the scroll view.
+    await Scrollable.ensureVisible(
+      tester.element(auditedTarget),
+      alignment: 0.8,
+    );
+    await tester.pump();
+    print(
+      'HOPE_T10_TARGET_REVEALED:$marker:initialOffset=$auditedTargetInitialOffset:visibleOffset=${auditedTargetScrollable!.position.pixels}',
+    );
+  }
+
   if (_talkbackRequired && _semanticsOnly && !marker.startsWith('scroll-end-')) {
     semanticsHandle = tester.ensureSemantics();
     try {
@@ -936,9 +1147,54 @@ Future<void> _captureRuntimeScreenshot(
       if (root == null) {
         throw StateError('T10 semantics tree is missing for $marker.');
       }
+      final renderView = tester.binding.renderViews.firstWhere(
+        (view) => identical(view.owner?.semanticsOwner, root.owner),
+        orElse: () => throw StateError(
+          'T10 could not find the RenderView for semantics tree $marker.',
+        ),
+      );
       var nodeCount = 0;
       var labelledNodeCount = 0;
       var actionableNodeCount = 0;
+      var undersizedTargetCount = 0;
+      var targetBoundsCheckedCount = 0;
+      var boundarySkippedTargetCount = 0;
+      var minimumTapTargetWidth = double.infinity;
+      var minimumTapTargetHeight = double.infinity;
+      // Matrix inversion can represent an exact 48dp rect as
+      // 47.999999999999986dp. Ignore only floating-point noise, not any
+      // materially undersized accessibility target.
+      const tapTargetBoundsToleranceDp = 1e-6;
+      final explicitAuditedTarget = auditedTargetFinder;
+      if (explicitAuditedTarget != null) {
+        // The named target is the regression under test; it must always be
+        // checked directly after reveal, never silently excused as a clipped
+        // boundary node in the broad scan below.
+        final auditedNode = tester.getSemantics(explicitAuditedTarget);
+        final auditedData = auditedNode.getSemanticsData();
+        if (!auditedData.hasAction(SemanticsAction.tap)) {
+          throw StateError(
+            'T10 explicit audited target is missing its tap action for $marker.',
+          );
+        }
+        final auditedBounds = _globalSemanticsNodeBounds(auditedNode, renderView);
+        if (auditedBounds.isEmpty ||
+            auditedBounds.width < 48 - tapTargetBoundsToleranceDp ||
+            auditedBounds.height < 48 - tapTargetBoundsToleranceDp) {
+          throw StateError(
+            'T10 explicit audited target below 48dp for $marker: '
+            'label=${auditedData.label.trim()} '
+            'widthDp=${auditedBounds.width.toStringAsPrecision(17)} '
+            'heightDp=${auditedBounds.height.toStringAsPrecision(17)}.',
+          );
+        }
+        print(
+          'HOPE_T10_AUDITED_TARGET_BOUNDS_PASS:$marker:'
+          'widthDp=${auditedBounds.width.toStringAsFixed(1)}:'
+          'heightDp=${auditedBounds.height.toStringAsFixed(1)}',
+        );
+      }
+      final undersizedTargetExamples = <String>[];
       final pending = <SemanticsNode>[root];
       while (pending.isNotEmpty) {
         final node = pending.removeLast();
@@ -951,6 +1207,53 @@ Future<void> _captureRuntimeScreenshot(
         }
         if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
+          if (_isSemanticsTapTargetAtScrollableBoundary(node, renderView)) {
+            boundarySkippedTargetCount++;
+            // Mirror the framework guideline's recursive traversal: skipping
+            // this clipped target's size must not skip its semantic children.
+            pending.addAll(
+              node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder),
+            );
+            continue;
+          }
+          targetBoundsCheckedCount++;
+          final targetBounds = _globalSemanticsNodeBounds(node, renderView);
+          if (targetBounds.width < minimumTapTargetWidth) {
+            minimumTapTargetWidth = targetBounds.width;
+          }
+          if (targetBounds.height < minimumTapTargetHeight) {
+            minimumTapTargetHeight = targetBounds.height;
+          }
+          if (targetBounds.isEmpty ||
+              targetBounds.width < 48 - tapTargetBoundsToleranceDp ||
+              targetBounds.height < 48 - tapTargetBoundsToleranceDp) {
+            undersizedTargetCount++;
+            if (undersizedTargetExamples.length < 8) {
+              final targetLabel = data.label.trim().isEmpty
+                  ? 'unlabelled'
+                  : data.label.trim().replaceAll(RegExp(r'\s+'), ' ');
+              final preciseTargetBounds = [
+                targetBounds.left,
+                targetBounds.top,
+                targetBounds.right,
+                targetBounds.bottom,
+              ].map((value) => value.toStringAsPrecision(17)).join(',');
+              final preciseLocalRect = [
+                node.rect.left,
+                node.rect.top,
+                node.rect.right,
+                node.rect.bottom,
+              ].map((value) => value.toStringAsPrecision(17)).join(',');
+              undersizedTargetExamples.add(
+                '$targetLabel:widthDp=${targetBounds.width.toStringAsPrecision(17)}'
+                ':heightDp=${targetBounds.height.toStringAsPrecision(17)}'
+                ':boundsDp=[$preciseTargetBounds]'
+                ':nodeRect=[$preciseLocalRect]'
+                ':transformChain=${_semanticsTransformChain(node)}'
+                ':rootMatrix=${_preciseSemanticsMatrix(renderView.configuration.toMatrix())}',
+              );
+            }
+          }
         }
         pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
@@ -962,14 +1265,44 @@ Future<void> _captureRuntimeScreenshot(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
       }
+      if (requiresTapAction && targetBoundsCheckedCount == 0) {
+        throw StateError(
+          'T10 found no tap targets safely measurable away from viewport boundaries for $marker: '
+          'actions=$actionableNodeCount boundarySkipped=$boundarySkippedTargetCount.',
+        );
+      }
+      if (undersizedTargetCount > 0) {
+        final examples = undersizedTargetExamples.join('; ');
+        print(
+          'HOPE_T10_TARGET_BOUNDS_FAIL:$marker:undersized=$undersizedTargetCount:examples=$examples',
+        );
+        throw StateError(
+          'T10 target bounds below 48dp for $marker: '
+          'undersized=$undersizedTargetCount examples=$examples.',
+        );
+      }
+      final minimumWidth =
+          targetBoundsCheckedCount == 0 ? 0.0 : minimumTapTargetWidth;
+      final minimumHeight =
+          targetBoundsCheckedCount == 0 ? 0.0 : minimumTapTargetHeight;
+      print(
+        'HOPE_T10_TARGET_BOUNDS_PASS:$marker:targets=$targetBoundsCheckedCount:skippedBoundary=$boundarySkippedTargetCount:minWidthDp=${minimumWidth.toStringAsFixed(1)}:minHeightDp=${minimumHeight.toStringAsFixed(1)}',
+      );
       print(
         'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
       );
     } catch (_) {
+      try {
+        await restoreAuditedTargetScroll();
+      } catch (_) {
+        // Preserve the primary target-bounds failure if scroll restoration
+        // itself cannot complete after a failed semantics audit.
+      }
       semanticsHandle.dispose();
       rethrow;
     }
   }
+  await restoreAuditedTargetScroll();
   if (_semanticsOnly) {
     // Never write a screenshot in the TalkBack-bound pass: focus outlines must
     // not be mixed into the clean visual-baseline image set.
@@ -980,10 +1313,12 @@ Future<void> _captureRuntimeScreenshot(
   try {
     final binding = IntegrationTestWidgetsFlutterBinding.instance;
     print('HOPE_SCREENSHOT_CAPTURE_START:$marker');
+    final freshFrameCount = _runtimeFreshFrameCount(marker);
     await _captureHopeNativeScreenshot(
       binding,
       marker,
-      forceFreshFrame: _runtimeHasCapturedScreenshot,
+      forceFreshFrame: freshFrameCount > 0,
+      freshFramesRequired: freshFrameCount,
     ).timeout(
       _nativeScreenshotCaptureTimeout,
       onTimeout: () {
@@ -992,7 +1327,6 @@ Future<void> _captureRuntimeScreenshot(
         );
       },
     );
-    _runtimeHasCapturedScreenshot = true;
     print('HOPE_SCREENSHOT_SOURCE:native-primary:$marker');
     print('HOPE_SCREENSHOT_READY:$marker');
   } finally {
@@ -1003,6 +1337,8 @@ Future<void> _captureRuntimeScreenshot(
 bool _runtimeNeedsScrollEnd(String marker) {
   const auditedPages = <String>{
     'home', 'jobs', 'job-detail', 'transactions', 'wallet', 'profile',
+    'transaction-detail', 'create-job', 'financial-insights',
+    'job-satisfaction',
   };
   final localeSuffix = _captureLocale == 'en' ? '-en-ltr' : '-fa-rtl';
   return !marker.startsWith('responsive-') &&
@@ -1161,7 +1497,28 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
 Future<void> _waitForRuntimeRegisterGoogleCta(WidgetTester tester) async {
   final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
   for (var attempt = 0; attempt < 6; attempt++) {
-    if (googleButton.evaluate().isNotEmpty) return;
+    if (googleButton.evaluate().isNotEmpty) {
+      await tester.ensureVisible(googleButton);
+      await tester.pump();
+
+      final element = tester.element(googleButton);
+      final viewport = Offset.zero & MediaQuery.sizeOf(element);
+      final bounds = tester.getRect(googleButton);
+      final visibleBounds = bounds.intersect(viewport);
+      final renderBox = tester.renderObject<RenderBox>(googleButton);
+      if (!renderBox.attached ||
+          !renderBox.hasSize ||
+          renderBox.size.isEmpty ||
+          visibleBounds.width + 0.5 < bounds.width ||
+          visibleBounds.height + 0.5 < bounds.height) {
+        throw StateError(
+          'Register Google CTA exists but is not fully painted inside the capture viewport: '
+          'button=$bounds viewport=$viewport visible=$visibleBounds.',
+        );
+      }
+      print('HOPE_RUNTIME_REGISTER_GOOGLE_CTA_VISIBLE:$bounds');
+      return;
+    }
     await tester.pump();
   }
   throw StateError(
@@ -1225,6 +1582,22 @@ Future<void> _captureRuntimeScreen(
   // already commits the initial target frame, so keep the capture boundary
   // deterministic and avoid an extra timed/async pump.
   if (child is PasswordResetPage) {
+    final localeMarker = locale.languageCode == 'fa' ? 'fa-rtl' : 'en-ltr';
+    final expectedMarker = 'password-reset-$localeMarker';
+    if (marker != expectedMarker) {
+      throw StateError(
+        'Password Reset capture marker mismatch: expected $expectedMarker, got $marker.',
+      );
+    }
+    expect(find.byType(PasswordResetPage), findsOneWidget,
+        reason: 'Password Reset must be mounted before native capture.');
+    expect(find.byType(RegisterPage), findsNothing,
+        reason: 'Registration content must never be labelled as Password Reset evidence.');
+    expect(find.byType(TextField), findsOneWidget,
+        reason: 'Password Reset runtime surface must contain exactly one email field.');
+    expect(find.byType(FilledButton), findsOneWidget,
+        reason: 'Password Reset runtime surface must expose its submit action.');
+    print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {
@@ -1470,6 +1843,18 @@ void main() {
   }
   print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
   print('HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale');
+
+  test('runtime transaction screenshot fixture follows the backend MISSION fee contract', () {
+    final fees = _EvidenceTransactionRepository()._payment.fees!;
+    expect(fees.baseAmount, '1500000');
+    expect(fees.employerFee, '150000');
+    expect(fees.workerFee, '150000');
+    expect(fees.platformFee, '300000');
+    expect(fees.employerCharge, '1650000');
+    expect(fees.providerPayout, '1350000');
+    expect(fees.policyVersion, '2026-08-v1');
+    expect(fees.currency, 'TOMAN');
+  });
 
   testWidgets('HOPE critical screens rendered screenshot evidence',
       (tester) async {
