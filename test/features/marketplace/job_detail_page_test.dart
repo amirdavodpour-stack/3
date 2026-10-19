@@ -327,6 +327,15 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(report, findsOneWidget);
+        final visualReportButton = tester.widget<TextButton>(find.descendant(
+          of: report,
+          matching: find.byType(TextButton),
+        ));
+        expect(
+          visualReportButton.style?.disabledForegroundColor?.resolve({}),
+          AppTheme.dark().colorScheme.onSurfaceVariant,
+          reason: 'Disabled report text should use the neutral readable text tone, not the indigo action accent.',
+        );
         final reportGesture = tester.widget<GestureDetector>(report);
         expect(
           reportGesture,
