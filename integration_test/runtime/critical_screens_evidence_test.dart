@@ -1010,6 +1010,7 @@ Future<void> _captureRuntimeScreenshot(
   required WidgetTester tester,
 }) async {
   SemanticsHandle? semanticsHandle;
+  Finder? auditedTargetFinder;
 
   // The T10 widget regression scrolls the report control fully into view before
   // measuring its semantics rect. Match that condition in Android runtime
@@ -1050,6 +1051,7 @@ Future<void> _captureRuntimeScreenshot(
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
         : find.byKey(const ValueKey('transaction-status-semantic-target'));
+    auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it
     // first with the same vertical scrollable used by scroll-end evidence.
@@ -1163,11 +1165,12 @@ Future<void> _captureRuntimeScreenshot(
       // 47.999999999999986dp. Ignore only floating-point noise, not any
       // materially undersized accessibility target.
       const tapTargetBoundsToleranceDp = 1e-6;
-      if (auditedTargetFinder != null) {
+      final explicitAuditedTarget = auditedTargetFinder;
+      if (explicitAuditedTarget != null) {
         // The named target is the regression under test; it must always be
         // checked directly after reveal, never silently excused as a clipped
         // boundary node in the broad scan below.
-        final auditedNode = tester.getSemantics(auditedTargetFinder!);
+        final auditedNode = tester.getSemantics(explicitAuditedTarget);
         final auditedData = auditedNode.getSemanticsData();
         if (!auditedData.hasAction(SemanticsAction.tap)) {
           throw StateError(
