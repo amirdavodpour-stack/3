@@ -1158,6 +1158,7 @@ class _LineChart extends StatelessWidget {
                         points,
                         color,
                         color.withValues(alpha: .12),
+                        Theme.of(context).colorScheme.onSurfaceVariant,
                         Directionality.of(context),
                         Localizations.localeOf(context).languageCode,
                         textScale,
@@ -1183,6 +1184,7 @@ class _LineChartPainter extends CustomPainter {
     this.points,
     this.color,
     this.fillColor,
+    this.labelColor,
     this.textDirection,
     this.locale,
     this.textScale,
@@ -1194,6 +1196,7 @@ class _LineChartPainter extends CustomPainter {
   final List<HopeBalancePoint> points;
   final Color color;
   final Color fillColor;
+  final Color labelColor;
   final TextDirection textDirection;
   final String locale;
   final double textScale;
@@ -1268,7 +1271,7 @@ class _LineChartPainter extends CustomPainter {
         text: TextSpan(
           text: formatBalanceTrendAxisLabel(points[i].date, locale),
           style: TextStyle(
-            color: color.withValues(alpha: .92),
+            color: labelColor,
             fontSize: (12.0 * textScale).toDouble(),
             height: 1.1,
           ),
@@ -1278,9 +1281,9 @@ class _LineChartPainter extends CustomPainter {
         maxLines: 1,
         ellipsis: '…',
       )..layout(maxWidth: labelWidth);
-      final pointX = points.length == 1
-          ? size.width / 2
-          : i * size.width / (points.length - 1);
+      // Labels occupy the center of each month slot rather than the
+      // extreme data-point coordinates, preventing edge glyph clipping.
+      final pointX = (i + .5) * size.width / points.length;
       final x = (pointX - painter.width / 2)
           .clamp(0.0, math.max(0.0, size.width - painter.width))
           .toDouble();
@@ -1293,6 +1296,7 @@ class _LineChartPainter extends CustomPainter {
       oldDelegate.points != points ||
       oldDelegate.color != color ||
       oldDelegate.fillColor != fillColor ||
+      oldDelegate.labelColor != labelColor ||
       oldDelegate.textDirection != textDirection ||
       oldDelegate.locale != locale ||
       oldDelegate.textScale != textScale ||
