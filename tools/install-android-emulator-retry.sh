@@ -28,14 +28,16 @@ yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
 
 for attempt in $(seq 1 "$ATTEMPTS"); do
   echo "HOPE_ANDROID_EMULATOR_INSTALL_ATTEMPT:$attempt/$ATTEMPTS"
-  if "$SDKMANAGER" --install emulator --channel=0 &&
-    [[ -x "$SDK_ROOT/emulator/emulator" ]] &&
-    "$SDK_ROOT/emulator/emulator" -version; then
-    echo "HOPE_ANDROID_EMULATOR_INSTALL_PASS:attempt=$attempt"
-    exit 0
+  if "$SDKMANAGER" --install emulator --channel=0; then
+    if [[ -x "$SDK_ROOT/emulator/emulator" ]] &&
+      "$SDK_ROOT/emulator/emulator" -version; then
+      echo "HOPE_ANDROID_EMULATOR_INSTALL_PASS:attempt=$attempt"
+      exit 0
+    fi
+    status=1
+  else
+    status=$?
   fi
-
-  status=$?
   echo "HOPE_ANDROID_EMULATOR_INSTALL_RETRYABLE_FAILURE:attempt=$attempt:status=$status" >&2
   if (( attempt < ATTEMPTS )); then
     # sdkmanager can leave a truncated archive after a transport interruption.
