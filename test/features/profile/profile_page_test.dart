@@ -388,4 +388,40 @@ testWidgets('profile keeps application management in the dedicated work destinat
     },
   );
 
+  testWidgets(
+    'compact appearance action keeps a 48dp rendered and semantic target',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+      await _pump(
+        tester,
+        authenticated: true,
+        width: 390,
+        height: 844,
+        theme: AppTheme.dark(),
+      );
+
+      final appearanceLabel = find.text('ظاهر برنامه');
+      expect(appearanceLabel, findsOneWidget);
+      final appearanceTile = find.ancestor(
+        of: appearanceLabel,
+        matching: find.byType(ListTile),
+      ).first;
+      await tester.ensureVisible(appearanceTile);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSize(appearanceTile).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(
+        tester.getSemantics(appearanceTile).rect.height,
+        greaterThanOrEqualTo(48),
+        reason: 'The TalkBack action target must meet the 48dp minimum.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
 }
