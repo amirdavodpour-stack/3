@@ -23,6 +23,16 @@ require_line() {
 require_line "$workflow" "repository: soloturn/android-emulator-runner"
 require_line "$workflow" "ref: ab495a9b42f2af30f5222bd978136f9b0a85b68a"
 require_line "$workflow" "uses: ./.ci/android-emulator-runner"
+require_line "$workflow" "name: Test Android Emulator package retry contract"
+require_line "$workflow" "run: bash test/runtime/android_emulator_install_retry_test.sh"
+require_line "$workflow" "name: Prepare Android Emulator package with bounded retry"
+require_line "$workflow" "run: bash tools/install-android-emulator-retry.sh"
+prepare_line="$(grep -nF -- '- name: Prepare Android Emulator package with bounded retry' "$workflow" | cut -d: -f1 | head -n1)"
+runtime_line="$(grep -nF -- '- name: Android runtime evidence' "$workflow" | cut -d: -f1 | head -n1)"
+if [[ -z "$prepare_line" || -z "$runtime_line" || "$prepare_line" -ge "$runtime_line" ]]; then
+  echo "FAIL: Android Emulator package must be prewarmed and validated before the pinned runner starts." >&2
+  exit 1
+fi
 require_line "$workflow" "ram-size: 8192M"
 require_line "$workflow" 'group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
 require_line "$workflow" "force-avd-creation: false"
