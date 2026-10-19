@@ -1178,6 +1178,11 @@ Future<void> _captureRuntimeScreenshot(
           actionableNodeCount++;
           if (_isSemanticsTapTargetAtScrollableBoundary(node, renderView)) {
             boundarySkippedTargetCount++;
+            // Mirror the framework guideline's recursive traversal: skipping
+            // this clipped target's size must not skip its semantic children.
+            pending.addAll(
+              node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder),
+            );
             continue;
           }
           targetBoundsCheckedCount++;
