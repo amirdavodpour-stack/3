@@ -1369,6 +1369,7 @@ class _ChatPageState extends State<ChatPage> {
                                 hintText: _t('پیام خود را بنویسید', 'Write a message'),
                                 isDense: true,
                                 prefixIcon: null,
+                                constraints: const BoxConstraints(minHeight: 48),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               ),
                             ),
