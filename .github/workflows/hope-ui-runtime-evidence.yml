@@ -96,6 +96,8 @@ jobs:
 
       - name: Test Android ADB recovery contract
         run: bash test/runtime/android_runtime_adb_recovery_test.sh
+      - name: Test Android Emulator package retry contract
+        run: bash test/runtime/android_emulator_install_retry_test.sh
       - name: Test Android screenshot transport contract
         run: bash test/runtime/android_screenshot_transport_test.sh
       - name: Test TalkBack bound-service contract
@@ -199,6 +201,14 @@ jobs:
           ls -l /dev/kvm
           test -r /dev/kvm
           test -w /dev/kvm
+
+      # Warm the latest emulator package with a bounded retry before the pinned
+      # action invokes sdkmanager itself; this recovers from truncated SDK archives.
+      - name: Prepare Android Emulator package with bounded retry
+        env:
+          HOPE_ANDROID_EMULATOR_INSTALL_ATTEMPTS: '3'
+          HOPE_ANDROID_EMULATOR_INSTALL_RETRY_DELAY_SECONDS: '5'
+        run: bash tools/install-android-emulator-retry.sh
 
       # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 6 responsive
       # on Run #35741811401. Keep the proven memory/AVD lifecycle contract intact.
