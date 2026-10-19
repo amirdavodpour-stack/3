@@ -964,6 +964,41 @@ Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView) {
   return MatrixUtils.transformRect(transform, node.rect);
 }
 
+// Match Flutter's MinimumTapTargetGuideline boundary handling. A semantic
+// rectangle touching an implicit-scroll or view boundary can be clipped even
+// when its underlying hit target is correctly sized. Such nodes are only
+// excluded from the broad tree scan; audited targets are still revealed and
+// measured away from the boundary before the screen can pass.
+// https://github.com/flutter/flutter/blob/main/packages/flutter_test/lib/src/accessibility.dart
+bool _isAtSemanticsBoundary(Rect child, Rect parent) {
+  const minimumGapToBoundary = 0.001;
+  return child.left - parent.left <= minimumGapToBoundary ||
+      parent.right - child.right <= minimumGapToBoundary ||
+      child.top - parent.top <= minimumGapToBoundary ||
+      parent.bottom - child.bottom <= minimumGapToBoundary;
+}
+
+bool _isSemanticsTapTargetAtScrollableBoundary(
+  SemanticsNode node,
+  RenderView renderView,
+) {
+  var paintBounds = node.rect;
+  SemanticsNode? current = node;
+  while (current != null) {
+    final transform = current.transform;
+    if (transform != null) {
+      paintBounds = MatrixUtils.transformRect(transform, paintBounds);
+    }
+    if (current.flagsCollection.hasImplicitScrolling &&
+        _isAtSemanticsBoundary(paintBounds, current.rect)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  final viewRect = Offset.zero & renderView.flutterView.physicalSize;
+  return _isAtSemanticsBoundary(paintBounds, viewRect);
+}
+
 int _runtimeFreshFrameCount(String marker) {
   if (marker.startsWith('register-')) return 2;
   if (marker.startsWith('password-reset-')) return 1;
@@ -1090,11 +1125,11 @@ Future<void> _captureRuntimeScreenshot(
         'T10 audited target materialized under a different Scrollable than the one scrolled for $marker.',
       );
     }
-    // A child can be built before it is fully visible; align its trailing
-    // edge with the viewport before inspecting the exported semantics rect.
+    // Leave a visible inset between the audited target and the viewport edge
+    // so its exported semantics rectangle is not clipped by the scroll view.
     await Scrollable.ensureVisible(
       tester.element(auditedTarget),
-      alignment: 1.0,
+      alignment: 0.8,
     );
     await tester.pump();
     print(
@@ -1120,6 +1155,8 @@ Future<void> _captureRuntimeScreenshot(
       var labelledNodeCount = 0;
       var actionableNodeCount = 0;
       var undersizedTargetCount = 0;
+      var targetBoundsCheckedCount = 0;
+      var boundarySkippedTargetCount = 0;
       var minimumTapTargetWidth = double.infinity;
       var minimumTapTargetHeight = double.infinity;
       // Matrix inversion can represent an exact 48dp rect as
@@ -1139,6 +1176,11 @@ Future<void> _captureRuntimeScreenshot(
         }
         if (data.hasAction(SemanticsAction.tap)) {
           actionableNodeCount++;
+          if (_isSemanticsTapTargetAtScrollableBoundary(node, renderView)) {
+            boundarySkippedTargetCount++;
+            continue;
+          }
+          targetBoundsCheckedCount++;
           final targetBounds = _globalSemanticsNodeBounds(node, renderView);
           if (targetBounds.width < minimumTapTargetWidth) {
             minimumTapTargetWidth = targetBounds.width;
@@ -1187,6 +1229,12 @@ Future<void> _captureRuntimeScreenshot(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
       }
+      if (requiresTapAction && targetBoundsCheckedCount == 0) {
+        throw StateError(
+          'T10 found no tap targets safely measurable away from viewport boundaries for $marker: '
+          'actions=$actionableNodeCount boundarySkipped=$boundarySkippedTargetCount.',
+        );
+      }
       if (undersizedTargetCount > 0) {
         final examples = undersizedTargetExamples.join('; ');
         print(
@@ -1197,10 +1245,12 @@ Future<void> _captureRuntimeScreenshot(
           'undersized=$undersizedTargetCount examples=$examples.',
         );
       }
-      final minimumWidth = actionableNodeCount == 0 ? 0.0 : minimumTapTargetWidth;
-      final minimumHeight = actionableNodeCount == 0 ? 0.0 : minimumTapTargetHeight;
+      final minimumWidth =
+          targetBoundsCheckedCount == 0 ? 0.0 : minimumTapTargetWidth;
+      final minimumHeight =
+          targetBoundsCheckedCount == 0 ? 0.0 : minimumTapTargetHeight;
       print(
-        'HOPE_T10_TARGET_BOUNDS_PASS:$marker:targets=$actionableNodeCount:minWidthDp=${minimumWidth.toStringAsFixed(1)}:minHeightDp=${minimumHeight.toStringAsFixed(1)}',
+        'HOPE_T10_TARGET_BOUNDS_PASS:$marker:targets=$targetBoundsCheckedCount:skippedBoundary=$boundarySkippedTargetCount:minWidthDp=${minimumWidth.toStringAsFixed(1)}:minHeightDp=${minimumHeight.toStringAsFixed(1)}',
       );
       print(
         'HOPE_T10_SEMANTICS_PASS:$marker:nodes=$nodeCount:labels=$labelledNodeCount:actions=$actionableNodeCount',
