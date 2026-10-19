@@ -202,6 +202,17 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
+      # Android Emulator's host-side QEMU binary dynamically links PulseAudio
+      # even for the non-interactive version probe used by the installer guard.
+      # Hosted Ubuntu runners may omit this optional desktop runtime library.
+      - name: Install Android Emulator host runtime libraries
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libpulse0
+          ldconfig -p | grep -F 'libpulse.so.0'
+
       # Warm the latest emulator package with a bounded retry before the pinned
       # action invokes sdkmanager itself; this recovers from truncated SDK archives.
       - name: Prepare Android Emulator package with bounded retry
