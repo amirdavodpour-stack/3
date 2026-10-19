@@ -190,6 +190,12 @@ grep_fixed -Fq -- 'Checkout pinned Google TalkBack source' "$workflow_file"
 grep_fixed -Fq -- '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
 grep_fixed -Fq -- 'Build pinned Google TalkBack accessibility service' "$workflow_file"
 grep_fixed -Fq -- 'ndk;28.2.13676358' "$workflow_file"
+grep_fixed -Fq -- 'Install Android Emulator host runtime libraries' "$workflow_file"
+grep_fixed -Fq -- 'sudo apt-get install --yes --no-install-recommends libpulse0' "$workflow_file"
+grep_fixed -Fq -- "ldconfig -p | grep -F 'libpulse.so.0'" "$workflow_file"
+host_runtime_lib_line="$(grep -nF 'Install Android Emulator host runtime libraries' "$workflow_file" | cut -d: -f1)"
+emulator_prepare_line="$(grep -nF 'Prepare Android Emulator package with bounded retry' "$workflow_file" | cut -d: -f1)"
+test "$host_runtime_lib_line" -lt "$emulator_prepare_line"
 grep_fixed -Fq -- "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
 bash test/runtime/hope_disable_talkback_test.sh
