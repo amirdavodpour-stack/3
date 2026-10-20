@@ -213,7 +213,7 @@ void main() {
   });
 
   testWidgets(
-      'PremiumPaymentSummary always presents the current internal ledger as Toman',
+      'PremiumPaymentSummary always formats monetary amounts as Toman',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(

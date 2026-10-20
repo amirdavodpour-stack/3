@@ -836,7 +836,7 @@ void main() {
         expect(
           semanticLabel,
           contains(subtitle.data),
-          reason: 'The date shown in the ledger row must also be present in its grouped screen-reader label.',
+          reason: 'The date shown in the wallet history row must also be present in its grouped screen-reader label.',
         );
         expect(tester.takeException(), isNull);
       } finally {
@@ -948,7 +948,7 @@ void main() {
     }
   });
 
-  testWidgets('wallet treats backend ledger currencies as internal Toman',
+  testWidgets('wallet formats backend currencies as internal Toman',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
@@ -1065,7 +1065,7 @@ void main() {
         expect(
           amountText.style?.color,
           isNot(Theme.of(amountContext).colorScheme.primary),
-          reason: 'Ledger amounts must not use the brand action foreground in $brightness mode.',
+          reason: 'Transaction amounts must not use the brand action foreground in $brightness mode.',
         );
       }
     }
@@ -1181,7 +1181,7 @@ void main() {
     expect(find.text('op-1'), findsNothing);
   });
 
-  testWidgets('wallet does not expose raw unknown ledger entry types',
+  testWidgets('wallet does not expose backend-only transaction type codes',
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});

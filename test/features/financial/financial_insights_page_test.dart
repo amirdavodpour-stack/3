@@ -431,6 +431,59 @@ void main() {
   );
 
   testWidgets(
+    'financial insights hides implementation-only accounting terms from displayed copy',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in [const Locale('fa'), const Locale('en')]) {
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              locale: locale,
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('لجر'), findsNothing);
+        expect(find.textContaining('ledger'), findsNothing);
+        expect(find.textContaining('transaction reference'), findsNothing);
+        expect(find.textContaining('نوع مرجع تراکنش'), findsNothing);
+        expect(
+          find.text(locale.languageCode == 'en' ? 'Financial insights' : 'تحلیل مالی'),
+          findsOneWidget,
+        );
+
+        final balanceTitle = find.text(
+          locale.languageCode == 'en' ? 'Balance trend' : 'روند موجودی',
+        );
+        await tester.scrollUntilVisible(
+          balanceTitle,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('لجر'), findsNothing);
+        expect(find.textContaining('ledger'), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 24 financial chart legend describes the three real cash-flow series',
     (tester) async {
       tester.view.physicalSize = const Size(360, 900);

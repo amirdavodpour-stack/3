@@ -60,12 +60,6 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                   domain: HopeProductDomain.finance,
                   eyebrow: _t('مالی', 'FINANCE'),
                   title: _t('تحلیل مالی', 'Financial insights'),
-                  subtitle: shortViewport
-                      ? _t('بر پایه لجر داخلی تومان.', 'Internal TOMAN ledger.')
-                      : _t(
-                          'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
-                          'A ledger-based view of your balance and recorded financial activity in HOPE.',
-                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -165,19 +159,13 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
                               title: _t('روند موجودی', 'Balance trend'),
-                              subtitle: _t(
-                                'آخرین موجودی ثبت‌شده در لجر (تومان)',
-                                'Recorded closing balance from the ledger (TOMAN)',
-                              ),
+                              subtitle: _t('موجودی پایانی (تومان)', 'Closing balance (TOMAN)'),
                               child: _LineChart(points: data.balanceTrend),
                             ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
                               title: _t('منابع فعالیت مالی', 'Financial activity sources'),
-                              subtitle: _t(
-                                'بر اساس نوع مرجع تراکنش',
-                                'Grouped by transaction reference',
-                              ),
+                              subtitle: _t('تفکیک فعالیت‌ها', 'Activity categories'),
                               child: _SourceChart(data: data.bySource, t: _t),
                             ),
                           ],
@@ -251,11 +239,6 @@ class _SummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          SizedBox(height: compact ? 4 : 6),
-          Text(t(
-            compact ? 'لجر داخلی تومان؛ بدون تخمین.' : 'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
-            compact ? 'Internal TOMAN ledger only.' : 'Based on the internal TOMAN ledger only; no off-ledger estimates.',
-          )),
           SizedBox(height: compact ? 8 : 13),
           LayoutBuilder(
             builder: (context, constraints) {

@@ -234,25 +234,6 @@ class _WalletPageState extends State<WalletPage> {
     return _t('سایر فعالیت‌ها', 'Other activity');
   }
 
-  String _entryTypeLabel(String value) {
-    switch (value.toUpperCase()) {
-      case 'TRANSFER':
-        return _t('انتقال داخلی', 'Internal transfer');
-      case 'TOP_UP':
-        return _t('شارژ کیف پول', 'Wallet top-up');
-      case 'PAYOUT':
-      case 'WITHDRAW':
-        return _t('برداشت', 'Withdrawal');
-      case 'HOLD':
-        return _t('رزرو مبلغ', 'Funds held');
-      case 'RELEASE':
-        return _t('آزادسازی مبلغ', 'Funds released');
-      case 'REFUND':
-        return _t('بازگشت وجه', 'Refund');
-      default:
-        return _t('سایر فعالیت‌ها', 'Other activity');
-    }
-  }
 
   String _directionLabel(String value) {
     switch (value.toUpperCase()) {
@@ -514,9 +495,7 @@ class _WalletPageState extends State<WalletPage> {
                 value: _signedMoney(item),
                 valueColor: _directionColor(context, item.isCredit),
               ),
-              _DetailRow(label: _t('نوع ثبت', 'Entry type'), value: _entryTypeLabel(item.entryType)),
               _DetailRow(label: _t('جهت', 'Direction'), value: _directionLabel(item.direction)),
-              _DetailRow(label: _t('نوع مرجع', 'Reference type'), value: _referenceTypeLabel(item.referenceType)),
 
               if (item.balanceAfter != null)
                 _DetailRow(
