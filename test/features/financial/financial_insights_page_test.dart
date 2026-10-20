@@ -828,7 +828,12 @@ void main() {
           reason: 'Six recorded months on a 360dp viewport must expose the horizontal-scroll cue.',
         );
         expect(
-          find.text('برای دیدن ماه‌های دیگر، نمودار را افقی بکشید'),
+          find.descendant(
+            of: find.byKey(
+              const ValueKey('financial-balance-scroll-hint'),
+            ),
+            matching: find.text('برای دیدن ماه‌های دیگر، نمودار را افقی بکشید'),
+          ),
           findsOneWidget,
         );
         final balanceAxis = find.byKey(
