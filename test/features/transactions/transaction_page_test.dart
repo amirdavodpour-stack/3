@@ -353,6 +353,11 @@ void main() {
     expect(find.text('Design landing page'), findsAtLeastNWidgets(1));
     expect(find.text('Start work'), findsOneWidget);
     await tester.ensureVisible(find.text('Start work'));
+    final startAction = find.widgetWithText(FilledButton, 'Start work');
+    expect(
+      tester.widget<FilledButton>(startAction).style?.backgroundColor?.resolve({}),
+      HopeV2Colors.markedPrimaryActionDarkGreen,
+    );
     await tester.tap(find.text('Start work'));
     await tester.pumpAndSettle();
     expect(repo.calls, contains('start:j1'));
