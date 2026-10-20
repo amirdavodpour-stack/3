@@ -137,6 +137,7 @@ void main() {
                 label: 'Applications',
                 icon: HopeV2Icons.mission,
                 primary: true,
+                primaryActionColor: HopeV2Colors.markedPrimaryActionDarkGreen,
               ),
               PremiumQuickAction(
                 label: 'Offers',
@@ -152,6 +153,15 @@ void main() {
     expect(find.byType(PremiumPanel), findsNothing);
     expect(find.text('Applications'), findsOneWidget);
     expect(find.text('Offers'), findsOneWidget);
+    final actionInk = find.ancestor(
+      of: find.text('Applications'),
+      matching: find.byType(Ink),
+    ).first;
+    final decoration = tester.widget<Ink>(actionInk).decoration as BoxDecoration;
+    expect(
+      decoration.color,
+      HopeV2Colors.markedPrimaryActionDarkGreen.withValues(alpha: .92),
+    );
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
