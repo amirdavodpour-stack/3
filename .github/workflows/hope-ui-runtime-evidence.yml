@@ -241,9 +241,9 @@ jobs:
           arch: x86_64
           target: default
           profile: pixel_2
-          # Recreate AVD user data from the cached API-35 system image on each run.
-          # Reuse of cached app data leaves HOPE/TalkBack packages signed by prior per-run debug keys,
-          # causing INSTALL_FAILED_UPDATE_INCOMPATIBLE before the evidence script can recover.
+          # Force AVD recreation and wipe user data before installing run-specific debug APKs.
+          # Cached app packages may be signed by prior per-run keys, causing INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+          # Emulator -wipe-data guarantees user apps/settings are removed even if AVD metadata is cached.
           # Use the current SwiftShader software renderer mode supported by modern Emulator releases.
           # Keep Vulkan explicitly disabled for deterministic GLES/PixelCopy capture on the headless lane.
           force-avd-creation: true
@@ -251,7 +251,7 @@ jobs:
           ram-size: 8192M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -no-snapshot -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -no-snapshot -wipe-data -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
