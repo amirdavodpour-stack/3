@@ -116,6 +116,77 @@ void main() {
     );
   });
 
+  test('teal data-chart token and Google sign-in surface preserve contrast and color roles', () {
+    expect(HopeV2Colors.googleSignInSurface, const Color(0xFFE3F0EB));
+    expect(HopeV2Colors.googleSignInBorder, const Color(0xFFAFCFC4));
+    expect(HopeV2Colors.googleSignInForeground, const Color(0xFF173B34));
+    expect(
+      _contrastRatio(
+        HopeV2Colors.googleSignInForeground,
+        HopeV2Colors.googleSignInSurface,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      _contrastRatio(
+        HopeV2Colors.googleSignInDisabledForeground,
+        HopeV2Colors.googleSignInDisabledSurface,
+      ),
+      greaterThanOrEqualTo(4.5),
+    );
+
+    final googleStyle = HopeV2ButtonStyles.googleSignIn();
+    expect(googleStyle.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
+    expect(googleStyle.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
+    expect(googleStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.googleSignInDisabledSurface);
+
+    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
+  });
+
+  testWidgets('match-score chart token is teal in both themes, not the indigo action hue',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      late BuildContext chartContext;
+      final theme = brightness == Brightness.dark ? AppTheme.dark() : AppTheme.light();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Builder(
+            builder: (context) {
+              chartContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      final expected = brightness == Brightness.dark
+          ? HopeV2TonalPalettes.info.shade400
+          : HopeV2TonalPalettes.info.shade700;
+      final actual = HopeV2ChartColors.matchSignal(chartContext);
+      expect(actual, expected);
+      expect(actual, isNot(theme.colorScheme.primary));
+      expect(
+        HopeV2ChartColors.cashIn(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.success.shade400
+            : HopeV2TonalPalettes.success.shade700,
+        reason: 'Semantic cash-in green is not rebranded as a data-chart accent.',
+      );
+      expect(
+        HopeV2ChartColors.cashOut(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.danger.shade400
+            : HopeV2TonalPalettes.danger.shade700,
+      );
+      expect(
+        HopeV2ChartColors.reserved(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.warning.shade300
+            : HopeV2TonalPalettes.warning.shade700,
+      );
+    }
+  });
+
   test('indigo action pairings meet WCAG AA with editorial surfaces', () {
     expect(
       _contrastRatio(HopeV2Colors.surface, HopeV2Colors.primaryAction),
