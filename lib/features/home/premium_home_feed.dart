@@ -1096,11 +1096,23 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.sm),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.sm),
-            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HopeIcon( Directionality.of(context) == TextDirection.rtl
-                                  ? HopeV2Icons.arrowLeft
-                                  : HopeV2Icons.arrowRight,
-                              size: 19,
-                            ), label: Text(action))),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+                  foregroundColor: HopeV2Colors.darkText,
+                ),
+                onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)),
+                icon: HopeIcon(
+                  Directionality.of(context) == TextDirection.rtl
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 19,
+                ),
+                label: Text(action),
+              ),
+            ),
           ]),
         );
       },
