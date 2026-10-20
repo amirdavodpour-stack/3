@@ -2490,14 +2490,19 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
-                                    child: Text(
-                                      '${_t(context, 'مکان', 'Location')} · ${location.trim()}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                            color: neutralForeground,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                    child: Semantics(
+                                      label: '${_t(context, 'مکان', 'Location')}: ${location.trim()}',
+                                      child: ExcludeSemantics(
+                                        child: Text(
+                                          location.trim(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                color: neutralForeground,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
