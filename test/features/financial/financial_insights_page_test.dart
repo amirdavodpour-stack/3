@@ -822,6 +822,15 @@ void main() {
           await tester.drag(pageList, const Offset(0, -400));
           await tester.pumpAndSettle();
         }
+        expect(
+          find.byKey(const ValueKey('financial-balance-scroll-hint')),
+          findsOneWidget,
+          reason: 'Six recorded months on a 360dp viewport must expose the horizontal-scroll cue.',
+        );
+        expect(
+          find.text('برای دیدن ماه‌های دیگر، نمودار را افقی بکشید'),
+          findsOneWidget,
+        );
         final balanceAxis = find.byKey(
           const ValueKey('financial-balance-y-axis'),
         );
