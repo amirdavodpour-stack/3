@@ -353,6 +353,10 @@ class _OffersPageState extends State<OffersPage> {
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+                  foregroundColor: HopeV2Colors.darkText,
+                ),
                 onPressed: _acceptingId == o.id ? null : () => _accept(o),
                 icon: _acceptingId == o.id
                     ? const SizedBox(
