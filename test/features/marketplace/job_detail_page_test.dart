@@ -15,6 +15,7 @@ import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
@@ -490,7 +491,64 @@ void main() {
 
   testWidgets('decision strip renders all four breakdown dimensions in a compact grid',
       (tester) async {
-    await _pump(tester, job: _job(), width: 390, height: 844);
+    await _pump(
+      tester,
+      job: _job(city: 'تهران'),
+      width: 360,
+      height: 1200,
+      locale: const Locale('fa'),
+    );
+
+    final decision = find.byKey(const ValueKey('opportunity-decision-strip'));
+    final hero = find.byType(PremiumHero);
+    expect(decision, findsOneWidget);
+    expect(hero, findsOneWidget);
+    expect(
+      tester.getTopLeft(decision).dy - tester.getBottomLeft(hero).dy,
+      greaterThanOrEqualTo(8),
+      reason: 'The hero and decision surfaces need a visible, stable gap on compact screens.',
+    );
+    final decisionWidget = tester.widget<HopeOpportunityDecisionStrip>(
+      find.byKey(const ValueKey('opportunity-decision-strip')),
+    );
+    expect(
+      decisionWidget.highlightHighScore,
+      isFalse,
+      reason: 'Job detail should not tint the full surface indigo for a high score.',
+    );
+
+    final location = find.byKey(
+      const ValueKey('opportunity-decision-location-inline'),
+    );
+    final rationale = find.byKey(
+      const ValueKey('opportunity-decision-match-rationale'),
+    );
+    expect(location, findsOneWidget);
+    expect(rationale, findsOneWidget);
+    expect(
+      (tester.getRect(location).center.dy - tester.getRect(rationale).center.dy).abs(),
+      lessThan(18),
+      reason: 'The Tehran metadata and matching reason should share the compact metadata row.',
+    );
+
+    final scoreRing = find.descendant(
+      of: find.byKey(const ValueKey('opportunity-match-score-ring')),
+      matching: find.byType(CircularProgressIndicator),
+    );
+    expect(scoreRing, findsOneWidget);
+    final chartColor = HopeV2ChartColors.matchSignal(
+      tester.element(decision),
+    );
+    expect(
+      tester.widget<CircularProgressIndicator>(scoreRing).valueColor,
+      isA<AlwaysStoppedAnimation<Color>>(),
+    );
+    expect(
+      (tester.widget<CircularProgressIndicator>(scoreRing).valueColor
+              as AlwaysStoppedAnimation<Color>)
+          .value,
+      chartColor,
+    );
 
     final skills = find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
     final category = find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
@@ -501,6 +559,19 @@ void main() {
     expect(category, findsOneWidget);
     expect(location, findsOneWidget);
     expect(salary, findsOneWidget);
+    final chartBars = tester.widgetList<LinearProgressIndicator>(
+      find.descendant(
+        of: find.byKey(const ValueKey('opportunity-decision-strip')),
+        matching: find.byType(LinearProgressIndicator),
+      ),
+    ).toList(growable: false);
+    expect(chartBars, hasLength(4));
+    for (final bar in chartBars) {
+      expect(
+        (bar.valueColor as AlwaysStoppedAnimation<Color>).value,
+        chartColor,
+      );
+    }
     expect(
       (tester.getTopLeft(category).dy - tester.getTopLeft(skills).dy).abs(),
       lessThan(90),
