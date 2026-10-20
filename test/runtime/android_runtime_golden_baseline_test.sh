@@ -38,6 +38,7 @@ require_line "$workflow" 'group: hope-ui-runtime-evidence-${{ github.workflow }}
 # A cached AVD can retain the app/TalkBack packages from a prior job's debug signing key.
 # Always recreate user data before the runner installs the exact-HEAD APK.
 require_line "$workflow" "force-avd-creation: true"
+require_line "$workflow" "-wipe-data"
 require_line "$workflow" "Recreate AVD user data from the cached API-35 system image on each run."
 if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
@@ -52,7 +53,7 @@ require_line "$workflow" "Align PR runtime checkout to exact feature HEAD"
 require_line "$workflow" 'exact_head="$(git rev-parse HEAD^2)"'
 require_line "$workflow" 'test "$(git rev-parse HEAD)" = "$exact_head"'
 require_line "$workflow" "cores: 4"
-require_line "$workflow" "emulator-options: -no-window -no-snapshot -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
+require_line "$workflow" "emulator-options: -no-window -no-snapshot -wipe-data -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics"
 require_line "$workflow" "-feature -Vulkan"
 if grep -Fq -- '-gpu software' "$workflow"; then
   printf 'FAIL: runtime golden baseline still uses generic software GPU mode; use the runner-stable SwiftShader mode.\n' >&2
