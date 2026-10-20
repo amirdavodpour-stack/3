@@ -32,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   bool obscure = true;
   bool loading = false;
   bool _capabilitiesLookupAttempted = false;
+  bool _googleLogoPrecacheStarted = false;
   BackendCapabilities? _backendCapabilities;
 
   bool get _canUseGoogleSignIn =>
@@ -41,6 +42,18 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Prime the small bundled logo before the first Google CTA frame. The
+    // login screen is captured first on cold start, so no earlier route has
+    // necessarily warmed Flutter's asset image cache yet.
+    if (!_googleLogoPrecacheStarted) {
+      _googleLogoPrecacheStarted = true;
+      unawaited(
+        precacheImage(
+          const AssetImage('assets/branding/google_g.png'),
+          context,
+        ),
+      );
+    }
     if (_capabilitiesLookupAttempted) return;
     _capabilitiesLookupAttempted = true;
     try {
@@ -212,6 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                             style: HopeV2ButtonStyles.googleSignIn(),
                             onPressed: loading ? null : submitGoogle,
                             icon: Image.asset(
+                              key: const ValueKey('auth-google-sign-in-logo'),
                               'assets/branding/google_g.png',
                               width: 20,
                               height: 20,
