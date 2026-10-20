@@ -2243,6 +2243,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     required this.location,
     required this.kind,
     this.accent,
+    this.highlightHighScore = true,
     this.breakdown = const <String, double>{},
     this.recommendationReasons = const <String>[],
   });
@@ -2253,6 +2254,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   final String location;
   final String kind;
   final Color? accent;
+  final bool highlightHighScore;
   final Map<String, double> breakdown;
   final List<String> recommendationReasons;
 
@@ -2281,6 +2283,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
+    final chartColor = HopeV2ChartColors.matchSignal(context);
     final scoreForeground = HopeV2SemanticColors.info(context);
     final neutralForeground = HopeV2SemanticColors.textSecondary(context);
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -2401,7 +2404,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   minHeight: 4,
                   value: value,
                   backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .32),
-                  valueColor: AlwaysStoppedAnimation<Color>(primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(chartColor),
                 ),
               ),
             ],
@@ -2436,7 +2439,9 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
       label: _t(context, 'خلاصه تصمیم فرصت', 'Opportunity decision summary'),
       child: PremiumPanel(
         key: const ValueKey('opportunity-decision-strip'),
-        highlight: score != null && score >= 90,
+        // The page can suppress the indigo wash while retaining the compact
+        // decision hierarchy; the score is carried by the teal data series.
+        highlight: highlightHighScore && score != null && score >= 90,
         padding: EdgeInsets.fromLTRB(
           compact ? 10 : 12,
           compact ? 9 : 11,
@@ -2488,7 +2493,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                   backgroundColor: HopeV2Surfaces.border(context)
                                       .withValues(alpha: .42),
                                   valueColor:
-                                      AlwaysStoppedAnimation<Color>(primary),
+                                      AlwaysStoppedAnimation<Color>(chartColor),
                                 ),
                               ),
                               Column(
@@ -2587,9 +2592,9 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       constraints: const BoxConstraints(minWidth: 70, minHeight: 60),
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: primary.withValues(alpha: .12),
+                        color: chartColor.withValues(alpha: .12),
                         borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                        border: Border.all(color: primary.withValues(alpha: .22)),
+                        border: Border.all(color: chartColor.withValues(alpha: .22)),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
