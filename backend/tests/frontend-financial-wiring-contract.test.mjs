@@ -162,6 +162,10 @@ test('opportunity fee disclosures match backend fee policy in Persian and Englis
   const view = read('backend/src/application/view_helpers.js');
   const financial = read('backend/src/financial.js');
   const createPage = read('lib/features/marketplace/create_job_widgets.part.dart');
+  const feeDisclosureStart = createPage.indexOf("title: translate('کارمزد HOPE'");
+  const feeDisclosureEnd = createPage.indexOf("title: translate('معیار پذیرش'");
+  assert.ok(feeDisclosureStart >= 0 && feeDisclosureEnd > feeDisclosureStart);
+  const feeDisclosure = createPage.slice(feeDisclosureStart, feeDisclosureEnd);
   const faCopy = read('lib/l10n/generated/app_localizations_fa.dart');
   const enCopy = read('lib/l10n/generated/app_localizations_en.dart');
 
@@ -169,7 +173,7 @@ test('opportunity fee disclosures match backend fee policy in Persian and Englis
   assert.match(view, /employerRate: 0\.30, candidateRate: 0, model: 'FIRST_MONTH_SALARY'/);
   assert.match(financial, /employerFeeRate = normalizedKind === 'MISSION' \? 10 : 30/);
   assert.match(financial, /workerFeeRate = normalizedKind === 'MISSION' \? 10 : 0/);
-  assert.match(createPage, /kind === 'MISSION'[\s\S]{0,180}copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]{0,150}copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
+  assert.match(feeDisclosure, /kind === 'MISSION'\s*\?[\s\S]*copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]*:[\s\S]*copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
   assert.match(faCopy, /۱۰٪ از کارفرما و ۱۰٪ از کارجو/);
   assert.match(faCopy, /۳۰٪ از دستمزد ماه اول کارجو از سمت کارفرما/);
   assert.match(enCopy, /10% from the employer and 10% from the candidate/);
