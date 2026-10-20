@@ -2475,6 +2475,34 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                     fontWeight: FontWeight.w900,
                                   ),
                             ),
+                            if (compact &&
+                                !enlargedText &&
+                                location.trim().isNotEmpty &&
+                                location.trim() != '—') ...[
+                              const SizedBox(height: 3),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const HopeIcon(
+                                    HopeV2Icons.location,
+                                    size: 13,
+                                    color: HopeV2Colors.secondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      '${_t(context, 'مکان', 'Location')} · ${location.trim()}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: neutralForeground,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -2561,7 +2589,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       children: [
                         fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
                         fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
-                        fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                        if (!compact || enlargedText)
+                          fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
                       ],
                     ),
                   if (matchRationaleTag != null) ...[
