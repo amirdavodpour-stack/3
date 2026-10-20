@@ -283,7 +283,7 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                          onPressed: loading ? null : submit,
+
                           child: loading
                               ? const SizedBox(
                                   width: 22,
