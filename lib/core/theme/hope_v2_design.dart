@@ -153,7 +153,7 @@ class HopeV2ButtonStyles {
       disabledForegroundColor: isDark
           ? HopeV2Colors.darkMuted
           : HopeV2Colors.muted,
-      overlayColor: HopeV2Colors.darkText.withValues(alpha: 0.12),
+      overlayColor: HopeV2Colors.darkBackground.withValues(alpha: 0.12),
     );
   }
 }

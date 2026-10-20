@@ -78,6 +78,14 @@ void main() {
       _contrastRatio(darkStyle.foregroundColor!.resolve({})!, darkStyle.backgroundColor!.resolve({})!),
       greaterThanOrEqualTo(4.5),
     );
+    final darkPressedFill = Color.alphaBlend(
+      darkStyle.overlayColor!.resolve({WidgetState.pressed})!,
+      darkStyle.backgroundColor!.resolve({})!,
+    );
+    expect(
+      _contrastRatio(darkStyle.foregroundColor!.resolve({})!, darkPressedFill),
+      greaterThanOrEqualTo(4.5),
+    );
 
     late ButtonStyle lightStyle;
     await tester.pumpWidget(
@@ -96,6 +104,14 @@ void main() {
     expect(lightStyle.foregroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.muted);
     expect(
       _contrastRatio(lightStyle.foregroundColor!.resolve({})!, lightStyle.backgroundColor!.resolve({})!),
+      greaterThanOrEqualTo(4.5),
+    );
+    final lightPressedFill = Color.alphaBlend(
+      lightStyle.overlayColor!.resolve({WidgetState.pressed})!,
+      lightStyle.backgroundColor!.resolve({})!,
+    );
+    expect(
+      _contrastRatio(lightStyle.foregroundColor!.resolve({})!, lightPressedFill),
       greaterThanOrEqualTo(4.5),
     );
   });
