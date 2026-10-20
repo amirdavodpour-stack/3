@@ -7,6 +7,7 @@ on:
     branches:
       - feat/google-sign-in-2026-09-20
       - feat/ui-v2-wave-1-execution-2026-10-07
+      - ci/runtime-capture-bridge-2026-10-20
 
 concurrency:
   # Isolate verification by exact commit so a wedged older runner cannot starve the current head.
