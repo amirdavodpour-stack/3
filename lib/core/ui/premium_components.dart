@@ -2443,10 +2443,10 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
         // decision hierarchy; the score is carried by the teal data series.
         highlight: highlightHighScore && score != null && score >= 90,
         padding: EdgeInsets.fromLTRB(
-          compact ? 10 : 12,
-          compact ? 9 : 11,
-          compact ? 10 : 12,
-          compact ? 9 : 11,
+          compact ? 9 : 12,
+          compact ? 7 : 11,
+          compact ? 9 : 12,
+          compact ? 7 : 11,
         ),
         child: compact
             ? Column(
@@ -2477,34 +2477,48 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                             ),
                             if (compact &&
                                 !enlargedText &&
-                                location.trim().isNotEmpty &&
-                                location.trim() != '—') ...[
+                                ((location.trim().isNotEmpty &&
+                                        location.trim() != '—') ||
+                                    matchRationaleTag != null)) ...[
                               const SizedBox(height: 3),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 3,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  const HopeIcon(
-                                    HopeV2Icons.location,
-                                    size: 13,
-                                    color: HopeV2Colors.secondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Semantics(
-                                      label: '${_t(context, 'مکان', 'Location')}: ${location.trim()}',
-                                      child: ExcludeSemantics(
-                                        child: Text(
-                                          location.trim(),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                color: neutralForeground,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
+                                  if (location.trim().isNotEmpty &&
+                                      location.trim() != '—')
+                                    Row(
+                                      key: const ValueKey(
+                                        'opportunity-decision-location-inline',
                                       ),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const HopeIcon(
+                                          HopeV2Icons.location,
+                                          size: 13,
+                                          color: HopeV2Colors.secondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Semantics(
+                                            label: '${_t(context, 'مکان', 'Location')}: ${location.trim()}',
+                                            child: ExcludeSemantics(
+                                              child: Text(
+                                                location.trim(),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                      color: neutralForeground,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
+                                  if (matchRationaleTag != null) matchRationaleTag,
                                 ],
                               ),
                             ],
@@ -2560,7 +2574,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   if (enlargedText)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2598,7 +2612,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                           fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
                       ],
                     ),
-                  if (matchRationaleTag != null) ...[
+                  if (matchRationaleTag != null &&
+                      (!compact || enlargedText)) ...[
                     const SizedBox(height: 6),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
