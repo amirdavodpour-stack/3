@@ -1449,10 +1449,10 @@ void main() {
       expect(unit, findsOneWidget);
       expect(tester.widget<Text>(unit).data, 'تومان');
 
-      final unitAlignment = find.ancestor(
-        of: unit,
-        matching: find.byType(Align),
-      ).first;
+      final unitAlignment = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit-alignment'),
+      );
+      expect(unitAlignment, findsOneWidget);
       expect(
         tester.widget<Align>(unitAlignment).alignment,
         AlignmentDirectional.centerEnd,
