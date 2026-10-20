@@ -47,6 +47,17 @@ void main() {
     );
   });
 
+  test('annotated dark-green CTA token meets WCAG AA and preserves indigo brand tokens', () {
+    expect(HopeV2Colors.markedPrimaryActionDarkGreen, const Color(0xFF2E7B5A));
+    expect(
+      _contrastRatio(HopeV2Colors.darkText, HopeV2Colors.markedPrimaryActionDarkGreen),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
+    expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
+    expect(HopeV2Colors.success, const Color(0xFF166534));
+  });
+
   test('indigo action pairings meet WCAG AA with editorial surfaces', () {
     expect(
       _contrastRatio(HopeV2Colors.surface, HopeV2Colors.primaryAction),
