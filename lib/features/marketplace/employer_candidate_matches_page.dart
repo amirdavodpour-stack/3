@@ -119,7 +119,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                       value: ratio,
                       backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .35),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
+                        HopeV2ChartColors.matchSignal(context),
                       ),
                     ),
                   ),
@@ -167,7 +167,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       key: const ValueKey('candidate-comparison-best-score'),
       icon: HopeV2Icons.match,
       label: _candidateScoreLabel(context, best.score),
-      color: Theme.of(context).colorScheme.primary,
+      color: HopeV2ChartColors.matchSignal(context),
     );
     final gapTag = candidateCount > 1 && gapValue != null
         ? PremiumTag(
@@ -476,7 +476,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           height: 34,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: HopeV2Colors.primary.withValues(alpha: .12),
+                            color: HopeV2ChartColors.matchSignal(context).withValues(alpha: .12),
                           ),
                           child: Center(
                             child: Text(
@@ -521,10 +521,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                           key: ValueKey('candidate-match-score-${candidate.userId}'),
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: HopeV2Colors.primary.withValues(alpha: .10),
+                            color: HopeV2ChartColors.matchSignal(context).withValues(alpha: .10),
                             borderRadius: BorderRadius.circular(HopeV2Radii.sm),
                             border: Border.all(
-                              color: HopeV2Colors.primary.withValues(alpha: .14),
+                              color: HopeV2ChartColors.matchSignal(context).withValues(alpha: .14),
                             ),
                           ),
                           child: Text(
