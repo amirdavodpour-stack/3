@@ -1038,10 +1038,6 @@ class _LineChart extends StatelessWidget {
       builder: (context, constraints) {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final labelHeight = math.max(
-          constraints.maxHeight < 150 ? 20.0 : 24.0,
-          14.0 * textScale,
-        ).toDouble();
         final pointWidth = math.max(64.0, 64.0 * textScale);
         final axisWidth =
             math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
@@ -1087,6 +1083,10 @@ class _LineChart extends StatelessWidget {
           1.0,
           constraints.maxHeight -
               (hasHorizontalOverflow ? scrollHintHeight : 0),
+        ).toDouble();
+        final labelHeight = math.max(
+          chartViewportHeight < 150 ? 20.0 : 24.0,
+          14.0 * textScale,
         ).toDouble();
 
         return Column(
