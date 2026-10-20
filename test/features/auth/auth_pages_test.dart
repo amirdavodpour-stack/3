@@ -8,6 +8,7 @@ import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
 import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/hope_l10n.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
@@ -343,6 +344,27 @@ void main() {
       findsNothing,
       reason: 'The compact registration hero intentionally suppresses the eyebrow.',
     );
+  });
+
+  testWidgets('marked auth submit actions use the scoped green CTA token', (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      final button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(
+        button.style?.backgroundColor?.resolve({}),
+        HopeV2Colors.markedPrimaryActionDarkGreen,
+      );
+      expect(
+        button.style?.foregroundColor?.resolve({}),
+        HopeV2Colors.darkText,
+      );
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
