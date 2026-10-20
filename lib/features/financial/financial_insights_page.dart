@@ -1114,7 +1114,8 @@ class _LineChart extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color:
+                                  Theme.of(context).colorScheme.onSurfaceVariant,
                               fontSize: 11,
                             ),
                       ),
@@ -1129,89 +1130,91 @@ class _LineChart extends StatelessWidget {
                   SizedBox(
                     width: axisWidth,
                     height: chartViewportHeight,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: labelHeight),
-                      child: Column(
-                        key: const ValueKey('financial-balance-y-axis'),
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final tick in axisValues)
-                            Text(
-                              _cashFlowAxisLabel(tick, locale),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    fontSize: 10,
-                                    height: 1,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: labelHeight),
+                            child: Column(
+                              key: const ValueKey('financial-balance-y-axis'),
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (final tick in axisValues)
+                                  Text(
+                                    _cashFlowAxisLabel(tick, locale),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: 10,
+                                          height: 1,
+                                          fontWeight: FontWeight.w700,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
                                   ),
+                              ],
                             ),
-                        ],
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(
-              key: ValueKey('financial-balance-axis-gutter'),
-              width: axisGap,
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                key: const ValueKey('financial-balance-chart-scroll'),
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: chartWidth,
-                  height: chartViewportHeight,
-                  child: Semantics(
-                    key: const ValueKey('financial-balance-chart-semantics'),
-                    container: true,
-                    label: (english
-                            ? 'Balance trend; recorded closing balance in TOMAN. '
-                            : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
-                        points.map((point) {
-                          final recordedValue = point.value;
-                          if (recordedValue == null) {
-                            return english
-                                ? '${point.date}: no closing balance recorded'
-                                : '${point.date}: مانده پایانی ثبت نشده';
-                          }
-                          final value = HopeDisplayFormatter.money(
-                            recordedValue.round(),
-                            locale: locale,
-                          );
-                          return '${point.date}: $value';
-                        }).join('. '),
-                    child: CustomPaint(
-                      painter: _LineChartPainter(
-                        points,
-                        color,
-                        color.withValues(alpha: .12),
-                        Theme.of(context).colorScheme.onSurfaceVariant,
-                        Directionality.of(context),
-                        Localizations.localeOf(context).languageCode,
-                        textScale,
-                        scaleMinimum,
-                        scaleMaximum,
-                        labelHeight,
-                      ),
-                      child: const SizedBox.expand(),
-                    ),
+                  const SizedBox(
+                    key: ValueKey('financial-balance-axis-gutter'),
+                    width: axisGap,
                   ),
-                ),
-              ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: const ValueKey('financial-balance-chart-scroll'),
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: chartWidth,
+                        height: chartViewportHeight,
+                        child: Semantics(
+                          key: const ValueKey(
+                            'financial-balance-chart-semantics',
+                          ),
+                          container: true,
+                          label: (english
+                                  ? 'Balance trend; recorded closing balance in TOMAN. '
+                                  : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
+                              points.map((point) {
+                                final recordedValue = point.value;
+                                if (recordedValue == null) {
+                                  return english
+                                      ? '${point.date}: no closing balance recorded'
+                                      : '${point.date}: مانده پایانی ثبت نشده';
+                                }
+                                final value = HopeDisplayFormatter.money(
+                                  recordedValue.round(),
+                                  locale: locale,
+                                );
+                                return '${point.date}: $value';
+                              }).join('. '),
+                          child: CustomPaint(
+                            painter: _LineChartPainter(
+                              points,
+                              color,
+                              color.withValues(alpha: .12),
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                              Directionality.of(context),
+                              Localizations.localeOf(context).languageCode,
+                              textScale,
+                              scaleMinimum,
+                              scaleMaximum,
+                              labelHeight,
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
