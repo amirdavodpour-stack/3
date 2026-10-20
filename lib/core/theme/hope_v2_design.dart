@@ -17,6 +17,9 @@ class HopeV2Colors {
 
   static const primary = Color(0xFF6366F1);
   static const primaryAction = Color(0xFF4F46E5);
+  /// Dark-green fill for the specific primary CTAs marked in the 2026-10-20 visual audit.
+  /// Keep the global indigo brand/action ramp unchanged.
+  static const markedPrimaryActionDarkGreen = Color(0xFF2E7B5A);
   static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
