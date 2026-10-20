@@ -1012,7 +1012,7 @@ class _LineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final color = HopeV2ChartColors.matchSignal(context);
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale.toLowerCase().startsWith('en');
     final recordedPoints = points
@@ -1442,7 +1442,13 @@ class _SourceChart extends StatelessWidget {
                   const SizedBox(height: 5),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(value: ratio, minHeight: 8),
+                    child: LinearProgressIndicator(
+                      value: ratio,
+                      minHeight: 8,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        HopeV2ChartColors.matchSignal(context),
+                      ),
+                    ),
                   ),
                 ],
               ],
