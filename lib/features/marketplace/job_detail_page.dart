@@ -766,6 +766,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             : HopeCopy.of(context)
                                 .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+                    foregroundColor: HopeV2Colors.darkText,
+                  ),
                   key: const ValueKey('opportunity-detail-primary-cta'),
                   onPressed: loading
                       ? null
