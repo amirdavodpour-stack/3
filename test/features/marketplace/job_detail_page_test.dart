@@ -508,11 +508,10 @@ void main() {
       greaterThanOrEqualTo(8),
       reason: 'The hero and decision surfaces need a visible, stable gap on compact screens.',
     );
-    final decisionWidget = tester.widget<HopeOpportunityDecisionStrip>(
-      find.byKey(const ValueKey('opportunity-decision-strip')),
-    );
+    // The key is owned by the PremiumPanel inside the decision strip.
+    final decisionPanel = tester.widget<PremiumPanel>(decision);
     expect(
-      decisionWidget.highlightHighScore,
+      decisionPanel.highlight,
       isFalse,
       reason: 'Job detail should not tint the full surface indigo for a high score.',
     );
