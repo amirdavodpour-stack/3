@@ -332,7 +332,7 @@ void main() {
           matching: find.byType(TextButton),
         ));
         expect(
-          visualReportButton.style?.disabledForegroundColor?.resolve({}),
+          visualReportButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
           AppTheme.dark().colorScheme.onSurfaceVariant,
           reason: 'Disabled report text should use the neutral readable text tone, not the indigo action accent.',
         );
