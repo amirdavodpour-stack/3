@@ -353,6 +353,10 @@ testWidgets('accepting an offer disables the financial action until completion',
 
     final acceptButton = find.widgetWithText(FilledButton, 'Accept offer');
     expect(acceptButton, findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(acceptButton).style?.backgroundColor?.resolve({}),
+      HopeV2Colors.markedPrimaryActionDarkGreen,
+    );
 
     await tester.tap(acceptButton);
     await tester.pump();
