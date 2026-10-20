@@ -209,15 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             key: const ValueKey('auth-google-sign-in'),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF1F1F1F),
-                              side: const BorderSide(color: Color(0xFFDADCE0)),
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            style: HopeV2ButtonStyles.googleSignIn(),
                             onPressed: loading ? null : submitGoogle,
                             icon: Image.asset(
                               'assets/branding/google_g.png',
