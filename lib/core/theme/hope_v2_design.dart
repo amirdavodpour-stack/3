@@ -20,6 +20,13 @@ class HopeV2Colors {
   /// Dark-green fill for the specific primary CTAs marked in the 2026-10-20 visual audit.
   /// Keep the global indigo brand/action ramp unchanged.
   static const markedPrimaryActionDarkGreen = Color(0xFF2E7B5A);
+  // Google sign-in keeps the multicolor G logo but replaces pure white with a
+  // pale botanical surface that belongs to HOPE's dark editorial interface.
+  static const googleSignInSurface = Color(0xFFE3F0EB);
+  static const googleSignInBorder = Color(0xFFAFCFC4);
+  static const googleSignInForeground = Color(0xFF173B34);
+  static const googleSignInDisabledSurface = Color(0xFFD7E5DF);
+  static const googleSignInDisabledForeground = Color(0xFF61756D);
   static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
@@ -141,6 +148,18 @@ class HopeV2Colors {
 /// Disabled/loading actions remain neutral; enabled actions use the audited green fill.
 class HopeV2ButtonStyles {
   const HopeV2ButtonStyles._();
+
+  static ButtonStyle googleSignIn() => OutlinedButton.styleFrom(
+        backgroundColor: HopeV2Colors.googleSignInSurface,
+        foregroundColor: HopeV2Colors.googleSignInForeground,
+        disabledBackgroundColor: HopeV2Colors.googleSignInDisabledSurface,
+        disabledForegroundColor: HopeV2Colors.googleSignInDisabledForeground,
+        side: const BorderSide(color: HopeV2Colors.googleSignInBorder),
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      );
 
   static ButtonStyle auditedGreenPrimaryCta(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1017,6 +1036,13 @@ class HopeV2ChartColors {
   static Color reserved(BuildContext context) => _isDark(context)
       ? HopeV2TonalPalettes.warning.shade300
       : HopeV2TonalPalettes.warning.shade700;
+
+  /// Match-score rings, component bars, and analytics trends. Teal belongs to
+  /// information/data visualization; green/red/amber remain reserved for cash
+  /// in/out/held states, and the global indigo action ramp remains unchanged.
+  static Color matchSignal(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.info.shade400
+      : HopeV2TonalPalettes.info.shade700;
 }
 
 class HopeV2Shadows {
