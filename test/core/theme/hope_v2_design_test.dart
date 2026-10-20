@@ -58,6 +58,48 @@ void main() {
     expect(HopeV2Colors.success, const Color(0xFF166534));
   });
 
+  testWidgets('audited green CTA keeps disabled state neutral in light and dark themes', (tester) async {
+    late ButtonStyle darkStyle;
+    await tester.pumpWidget(
+      Theme(
+        data: AppTheme.dark(),
+        child: Builder(
+          builder: (context) {
+            darkStyle = HopeV2ButtonStyles.auditedGreenPrimaryCta(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(darkStyle.backgroundColor?.resolve({}), HopeV2Colors.markedPrimaryActionDarkGreen);
+    expect(darkStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.darkSurface);
+    expect(darkStyle.foregroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.darkMuted);
+    expect(
+      _contrastRatio(darkStyle.foregroundColor!.resolve({})!, darkStyle.backgroundColor!.resolve({})!),
+      greaterThanOrEqualTo(4.5),
+    );
+
+    late ButtonStyle lightStyle;
+    await tester.pumpWidget(
+      Theme(
+        data: AppTheme.light(),
+        child: Builder(
+          builder: (context) {
+            lightStyle = HopeV2ButtonStyles.auditedGreenPrimaryCta(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(lightStyle.backgroundColor?.resolve({}), HopeV2Colors.markedPrimaryActionDarkGreen);
+    expect(lightStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.disabledLight);
+    expect(lightStyle.foregroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.muted);
+    expect(
+      _contrastRatio(lightStyle.foregroundColor!.resolve({})!, lightStyle.backgroundColor!.resolve({})!),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
   test('indigo action pairings meet WCAG AA with editorial surfaces', () {
     expect(
       _contrastRatio(HopeV2Colors.surface, HopeV2Colors.primaryAction),

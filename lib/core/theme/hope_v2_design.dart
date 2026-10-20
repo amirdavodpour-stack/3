@@ -137,6 +137,27 @@ class HopeV2Colors {
   static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
 }
 
+/// State-aware style for only the primary CTAs called out in the 2026-10-20 visual audit.
+/// Disabled/loading actions remain neutral; enabled actions use the audited green fill.
+class HopeV2ButtonStyles {
+  const HopeV2ButtonStyles._();
+
+  static ButtonStyle auditedGreenPrimaryCta(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return FilledButton.styleFrom(
+      backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+      foregroundColor: HopeV2Colors.darkText,
+      disabledBackgroundColor: isDark
+          ? HopeV2Colors.darkSurface
+          : HopeV2Colors.disabledLight,
+      disabledForegroundColor: isDark
+          ? HopeV2Colors.darkMuted
+          : HopeV2Colors.muted,
+      overlayColor: HopeV2Colors.darkText.withValues(alpha: 0.12),
+    );
+  }
+}
+
 /// Muted decorative identities for opportunity artwork and its matching card
 /// accent rail. These colors are never readable text and never represent a
 /// lifecycle, money, verification, or trust state.

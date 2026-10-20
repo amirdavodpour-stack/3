@@ -1099,10 +1099,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
-                  foregroundColor: HopeV2Colors.darkText,
-                ),
+                style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                 onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)),
                 icon: HopeIcon(
                   Directionality.of(context) == TextDirection.rtl

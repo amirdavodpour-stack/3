@@ -105,10 +105,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
-                              foregroundColor: HopeV2Colors.darkText,
-                            ),
+                            style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                             onPressed: loading ? null : submit,
                             child: loading
                                 ? const SizedBox(
