@@ -173,7 +173,7 @@ test('opportunity fee disclosures match backend fee policy in Persian and Englis
   assert.match(view, /employerRate: 0\.30, candidateRate: 0, model: 'FIRST_MONTH_SALARY'/);
   assert.match(financial, /employerFeeRate = normalizedKind === 'MISSION' \? 10 : 30/);
   assert.match(financial, /workerFeeRate = normalizedKind === 'MISSION' \? 10 : 0/);
-  assert.match(feeDisclosure, /kind === 'MISSION'\s*\?[\s\S]*copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]*:[\s\S]*copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
+  assert.match(feeDisclosure, /kind\s*==\s*'MISSION'\s*\?[\s\S]*copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]*:[\s\S]*copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
   assert.match(faCopy, /۱۰٪ از کارفرما و ۱۰٪ از کارجو/);
   assert.match(faCopy, /۳۰٪ از دستمزد ماه اول کارجو از سمت کارفرما/);
   assert.match(enCopy, /10% from the employer and 10% from the candidate/);
