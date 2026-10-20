@@ -1654,7 +1654,7 @@ class _MatchIntelligence extends StatelessWidget {
 
   Widget _compactSurface(BuildContext context) {
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null
         ? null
@@ -1840,6 +1840,7 @@ class _MatchIntelligence extends StatelessWidget {
     }
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final primary = Theme.of(context).colorScheme.primary;
+    final chartColor = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null ? null : score >= 90
         ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
@@ -1881,8 +1882,8 @@ class _MatchIntelligence extends StatelessWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: chartColor.withValues(alpha: .10))),
+                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: chartColor)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text(HopeDisplayFormatter.percent(
                                     score.clamp(0, 100),
@@ -1943,7 +1944,7 @@ class _MatchIntelligence extends StatelessWidget {
   }
 
   Widget _breakdownBar(BuildContext context, {required String key, required double value}) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-$key'),
@@ -1969,7 +1970,7 @@ class _MatchIntelligence extends StatelessWidget {
 
   void _showDetails(BuildContext context) {
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     showModalBottomSheet<void>(
       context: context,
