@@ -151,11 +151,19 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: theme,
-          home: Builder(
-            builder: (context) {
-              chartContext = context;
-              return const SizedBox.shrink();
-            },
+          home: Theme(
+            data: theme,
+            child: Builder(
+              builder: (context) {
+                chartContext = context;
+                expect(
+                  Theme.of(context).brightness,
+                  brightness,
+                  reason: 'The chart palette test must evaluate the requested theme.',
+                );
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
