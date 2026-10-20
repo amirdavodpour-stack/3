@@ -318,8 +318,8 @@ class MainActivity : FlutterActivity() {
 
         // Register the listener before checking or draining reader state so callbacks
         // from racing frames are not lost. Normal captures retain the committed-frame
-        // fast path; strict Password Reset capture drains that candidate and waits for
-        // later ImageReader deliveries without changing policy for other static screens.
+        // fast path; strict authentication captures drain that candidate and wait for
+        // the requested number of later ImageReader deliveries.
         imageReader.setOnImageAvailableListener(
             {
                 mainHandler.post {

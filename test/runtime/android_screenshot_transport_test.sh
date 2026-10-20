@@ -54,8 +54,15 @@ done
 
 
 grep -Fq "int _runtimeFreshFrameCount(String marker)" "$test_file"
-grep -Fq "if (marker.startsWith('register-')) return 2;" "$test_file"
+grep -Fq "if (marker.startsWith('register-')) return 1;" "$test_file"
 grep -Fq "if (marker.startsWith('password-reset-')) return 1;" "$test_file"
+register_capture_block="$(sed -n '/^  if (child is RegisterPage) {/,/^  if (child is PasswordResetPage) {/p' "$test_file")"
+register_ready_line="$(grep -nF 'await _waitForRuntimeRegisterGoogleCta(tester);' <<<"$register_capture_block" | head -n1 | cut -d: -f1)"
+register_capture_line="$(grep -nF 'await _captureRuntimeScreenshot(marker, tester: tester);' <<<"$register_capture_block" | head -n1 | cut -d: -f1)"
+if [[ -z "$register_ready_line" || -z "$register_capture_line" || "$register_ready_line" -ge "$register_capture_line" ]]; then
+  echo "FAIL: Register capture must wait for the Google CTA to be fully painted before requesting its one fresh frame." >&2
+  exit 1
+fi
 grep -Fq "final freshFrameCount = _runtimeFreshFrameCount(marker);" "$test_file"
 grep -Fq "forceFreshFrame: freshFrameCount > 0," "$test_file"
 # Inspect only the invokeMethod payload. A whole-file grep is insufficient because
@@ -100,8 +107,10 @@ fi
 grep -Fq ': > "$log_path"' "$script_file"
 
 # Regression: strict auth capture must not accept an already-queued pre-target image.
-# Drain at the marker boundary. Register requires two later deliveries to let its async Google CTA settle;
-# Password Reset requires one later delivery for its static surface. Other screenshots keep the committed-frame fast path.
+# Drain at the marker boundary. Register's CTA-readiness gate runs before capture, so one
+# later ImageReader delivery is enough; do not wait for a second repaint that a settled,
+# static auth page may never produce. Password Reset also requires one later delivery.
+# Other screenshots keep the committed-frame fast path.
 grep -Fq 'if (forceFreshFrame) freshFramesRequired.coerceIn(1, 2) else 0' "$main_activity"
 grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained' "$main_activity"
 grep -Fq 'hopeScreenshotFreshFramesRemaining > 1' "$main_activity"

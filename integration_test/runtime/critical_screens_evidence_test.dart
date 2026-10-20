@@ -1000,7 +1000,10 @@ bool _isSemanticsTapTargetAtScrollableBoundary(
 }
 
 int _runtimeFreshFrameCount(String marker) {
-  if (marker.startsWith('register-')) return 2;
+  // Register's readiness gate waits for the Google CTA to be fully painted before
+  // capture; one post-drain ImageReader delivery validates that target-screen frame.
+  // Requiring a second delivery can deadlock when the settled auth page has no repaint.
+  if (marker.startsWith('register-')) return 1;
   if (marker.startsWith('password-reset-')) return 1;
   return 0;
 }
