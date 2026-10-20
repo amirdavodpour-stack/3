@@ -39,7 +39,7 @@ require_line "$workflow" 'group: hope-ui-runtime-evidence-${{ github.workflow }}
 # Always recreate user data before the runner installs the exact-HEAD APK.
 require_line "$workflow" "force-avd-creation: true"
 require_line "$workflow" "-wipe-data"
-require_line "$workflow" "Recreate AVD user data from the cached API-35 system image on each run."
+require_line "$workflow" "Force AVD recreation and wipe user data before installing run-specific debug APKs."
 if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
   exit 1
