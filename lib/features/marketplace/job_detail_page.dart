@@ -855,8 +855,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 ),
               ],
             ),
+            // Separate the hero and decision surfaces so their rounded
+            // edges never visually merge on compact Android captures.
+            SizedBox(height: compactViewport ? 10 : 14),
             HopeOpportunityDecisionStrip(
               matchScore: j.recommendationScore,
+              highlightHighScore: false,
               kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
               budget: isJob
                   ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
