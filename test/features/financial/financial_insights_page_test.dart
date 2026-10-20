@@ -1410,4 +1410,63 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'cash-flow axis unit aligns with the tick-label edge in Persian RTL',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final unit = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit'),
+      );
+      await tester.scrollUntilVisible(
+        unit,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(unit, findsOneWidget);
+      expect(tester.widget<Text>(unit).data, 'تومان');
+
+      final unitAlignment = find.ancestor(
+        of: unit,
+        matching: find.byType(Align),
+      ).first;
+      expect(
+        tester.widget<Align>(unitAlignment).alignment,
+        AlignmentDirectional.centerEnd,
+        reason:
+            'In Persian RTL, the unit should share the inner axis edge with the tick labels, not float at the outer card edge.',
+      );
+
+      final topTick = find.byKey(
+        const ValueKey('financial-cashflow-y-tick-4'),
+      );
+      expect(topTick, findsOneWidget);
+      expect(tester.widget<Text>(topTick).textAlign, TextAlign.end);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
