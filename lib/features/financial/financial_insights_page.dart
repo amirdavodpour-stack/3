@@ -1081,13 +1081,54 @@ class _LineChart extends StatelessWidget {
           chartViewportWidth,
           points.length * pointWidth,
         ).toDouble();
+        final hasHorizontalOverflow = chartWidth > chartViewportWidth;
+        final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
+        final chartViewportHeight = math.max(
+          1.0,
+          constraints.maxHeight -
+              (hasHorizontalOverflow ? scrollHintHeight : 0),
+        ).toDouble();
 
-        return Row(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: axisWidth,
-              height: constraints.maxHeight,
+            if (hasHorizontalOverflow)
+              SizedBox(
+                key: const ValueKey('financial-balance-scroll-hint'),
+                height: scrollHintHeight,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(
+                      HopeV2Icons.roleSwitch,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        english
+                            ? 'Swipe the chart sideways to view other months'
+                            : 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 11,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: axisWidth,
+                    height: chartViewportHeight,
               child: Column(
                 children: [
                   Expanded(
@@ -1133,7 +1174,7 @@ class _LineChart extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
                   width: chartWidth,
-                  height: constraints.maxHeight,
+                  height: chartViewportHeight,
                   child: Semantics(
                     key: const ValueKey('financial-balance-chart-semantics'),
                     container: true,
@@ -1170,6 +1211,9 @@ class _LineChart extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+                  ),
+                ],
               ),
             ),
           ],
