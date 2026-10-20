@@ -158,6 +158,23 @@ test('wallet and financial-insights API envelopes match the Flutter repositories
   assert.match(insightsRepository, /HopeFinancialInsights\.fromMap/);
 });
 
+test('opportunity fee disclosures match backend fee policy in Persian and English', () => {
+  const view = read('backend/src/application/view_helpers.js');
+  const financial = read('backend/src/financial.js');
+  const createPage = read('lib/features/marketplace/create_job_widgets.part.dart');
+  const faCopy = read('lib/l10n/generated/app_localizations_fa.dart');
+  const enCopy = read('lib/l10n/generated/app_localizations_en.dart');
+
+  assert.match(view, /employerRate: 0\.10, candidateRate: 0\.10, model: 'PER_MISSION'/);
+  assert.match(view, /employerRate: 0\.30, candidateRate: 0, model: 'FIRST_MONTH_SALARY'/);
+  assert.match(financial, /employerFeeRate = normalizedKind === 'MISSION' \? 10 : 30/);
+  assert.match(financial, /workerFeeRate = normalizedKind === 'MISSION' \? 10 : 0/);
+  assert.match(createPage, /kind === 'MISSION'[\s\S]{0,180}copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]{0,150}copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
+  assert.match(faCopy, /۱۰٪ از کارفرما و ۱۰٪ از کارجو/);
+  assert.match(faCopy, /۳۰٪ از دستمزد ماه اول کارجو از سمت کارفرما/);
+  assert.match(enCopy, /10% from the employer and 10% from the candidate/);
+  assert.match(enCopy, /30% of the candidate\\'s first-month pay is charged to the employer/);
+});
 test('customer financial copy does not expose implementation-only accounting terms', () => {
   const insightsPage = read('lib/features/financial/financial_insights_page.dart');
   const walletPage = read('lib/features/wallet/wallet_page.dart');
