@@ -621,6 +621,7 @@ class PremiumQuickAction {
     required this.icon,
     this.onPressed,
     this.primary = false,
+    this.primaryColor,
     this.semanticLabel,
   });
 
@@ -628,6 +629,7 @@ class PremiumQuickAction {
   final Object icon;
   final VoidCallback? onPressed;
   final bool primary;
+  final Color? primaryColor;
   final String? semanticLabel;
 }
 
@@ -649,8 +651,9 @@ class _PremiumQuickActionButton extends StatelessWidget {
             ? Colors.white
             : Theme.of(context).colorScheme.onSurface)
         : Theme.of(context).colorScheme.onSurfaceVariant;
+    final actionAccent = action.primaryColor ?? accent;
     final background = action.primary
-        ? accent.withValues(alpha: dark ? .92 : .96)
+        ? actionAccent.withValues(alpha: dark ? .92 : .96)
         : Colors.transparent;
 
     return Semantics(
@@ -671,7 +674,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
               border: Border.all(
                 color: action.primary
-                    ? accent.withValues(alpha: dark ? .30 : .20)
+                    ? actionAccent.withValues(alpha: dark ? .30 : .20)
                     : Colors.transparent,
               ),
             ),

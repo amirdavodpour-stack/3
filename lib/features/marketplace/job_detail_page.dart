@@ -767,6 +767,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
                   key: const ValueKey('opportunity-detail-primary-cta'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF174B3A),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: loading
                       ? null
                       : canViewFinance
