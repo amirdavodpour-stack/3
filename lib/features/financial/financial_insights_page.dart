@@ -767,9 +767,10 @@ class _BarChart extends StatelessWidget {
                                     SizedBox(
                                       height: labelHeight + 3,
                                       child: Align(
-                                        alignment: AlignmentDirectional.centerStart,
+                                        alignment: AlignmentDirectional.centerEnd,
                                         child: Text(
                                           english ? 'TOMAN' : 'تومان',
+                                          key: const ValueKey('financial-cashflow-axis-unit'),
                                           maxLines: 1,
                                           overflow: TextOverflow.clip,
                                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
