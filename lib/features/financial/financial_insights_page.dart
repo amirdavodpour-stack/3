@@ -725,8 +725,8 @@ class _BarChart extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     english
-                                        ? 'Swipe the chart sideways to view other months'
-                                        : 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید',
+                                        ? 'Swipe the cash-flow chart sideways to view other months'
+                                        : 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.end,
@@ -1093,8 +1093,8 @@ class _LineChart extends StatelessWidget {
                     Flexible(
                       child: Text(
                         english
-                            ? 'Swipe the chart sideways to view other months'
-                            : 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید',
+                            ? 'Swipe the balance chart sideways to view other months'
+                            : 'برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,

@@ -645,8 +645,8 @@ void main() {
   testWidgets(
     'monthly cash-flow chart advertises horizontal navigation only when needed',
     (tester) async {
-      const hintFa = 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید';
-      const hintEn = 'Swipe the chart sideways to view other months';
+      const hintFa = 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید';
+      const hintEn = 'Swipe the cash-flow chart sideways to view other months';
       for (final width in [360.0, 1200.0]) {
         tester.view.physicalSize = Size(width, 900);
         tester.view.devicePixelRatio = 1;
@@ -885,7 +885,7 @@ void main() {
             of: find.byKey(
               const ValueKey('financial-balance-scroll-hint'),
             ),
-            matching: find.text('برای دیدن ماه‌های دیگر، نمودار را افقی بکشید'),
+            matching: find.text('برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید'),
           ),
           findsOneWidget,
         );

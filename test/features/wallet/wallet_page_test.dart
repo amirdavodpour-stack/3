@@ -34,6 +34,7 @@ class _FakeWallet implements WalletRepository {
     this.payoutCurrency = 'TOMAN',
     this.payoutStatus = 'REQUESTED',
     this.entryType = 'TRANSFER',
+    this.referenceType = 'TRANSFER',
     this.direction = 'CREDIT',
     this.pendingWithdrawalBalance = 0,
     this.availableBalance = 2500000,
@@ -47,6 +48,7 @@ class _FakeWallet implements WalletRepository {
   final String payoutCurrency;
   final String payoutStatus;
   final String entryType;
+  final String referenceType;
   final String direction;
   final int pendingWithdrawalBalance;
   final int availableBalance;
@@ -85,7 +87,7 @@ class _FakeWallet implements WalletRepository {
             'direction': direction,
             'amount': 500000,
             'currency': transactionCurrency,
-            'referenceType': 'TRANSFER',
+            'referenceType': referenceType,
             'referenceId': 'ref-1',
             'financialOperationId': 'op-1',
             'createdAt': '2026-09-21T00:00:00Z',
@@ -1175,8 +1177,8 @@ void main() {
 
     expect(find.text('Credit'), findsOneWidget);
     expect(find.text('CREDIT'), findsNothing);
-    expect(find.text('Entry type'), findsOneWidget);
-    expect(find.text('Reference type'), findsOneWidget);
+    expect(find.text('Entry type'), findsNothing);
+    expect(find.text('Reference type'), findsNothing);
     expect(find.text('ref-1'), findsNothing);
     expect(find.text('op-1'), findsNothing);
   });
@@ -1185,7 +1187,10 @@ void main() {
       (tester) async {
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
-    final wallet = _FakeWallet(entryType: 'RECONCILIATION_ENTRY');
+    final wallet = _FakeWallet(
+      entryType: 'RECONCILIATION_ENTRY',
+      referenceType: 'UNKNOWN_REFERENCE',
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -1214,7 +1219,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Internal transfer').first);
+    await tester.tap(find.text('Other activity').first);
     await tester.pumpAndSettle();
 
     final detailsSheet = find.byType(BottomSheet);
