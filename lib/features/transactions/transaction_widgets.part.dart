@@ -148,10 +148,13 @@ extension on _TransactionPageState {
         ClipRRect(
           borderRadius: BorderRadius.circular(HopeV2Radii.sm),
           child: LinearProgressIndicator(
+            key: const ValueKey('transaction-lifecycle-progress'),
             minHeight: 4,
             value: progress,
             backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .55),
-            valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              HopeV2ChartColors.matchSignal(context),
+            ),
           ),
         ),
       ],
