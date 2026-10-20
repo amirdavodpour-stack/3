@@ -35,7 +35,10 @@ if [[ -z "$prepare_line" || -z "$runtime_line" || "$prepare_line" -ge "$runtime_
 fi
 require_line "$workflow" "ram-size: 8192M"
 require_line "$workflow" 'group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
-require_line "$workflow" "force-avd-creation: false"
+# A cached AVD can retain the app/TalkBack packages from a prior job's debug signing key.
+# Always recreate user data before the runner installs the exact-HEAD APK.
+require_line "$workflow" "force-avd-creation: true"
+require_line "$workflow" "Recreate AVD user data from the cached API-35 system image on each run."
 if grep -Fq 'uses: ReactiveCircus/android-emulator-runner@' "$workflow"; then
   printf 'FAIL: runtime golden baseline regressed to the non-certified ReactiveCircus runner.\n' >&2
   exit 1
