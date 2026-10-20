@@ -45,7 +45,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'fix/hopev2-visual-audit-v1-v2-2026-10-20' || github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
     # Only an authorized runtime job acquires this lock. Skipped PR events cannot cancel capture.
     concurrency:
       group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
