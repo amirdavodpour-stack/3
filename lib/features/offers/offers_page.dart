@@ -216,6 +216,38 @@ class _OffersPageState extends State<OffersPage> {
                     ),
                   ),
                 ),
+              if (!_loading &&
+                  (_loadError == null || _items.isNotEmpty) &&
+                  (MediaQuery.sizeOf(context).width < 420 ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2))
+                Padding(
+                  key: const ValueKey('offers-status-filter-scroll-cue'),
+                  padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 8, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      HopeIcon(
+                        HopeV2Icons.arrowLeft,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          _t('برای دیدن فیلترهای دیگر، افقی بکشید',
+                              'Swipe to see more filters'),
+                          key: const ValueKey('offers-status-filter-scroll-cue-text'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
               if (rows.isEmpty &&
                   (_items.isNotEmpty || (!_loading && _loadError == null)))

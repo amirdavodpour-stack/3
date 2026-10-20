@@ -420,6 +420,23 @@ void main() {
     expect(find.byType(PasswordResetPage), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
   });
+
+  testWidgets('password-reset privacy reassurance stays compact on a phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(await _screen(const PasswordResetPage()));
+    await tester.pumpAndSettle();
+
+    final note = find.byKey(const ValueKey('password-reset-privacy-note'));
+    expect(note, findsOneWidget);
+    expect(tester.getSize(note).height, lessThanOrEqualTo(140));
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('Wave 28 auth prefix glyphs have deterministic compact render bounds',
       (tester) async {
     final screens = <Widget>[

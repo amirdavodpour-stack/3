@@ -111,6 +111,46 @@ void main() {
     }
   });
 
+  testWidgets('compact offers filters disclose horizontal scrolling and keep the final filter reachable',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Provider<OfferRepository>.value(
+          value: _FakeOffers(),
+          child: const OffersPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('offers-status-filter-scroll-cue')),
+      findsOneWidget,
+    );
+    expect(find.text('Swipe to see more filters'), findsOneWidget);
+
+    final finalStatus = find.text('Rejected (0)');
+    await tester.ensureVisible(finalStatus);
+    await tester.pumpAndSettle();
+    expect(finalStatus, findsOneWidget);
+    expect(tester.getRect(finalStatus).left, greaterThanOrEqualTo(0));
+    expect(tester.getRect(finalStatus).right, lessThanOrEqualTo(320));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('offers do not expose unknown backend statuses',
       (tester) async {
     await tester.pumpWidget(

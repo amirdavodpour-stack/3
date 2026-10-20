@@ -120,10 +120,45 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  EmptyState(
-                    icon: HopeV2Icons.secure,
-                    title: HopeCopy.of(context).copy_you_are_covered_1bbe449,
-                    message: HopeCopy.of(context).copy_for_security_the_response_is_intentionally_6574fa6,
+                  PremiumPanel(
+                    key: const ValueKey('password-reset-privacy-note'),
+                    quiet: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HopeIcon(
+                          HopeV2Icons.secure,
+                          size: 20,
+                          color: HopeV2SemanticColors.info(context),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                HopeCopy.of(context).copy_you_are_covered_1bbe449,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                HopeCopy.of(context).copy_for_security_the_response_is_intentionally_6574fa6,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      height: 1.3,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -692,6 +692,11 @@ void main() {
     expect(find.text('Platform fee'), findsOneWidget);
     expect(find.text('Employer charge'), findsOneWidget);
     expect(find.text('Worker payout'), findsOneWidget);
+    // Exact MISSION contract fixture: 10% fee on each side, 20% platform fee.
+    expect(find.text('100,000 TOMAN'), findsNWidgets(2));
+    expect(find.text('200,000 TOMAN'), findsOneWidget);
+    expect(find.text('1,100,000 TOMAN'), findsOneWidget);
+    expect(find.text('900,000 TOMAN'), findsOneWidget);
   });
 
 

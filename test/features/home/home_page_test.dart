@@ -106,6 +106,15 @@ void main() {
     expect(unselectedExplore.selected, isFalse);
     expect(find.byType(FloatingActionButton), findsNothing);
     expect(find.text('کاوش'), findsOneWidget);
+    final homeDock = find.byType(PremiumNavigationBar);
+    expect(
+      find.descendant(of: homeDock, matching: find.text('کارگاه')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: homeDock, matching: find.text('کار')),
+      findsNothing,
+    );
     expect(find.text('ثبت فرصت جدید'), findsNothing);
   });
 

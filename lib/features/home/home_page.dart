@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
           icon: HopeV2NavigationIcons.workshopSelected,
           selected: true,
         ),
-        label: _t(context, 'کار', 'Work'),
+        label: _t(context, 'کارگاه', 'Workshop'),
       ),
       NavigationDestination(
         icon: const HopeNavigationGlyph(
