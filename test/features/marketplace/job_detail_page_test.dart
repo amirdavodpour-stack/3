@@ -517,16 +517,16 @@ void main() {
       reason: 'Job detail should not tint the full surface indigo for a high score.',
     );
 
-    final location = find.byKey(
+    final locationMetadata = find.byKey(
       const ValueKey('opportunity-decision-location-inline'),
     );
     final rationale = find.byKey(
       const ValueKey('opportunity-decision-match-rationale'),
     );
-    expect(location, findsOneWidget);
+    expect(locationMetadata, findsOneWidget);
     expect(rationale, findsOneWidget);
     expect(
-      (tester.getRect(location).center.dy - tester.getRect(rationale).center.dy).abs(),
+      (tester.getRect(locationMetadata).center.dy - tester.getRect(rationale).center.dy).abs(),
       lessThan(18),
       reason: 'The Tehran metadata and matching reason should share the compact metadata row.',
     );
