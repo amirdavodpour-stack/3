@@ -174,6 +174,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             HopeRoutes.myApplications(),
           ),
           primary: true,
+          primaryActionColor: HopeV2Colors.markedPrimaryActionDarkGreen,
         ),
         PremiumQuickAction(
           label: copy.copy_offers,
