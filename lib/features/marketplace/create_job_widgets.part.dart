@@ -756,6 +756,10 @@ class _CreateJobForm extends StatelessWidget {
                       Expanded(
                         child: FilledButton.icon(
                           key: const ValueKey('create-opportunity-next-step'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF174B3A),
+                            foregroundColor: Colors.white,
+                          ),
                           onPressed: busy
                               ? null
                               : activeStep < 4

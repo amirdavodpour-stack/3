@@ -687,6 +687,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
         icon: HopeV2Icons.workshop,
         onPressed: widget.onOpenExplore,
         primary: true,
+        primaryColor: const Color(0xFF174B3A),
       ),
       if (!auth.isGuest) ...[
         PremiumQuickAction(
