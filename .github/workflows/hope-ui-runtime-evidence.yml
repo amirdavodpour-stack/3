@@ -241,10 +241,12 @@ jobs:
           arch: x86_64
           target: default
           profile: pixel_2
-          # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
+          # Recreate AVD user data from the cached API-35 system image on each run.
+          # Reuse of cached app data leaves HOPE/TalkBack packages signed by prior per-run debug keys,
+          # causing INSTALL_FAILED_UPDATE_INCOMPATIBLE before the evidence script can recover.
           # Use the current SwiftShader software renderer mode supported by modern Emulator releases.
           # Keep Vulkan explicitly disabled for deterministic GLES/PixelCopy capture on the headless lane.
-          force-avd-creation: false
+          force-avd-creation: true
           cores: 4
           ram-size: 8192M
           disable-linux-hw-accel: false
