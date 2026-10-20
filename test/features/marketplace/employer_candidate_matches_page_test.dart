@@ -180,8 +180,16 @@ void main() {
           .where((indicator) => indicator.value != null)
           .toList(growable: false);
       expect(indicators, hasLength(2));
+      final chartColor = HopeV2ChartColors.matchSignal(
+        tester.element(find.byType(EmployerCandidateMatchesPage)),
+      );
       for (final indicator in indicators) {
         expect(indicator.value, inInclusiveRange(0.0, 1.0));
+        expect(
+          (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
+          chartColor,
+          reason: 'Candidate score bars share the HOPE teal chart role.',
+        );
       }
       expect(tester.takeException(), isNull);
     },
