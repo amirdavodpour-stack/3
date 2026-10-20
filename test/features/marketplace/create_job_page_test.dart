@@ -190,6 +190,11 @@ Future<void> _advance(WidgetTester tester) async {
     findsOneWidget,
     reason: 'The persistent Create Opportunity action must stay available.',
   );
+  final button = tester.widget<FilledButton>(next);
+  expect(
+    button.style?.backgroundColor?.resolve({}),
+    HopeV2Colors.markedPrimaryActionDarkGreen,
+  );
   await tester.tap(next);
   await tester.pumpAndSettle();
 }
