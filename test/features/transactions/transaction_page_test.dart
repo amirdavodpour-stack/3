@@ -292,6 +292,17 @@ void main() {
     expect(find.text('Protected by HOPE'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     expect(find.text('Stage 2 of 6'), findsOneWidget);
+    final lifecycleProgress = find.byKey(
+      const ValueKey('transaction-lifecycle-progress'),
+    );
+    expect(lifecycleProgress, findsOneWidget);
+    expect(
+      (tester.widget<LinearProgressIndicator>(lifecycleProgress).valueColor
+              as AlwaysStoppedAnimation<Color>)
+          .value,
+      HopeV2ChartColors.matchSignal(tester.element(lifecycleProgress)),
+      reason: 'Numeric lifecycle progress uses the shared teal chart role, not indigo.',
+    );
     expect(
       find.byWidgetPredicate(
         (widget) => widget is PremiumTag && widget.label == 'Funds held',
