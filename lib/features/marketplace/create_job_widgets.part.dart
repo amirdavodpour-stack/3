@@ -755,6 +755,10 @@ class _CreateJobForm extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+                            foregroundColor: HopeV2Colors.darkText,
+                          ),
                           key: const ValueKey('create-opportunity-next-step'),
                           onPressed: busy
                               ? null
