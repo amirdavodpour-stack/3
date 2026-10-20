@@ -277,6 +277,10 @@ extension on _TransactionPageState {
     final actions = <Widget>[];
     if (paymentStatus == 'NO_TRANSACTION' && owner) {
       actions.add(FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+          foregroundColor: HopeV2Colors.darkText,
+        ),
         onPressed: loading ? null : () => action('fund'),
         icon: const HopeIcon(HopeV2Icons.wallet, size: 19),
         label: Text(_t('تأمین وجه', 'Fund payment')),
@@ -291,6 +295,10 @@ extension on _TransactionPageState {
     }
     if (paymentStatus == 'HELD' && job?.status == 'FUNDED' && provider) {
       actions.add(FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+          foregroundColor: HopeV2Colors.darkText,
+        ),
         onPressed: loading ? null : () => _jobAction('start'),
         icon: const HopeIcon(HopeV2Icons.mission, size: 19),
         label: Text(_t('شروع کار', 'Start work')),
@@ -298,6 +306,10 @@ extension on _TransactionPageState {
     }
     if (job?.status == 'IN_PROGRESS' && provider) {
       actions.add(FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+          foregroundColor: HopeV2Colors.darkText,
+        ),
         onPressed: loading ? null : () => _jobAction('deliver'),
         icon: const HopeIcon(HopeV2Icons.activity, size: 19),
         label: Text(_t('تحویل برای بررسی', 'Submit delivery')),
@@ -307,6 +319,10 @@ extension on _TransactionPageState {
         paymentStatus == 'HELD' &&
         owner) {
       actions.add(FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+          foregroundColor: HopeV2Colors.darkText,
+        ),
         onPressed: loading ? null : () => _jobAction('accept'),
         icon: const HopeIcon(HopeV2Icons.completed, size: 19),
         label: Text(_t('تأیید و تکمیل', 'Approve & complete')),
@@ -324,6 +340,10 @@ extension on _TransactionPageState {
             paymentStatus == 'RELEASE_FAILED') &&
         owner) {
       actions.add(FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+          foregroundColor: HopeV2Colors.darkText,
+        ),
         onPressed: loading ? null : () => action('release'),
         icon: const HopeIcon(HopeV2Icons.payments, size: 19),
         label: Text(_t('تسویه با مجری', 'Release payout')),
