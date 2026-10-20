@@ -185,7 +185,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      final googleButton = tester.widget<OutlinedButton>(
+        find.byKey(const ValueKey('auth-google-sign-in')),
+      );
+      expect(googleButton.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
+      expect(googleButton.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
       expect(find.text('یا'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -210,6 +214,9 @@ void main() {
 
       final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
       expect(googleButton, findsOneWidget);
+      final googleWidget = tester.widget<OutlinedButton>(googleButton);
+      expect(googleWidget.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
+      expect(googleWidget.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
       expect(find.text('یا'), findsOneWidget);
       final bounds = tester.getRect(googleButton);
       expect(bounds.left, greaterThanOrEqualTo(0));
