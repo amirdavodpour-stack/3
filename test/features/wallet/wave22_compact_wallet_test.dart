@@ -489,7 +489,7 @@ void main() {
       expect(
         firstTransactionRect.top,
         lessThan(initialDockRect.top - 40),
-        reason: 'The first ledger entry should enter the compact first fold, not start under the dock.',
+        reason: 'The first transaction summary should enter the compact first fold, not start under the dock.',
       );
       expect(
         firstAmountRect.bottom,
@@ -712,20 +712,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(signature, findsOneWidget);
-      expect(find.text('Money flow in the ledger'), findsOneWidget);
+      expect(find.text('Money flow'), findsOneWidget);
       final flowHeading = tester.widget<Text>(
-        find.text('Money flow in the ledger'),
+        find.text('Money flow'),
       );
       expect(flowHeading.maxLines, isNull);
       expect(flowHeading.overflow, isNull);
       final flowExplanation = tester.widget<Text>(
         find.text(
-          'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+          'Reserved funds are released after work approval.',
         ),
       );
       expect(flowExplanation.maxLines, isNull);
       expect(flowExplanation.overflow, TextOverflow.visible);
-      for (final label in ['Ledger entry', 'Hold for approval', 'Release funds']) {
+      for (final label in ['Transaction', 'Hold for approval', 'Release funds']) {
         expect(find.text(label), findsOneWidget);
       }
       expect(tester.takeException(), isNull);
