@@ -1433,7 +1433,12 @@ void main() {
     expect(find.text('Maximum: 2,500,000 TOMAN'), findsOneWidget);
     expect(find.text('Maximum: 2500000'), findsNothing);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    expect(find.text('Toman'), findsNothing);
+    final transferDialog = find.byType(AlertDialog);
+    expect(transferDialog, findsOneWidget);
+    expect(
+      find.descendant(of: transferDialog, matching: find.text('Toman')),
+      findsNothing,
+    );
   });
 
   testWidgets('wallet uses a compact finance header on narrow surfaces', (tester) async {

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:hope_mobile/core/transactions/wallet.dart';
-
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/ui/hope_signature_components.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets(
@@ -207,6 +208,12 @@ void main() {
       Widget render(Locale locale) => MaterialApp(
             locale: locale,
             supportedLocales: const [Locale('en'), Locale('fa')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             home: Scaffold(
               body: SingleChildScrollView(
                 child: HopeWalletFlowSignature(wallet: wallet),
