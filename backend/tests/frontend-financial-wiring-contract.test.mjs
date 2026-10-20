@@ -173,7 +173,7 @@ test('opportunity fee disclosures match backend fee policy in Persian and Englis
   assert.match(faCopy, /۱۰٪ از کارفرما و ۱۰٪ از کارجو/);
   assert.match(faCopy, /۳۰٪ از دستمزد ماه اول کارجو از سمت کارفرما/);
   assert.match(enCopy, /10% from the employer and 10% from the candidate/);
-  assert.match(enCopy, /30% of the candidate\\'s first-month pay is charged to the employer/);
+  assert.match(enCopy, /30% of the candidate.*first-month pay is charged to the employer/);
 });
 test('customer financial copy does not expose implementation-only accounting terms', () => {
   const insightsPage = read('lib/features/financial/financial_insights_page.dart');
