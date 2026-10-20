@@ -227,7 +227,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       bool highlight = false,
       Key? key,
     }) {
-      final primary = Theme.of(context).colorScheme.primary;
+      final primary = HopeV2ChartColors.matchSignal(context);
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
         child: Container(
