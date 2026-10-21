@@ -600,7 +600,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Payment status'), findsOneWidget);
-      expect(find.text('Amount'), findsOneWidget);
+      final baseAmountLabel = find.byKey(
+        const ValueKey('transaction-payment-base-amount-label'),
+      );
+      expect(baseAmountLabel, findsOneWidget);
+      expect(tester.widget<Text>(baseAmountLabel).data, 'Base amount');
       expect(find.text('Reference'), findsNothing);
       expect(
         find.text(
@@ -712,18 +716,26 @@ void main() {
     // Scroll the fee breakdown into the built viewport.
     await tester.drag(find.byType(ListView), const Offset(0, -350));
     await tester.pumpAndSettle();
-    expect(find.text('Financial details'), findsOneWidget);
-    expect(find.text('Base amount'), findsOneWidget);
-    expect(find.text('Employer fee'), findsOneWidget);
-    expect(find.text('Worker fee'), findsOneWidget);
-    expect(find.text('Platform fee'), findsOneWidget);
-    expect(find.text('Employer charge'), findsOneWidget);
-    expect(find.text('Worker payout'), findsOneWidget);
+    final detailPanel = find.byKey(
+      const ValueKey('transaction-payment-financial-details'),
+    );
+    expect(detailPanel, findsOneWidget);
+    Finder detailText(String label) => find.descendant(
+          of: detailPanel,
+          matching: find.text(label),
+        );
+    expect(detailText('Financial details'), findsOneWidget);
+    expect(detailText('Base amount'), findsOneWidget);
+    expect(detailText('Employer fee'), findsOneWidget);
+    expect(detailText('Worker fee'), findsOneWidget);
+    expect(detailText('Platform fee'), findsOneWidget);
+    expect(detailText('Employer charge'), findsOneWidget);
+    expect(detailText('Worker payout'), findsOneWidget);
     // Exact MISSION contract fixture: 10% fee on each side, 20% platform fee.
-    expect(find.text('100,000 TOMAN'), findsNWidgets(2));
-    expect(find.text('200,000 TOMAN'), findsOneWidget);
-    expect(find.text('1,100,000 TOMAN'), findsOneWidget);
-    expect(find.text('900,000 TOMAN'), findsOneWidget);
+    expect(detailText('100,000 TOMAN'), findsNWidgets(2));
+    expect(detailText('200,000 TOMAN'), findsOneWidget);
+    expect(detailText('1,100,000 TOMAN'), findsOneWidget);
+    expect(detailText('900,000 TOMAN'), findsOneWidget);
   });
 
 
