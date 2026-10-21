@@ -1001,8 +1001,8 @@ class _ChatPageState extends State<ChatPage> {
                           onPressed: () => Navigator.maybePop(context),
                         ),
                       ),
-                      if (conversation != null) ...[
-                        SizedBox(height: expandableHeaderText ? 0 : 9),
+                      if (conversation != null && !expandableHeaderText) ...[
+                        SizedBox(height: 9),
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: PremiumTag(

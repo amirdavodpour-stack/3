@@ -360,8 +360,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
-            _homePulse(context, auth, compact: compactFold),
-            SizedBox(height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm),
+            if (!compactViewport)
+              _homePulse(context, auth, compact: compactFold),
+            if (!compactViewport)
+              SizedBox(height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
@@ -401,6 +403,10 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 );
               },
             ),
+            if (compactViewport) ...[
+              SizedBox(height: HopeV2Spacing.xs),
+              _homePulse(context, auth, compact: true),
+            ],
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),

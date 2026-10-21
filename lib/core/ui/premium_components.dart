@@ -1415,7 +1415,11 @@ class PremiumHero extends StatelessWidget {
         : action != null
             ? (compact ? 184.0 : 208.0)
             : message.trim().isEmpty
-                ? (compact ? 132.0 : 152.0)
+                ? (compact
+                    ? 132.0
+                    : page == HopePageId.opportunityDetail
+                        ? 184.0
+                        : 152.0)
                 : (compact ? 164.0 : 184.0);
     final minHeroHeight = compactHero ? 88.0 : (compact ? 112.0 : 152.0);
     final heroHeight = height.clamp(minHeroHeight, maxHeroHeight).toDouble();

@@ -1514,7 +1514,8 @@ class _JobLifecycleCard extends StatelessWidget {
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < HopeV2Breakpoints.compact) {
+              if (constraints.maxWidth < HopeV2Breakpoints.compact &&
+                  MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
                 return HopeLifecycleRail(
                   labels: [for (final stage in stages) _label(context, stage)],
                   icons: const [
