@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/chat/chat_local_file_store.dart';
 import '../../core/chat/chat_repository.dart';
 import '../../core/chat/chat_voice_bridge.dart';
 import '../../core/network/api_error_presenter.dart';
@@ -61,12 +61,14 @@ class ChatPage extends StatefulWidget {
   const ChatPage({
     super.key,
     this.repository,
+    this.fileStore,
     this.jobId,
     this.conversationId,
     this.adminRoom = false,
   });
 
   final ChatRepository? repository;
+  final ChatLocalFileStore? fileStore;
   final String? jobId;
   final String? conversationId;
   final bool adminRoom;
@@ -79,6 +81,7 @@ class _ChatPageState extends State<ChatPage> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   late final ChatRepository _repository;
+  late final ChatLocalFileStore _fileStore;
 
   HopeChatThread? _thread;
   List<HopeChatConversation> _conversations = const [];
@@ -96,7 +99,7 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _liveTimer;
   Timer? _typingTimer;
   bool _pollingLive = false;
-  final List<Directory> _voiceTempDirs = [];
+  final List<String> _voiceTempDirs = [];
 
   bool get _isInbox => widget.conversationId == null && widget.jobId == null && !widget.adminRoom;
   ChatCapabilitiesRepository? get _capabilities =>
@@ -106,6 +109,7 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _repository = widget.repository ?? context.read<ChatRepository>();
+    _fileStore = widget.fileStore ?? const IoChatLocalFileStore();
     _voicePlaybackSubscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
       if (!mounted || _playingVoiceMessageId == null) return;
       setState(() => _playingVoiceMessageId = null);
@@ -128,24 +132,24 @@ class _ChatPageState extends State<ChatPage> {
     if (_recordingVoice) unawaited(_discardActiveRecording());
     final pendingVoice = _pendingVoicePath;
     if (!_recordingVoice && pendingVoice != null) {
-      unawaited(File(pendingVoice).delete().catchError((Object _) => File(pendingVoice)));
+      unawaited(_fileStore.deleteFile(pendingVoice).catchError((Object _) {}));
     }
-    for (final directory in _voiceTempDirs) {
-      unawaited(_deleteVoiceTempDirectory(directory));
+    for (final directoryPath in _voiceTempDirs) {
+      unawaited(_deleteVoiceTempDirectory(directoryPath));
     }
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _deleteVoiceTempDirectory(Directory directory) async {
-    try { await directory.delete(recursive: true); } catch (_) {}
+  Future<void> _deleteVoiceTempDirectory(String directoryPath) async {
+    try { await _fileStore.deleteDirectory(directoryPath); } catch (_) {}
   }
 
   Future<void> _discardActiveRecording() async {
     try {
       final path = await HopeChatVoiceBridge.stopRecording();
-      await File(path).delete();
+      await _fileStore.deleteFile(path);
     } catch (_) {}
   }
 
@@ -288,8 +292,8 @@ class _ChatPageState extends State<ChatPage> {
         setState(() => _error = _t('در هر پیام حداکثر ۵ فایل مجاز است.', 'You can attach up to five files per message.'));
         return;
       }
-      final files = picked.files.where((f) => f.path != null).map((f) => File(f.path!)).toList();
-      if (files.isNotEmpty) await _sendFiles(files, messageType: 'ATTACHMENT');
+      final filePaths = picked.files.where((f) => f.path != null).map((f) => f.path!).toList();
+      if (filePaths.isNotEmpty) await _sendFiles(filePaths, messageType: 'ATTACHMENT');
     } catch (e) {
       if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('انتخاب فایل انجام نشد.', 'Could not select files.')));
     }
@@ -302,7 +306,7 @@ class _ChatPageState extends State<ChatPage> {
         final path = await HopeChatVoiceBridge.startRecording();
         if (!mounted) {
           try { await HopeChatVoiceBridge.stopRecording(); } catch (_) {}
-          try { await File(path).delete(); } catch (_) {}
+          try { await _fileStore.deleteFile(path); } catch (_) {}
           return;
         }
         setState(() { _pendingVoicePath = path; _recordingVoice = true; _error = null; });
@@ -313,24 +317,25 @@ class _ChatPageState extends State<ChatPage> {
     }
     try {
       final path = await HopeChatVoiceBridge.stopRecording();
-      if (!mounted) { try { await File(path).delete(); } catch (_) {} return; }
+      if (!mounted) { try { await _fileStore.deleteFile(path); } catch (_) {} return; }
       setState(() { _recordingVoice = false; _pendingVoicePath = path; });
-      await _sendFiles([File(path)], messageType: 'VOICE', removeSourcesOnSuccess: true);
+      await _sendFiles([path], messageType: 'VOICE', removeSourcesOnSuccess: true);
     } catch (e) {
       if (mounted) setState(() { _recordingVoice = false; _error = apiErrorMessage(e, fallback: _t('پیام صوتی آماده نشد.', 'Voice message could not be prepared.')); });
     }
   }
 
-  Future<void> _sendFiles(List<File> files, {required String messageType, bool removeSourcesOnSuccess = false}) async {
+  Future<void> _sendFiles(List<String> filePaths, {required String messageType, bool removeSourcesOnSuccess = false}) async {
     final capabilities = _capabilities;
     final thread = _thread;
-    if (capabilities == null || thread == null || _busy || files.isEmpty) return;
+    if (capabilities == null || thread == null || _busy || filePaths.isEmpty) return;
     setState(() { _busy = true; _error = null; });
     try {
       final uploaded = <Map<String,String>>[];
-      for (final file in files) {
-        final result = await capabilities.uploadChatFile(file);
-        uploaded.add({'key': result['key'].toString(), 'filename': (result['filename'] ?? file.uri.pathSegments.last).toString()});
+      for (final path in filePaths) {
+        final result = await capabilities.uploadChatFile(path);
+        final fallbackFilename = Uri.file(path).pathSegments.last;
+        uploaded.add({'key': result['key'].toString(), 'filename': (result['filename'] ?? fallbackFilename).toString()});
       }
       final message = await capabilities.sendMessageWithAttachments(
         thread.conversation.id, _controller.text,
@@ -340,7 +345,7 @@ class _ChatPageState extends State<ChatPage> {
       _mergeSentMessage(thread, message);
       _controller.clear();
       if (removeSourcesOnSuccess) {
-        for (final file in files) { try { await file.delete(); } catch (_) {} }
+        for (final path in filePaths) { try { await _fileStore.deleteFile(path); } catch (_) {} }
         if (messageType == 'VOICE' && mounted) setState(() => _pendingVoicePath = null);
       }
       _scrollToLatest();
@@ -360,12 +365,11 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _retryPendingVoiceMessage() async {
     final path = _pendingVoicePath;
     if (path == null || _busy || _recordingVoice) return;
-    final file = File(path);
-    if (!await file.exists()) {
+    if (!await _fileStore.fileExists(path)) {
       if (mounted) setState(() { _pendingVoicePath = null; _error = _t('فایل ضبط‌شده پیدا نشد؛ دوباره ضبط کنید.', 'The recorded voice file is missing. Please record again.'); });
       return;
     }
-    await _sendFiles([file], messageType: 'VOICE', removeSourcesOnSuccess: true);
+    await _sendFiles([path], messageType: 'VOICE', removeSourcesOnSuccess: true);
   }
 
   Future<void> _saveAttachment(HopeChatAttachment attachment) async {
@@ -390,15 +394,13 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final attachment = message.attachments.first;
       final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
-      final directory = await Directory.systemTemp.createTemp('hope-chat-voice-');
-      _voiceTempDirs.add(directory);
       final extension = attachment.filename.contains('.') ? attachment.filename.split('.').last : 'm4a';
-      final file = File('${directory.path}/voice.$extension');
-      await file.writeAsBytes(bytes, flush: true);
+      final temporary = await _fileStore.createTemporaryMediaFile(bytes, extension);
+      _voiceTempDirs.add(temporary.directoryPath);
       // Set the active ID before starting native playback so an extremely short
       // clip cannot finish and emit playbackCompleted before the state is set.
       if (mounted) setState(() { _playingVoiceMessageId = message.id; _error = null; });
-      await HopeChatVoiceBridge.playFile(file.path);
+      await HopeChatVoiceBridge.playFile(temporary.path);
     } catch (e) {
       if (mounted) setState(() {
         if (_playingVoiceMessageId == message.id) _playingVoiceMessageId = null;

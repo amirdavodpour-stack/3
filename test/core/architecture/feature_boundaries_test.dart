@@ -21,14 +21,9 @@ void main() {
     expect(featureFiles, isNotEmpty, reason: 'lib/features should exist');
   });
 
-  // File-picker and voice-attachment surfaces legitimately handle local paths
-  // and pass files to core repositories. Keep this allow-list explicit so other
-  // feature pages cannot import dart:io opportunistically.
-  const allowedIoFiles = {
-    'evidence_picker.dart',
-    'transaction_page.dart',
-    'chat_page.dart',
-  };
+  // File-picking pages legitimately touch the platform file system and hand
+  // real [File]s to the core UploadQueue/ApiClient contract (dart:io File).
+  const allowedIoFiles = {'evidence_picker.dart', 'transaction_page.dart'};
 
   for (final file in featureFiles) {
     final rel = file.path.replaceAll('\\', '/');

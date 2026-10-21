@@ -90,7 +90,7 @@ class HopeChatThread {
 
 abstract interface class ChatCapabilitiesRepository {
   Future<HopeChatMessage> sendMessageWithAttachments(String conversationId, String message, {required String messageType, required List<Map<String, String>> attachments});
-  Future<Map<String, dynamic>> uploadChatFile(File file);
+  Future<Map<String, dynamic>> uploadChatFile(String path);
   Future<Uint8List> downloadAttachment(String downloadPath);
   Future<void> markRead(String conversationId);
   Future<void> updatePresence(String conversationId, {required bool online, required bool typing});
@@ -136,8 +136,8 @@ class ApiChatRepository implements ChatRepository, ChatCapabilitiesRepository {
     return HopeChatMessage.fromMap(Map<String,dynamic>.from(raw));
   }
   @override
-  Future<Map<String,dynamic>> uploadChatFile(File file) async {
-    final raw = await _api.uploadFile('/storage/upload', file, auth: true);
+  Future<Map<String,dynamic>> uploadChatFile(String path) async {
+    final raw = await _api.uploadFile('/storage/upload', File(path), auth: true);
     if (raw is! Map || raw['key'] == null) throw const FormatException('Invalid attachment upload response');
     return Map<String,dynamic>.from(raw);
   }

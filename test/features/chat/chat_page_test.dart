@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -106,8 +105,8 @@ class RacingChatRepository extends FakeChatRepository
       sendMessage(conversationId, message);
 
   @override
-  Future<Map<String, dynamic>> uploadChatFile(File file) async =>
-      {'key': 'uploaded/file', 'filename': file.uri.pathSegments.last};
+  Future<Map<String, dynamic>> uploadChatFile(String path) async =>
+      {'key': 'uploaded/file', 'filename': Uri.file(path).pathSegments.last};
 
   @override
   Future<Uint8List> downloadAttachment(String downloadPath) async =>
