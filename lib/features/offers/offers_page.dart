@@ -194,7 +194,7 @@ class _OffersPageState extends State<OffersPage> {
                     controller: _filterScrollController,
                     key: const ValueKey('offers-status-filter-scroll'),
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 8),
+                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
