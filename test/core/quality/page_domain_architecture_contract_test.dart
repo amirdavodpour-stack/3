@@ -251,7 +251,7 @@ void main() {
 
   test('profile trust heading precedes professional state', () {
     final source = _read('lib/features/profile/profile_page.dart');
-    final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
+    final trust = source.indexOf("'اعتماد و پروفایل حرفه‌ای'");
     final professional = source.lastIndexOf('FutureBuilder<HopeProviderProfile>');
     expect(trust, greaterThanOrEqualTo(0));
     expect(professional, greaterThan(trust));

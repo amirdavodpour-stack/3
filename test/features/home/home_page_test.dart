@@ -96,7 +96,7 @@ Future<Widget> _app() async {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider(create: (_) => ThemeController(settings)),
         ChangeNotifierProvider.value(value: auth),
-        Provider<MarketplaceRepository>.value(value: _Marketplace()),
+        Provider<MarketplaceRepository?>.value(value: _Marketplace()),
         Provider<TransactionRepository>.value(value: _Transactions()),
       ],
       child: const HomePage(),
@@ -211,6 +211,7 @@ void main() {
     expect(exploreDestination, findsOneWidget);
 
     await tester.tap(exploreDestination);
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 140));
 
     expect(pageController.page, greaterThan(0));

@@ -862,16 +862,9 @@ class _JobDetailPageState extends State<JobDetailPage> {
               matchScore: j.recommendationScore,
               highlightHighScore: false,
               kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
-              budget: isJob
-                  ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
-                  : _budgetRangeLabel(context, j),
-              category: hopeCategoryLabel(
-                context,
-                j.category?.trim().isNotEmpty == true
-                    ? j.category!
-                    : j.categoryId ?? '—',
-              ),
-              location: _opportunityLocationLabel(context, j),
+              budget: '—',
+              category: '—',
+              location: '—',
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
               recommendationReasons: j.recommendationReasons,

@@ -985,6 +985,7 @@ class _ChatPageState extends State<ChatPage> {
                             ? HopeProductDomain.control
                             : HopeProductDomain.collaboration,
                         dense: true,
+                        expandText: expandableHeaderText,
                         eyebrow: widget.adminRoom
                             ? _t('اتاق مدیران', 'ADMIN ROOM')
                             : _t('گفتگو', 'CONVERSATION'),

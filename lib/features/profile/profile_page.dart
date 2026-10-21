@@ -159,7 +159,21 @@ class _ProfilePageState extends State<ProfilePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                           ),
-
+                          Semantics(
+                            container: true,
+                            label: _t(
+                              context,
+                              'اعتماد و پروفایل حرفه‌ای',
+                              'Trust & professional profile',
+                            ),
+                            child: ExcludeSemantics(
+                              child: PremiumTag(
+                                domain: HopeProductDomain.trust,
+                                icon: HopeV2Icons.secure,
+                                label: _t(context, 'اعتماد', 'Trust'),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -168,16 +182,6 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 8),
-          PremiumSectionHeader(
-            domain: HopeProductDomain.trust,
-            title: _t(
-              context,
-              'اعتماد و پروفایل حرفه‌ای',
-              'Trust & professional profile',
-            ),
-          ),
-          const SizedBox(height: 6),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {

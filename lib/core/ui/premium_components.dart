@@ -904,6 +904,7 @@ class PremiumHeader extends StatelessWidget {
     this.trailing,
     this.domain,
     this.page,
+    this.expandText = false,
     this.dense = false,
   });
 
@@ -915,6 +916,7 @@ class PremiumHeader extends StatelessWidget {
   final Widget? trailing;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  final bool expandText;
   final bool dense;
 
   @override
@@ -928,8 +930,8 @@ class PremiumHeader extends StatelessWidget {
               Text(
                 title,
                 key: titleKey,
-                maxLines: compact ? 2 : 3,
-                overflow: TextOverflow.ellipsis,
+                maxLines: expandText ? null : (compact ? 2 : 3),
+                overflow: expandText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
                   fontSize: compact ? 19.5 : 25.5,
                   height: compact ? 1.12 : 1.08,
@@ -941,8 +943,8 @@ class PremiumHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   key: subtitleKey,
-                  maxLines: compact ? 2 : 4,
-                  overflow: TextOverflow.ellipsis,
+                  maxLines: expandText ? null : (compact ? 2 : 4),
+                  overflow: expandText ? TextOverflow.visible : TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? HopeV2Colors.darkMuted
@@ -2014,19 +2016,21 @@ class PremiumTag extends StatelessWidget {
     this.color,
     this.inverse = false,
     this.allowWrap = false,
+    this.domain,
   });
 
   final String label;
   final Object? icon;
   final Color? color;
   final bool inverse;
+  final HopeProductDomain? domain;
   /// Allows labels to grow naturally at enlarged accessibility text scales.
   /// Defaults to the compact one-line contract for existing callers.
   final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
-    final base = color ?? Theme.of(context).colorScheme.primary;
+    final base = color ?? domain?.spec.accentFor(context) ?? Theme.of(context).colorScheme.primary;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final foreground = inverse ? Colors.white : HopeV2SemanticColors.textPrimary(context);
     final iconForeground = inverse ? Colors.white : base;
@@ -2554,6 +2558,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                 children: [
                                   Text(
                                     scoreLabel,
+                                    key: const ValueKey('opportunity-detail-hero-match'),
                                     style: HopeV2Type.metric(context).copyWith(
                                       color: scoreForeground,
                                       fontSize: enlargedText ? 14 : 17,
@@ -2654,7 +2659,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: scoreForeground, fontSize: 24)),
+                          Text(scoreLabel, key: const ValueKey('opportunity-detail-hero-match'), style: HopeV2Type.metric(context).copyWith(color: scoreForeground, fontSize: 24)),
                           Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scoreForeground)),
                         ],
                       ),
