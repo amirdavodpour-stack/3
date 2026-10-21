@@ -278,10 +278,37 @@ void main() {
         'amount': 1000000,
         'providerRef': 'ref-1',
         'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        'fees': {
+          'baseAmount': 1000000,
+          'employerFee': 100000,
+          'workerFee': 100000,
+          'platformFee': 200000,
+          'employerCharge': 1100000,
+          'providerPayout': 900000,
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
+        },
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
     expect(find.text('Financial summary'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-payment-base-amount-label')),
+      findsOneWidget,
+      reason: 'The headline amount must identify the backend base amount, not an unlabeled generic amount.',
+    );
+    final payoutSummary = find.byKey(
+      const ValueKey('transaction-payment-payout-summary'),
+    );
+    expect(payoutSummary, findsOneWidget);
+    expect(
+      find.descendant(of: payoutSummary, matching: find.text('Employer charge')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: payoutSummary, matching: find.text('Worker payout')),
+      findsOneWidget,
+    );
     final header = tester.widget<PremiumHeader>(
       find.byType(PremiumHeader).first,
     );
