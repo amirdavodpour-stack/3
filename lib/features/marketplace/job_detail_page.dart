@@ -840,7 +840,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           : 214,
                   compactHero: denseViewport,
                   maxHeightOverride:
-                      compactViewport && viewportWidth >= 360 ? 184 : null,
+                      viewportWidth >= 360 && viewportWidth < 840 ? 184 : null,
                   expandForAccessibilityText: true,
                   semanticLabel: j.title,
                 ),
@@ -1376,9 +1376,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
     String label,
     String value,
   ) {
+    final width = MediaQuery.sizeOf(context).width;
     final largeTextOnNarrowScreen =
-        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
-        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+        width < 360 ||
+        (width < HopeV2Breakpoints.compact &&
+            MediaQuery.textScalerOf(context).scale(1) > 1.2);
     if (largeTextOnNarrowScreen) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),
@@ -1552,7 +1554,8 @@ class _JobLifecycleCard extends StatelessWidget {
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < HopeV2Breakpoints.compact &&
+              if (constraints.maxWidth >= 360 &&
+                  constraints.maxWidth < HopeV2Breakpoints.compact &&
                   MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
                 return HopeLifecycleRail(
                   labels: [for (final stage in stages) _label(context, stage)],
