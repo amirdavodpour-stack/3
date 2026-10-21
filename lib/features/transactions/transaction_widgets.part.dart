@@ -805,13 +805,19 @@ Widget _buildPage(BuildContext context) {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      HopeCopy.of(context).copy_amount_6400812,
+                      key: const ValueKey('transaction-payment-amount-label'),
+                      payment?.fees?.baseAmount != null
+                          ? HopeCopy.of(context).copy_base_amount_82586c0
+                          : HopeCopy.of(context).copy_amount_6400812,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       key: const ValueKey('transaction-payment-amount'),
-                      moneyLabel(context, payment?.amount ?? '—'),
+                      moneyLabel(
+                        context,
+                        payment?.fees?.baseAmount ?? payment?.amount ?? '—',
+                      ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -820,6 +826,31 @@ Widget _buildPage(BuildContext context) {
                         letterSpacing: -.8,
                       ),
                     ),
+                    if (payment?.fees?.employerCharge != null ||
+                        payment?.fees?.providerPayout != null) ...[
+                      const SizedBox(height: 4),
+                      const Divider(height: 12),
+                      if (payment?.fees?.employerCharge != null)
+                        KeyedSubtree(
+                          key: const ValueKey('transaction-employer-charge-summary'),
+                          child: _moneyRow(
+                            context,
+                            HopeCopy.of(context).copy_employer_charge_9740283,
+                            payment?.fees?.employerCharge,
+                            strong: true,
+                          ),
+                        ),
+                      if (payment?.fees?.providerPayout != null)
+                        KeyedSubtree(
+                          key: const ValueKey('transaction-provider-payout-summary'),
+                          child: _moneyRow(
+                            context,
+                            HopeCopy.of(context).copy_worker_payout_45f6bb9,
+                            payment?.fees?.providerPayout,
+                            strong: true,
+                          ),
+                        ),
+                    ],
                     if (status == 'HELD' ||
                         status == 'RELEASE_PENDING') ...[
                       const SizedBox(height: 8),
@@ -901,6 +932,7 @@ Widget _buildPage(BuildContext context) {
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
                 PremiumPanel(
+                    key: const ValueKey('transaction-financial-details'),
                     padding: const EdgeInsets.all(14),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,

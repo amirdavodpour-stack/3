@@ -577,14 +577,42 @@ void main() {
           find.byKey(const ValueKey('transaction-payment-amount-label'));
       expect(mainAmountLabel, findsOneWidget);
       expect(tester.widget<Text>(mainAmountLabel).data, 'Base amount');
+      final employerSummary =
+          find.byKey(const ValueKey('transaction-employer-charge-summary'));
+      final payoutSummary =
+          find.byKey(const ValueKey('transaction-provider-payout-summary'));
+      expect(employerSummary, findsOneWidget);
+      expect(payoutSummary, findsOneWidget);
       expect(
-        find.byKey(const ValueKey('transaction-employer-charge-summary')),
+        find.descendant(
+          of: employerSummary,
+          matching: find.text('Employer charge'),
+        ),
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('transaction-provider-payout-summary')),
+        find.descendant(
+          of: employerSummary,
+          matching: find.text('9,000,000,000,000,000 TOMAN'),
+        ),
         findsOneWidget,
       );
+      expect(
+        find.descendant(
+          of: payoutSummary,
+          matching: find.text('Worker payout'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: payoutSummary,
+          matching: find.text('8,999,999,998,500,000 TOMAN'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.getRect(employerSummary).bottom, lessThan(640));
+      expect(tester.getRect(payoutSummary).bottom, lessThan(640));
       expect(find.text('Reference'), findsNothing);
       expect(
         find.text(
@@ -615,7 +643,12 @@ void main() {
                 widget.data!.replaceAll(',', '') == '$digits TOMAN',
           );
 
-      final feeAmount = moneyTextWithoutCommas('8999999999000000');
+      final financialDetails =
+          find.byKey(const ValueKey('transaction-financial-details'));
+      final feeAmount = find.descendant(
+        of: financialDetails,
+        matching: moneyTextWithoutCommas('8999999999000000'),
+      );
       await tester.scrollUntilVisible(
         feeAmount,
         180,
@@ -700,18 +733,23 @@ void main() {
     // Scroll the fee breakdown into the built viewport.
     await tester.drag(find.byType(ListView), const Offset(0, -350));
     await tester.pumpAndSettle();
-    expect(find.text('Financial details'), findsOneWidget);
-    expect(find.text('Base amount'), findsOneWidget);
-    expect(find.text('Employer fee'), findsOneWidget);
-    expect(find.text('Worker fee'), findsOneWidget);
-    expect(find.text('Platform fee'), findsOneWidget);
-    expect(find.text('Employer charge'), findsOneWidget);
-    expect(find.text('Worker payout'), findsOneWidget);
+    final details = find.byKey(
+      const ValueKey('transaction-financial-details'),
+    );
+    Finder inDetails(String text) =>
+        find.descendant(of: details, matching: find.text(text));
+    expect(inDetails('Financial details'), findsOneWidget);
+    expect(inDetails('Base amount'), findsOneWidget);
+    expect(inDetails('Employer fee'), findsOneWidget);
+    expect(inDetails('Worker fee'), findsOneWidget);
+    expect(inDetails('Platform fee'), findsOneWidget);
+    expect(inDetails('Employer charge'), findsOneWidget);
+    expect(inDetails('Worker payout'), findsOneWidget);
     // Exact MISSION contract fixture: 10% fee on each side, 20% platform fee.
-    expect(find.text('100,000 TOMAN'), findsNWidgets(2));
-    expect(find.text('200,000 TOMAN'), findsOneWidget);
-    expect(find.text('1,100,000 TOMAN'), findsOneWidget);
-    expect(find.text('900,000 TOMAN'), findsOneWidget);
+    expect(inDetails('100,000 TOMAN'), findsNWidgets(2));
+    expect(inDetails('200,000 TOMAN'), findsOneWidget);
+    expect(inDetails('1,100,000 TOMAN'), findsOneWidget);
+    expect(inDetails('900,000 TOMAN'), findsOneWidget);
   });
 
 
