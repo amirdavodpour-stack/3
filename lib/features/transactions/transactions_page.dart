@@ -932,8 +932,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       const SizedBox(height: 8),
                       ...settledItems.map(_workItemCard),
                     ],
-                    const SizedBox(height: 8),
-                    _activityNavigation(context),
                   ],
                 ),
               ));

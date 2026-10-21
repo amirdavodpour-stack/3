@@ -898,7 +898,9 @@ class PremiumHeader extends StatelessWidget {
     super.key,
     required this.eyebrow,
     required this.title,
+    this.titleKey,
     this.subtitle,
+    this.subtitleKey,
     this.trailing,
     this.domain,
     this.page,
@@ -907,7 +909,9 @@ class PremiumHeader extends StatelessWidget {
 
   final String eyebrow;
   final String title;
+  final Key? titleKey;
   final String? subtitle;
+  final Key? subtitleKey;
   final Widget? trailing;
   final HopeProductDomain? domain;
   final HopePageId? page;
@@ -923,6 +927,7 @@ class PremiumHeader extends StatelessWidget {
             children: [
               Text(
                 title,
+                key: titleKey,
                 maxLines: compact ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
@@ -935,6 +940,7 @@ class PremiumHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle!,
+                  key: subtitleKey,
                   maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

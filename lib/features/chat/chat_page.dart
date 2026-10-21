@@ -435,18 +435,22 @@ class _ChatPageState extends State<ChatPage> {
       body: SafeArea(child: PremiumPageFrame(
         maxWidth: 920, padding: const EdgeInsets.fromLTRB(12,12,12,8),
         child: Column(crossAxisAlignment:CrossAxisAlignment.stretch, children:[
-          Row(children:[
-            Container(width:42,height:42,decoration:BoxDecoration(
-              color:colors.primary.withValues(alpha:.13),borderRadius:BorderRadius.circular(HopeV2Radii.md),
-              border:Border.all(color:colors.primary.withValues(alpha:.26))),
-              child:Center(child:HopeIcon(HopeV2Icons.message,color:colors.primary,size:21))),
-            const SizedBox(width:12),
-            Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-              Text(_t('گفتگوها','Chats'),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900)),
-              Text(_t('فضای امن همکاری‌های HOPE','Your HOPE collaboration space'),style:Theme.of(context).textTheme.bodySmall?.copyWith(color:colors.onSurfaceVariant)),
-            ])),
-            PremiumIconButton(icon:HopeV2Icons.close,tooltip:_t('بستن','Close'),onPressed:()=>Navigator.maybePop(context)),
-          ]),
+          PremiumHeader(
+            page: HopePageId.chat,
+            domain: HopeProductDomain.collaboration,
+            dense: true,
+            eyebrow: _t('همکاری HOPE', 'HOPE COLLABORATION'),
+            title: _t('گفتگوها', 'Chats'),
+            subtitle: _t(
+              'فضای امن همکاری‌های HOPE',
+              'Your HOPE collaboration space',
+            ),
+            trailing: PremiumIconButton(
+              icon: HopeV2Icons.close,
+              tooltip: _t('بستن', 'Close'),
+              onPressed: () => Navigator.maybePop(context),
+            ),
+          ),
           const SizedBox(height:16),
           TextField(key:const ValueKey('chat-inbox-search'),onChanged:(value)=>setState(()=>_searchQuery=value),
             decoration:InputDecoration(prefixIcon:const HopeIcon(HopeV2Icons.search,size:19),
@@ -975,88 +979,26 @@ class _ChatPageState extends State<ChatPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: expandableHeaderText ? 32 : 42,
-                            height: expandableHeaderText ? 32 : 42,
-                            decoration: BoxDecoration(
-                              color: colors.primary.withValues(alpha: .10),
-                              borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                              border: Border.all(color: colors.primary.withValues(alpha: .20)),
-                            ),
-                            child: Center(
-                              child: HopeIcon(
-                                widget.adminRoom ? HopeV2Icons.protectedFunds : HopeV2Icons.message,
-                                size: 20,
-                                color: colors.primary,
-                                strokeWidth: 1.6,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (!expandableHeaderText) ...[
-                                  Text(
-                                    widget.adminRoom
-                                        ? _t('اتاق مدیران', 'ADMIN ROOM')
-                                        : _t('گفتگو', 'CONVERSATION'),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: colors.primary,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: .35,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                ],
-                                Text(
-                                  title,
-                                  key: const ValueKey('chat-conversation-title'),
-                                  maxLines: expandableHeaderText ? null : 1,
-                                  softWrap: true,
-                                  overflow: expandableHeaderText
-                                      ? TextOverflow.visible
-                                      : TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
-                                ),
-                                const SizedBox(height: 1),
-                                Text(
-                                  contextLine,
-                                  key: const ValueKey('chat-conversation-context'),
-                                  maxLines: expandableHeaderText ? null : 1,
-                                  softWrap: true,
-                                  overflow: expandableHeaderText
-                                      ? TextOverflow.visible
-                                      : TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                if (_presence.any((person) => person.online))
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 3),
-                                    child: Text(
-                                      _presence.any((person) => person.typing)
-                                          ? _t('در حال نوشتن…', 'Typing…')
-                                          : _t('آنلاین', 'Online'),
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        color: HopeV2Colors.secondaryDark,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          PremiumIconButton(
-                            icon: HopeV2Icons.close,
-                            tooltip: isEn ? 'Close' : 'بستن',
-                            onPressed: () => Navigator.maybePop(context),
-                          ),
-                        ],
+                      PremiumHeader(
+                        page: pageId,
+                        domain: widget.adminRoom
+                            ? HopeProductDomain.control
+                            : HopeProductDomain.collaboration,
+                        dense: true,
+                        eyebrow: widget.adminRoom
+                            ? _t('اتاق مدیران', 'ADMIN ROOM')
+                            : _t('گفتگو', 'CONVERSATION'),
+                        title: title,
+                        titleKey: const ValueKey('chat-conversation-title'),
+                        subtitle: _presence.any((person) => person.online)
+                            ? '$contextLine · ${_presence.any((person) => person.typing) ? _t('در حال نوشتن…', 'Typing…') : _t('آنلاین', 'Online')}'
+                            : contextLine,
+                        subtitleKey: const ValueKey('chat-conversation-context'),
+                        trailing: PremiumIconButton(
+                          icon: HopeV2Icons.close,
+                          tooltip: isEn ? 'Close' : 'بستن',
+                          onPressed: () => Navigator.maybePop(context),
+                        ),
                       ),
                       if (conversation != null) ...[
                         SizedBox(height: expandableHeaderText ? 4 : 9),

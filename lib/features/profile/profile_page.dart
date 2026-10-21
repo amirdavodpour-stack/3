@@ -169,6 +169,15 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 8),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.trust,
+            title: _t(
+              context,
+              'اعتماد و پروفایل حرفه‌ای',
+              'Trust & professional profile',
+            ),
+          ),
+          const SizedBox(height: 6),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
