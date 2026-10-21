@@ -618,7 +618,13 @@ void main() {
       );
       expect(mainAmount, findsOneWidget);
       final mainAmountText = tester.widget<Text>(mainAmount);
-      expect(mainAmountText.data!.replaceAll(',', ''), '9000000000000000 TOMAN');
+      expect(
+        mainAmountText.data!.replaceAll(',', ''),
+        '8999999999000000 TOMAN',
+        reason: 'The headline value is the canonical backend baseAmount; employerCharge remains a separate amount.',
+      );
+      expect(find.text('Employer charge'), findsAtLeastNWidgets(1));
+      expect(find.text('Worker payout'), findsAtLeastNWidgets(1));
       expect(mainAmountText.maxLines, isNull);
       expect(mainAmountText.softWrap, isTrue);
       expect(mainAmountText.overflow, TextOverflow.visible);
