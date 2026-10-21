@@ -354,6 +354,124 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     );
   }
 
+  Future<void> _showCandidateDetails(
+    BuildContext context,
+    HopeEmployerCandidateMatch candidate,
+  ) async {
+    final locale = Localizations.localeOf(context).languageCode;
+    final skills = candidate.skills?.trim();
+    final highlights = candidate.resumeHighlights?.trim();
+    final offerMessage = candidate.offerMessage?.trim();
+    final rawOfferPrice = candidate.offerPrice?.trim();
+    final offerPrice = rawOfferPrice == null || rawOfferPrice.isEmpty
+        ? null
+        : HopeDisplayFormatter.money(rawOfferPrice, locale: locale);
+    final displayName = candidate.displayName.trim().isEmpty
+        ? _t(context, 'کارجو', 'Worker')
+        : candidate.displayName.trim();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        Widget detailSection(String label, String value) => Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(sheetContext).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: Theme.of(sheetContext).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            );
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 12, 18, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _t(sheetContext, 'جزئیات کارجو', 'Candidate details'),
+                        style: Theme.of(sheetContext)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    IconButton(
+                      key: const ValueKey('candidate-details-close-action'),
+                      tooltip: _t(sheetContext, 'بستن', 'Close'),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  displayName,
+                  style: Theme.of(sheetContext)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _t(sheetContext, 'میزان انطباق', 'Compatibility'),
+                  style: Theme.of(sheetContext).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _candidateScoreLabel(sheetContext, candidate.score),
+                  style: Theme.of(sheetContext)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                if (skills != null && skills.isNotEmpty)
+                  detailSection(_t(sheetContext, 'مهارت‌ها', 'Skills'), skills),
+                if (highlights != null && highlights.isNotEmpty)
+                  detailSection(
+                    _t(sheetContext, 'خلاصهٔ سوابق', 'Resume highlights'),
+                    highlights,
+                  ),
+                if (offerMessage != null && offerMessage.isNotEmpty)
+                  detailSection(
+                    _t(sheetContext, 'پیام پیشنهاد', 'Offer message'),
+                    offerMessage,
+                  ),
+                if (offerPrice != null)
+                  detailSection(
+                    _t(sheetContext, 'مبلغ پیشنهاد', 'Offer amount'),
+                    offerPrice,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
@@ -365,6 +483,17 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       child: ListView(
         padding: HopeV2Navigation.scrollEndPadding(context),
         children: [
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            key: const ValueKey('candidate-matches-back-action'),
+            onPressed: () {
+              Navigator.of(context).maybePop();
+            },
+            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            label: Text(_t(context, 'بازگشت', 'Back')),
+          ),
+        ),
         PremiumSectionHeader(
           page: HopePageId.candidateMatches,
           domain: HopeProductDomain.intelligence,
@@ -587,6 +716,25 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
                             ),
                       ),
                     ],
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        key: ValueKey(
+                          'candidate-match-details-${candidate.userId}',
+                        ),
+                        onPressed: () => _showCandidateDetails(
+                          context,
+                          candidate,
+                        ),
+                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                        label: Text(_t(
+                          context,
+                          'مشاهده جزئیات',
+                          'View details',
+                        )),
+                      ),
+                    ),
                   ],
                 ),
               ),
