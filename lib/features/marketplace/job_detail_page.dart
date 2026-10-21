@@ -1598,6 +1598,55 @@ class _JobLifecycleCard extends StatelessWidget {
                   current: current,
                 );
               }
+              if (enlargedText && constraints.maxWidth < 360) {
+                // On a very narrow viewport, a vertical timeline becomes
+                // taller than the visible content area at 1.5x text. Keep
+                // every localized label intact while laying the ordered
+                // stages out in a responsive two-column grid.
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: List.generate(stages.length, (index) {
+                    final reached = current >= index;
+                    final active = current == index;
+                    return SizedBox(
+                      width: (constraints.maxWidth - 12) / 2,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Container(
+                              width: active ? 14 : 11,
+                              height: active ? 14 : 11,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: reached
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.outlineVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                _label(context, stages[index]),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: active
+                                          ? FontWeight.w800
+                                          : FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                );
+              }
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
