@@ -115,7 +115,7 @@ test('financial insights and satisfaction UI are wired to scoped backend capabil
 test('shared financial summary keeps status and financial language localized', () => {
   const summary = read('lib/core/ui/premium_payment_summary.dart');
   const activity = read('lib/features/transactions/transactions_page.dart');
-  for (const marker of ['Localizations.localeOf(context).languageCode', 'Funds held', 'وجه در امانت', 'Total charge', 'مبلغ نهایی']) {
+  for (const marker of ['Localizations.localeOf(context).languageCode', 'Funds held', 'وجه در امانت', 'Base amount', 'مبلغ پایه', 'Employer charge', 'مبلغ پرداختی کارفرما', 'Worker payout', 'دریافتی کارجو']) {
     assert.ok(summary.includes(marker), `missing ${marker}`);
   }
   for (const marker of ['PUBLISHED', 'ASSIGNED', 'IN_PROGRESS', 'DELIVERED', 'UNDER_REVIEW', 'COMPLETED', 'Settled', 'تسویه شده']) {
