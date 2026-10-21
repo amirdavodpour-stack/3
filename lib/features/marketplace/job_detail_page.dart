@@ -834,11 +834,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
                   height: compactViewport
-                      ? (denseViewport ? 96 : 128)
+                      ? (viewportWidth < 360 ? 96 : 184)
                       : denseViewport
                           ? 184
                           : 214,
                   compactHero: denseViewport,
+                  maxHeightOverride:
+                      compactViewport && viewportWidth >= 360 ? 184 : null,
                   expandForAccessibilityText: true,
                   semanticLabel: j.title,
                 ),
@@ -1374,6 +1376,42 @@ class _JobDetailPageState extends State<JobDetailPage> {
     String label,
     String value,
   ) {
+    final largeTextOnNarrowScreen =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    if (largeTextOnNarrowScreen) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIcon(icon, size: 19, color: AppColors.primary, strokeWidth: 1.9),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    label,
+                    softWrap: true,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 28),
+              child: Text(
+                value,
+                softWrap: true,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(

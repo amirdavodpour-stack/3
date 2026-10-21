@@ -1383,6 +1383,7 @@ class PremiumHero extends StatelessWidget {
     this.domain,
     this.page,
     this.expandForAccessibilityText = false,
+    this.maxHeightOverride,
   });
   final String eyebrow;
   final String title;
@@ -1399,6 +1400,8 @@ class PremiumHero extends StatelessWidget {
   final HopePageId? page;
   /// Lets a long title grow naturally only when users enlarge system text.
   final bool expandForAccessibilityText;
+  /// Optional page-level maximum for a content-specific responsive hero.
+  final double? maxHeightOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -1410,17 +1413,14 @@ class PremiumHero extends StatelessWidget {
     // Editorial density is content-aware: informational heroes without an
     // action should not reserve the same vertical budget as a conversion hero.
     // Explicit short bands survive, while oversized caller values are capped.
-    final maxHeroHeight = compactHero
-        ? 148.0
-        : action != null
-            ? (compact ? 184.0 : 208.0)
-            : message.trim().isEmpty
-                ? (compact
-                    ? 132.0
-                    : page == HopePageId.opportunityDetail
-                        ? 184.0
-                        : 152.0)
-                : (compact ? 164.0 : 184.0);
+    final maxHeroHeight = maxHeightOverride ??
+        (compactHero
+            ? 148.0
+            : action != null
+                ? (compact ? 184.0 : 208.0)
+                : message.trim().isEmpty
+                    ? (compact ? 132.0 : 152.0)
+                    : (compact ? 164.0 : 184.0));
     final minHeroHeight = compactHero ? 88.0 : (compact ? 112.0 : 152.0);
     final heroHeight = height.clamp(minHeroHeight, maxHeroHeight).toDouble();
     final horizontal = compactHero

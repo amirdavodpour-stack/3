@@ -568,16 +568,38 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
-                                      child: Text(
-                                        '${stats[index].value} ${index == 3 ? _t(context, 'امانت', 'Escrow') : stats[index].label}',
-                                        maxLines: 1,
-                                        softWrap: false,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              color: Theme.of(context).colorScheme.onSurface,
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              stats[index].value,
+                                              maxLines: 1,
+                                              softWrap: false,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                  ),
                                             ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              index == 3
+                                                  ? _t(context, 'امانت', 'Escrow')
+                                                  : stats[index].label,
+                                              maxLines: 1,
+                                              softWrap: false,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
