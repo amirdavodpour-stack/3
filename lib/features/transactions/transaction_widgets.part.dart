@@ -931,6 +931,7 @@ Widget _buildPage(BuildContext context) {
               if (payment?.fees != null) ...[
                 const SizedBox(height: 12),
                 PremiumPanel(
+                    key: const ValueKey('transaction-payment-financial-details'),
                     padding: const EdgeInsets.all(14),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
