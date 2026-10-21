@@ -639,3 +639,13 @@ grep -Fq "repeated opportunity cards stay quiet while featured cards own surface
 grep -Fq "opportunity artwork accents stay unique and separate from semantic states" "test/core/theme/hope_v2_design_test.dart"
 grep -Fq "test/core/theme/hope_v2_design_test.dart" ".github/workflows/hope-ui-wave-1-static.yml"
 echo "PASS: Wave53 OpportunityCard 2.0 category identity + surface hierarchy + RTL action cue"
+
+
+# Candidate Matches is an audited runtime target, not a semantics-only exception.
+grep -Fq 'final shouldRevealCandidateMatchesTarget =' "$runtime_driver"
+grep -Fq "find.byKey(const ValueKey('candidate-match-details-candidate-user-1'))" "$runtime_driver"
+grep -Fq 'shouldRevealCandidateMatchesTarget' "$runtime_driver"
+if grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$runtime_driver"; then
+  echo "FAIL: Candidate Matches is still exempt from actionable-target assertions" >&2
+  exit 1
+fi
