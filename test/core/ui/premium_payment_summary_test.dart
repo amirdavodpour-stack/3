@@ -122,6 +122,47 @@ void main() {
 
 
   testWidgets(
+      'PremiumPaymentSummary prefers canonical baseAmount over the legacy amount field',
+      (tester) async {
+    final original = _payment(currency: 'TOMAN');
+    final payment = HopePayment(
+      id: original.id,
+      status: original.status,
+      amount: '2500000',
+      providerRef: original.providerRef,
+      job: original.job,
+      fees: original.fees,
+      createdAt: original.createdAt,
+      updatedAt: original.updatedAt,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(body: PremiumPaymentSummary(payment: payment)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Base amount'), findsOneWidget);
+    expect(find.text('1,000,000 Toman'), findsOneWidget);
+    expect(find.text('2,500,000 Toman'), findsNothing);
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
       'PremiumPaymentSummary displays employer and worker fee amounts separately',
       (tester) async {
     await tester.pumpWidget(

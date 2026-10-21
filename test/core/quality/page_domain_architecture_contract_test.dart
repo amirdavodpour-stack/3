@@ -183,9 +183,13 @@ void main() {
     expect(active, greaterThan(discovery));
   });
 
-  test('main navigation names the work center explicitly', () {
+  test('main navigation exposes the canonical work-center destination', () {
     final source = _read('lib/features/home/home_page.dart');
-    expect(source, contains("_t(context, 'کار', 'Work')"));
+    // Keep this structural contract aligned with the visible copy contract in
+    // home_page_test.dart, which protects the localized Workshop/کارگاه label.
+    expect(source, contains("ValueKey('hope-nav-work')"));
+    expect(source, contains("_t(context, 'کارگاه', 'Workshop')"));
+    expect(source, contains('2 => TransactionsPage('));
   });
 
   test('secondary navigation groups expose HOPE product domains', () {

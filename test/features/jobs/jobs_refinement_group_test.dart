@@ -126,7 +126,7 @@ void main() {
             const ValueKey('hope-opportunity-refinement-launcher'),
           ),
         ),
-        const Size(48, 48),
+        const Size(HopeV2Touch.minimum + 2, HopeV2Touch.minimum + 2),
       );
     },
   );
@@ -182,7 +182,7 @@ void main() {
             const ValueKey('hope-opportunity-refinement-launcher'),
           ),
         ),
-        const Size(48, 48),
+        const Size(HopeV2Touch.minimum + 2, HopeV2Touch.minimum + 2),
       );
       expect(find.textContaining('Filters'), findsNothing);
       expect(find.text('Missions'), findsNothing);
