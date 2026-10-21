@@ -101,7 +101,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         id: 'location',
         icon: HopeV2Icons.location,
         label: _t(context, 'مکان', 'Location'),
-        value: _opportunityLocationLabel(context, job),
+        value: _t(context, 'در خلاصه بالا', 'See above'),
         color: HopeV2Colors.secondary,
       ),
     ];
@@ -836,7 +836,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   height: compactViewport
                       ? (denseViewport ? 96 : 128)
                       : denseViewport
-                          ? 148
+                          ? 184
                           : 214,
                   compactHero: denseViewport,
                   expandForAccessibilityText: true,
@@ -864,7 +864,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
               kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
               budget: '—',
               category: '—',
-              location: '—',
+              location: _opportunityLocationLabel(context, j),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
               recommendationReasons: j.recommendationReasons,

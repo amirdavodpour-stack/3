@@ -972,9 +972,9 @@ class _ChatPageState extends State<ChatPage> {
                   glass: true,
                   padding: EdgeInsets.fromLTRB(
                     12,
-                    expandableHeaderText ? 4 : 10,
+                    expandableHeaderText ? 0 : 10,
                     8,
-                    expandableHeaderText ? 4 : 10,
+                    expandableHeaderText ? 0 : 10,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1002,7 +1002,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                       ),
                       if (conversation != null) ...[
-                        SizedBox(height: expandableHeaderText ? 4 : 9),
+                        SizedBox(height: expandableHeaderText ? 0 : 9),
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: PremiumTag(

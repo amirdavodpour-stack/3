@@ -2516,8 +2516,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                             child: ExcludeSemantics(
                                               child: Text(
                                                 location.trim(),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: enlargedText ? null : 1,
+                                                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                       color: neutralForeground,
                                                       fontWeight: FontWeight.w700,

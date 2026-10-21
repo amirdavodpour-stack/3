@@ -159,21 +159,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                           ),
-                          Semantics(
-                            container: true,
-                            label: _t(
-                              context,
-                              'اعتماد و پروفایل حرفه‌ای',
+                          if (snapshot.hasData && !snapshot.hasError)
+                            Semantics(
+                              container: true,
+                              label: _t(
+                                context,
+                                'اعتماد و پروفایل حرفه‌ای',
                               'Trust & professional profile',
                             ),
-                            child: ExcludeSemantics(
-                              child: PremiumTag(
-                                domain: HopeProductDomain.trust,
-                                icon: HopeV2Icons.secure,
-                                label: _t(context, 'اعتماد', 'Trust'),
+                              child: ExcludeSemantics(
+                                child: PremiumTag(
+                                  domain: HopeProductDomain.trust,
+                                  icon: HopeV2Icons.secure,
+                                  label: _t(context, 'اعتماد', 'Trust'),
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
