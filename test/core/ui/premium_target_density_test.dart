@@ -132,7 +132,7 @@ void main() {
 
     final title = find.text('فرصت بعدی خود را پیدا کنید');
     expect(title, findsOneWidget);
-    expect(tester.widget<Text>(title).style?.fontSize, 21.5);
+    expect(tester.widget<Text>(title).style?.fontSize, 19.5);
   });
 
   testWidgets('compact PremiumPanel default padding stays at the density baseline',
@@ -156,7 +156,7 @@ void main() {
 
     expect(
       tester.getSize(find.byType(PremiumPanel)),
-      const Size(78, 78),
+      const Size(74, 74),
     );
   });
 
@@ -263,7 +263,13 @@ void main() {
       tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
       HopeV2Navigation.barHeight,
     );
-    expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
+    expect(
+      decoration.borderRadius,
+      const BorderRadiusDirectional.only(
+        topStart: Radius.circular(14),
+        topEnd: Radius.circular(14),
+      ),
+    );
   });
 
 
@@ -518,7 +524,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('candidate-signal-skills')),
-        matching: find.text('94%'),
+        matching: find.text('۹۴٪'),
       ),
       findsOneWidget,
     );

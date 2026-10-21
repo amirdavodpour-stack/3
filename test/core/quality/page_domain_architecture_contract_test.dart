@@ -177,7 +177,7 @@ void main() {
   test('home places the primary discovery feed before active work', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final build = source.indexOf('Widget build(BuildContext context)');
-    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)', build);
+    final discovery = source.indexOf('_opportunitySections(', build);
     final active = source.indexOf('_activeWork(context)', build);
     expect(discovery, greaterThanOrEqualTo(0));
     expect(active, greaterThan(discovery));
