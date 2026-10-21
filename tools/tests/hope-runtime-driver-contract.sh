@@ -52,7 +52,7 @@ grep_fixed -Fq -- "'screenshotName': marker" "$test_file"
 grep_fixed -Fq -- 'call.argument<String>("screenshotName") ?: "unlabelled"' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- "'captureScreenshot'," "$test_file"
 grep_fixed -Fq -- "int _runtimeFreshFrameCount(String marker)" "$test_file"
-grep_fixed -Fq -- "if (marker.startsWith('register-')) return 2;" "$test_file"
+grep_fixed -Fq -- "if (marker.startsWith('register-')) return 1;" "$test_file"
 grep_fixed -Fq -- "if (marker.startsWith('password-reset-')) return 1;" "$test_file"
 grep_fixed -Fq -- "freshFramesRequired: freshFrameCount," "$test_file"
 grep_fixed -Fq -- "'freshFramesRequired': freshFramesRequired" "$test_file"
