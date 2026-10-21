@@ -805,13 +805,19 @@ Widget _buildPage(BuildContext context) {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      HopeCopy.of(context).copy_amount_6400812,
+                      key: const ValueKey('transaction-payment-base-amount-label'),
+                      payment?.fees?.baseAmount != null
+                          ? _t('مبلغ پایه', 'Base amount')
+                          : HopeCopy.of(context).copy_amount_6400812,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       key: const ValueKey('transaction-payment-amount'),
-                      moneyLabel(context, payment?.amount ?? '—'),
+                      moneyLabel(
+                        context,
+                        payment?.fees?.baseAmount ?? payment?.amount ?? '—',
+                      ),
                       softWrap: true,
                       overflow: TextOverflow.visible,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -820,6 +826,30 @@ Widget _buildPage(BuildContext context) {
                         letterSpacing: -.8,
                       ),
                     ),
+                    if (payment?.fees?.employerCharge != null ||
+                        payment?.fees?.providerPayout != null) ...[
+                      const SizedBox(height: 8),
+                      Column(
+                        key: const ValueKey('transaction-payment-payout-summary'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (payment?.fees?.employerCharge != null)
+                            _moneyRow(
+                              context,
+                              _t('مبلغ پرداختی کارفرما', 'Employer charge'),
+                              payment?.fees?.employerCharge,
+                              strong: true,
+                            ),
+                          if (payment?.fees?.providerPayout != null)
+                            _moneyRow(
+                              context,
+                              _t('دریافتی کارجو', 'Worker payout'),
+                              payment?.fees?.providerPayout,
+                              strong: true,
+                            ),
+                        ],
+                      ),
+                    ],
                     if (status == 'HELD' ||
                         status == 'RELEASE_PENDING') ...[
                       const SizedBox(height: 8),
