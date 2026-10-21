@@ -912,6 +912,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
                   const SizedBox(height: 10),
+                  _OpportunitySnapshot(job: j),
+                  const SizedBox(height: 10),
                   PremiumPanel(
                     quiet: true,
                     padding: const EdgeInsets.all(14),

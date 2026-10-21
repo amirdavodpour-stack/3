@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
@@ -29,6 +30,24 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
+}
+
+class _Marketplace implements MarketplaceRepository {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async =>
+      const <HopeJob>[];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _Transactions implements TransactionRepository {
@@ -77,6 +96,7 @@ Future<Widget> _app() async {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider(create: (_) => ThemeController(settings)),
         ChangeNotifierProvider.value(value: auth),
+        Provider<MarketplaceRepository>.value(value: _Marketplace()),
         Provider<TransactionRepository>.value(value: _Transactions()),
       ],
       child: const HomePage(),
@@ -183,17 +203,18 @@ void main() {
 
     final pager = find.byKey(const ValueKey('hope-tab-pager'));
     expect(pager, findsOneWidget);
-    final scrollable = find.descendant(
-      of: pager,
-      matching: find.byType(Scrollable),
-    ).first;
+    final pageController = tester.widget<PageView>(pager).controller!;
+    final exploreDestination = find.descendant(
+      of: find.byType(PremiumNavigationBar),
+      matching: find.text('کاوش'),
+    );
+    expect(exploreDestination, findsOneWidget);
 
-    await tester.tap(find.text('کاوش'));
+    await tester.tap(exploreDestination);
     await tester.pump(const Duration(milliseconds: 140));
 
-    final position = tester.state<ScrollableState>(scrollable).position;
-    expect(position.pixels, greaterThan(0));
-    expect(position.pixels, lessThan(position.maxScrollExtent));
+    expect(pageController.page, greaterThan(0));
+    expect(pageController.page, lessThan(1));
     expect(tester.takeException(), isNull);
   });
 }
