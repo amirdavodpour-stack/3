@@ -721,28 +721,40 @@ void main() {
         of: list,
         matching: find.byType(Scrollable),
       ).first;
-      await tester.scrollUntilVisible(
-        finalSection,
-        180,
-        scrollable: listScroller,
-        maxScrolls: 80,
-      );
-      await tester.pumpAndSettle();
+
+      // Advance in short increments and inspect the tree immediately when a
+      // render exception is first raised, before lazy sliver recycling detaches
+      // the offending Row and hides its creator chain from diagnostics.
+      var reachedFinalSection = false;
+      for (var scrollStep = 0; scrollStep < 80; scrollStep++) {
+        if (finalSection.evaluate().isNotEmpty) {
+          final candidateRect = tester.getRect(finalSection);
+          final currentViewport = tester.getRect(list);
+          reachedFinalSection = candidateRect.top >= currentViewport.top &&
+              candidateRect.bottom <= currentViewport.bottom;
+          if (reachedFinalSection) break;
+        }
+
+        await tester.drag(listScroller, const Offset(0, -90));
+        await tester.pumpAndSettle();
+        final scrollException = tester.takeException();
+        if (scrollException != null) {
+          debugPrint(
+            'WAVE42_SCROLL_LAYOUT_EXCEPTION width=$width step=$scrollStep '
+            'textScale=1.5: $scrollException',
+          );
+          debugDumpRenderTree();
+        }
+        expect(
+          scrollException,
+          isNull,
+          reason: 'Wave 42 render layout at $width dp / 1.5x must not overflow '
+              'during scroll step $scrollStep.',
+        );
+      }
+      expect(reachedFinalSection || finalSection.evaluate().isNotEmpty, isTrue);
       await tester.ensureVisible(finalSection);
       await tester.pumpAndSettle();
-
-      // Capture the active render tree before geometry assertions can short-circuit
-      // the test and dispose the overflowing row's element subtree.
-      final layoutException = tester.takeException();
-      if (layoutException != null) {
-        debugPrint('WAVE42_LAYOUT_EXCEPTION width=$width textScale=1.5: $layoutException');
-        debugDumpRenderTree();
-      }
-      expect(
-        layoutException,
-        isNull,
-        reason: 'Wave 42 render layout at $width dp / 1.5x must not overflow.',
-      );
 
       // ListView builds distant children lazily; assert presence after scrolling.
       expect(finalSection, findsOneWidget);
