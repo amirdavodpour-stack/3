@@ -275,11 +275,17 @@ grep -Fq 'com.hopev2.ci.talkback' "$workflow_file"
 grep -Fq 'HOPE_TALKBACK_PACKAGE: com.hopev2.ci.talkback' "$workflow_file"
 grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
-# A static candidate-match fixture intentionally exposes no tap callbacks; its
-# semantic labels/nodes remain required, while actionable semantics stay
-# mandatory on all other captured surfaces.
-grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"
+# Candidate Matches exposes a real keyed details action; the exact-head
+# TalkBack pass must audit its tap semantics and measurable target bounds too.
+grep -Fq 'final shouldRevealCandidateMatchesTarget =' "$test_file"
+grep -Fq 'candidate-match-details-candidate-user-1' "$test_file"
+grep -Fq 'shouldRevealCandidateMatchesTarget' "$test_file"
 grep -Fq 'actionableNodeCount < 1' "$test_file"
+grep -Fq 'if (targetBoundsCheckedCount == 0)' "$test_file"
+if grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"; then
+  echo "FAIL: Candidate Matches must not be exempt from tap-action requirements." >&2
+  exit 1
+fi
 
 # T10 regression: service presence under "Binding services" must not count as bound.
 if ! grep -Fq 'Bound services:' "$talkback_helper" ||
