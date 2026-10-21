@@ -113,17 +113,43 @@ class _OpportunitySnapshot extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(_t(context, 'خلاصه فرصت', 'Opportunity snapshot'), style: HopeV2Type.section(context)),
-              ),
-              PremiumTag(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackHeader =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              final title = Text(
+                _t(context, 'خلاصه فرصت', 'Opportunity snapshot'),
+                style: HopeV2Type.section(context),
+              );
+              final tag = PremiumTag(
                 icon: HopeV2Icons.insights,
                 label: _t(context, 'اطلاعات کلیدی', 'Key facts'),
                 color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+                allowWrap: stackHeader,
+              );
+              if (stackHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: 6),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: tag,
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  tag,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           LayoutBuilder(
