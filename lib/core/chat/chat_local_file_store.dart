@@ -29,14 +29,17 @@ class IoChatLocalFileStore implements ChatLocalFileStore {
   const IoChatLocalFileStore();
 
   @override
-  Future<void> deleteFile(String path) => File(path).delete();
+  Future<void> deleteFile(String path) async {
+    await File(path).delete();
+  }
 
   @override
   Future<bool> fileExists(String path) => File(path).exists();
 
   @override
-  Future<void> deleteDirectory(String path) =>
-      Directory(path).delete(recursive: true);
+  Future<void> deleteDirectory(String path) async {
+    await Directory(path).delete(recursive: true);
+  }
 
   @override
   Future<ChatTemporaryMediaFile> createTemporaryMediaFile(
