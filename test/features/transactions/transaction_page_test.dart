@@ -573,7 +573,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Payment status'), findsOneWidget);
-      expect(find.text('Amount'), findsOneWidget);
+      final mainAmountLabel =
+          find.byKey(const ValueKey('transaction-payment-amount-label'));
+      expect(mainAmountLabel, findsOneWidget);
+      expect(tester.widget<Text>(mainAmountLabel).data, 'Base amount');
+      expect(
+        find.byKey(const ValueKey('transaction-employer-charge-summary')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('transaction-provider-payout-summary')),
+        findsOneWidget,
+      );
       expect(find.text('Reference'), findsNothing);
       expect(
         find.text(
@@ -587,7 +598,11 @@ void main() {
       );
       expect(mainAmount, findsOneWidget);
       final mainAmountText = tester.widget<Text>(mainAmount);
-      expect(mainAmountText.data!.replaceAll(',', ''), '9000000000000000 TOMAN');
+      expect(
+        mainAmountText.data!.replaceAll(',', ''),
+        '8999999999000000 TOMAN',
+        reason: 'The hero amount must match the backend baseAmount when available.',
+      );
       expect(mainAmountText.maxLines, isNull);
       expect(mainAmountText.softWrap, isTrue);
       expect(mainAmountText.overflow, TextOverflow.visible);
