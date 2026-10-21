@@ -637,7 +637,13 @@ void main() {
                 widget.data!.replaceAll(',', '') == '$digits TOMAN',
           );
 
-      final feeAmount = moneyTextWithoutCommas('8999999999000000');
+      final detailsPanel = find.byKey(
+        const ValueKey('transaction-payment-financial-details'),
+      );
+      final feeAmount = find.descendant(
+        of: detailsPanel,
+        matching: moneyTextWithoutCommas('8999999999000000'),
+      );
       await tester.scrollUntilVisible(
         feeAmount,
         180,
