@@ -1510,6 +1510,7 @@ class _JobLifecycleCard extends StatelessWidget {
     ];
     final current = _current();
     final status = job.status?.toUpperCase() ?? 'UNKNOWN';
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
     return PremiumPanel(
       quiet: true,
@@ -1623,7 +1624,10 @@ class _JobLifecycleCard extends StatelessWidget {
                       if (index < stages.length - 1)
                         Container(
                           width: 2,
-                          height: 25,
+                          // Keep the vertical lifecycle rail compact when
+                          // the system font is enlarged; stage labels still
+                          // expand naturally and remain fully readable.
+                          height: enlargedText ? 12 : 25,
                           color: reached && current > index
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.outlineVariant,
@@ -1634,7 +1638,9 @@ class _JobLifecycleCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 9),
+                    padding: EdgeInsets.only(
+                      bottom: enlargedText ? 4 : 9,
+                    ),
                     child: Text(
                       _label(context, stages[index]),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
