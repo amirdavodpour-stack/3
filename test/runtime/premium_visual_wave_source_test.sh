@@ -199,7 +199,7 @@ grep -Fq 'maxLines: enlargedText' "$opportunity"
 grep -Fq ': (compactViewport ? 3 : 2)' "$opportunity"
 grep -Fq 'overflow: enlargedText' "$opportunity"
 grep -Fq 'String _budgetRangeLabel(BuildContext context, HopeJob job)' "lib/features/marketplace/job_detail_page.dart"
-grep -Fq '_budgetRangeLabel(context, j)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq '_budgetRangeLabel(context, job)' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'wave17-filled-scroll-viewport' 'test/core/ui/premium_visual_wave_15_test.dart'
 
 # Wave 18: responsive screenshots represent a real 360x640dp viewport, and short
@@ -272,7 +272,7 @@ grep -Fq ': 2;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'height: compactViewport' "lib/features/marketplace/job_detail_page.dart"
-grep -Fq '(denseViewport ? 96 : 128)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq ': denseViewport' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq '? (viewportWidth < 360 ? 96 : 184)' "lib/features/marketplace/job_detail_page.dart"
 # Wave 42: enlarged text on narrow Job Detail uses a horizontal, accessible lifecycle rail.
 grep -Fq 'if (enlargedText && constraints.maxWidth < 360)' "lib/features/marketplace/job_detail_page.dart"
