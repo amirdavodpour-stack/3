@@ -86,7 +86,16 @@ void main() {
       amount: '2000000.0',
       providerRef: payment.providerRef,
       job: payment.job,
-      fees: payment.fees,
+      fees: HopePaymentFees(
+        baseAmount: '2000000.0',
+        employerFee: payment.fees!.employerFee,
+        workerFee: payment.fees!.workerFee,
+        platformFee: payment.fees!.platformFee,
+        employerCharge: payment.fees!.employerCharge,
+        providerPayout: payment.fees!.providerPayout,
+        policyVersion: payment.fees!.policyVersion,
+        currency: payment.fees!.currency,
+      ),
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
     );
@@ -132,6 +141,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Base amount'), findsOneWidget);
+    expect(find.text('Employer charge'), findsOneWidget);
+    expect(find.text('Worker payout'), findsOneWidget);
     expect(find.text('Employer fee'), findsOneWidget);
     expect(find.text('Worker fee'), findsOneWidget);
     expect(find.text('100,000 Toman'), findsNWidgets(2));
@@ -281,7 +293,7 @@ void main() {
     await tester.pump();
     expect(
       find.bySemanticsLabel(
-        'Payment status: Funds held, amount 1,000,000 Toman',
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman',
       ),
       findsOneWidget,
     );
