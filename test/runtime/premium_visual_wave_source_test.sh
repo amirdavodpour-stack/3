@@ -273,7 +273,12 @@ grep -Fq '(constraints.maxWidth - gap * (columns - 1)) / columns;' "lib/features
 grep -Fq 'maxLines: 2,' "lib/features/financial/financial_insights_page.dart"
 grep -Fq 'height: compactViewport' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq '(denseViewport ? 96 : 128)' "lib/features/marketplace/job_detail_page.dart"
-grep -Fq '? 148' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq '? (viewportWidth < 360 ? 96 : 184)' "lib/features/marketplace/job_detail_page.dart"
+# Wave 42: enlarged text on narrow Job Detail uses a horizontal, accessible lifecycle rail.
+grep -Fq 'if (enlargedText && constraints.maxWidth < 360)' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'scrollDirection: Axis.horizontal' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'Scroll horizontally to view all lifecycle stages.' "lib/features/marketplace/job_detail_page.dart"
+grep -Fq 'Wave 42 final Job Detail section remains reachable above the fixed CTA at 1.5x text' "test/features/marketplace/job_detail_page_test.dart"
 grep -Fq ': 214,' "lib/features/marketplace/job_detail_page.dart"
 grep -Fq 'HOPE_RUNTIME_EXACT_HEAD=$exact_head' ".github/workflows/hope-ui-runtime-evidence.yml"
 if sed -n '/class HopeWalletFlowSignature/,/Target-aligned opportunity DNA signature/p' "lib/core/ui/hope_signature_components.dart" | grep -Eq 'wallet\.(totalBalance|availableBalance|lockedBalance)'; then
