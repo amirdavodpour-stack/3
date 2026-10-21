@@ -831,8 +831,9 @@ Widget _buildPage(BuildContext context) {
                       const SizedBox(height: 4),
                       const Divider(height: 12),
                       if (payment?.fees?.employerCharge != null)
-                        KeyedSubtree(
+                        Padding(
                           key: const ValueKey('transaction-employer-charge-summary'),
+                          padding: EdgeInsets.zero,
                           child: _moneyRow(
                             context,
                             HopeCopy.of(context).copy_employer_charge_9740283,
@@ -841,8 +842,9 @@ Widget _buildPage(BuildContext context) {
                           ),
                         ),
                       if (payment?.fees?.providerPayout != null)
-                        KeyedSubtree(
+                        Padding(
                           key: const ValueKey('transaction-provider-payout-summary'),
+                          padding: EdgeInsets.zero,
                           child: _moneyRow(
                             context,
                             HopeCopy.of(context).copy_worker_payout_45f6bb9,
