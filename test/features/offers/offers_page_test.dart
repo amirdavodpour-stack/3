@@ -491,14 +491,26 @@ testWidgets('accepting an offer disables the financial action until completion',
           reason: 'The logical leading All filter remains active in both directions.',
         );
         final leadingBounds = tester.getRect(leadingChip);
+        final isRtl = scenario.locale.languageCode == 'fa';
         expect(leadingBounds.left, greaterThanOrEqualTo(railBounds.left));
         expect(leadingBounds.right, lessThanOrEqualTo(railBounds.right));
+        if (isRtl) {
+          expect(
+            leadingBounds.right,
+            lessThanOrEqualTo(railBounds.right - 12),
+            reason: 'The RTL leading filter must have at least 12dp breathing room from the right viewport edge.',
+          );
+        } else {
+          expect(
+            leadingBounds.left,
+            greaterThanOrEqualTo(railBounds.left + 12),
+            reason: 'The LTR leading filter must have at least 12dp breathing room from the left viewport edge.',
+          );
+        }
 
         expect(
           Directionality.of(tester.element(rail)),
-          scenario.locale.languageCode == 'fa'
-              ? TextDirection.rtl
-              : TextDirection.ltr,
+          isRtl ? TextDirection.rtl : TextDirection.ltr,
           reason: 'The status rail must inherit the requested locale direction.',
         );
 
@@ -547,6 +559,19 @@ testWidgets('accepting an offer disables the financial action until completion',
           lessThanOrEqualTo(endRailBounds.right),
           reason: 'The final status chip must be fully reachable at the end of the rail.',
         );
+        if (isRtl) {
+          expect(
+            terminalBounds.left,
+            greaterThanOrEqualTo(endRailBounds.left + 12),
+            reason: 'The RTL terminal filter must have at least 12dp breathing room from the left viewport edge.',
+          );
+        } else {
+          expect(
+            terminalBounds.right,
+            lessThanOrEqualTo(endRailBounds.right - 12),
+            reason: 'The LTR terminal filter must have at least 12dp breathing room from the right viewport edge.',
+          );
+        }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
