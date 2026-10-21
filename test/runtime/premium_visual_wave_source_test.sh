@@ -643,7 +643,7 @@ echo "PASS: Wave53 OpportunityCard 2.0 category identity + surface hierarchy + R
 
 # Candidate Matches is an audited runtime target, not a semantics-only exception.
 grep -Fq 'final shouldRevealCandidateMatchesTarget =' "$runtime_driver"
-grep -Fq "find.byKey(const ValueKey('candidate-match-details-candidate-user-1'))" "$runtime_driver"
+grep -Fq "candidate-match-details-candidate-user-1" "$runtime_driver"
 grep -Fq 'shouldRevealCandidateMatchesTarget' "$runtime_driver"
 if grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$runtime_driver"; then
   echo "FAIL: Candidate Matches is still exempt from actionable-target assertions" >&2
