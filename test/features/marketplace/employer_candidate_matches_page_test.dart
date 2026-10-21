@@ -847,17 +847,33 @@ void main() {
       await tester.tap(detailsAction);
       await tester.pumpAndSettle();
 
-      expect(find.text('Candidate details'), findsOneWidget);
+      final detailsSheet = find.byType(BottomSheet);
+      expect(detailsSheet, findsOneWidget);
       expect(
-        find.text('Flutter, Dart and accessible UI engineering'),
+        find.descendant(
+          of: detailsSheet,
+          matching: find.text('Candidate details'),
+        ),
         findsOneWidget,
       );
+      for (final detail in <String>[
+        'Flutter, Dart and accessible UI engineering',
+        'Evidence of Flutter delivery and settlement operations.',
+        'Available to start next week.',
+      ]) {
+        expect(
+          find.descendant(of: detailsSheet, matching: find.text(detail)),
+          findsOneWidget,
+          reason: 'Details sheet should show only backend-provided candidate fields.',
+        );
+      }
       expect(
-        find.text('Evidence of Flutter delivery and settlement operations.'),
+        find.descendant(
+          of: detailsSheet,
+          matching: find.textContaining('1,200,000'),
+        ),
         findsOneWidget,
       );
-      expect(find.text('Available to start next week.'), findsOneWidget);
-      expect(find.textContaining('1,200,000'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       final closeAction = find.byKey(
