@@ -1050,10 +1050,20 @@ Future<void> _captureRuntimeScreenshot(
       _semanticsOnly &&
       marker.startsWith('transactions-') &&
       !marker.startsWith('scroll-end-');
-  if (shouldRevealReportTarget || shouldRevealTransactionTarget) {
+  final shouldRevealCandidateMatchesTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      marker == 'candidate-matches-fa-rtl';
+  if (shouldRevealReportTarget ||
+      shouldRevealTransactionTarget ||
+      shouldRevealCandidateMatchesTarget) {
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
-        : find.byKey(const ValueKey('transaction-status-semantic-target'));
+        : shouldRevealTransactionTarget
+            ? find.byKey(const ValueKey('transaction-status-semantic-target'))
+            : find.byKey(
+                const ValueKey('candidate-match-details-candidate-user-1'),
+              );
     auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it
@@ -1260,15 +1270,14 @@ Future<void> _captureRuntimeScreenshot(
         }
         pending.addAll(node.debugListChildrenInOrder(DebugSemanticsDumpOrder.traversalOrder));
       }
-      final requiresTapAction = marker != 'candidate-matches-fa-rtl';
       if (nodeCount < 3 ||
           labelledNodeCount < 2 ||
-          (requiresTapAction && actionableNodeCount < 1)) {
+          actionableNodeCount < 1) {
         throw StateError(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
       }
-      if (requiresTapAction && targetBoundsCheckedCount == 0) {
+      if (targetBoundsCheckedCount == 0) {
         throw StateError(
           'T10 found no tap targets safely measurable away from viewport boundaries for $marker: '
           'actions=$actionableNodeCount boundarySkipped=$boundarySkippedTargetCount.',
