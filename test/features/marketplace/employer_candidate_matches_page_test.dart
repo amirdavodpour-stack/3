@@ -765,4 +765,114 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Candidate Matches exposes reachable details and a visible back action',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-details-action',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-details-action',
+            displayName: 'Candidate With Details',
+            score: 91,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 90},
+            applicationId: 'app-details-action',
+            status: 'PENDING',
+            skills: 'Flutter, Dart and accessible UI engineering',
+            resumeHighlights:
+                'Evidence of Flutter delivery and settlement operations.',
+            offerPrice: '1200000',
+            offerMessage: 'Available to start next week.',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        body: EmployerCandidateMatchesPage(
+                          data: data,
+                          onRetry: () {},
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: const Text('Origin screen'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Origin screen'));
+      await tester.pumpAndSettle();
+
+      final backAction = find.byKey(
+        const ValueKey('candidate-matches-back-action'),
+      );
+      expect(backAction, findsOneWidget);
+      expect(backAction.hitTestable(), findsOneWidget);
+
+      final detailsAction = find.byKey(
+        const ValueKey('candidate-match-details-worker-details-action'),
+      );
+      expect(detailsAction, findsOneWidget);
+      expect(detailsAction.hitTestable(), findsOneWidget);
+
+      await tester.ensureVisible(detailsAction);
+      await tester.tap(detailsAction);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Candidate details'), findsOneWidget);
+      expect(
+        find.text('Flutter, Dart and accessible UI engineering'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Evidence of Flutter delivery and settlement operations.'),
+        findsOneWidget,
+      );
+      expect(find.text('Available to start next week.'), findsOneWidget);
+      expect(find.textContaining('1,200,000'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      final closeAction = find.byKey(
+        const ValueKey('candidate-details-close-action'),
+      );
+      expect(closeAction, findsOneWidget);
+      await tester.tap(closeAction);
+      await tester.pumpAndSettle();
+
+      await tester.tap(backAction);
+      await tester.pumpAndSettle();
+      expect(find.text('Origin screen'), findsOneWidget);
+      expect(find.byType(EmployerCandidateMatchesPage), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
