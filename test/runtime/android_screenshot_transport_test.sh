@@ -176,6 +176,9 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
+grep -Fq '"responsive-720x1280-financial-insights-fa-rtl"' "$script_file"
+grep -Fq '"responsive-720x1280-financial-insights-en-ltr"' "$script_file"
+grep -Fq 'pages.entries.skip(4).take(3)' "$test_file"
 # Baseline capture must remain one Driver/VM-service session; the proven green
 # certification run captured the complete locale baseline without repeated
 # emulator-side teardown/startup cycles.

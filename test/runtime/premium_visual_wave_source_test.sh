@@ -121,7 +121,7 @@ if grep -Fq 'swiftshader_indirect' ".github/workflows/hope-ui-runtime-evidence.y
   exit 1
 fi
 grep -Fq "contains(github.event.pull_request.title, '[runtime-capture-fa]')" ".github/workflows/hope-ui-runtime-evidence.yml"
-grep -Fq 'test "${png_count}" -ge 35' ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'test "${png_count}" -ge 36' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'Build pinned Google TalkBack accessibility service' ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq '.talkback_service_bound == true' ".github/workflows/hope-ui-runtime-evidence.yml"

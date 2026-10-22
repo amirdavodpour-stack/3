@@ -592,6 +592,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-transactions-en-ltr"
       "responsive-720x1280-wallet-en-ltr"
       "responsive-720x1280-profile-en-ltr"
+      "responsive-720x1280-financial-insights-en-ltr"
     )
   else
     responsive_session_screens=(
@@ -601,6 +602,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
       "responsive-720x1280-transactions-fa-rtl"
       "responsive-720x1280-wallet-fa-rtl"
       "responsive-720x1280-profile-fa-rtl"
+      "responsive-720x1280-financial-insights-fa-rtl"
     )
   fi
   # Split the responsive capture set across three fresh Flutter Driver sessions.
@@ -611,7 +613,7 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
   responsive_third_status=0
   responsive_first_screens=("${responsive_session_screens[@]:0:3}")
   responsive_second_screens=("${responsive_session_screens[@]:3:1}")
-  responsive_third_screens=("${responsive_session_screens[@]:4:2}")
+  responsive_third_screens=("${responsive_session_screens[@]:4:3}")
 
   run_host_batch_session responsive-a "${responsive_first_screens[@]}" || responsive_first_status=$?
   if [ "$responsive_first_status" -eq 0 ] && \
@@ -654,19 +656,21 @@ if [ "$baseline_status" -eq 0 ] && [ "$CAPTURE_HOME_ONLY" != "1" ]; then
     "responsive-720x1280-transactions-fa-rtl"
     "responsive-720x1280-wallet-fa-rtl"
     "responsive-720x1280-profile-fa-rtl"
+    "responsive-720x1280-financial-insights-fa-rtl"
     "responsive-720x1280-home-en-ltr"
     "responsive-720x1280-jobs-en-ltr"
     "responsive-720x1280-job-detail-en-ltr"
+    "responsive-720x1280-transactions-en-ltr"
     "responsive-720x1280-wallet-en-ltr"
     "responsive-720x1280-profile-en-ltr"
-    "responsive-720x1280-transactions-en-ltr"
+    "responsive-720x1280-financial-insights-en-ltr"
   )
 
   responsive_target_screens=("${responsive_screens[@]}")
   if [ "$CAPTURE_LOCALE" = "fa" ]; then
-    responsive_target_screens=("${responsive_screens[@]:0:6}")
+    responsive_target_screens=("${responsive_screens[@]:0:7}")
   elif [ "$CAPTURE_LOCALE" = "en" ]; then
-    responsive_target_screens=("${responsive_screens[@]:6:6}")
+    responsive_target_screens=("${responsive_screens[@]:7:7}")
   fi
 
   adb shell wm size reset || true
@@ -726,17 +730,19 @@ if [ "$CAPTURE_HOME_ONLY" != "1" ] && [ "$talkback_setup_status" -eq 0 ]; then
       "responsive-720x1280-home-en-ltr" "responsive-720x1280-jobs-en-ltr"
       "responsive-720x1280-job-detail-en-ltr" "responsive-720x1280-transactions-en-ltr"
       "responsive-720x1280-wallet-en-ltr" "responsive-720x1280-profile-en-ltr"
+      "responsive-720x1280-financial-insights-en-ltr"
     )
   else
     semantics_responsive_screens=(
       "responsive-720x1280-home-fa-rtl" "responsive-720x1280-jobs-fa-rtl"
       "responsive-720x1280-job-detail-fa-rtl" "responsive-720x1280-transactions-fa-rtl"
       "responsive-720x1280-wallet-fa-rtl" "responsive-720x1280-profile-fa-rtl"
+      "responsive-720x1280-financial-insights-fa-rtl"
     )
   fi
   semantics_responsive_first=("${semantics_responsive_screens[@]:0:3}")
   semantics_responsive_second=("${semantics_responsive_screens[@]:3:1}")
-  semantics_responsive_third=("${semantics_responsive_screens[@]:4:2}")
+  semantics_responsive_third=("${semantics_responsive_screens[@]:4:3}")
   if [ "$semantics_status" -eq 0 ]; then
     # The image-capture pass reset the emulator to its default size. Reapply
     # the exact responsive viewport for service-bound semantics T10 as well.

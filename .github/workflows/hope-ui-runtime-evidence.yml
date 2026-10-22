@@ -237,7 +237,7 @@ jobs:
           HOPE_ANDROID_EMULATOR_INSTALL_RETRY_DELAY_SECONDS: '5'
         run: bash tools/install-android-emulator-retry.sh
 
-      # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 6 responsive
+      # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 7 responsive
       # on Run #35741811401. Keep the proven memory/AVD lifecycle contract intact.
       - name: Android runtime evidence
         uses: ./.ci/android-emulator-runner
@@ -281,10 +281,10 @@ jobs:
         run: |
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
-          # Full capture gate: 19 baseline + 6 responsive + 10 scroll-end screenshots.
-          test "${png_count}" -ge 35
+          # Full capture gate: 19 baseline + 7 responsive + 10 scroll-end screenshots.
+          test "${png_count}" -ge 36
           jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --arg theme "$HOPE_CAPTURE_THEME" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
-            '.sha == $sha and .capture_locale == $locale and .theme == $theme and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 25 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 25 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
+            '.sha == $sha and .capture_locale == $locale and .theme == $theme and .text_scale == $scale and .screens == 19 and .responsive_screens == 7 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 26 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 26 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
             docs/audit/evidence/android-runtime/metadata.json
 
       - name: Validate home-only diagnostic artifact contents
