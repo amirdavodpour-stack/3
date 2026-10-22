@@ -507,6 +507,12 @@ grep -Fq '"text_scale": $CAPTURE_TEXT_SCALE' "tools/hope-wallet-runtime-evidence
 grep -Fq "TextScaler.linear(_captureTextScale)" "integration_test/runtime/critical_screens_evidence_test.dart"
 grep -Fq "[runtime-capture-en-scale]" ".github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq "jq -e --arg sha" ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "HOPE_CAPTURE_THEME" "tools/hope-wallet-runtime-evidence.sh"
+grep -Fq "capture_theme:" ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "capture_text_scale:" ".github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq "String.fromEnvironment('HOPE_CAPTURE_THEME'" "integration_test/runtime/critical_screens_evidence_test.dart"
+grep -Fq "themeMode: _captureLightTheme ? ThemeMode.light : ThemeMode.dark" "integration_test/runtime/critical_screens_evidence_test.dart"
+grep -Fq '.theme == $theme' ".github/workflows/hope-ui-runtime-evidence.yml"
 echo "PASS: Wave 30 enlarged-text, cross-surface adaptive layout, and exact-head en-LTR evidence contracts"
 
 # Wave30: preserve readable Home Pulse header/metric reflow and wallet/dock LTR large-text layouts.
