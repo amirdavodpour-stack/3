@@ -823,12 +823,16 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           HopeIconTile(
                             activeItems.isNotEmpty
                                 ? HopeV2Icons.activity
-                                : HopeV2Icons.completed,
+                                : settledItems.isNotEmpty
+                                    ? HopeV2Icons.completed
+                                    : HopeV2Icons.pending,
                             size: 38,
                             filled: true,
                             color: activeItems.isNotEmpty
                                 ? Theme.of(context).colorScheme.primary
-                                : HopeV2Colors.success,
+                                : settledItems.isNotEmpty
+                                    ? HopeV2Colors.success
+                                    : HopeV2Colors.muted,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
