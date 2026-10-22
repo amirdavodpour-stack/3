@@ -11,6 +11,7 @@ import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -394,6 +395,53 @@ void main() {
     expect(find.text('پایان‌یافته مالی'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'work-center avoids completed affordances when no collaboration is settled',
+    (tester) async {
+      final repo = _Transactions()
+        ..jobs = [_job('published-only', status: 'PUBLISHED')];
+      await _pump(tester, repo, locale: const Locale('en'));
+
+      final focusStrip =
+          find.byKey(const ValueKey('work-center-focus-strip'));
+      final focusTileFinder = find.descendant(
+        of: focusStrip,
+        matching: find.byType(HopeIconTile),
+      );
+      expect(focusTileFinder, findsOneWidget);
+      final focusTile = tester.widget<HopeIconTile>(focusTileFinder);
+      expect(
+        focusTile.icon,
+        HopeV2Icons.pending,
+        reason: 'A published-only collaboration is neither active nor settled.',
+      );
+      expect(focusTile.color, HopeV2Colors.muted);
+
+      final metrics = find.byKey(const ValueKey('work-center-metrics'));
+      final pendingMetricIcon = find.descendant(
+        of: metrics,
+        matching: find.byIcon(HopeV2Icons.pending),
+      );
+      expect(
+        pendingMetricIcon,
+        findsOneWidget,
+        reason: 'Zero settled collaborations must not use a completed icon.',
+      );
+      expect(
+        tester.widget<Icon>(pendingMetricIcon).color,
+        HopeV2Colors.muted,
+      );
+      expect(
+        find.descendant(
+          of: metrics,
+          matching: find.byIcon(HopeV2Icons.completed),
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('work-center omits a redundant parent header for other-only states',
       (tester) async {
