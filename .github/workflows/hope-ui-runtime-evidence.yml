@@ -17,6 +17,22 @@ on:
         options:
           - fa
           - en
+      capture_theme:
+        description: "Theme to render"
+        required: true
+        type: choice
+        options:
+          - dark
+          - light
+      capture_text_scale:
+        description: "Text scale to render"
+        required: true
+        type: choice
+        options:
+          - "1.0"
+          - "1.25"
+          - "1.5"
+          - "2.0"
 
   # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
 # [runtime-capture] validate Wallet chunked settle diagnostic at exact current HEAD.
@@ -229,7 +245,8 @@ jobs:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
-          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
+          HOPE_CAPTURE_THEME: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_theme || 'dark' }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_text_scale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5') || '1.0' }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
           HOPE_TALKBACK_REQUIRED: '1'
           HOPE_TALKBACK_APK: ${{ runner.temp }}/hope-talkback.apk
@@ -259,14 +276,15 @@ jobs:
         if: ${{ success() && !(github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
         env:
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
-          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
+          HOPE_CAPTURE_THEME: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_theme || 'dark' }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_text_scale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5') || '1.0' }}
         run: |
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
           # Full capture gate: 19 baseline + 6 responsive + 10 scroll-end screenshots.
           test "${png_count}" -ge 35
-          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
-            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 25 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 25 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
+          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --arg theme "$HOPE_CAPTURE_THEME" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
+            '.sha == $sha and .capture_locale == $locale and .theme == $theme and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 25 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 25 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
             docs/audit/evidence/android-runtime/metadata.json
 
       - name: Validate home-only diagnostic artifact contents

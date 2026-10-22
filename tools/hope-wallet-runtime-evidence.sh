@@ -33,6 +33,7 @@ if [[ ! "$BODY_COMPLETION_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
   exit 2
 fi
 CAPTURE_LOCALE="${HOPE_CAPTURE_LOCALE:-}"
+CAPTURE_THEME="${HOPE_CAPTURE_THEME:-dark}"
 CAPTURE_TEXT_SCALE="${HOPE_CAPTURE_TEXT_SCALE:-1.0}"
 STRICT_RUNTIME_VALIDATION="${HOPE_RUNTIME_STRICT_VALIDATION:-0}"
 CAPTURE_HOME_ONLY="${HOPE_CAPTURE_HOME_ONLY:-0}"
@@ -50,6 +51,13 @@ case "$CAPTURE_LOCALE" in
     exit 2
     ;;
 esac
+case "$CAPTURE_THEME" in
+  dark|light) ;;
+  *)
+    echo "Unsupported HOPE_CAPTURE_THEME: $CAPTURE_THEME" >&2
+    exit 2
+    ;;
+esac
 case "$CAPTURE_TEXT_SCALE" in
   1.0|1.25|1.5|2.0) ;;
   *)
@@ -59,6 +67,7 @@ case "$CAPTURE_TEXT_SCALE" in
 esac
 
 echo "HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build"
+echo "HOPE_RUNTIME_CAPTURE_THEME:$CAPTURE_THEME"
 echo "HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$CAPTURE_TEXT_SCALE"
 
 adb shell settings get secure accessibility_enabled > "$evidence_dir/accessibility-enabled-before.txt" 2>&1 || true
@@ -393,6 +402,7 @@ run_host_batch_session() {
     --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
     --dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}" \
     --dart-define=HOPE_CAPTURE_TEXT_SCALE="${CAPTURE_TEXT_SCALE}" \
+    --dart-define=HOPE_CAPTURE_THEME="${CAPTURE_THEME}" \
     --dart-define=HOPE_TALKBACK_REQUIRED=true \
     --dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
@@ -851,7 +861,7 @@ cat > "$evidence_dir/metadata.json" <<EOF
   "capture_locale": "$CAPTURE_LOCALE",
   "text_scale": $CAPTURE_TEXT_SCALE,
   "locales": ["$CAPTURED_LOCALE_LABEL"],
-  "theme": "dark",
+  "theme": "$CAPTURE_THEME",
   "interactive_target_contract": "48px",
   "capture_transport": "native_android_pixelcopy",
   "visual_capture_accessibility_service": "disabled",

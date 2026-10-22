@@ -789,9 +789,9 @@ class _EvidenceHost extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        theme: AppTheme.dark(),
+        theme: _captureLightTheme ? AppTheme.light() : AppTheme.dark(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.dark,
+        themeMode: _captureLightTheme ? ThemeMode.light : ThemeMode.dark,
         builder: (context, appChild) {
           final media = MediaQuery.of(context);
           return PremiumAppCanvas(
@@ -821,6 +821,9 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+const _captureTheme =
+    String.fromEnvironment('HOPE_CAPTURE_THEME', defaultValue: 'dark');
+const bool _captureLightTheme = _captureTheme == 'light';
 const _captureTextScaleRaw = String.fromEnvironment(
   'HOPE_CAPTURE_TEXT_SCALE',
   defaultValue: '1.0',
@@ -1848,12 +1851,16 @@ void main() {
       'HOPE_T10_SEMANTICS_ONLY requires HOPE_TALKBACK_REQUIRED=true and a separately verified bound service.',
     );
   }
+  if (!['dark', 'light'].contains(_captureTheme)) {
+    throw StateError('HOPE_CAPTURE_THEME must be either dark or light.');
+  }
   if (![1.0, 1.25, 1.5, 2.0].contains(_captureTextScale)) {
     throw StateError(
       'HOPE_CAPTURE_TEXT_SCALE must be one of 1.0, 1.25, 1.5, or 2.0.',
     );
   }
   print('HOPE_RUNTIME_CAPTURE_LOCALE:$_captureLocale');
+  print('HOPE_RUNTIME_CAPTURE_THEME:$_captureTheme');
   print('HOPE_RUNTIME_CAPTURE_TEXT_SCALE:$_captureTextScale');
 
   test('runtime transaction screenshot fixture follows the backend MISSION fee contract', () {
