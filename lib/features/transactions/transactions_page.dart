@@ -796,8 +796,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           _workCenterMetric(
                             label: _t('تسویه‌شده', 'Settled'),
                             value: HopeDisplayFormatter.integer(settledCount, locale: Localizations.localeOf(context).languageCode),
-                            icon: HopeV2Icons.completed,
-                            accent: HopeV2Colors.success,
+                            icon: settledItems.isNotEmpty
+                                ? HopeV2Icons.completed
+                                : HopeV2Icons.pending,
+                            accent: settledItems.isNotEmpty
+                                ? HopeV2Colors.success
+                                : HopeV2Colors.muted,
                           ),
                         ];
 
