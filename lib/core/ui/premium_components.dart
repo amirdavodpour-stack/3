@@ -81,7 +81,7 @@ class PremiumNavigationBar extends StatelessWidget {
         key: const ValueKey('hope-navigation-dock'),
         // At 2x text scaling, reserve an additional line for long localized labels.
         height: HopeV2Navigation.barHeight +
-            (textScale > 1.5 ? 56 : textScale > 1.2 ? 40 : 0),
+            (textScale > 1.5 ? 72 : textScale > 1.2 ? 40 : 0),
         padding: EdgeInsets.fromLTRB(compactLabels ? 0 : 6, 4, compactLabels ? 0 : 6, 3),
         decoration: BoxDecoration(
           color: dark

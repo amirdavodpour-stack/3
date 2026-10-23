@@ -534,7 +534,7 @@ grep -Fq "ValueKey('home-pulse-stat-grid')" "lib/features/home/premium_home_feed
 grep -Fq "if (textScale <= 1) return child!;" "test/features/home/premium_home_feed_test.dart"
 grep -Fq "home pulse adapts its metric rows to the actual responsive rail width" "test/features/home/premium_home_feed_test.dart"
 grep -Fq "final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;" "lib/features/wallet/wallet_page.dart"
-grep -Fq "(textScale > 1.5 ? 56 : textScale > 1.2 ? 40 : 0)" "lib/core/ui/premium_components.dart"
+grep -Fq "(textScale > 1.5 ? 72 : textScale > 1.2 ? 40 : 0)" "lib/core/ui/premium_components.dart"
 grep -Fq "Wave30 English navigation dock expands vertically at 1.5x" "test/core/ui/premium_navigation_test.dart"
 echo "PASS: Wave30 responsive Home rail, enlarged Wallet status and navigation dock fit contracts"
 
