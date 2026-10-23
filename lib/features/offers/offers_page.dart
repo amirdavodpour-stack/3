@@ -184,35 +184,44 @@ class _OffersPageState extends State<OffersPage> {
                 const SizedBox(height: 10),
               ],
               if (!_loading && (_loadError == null || _items.isNotEmpty))
-                Scrollbar(
-                  controller: _filterScrollController,
-                  thumbVisibility: true,
-                  interactive: true,
-                  thickness: 2,
-                  radius: const Radius.circular(99),
-                  child: SingleChildScrollView(
+                // The parent ListView has bottom padding for its scroll tail.
+                // Flutter's horizontal Scrollbar painter also sees inherited
+                // MediaQuery bottom padding and can offset its thumb into the
+                // chip rail. Remove only that inherited inset for this subtree;
+                // the page's own scroll-end padding remains unchanged.
+                MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: true,
+                  child: Scrollbar(
                     controller: _filterScrollController,
-                    key: const ValueKey('offers-status-filter-scroll'),
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8),
-                            child: PremiumFilterChip(
-                              selected: _filter == x,
-                              label: x == 'ALL'
-                                  ? '${_t('همه', 'All')} (${all.length})'
-                                  : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
-                              color: x == 'ALL'
-                                  ? Theme.of(context).colorScheme.primary
-                                  : _statusColor(context, x),
-                              onTap: () => setState(() => _filter = x),
+                    thumbVisibility: true,
+                    interactive: true,
+                    thickness: 2,
+                    radius: const Radius.circular(99),
+                    child: SingleChildScrollView(
+                      controller: _filterScrollController,
+                      key: const ValueKey('offers-status-filter-scroll'),
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 8),
+                              child: PremiumFilterChip(
+                                selected: _filter == x,
+                                label: x == 'ALL'
+                                    ? '${_t('همه', 'All')} (${all.length})'
+                                    : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                                color: x == 'ALL'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : _statusColor(context, x),
+                                onTap: () => setState(() => _filter = x),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
