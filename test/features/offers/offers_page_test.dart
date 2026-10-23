@@ -514,6 +514,19 @@ testWidgets('accepting an offer disables the financial action until completion',
           reason: 'The status rail must inherit the requested locale direction.',
         );
 
+        if (isRtl) {
+          expect(
+            find.byKey(const ValueKey('offers-status-filter-scroll-cue')),
+            findsOneWidget,
+            reason: 'The compact Persian status rail must disclose its horizontal scroll affordance.',
+          );
+          expect(
+            find.text('برای دیدن فیلترهای دیگر، افقی بکشید'),
+            findsOneWidget,
+            reason: 'The Persian horizontal-scroll cue must be localized and visible.',
+          );
+        }
+
         for (final prefix in prefixes) {
           final filterLabel = find.textContaining(prefix);
           expect(filterLabel, findsOneWidget);
