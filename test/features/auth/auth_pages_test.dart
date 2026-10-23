@@ -421,6 +421,36 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
   });
 
+  testWidgets(
+    'password reset renders reset-specific copy and no registration controls',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(await _screen(const PasswordResetPage()));
+      await tester.pumpAndSettle();
+
+      final screen = find.byType(PasswordResetPage);
+      expect(screen, findsOneWidget);
+      expect(find.byType(RegisterPage), findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(FilledButton), findsOneWidget);
+
+      final copy = HopeCopy.of(tester.element(screen));
+      expect(find.text(copy.copy_reset_password_18b5d1c), findsOneWidget);
+      expect(find.text(copy.copy_send_request_0480e80), findsOneWidget);
+      expect(
+        find.text(copy.copy_start_a_good_collaboration_9df52cf),
+        findsNothing,
+      );
+      expect(find.text(copy.copy_full_name_c7448f1), findsNothing);
+      expect(find.text(copy.copy_password_656eabe), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('password-reset privacy reassurance stays compact on a phone',
       (tester) async {
     tester.view.physicalSize = const Size(360, 640);
