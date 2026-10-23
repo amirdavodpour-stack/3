@@ -916,6 +916,8 @@ class _WalletPageState extends State<WalletPage> {
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final denseViewport = MediaQuery.sizeOf(context).width < 800;
     final tightViewport = compact || denseViewport;
+    final shortCompactViewport =
+        compact && MediaQuery.sizeOf(context).height <= 700;
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
       return Center(
@@ -1458,7 +1460,7 @@ class _WalletPageState extends State<WalletPage> {
         maxWidth: 1020,
         padding: EdgeInsets.fromLTRB(
             tightViewport ? 12 : 16,
-            tightViewport ? 6 : 14,
+            shortCompactViewport ? 2 : tightViewport ? 6 : 14,
             tightViewport ? 12 : 16,
             tightViewport ? 12 : 20,
           ),
@@ -1507,7 +1509,7 @@ class _WalletPageState extends State<WalletPage> {
                 ],
               ),
             ),
-            SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
+            SizedBox(height: shortCompactViewport ? 0 : tightViewport ? 2 : HopeV2Spacing.sm),
             if (_error != null) ...[
               HopeAsyncState(
                 kind: hopeStateKindForError(_error!),
@@ -1573,7 +1575,7 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                 ),
               ),
-            SizedBox(height: tightViewport ? 2 : HopeV2Spacing.sm),
+            SizedBox(height: shortCompactViewport ? 0 : tightViewport ? 2 : HopeV2Spacing.sm),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 720;
@@ -1584,9 +1586,9 @@ class _WalletPageState extends State<WalletPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       hero,
-                      SizedBox(height: compact ? 4 : 12),
+                      SizedBox(height: shortCompactViewport ? 1 : compact ? 4 : 12),
                       actions,
-                      SizedBox(height: compact ? 4 : 12),
+                      SizedBox(height: shortCompactViewport ? 1 : compact ? 4 : 12),
                       if (!compact || enlargedText)
                         HopeWalletFlowSignature(wallet: wallet),
                     ],
@@ -1631,7 +1633,7 @@ class _WalletPageState extends State<WalletPage> {
                       ),
               ),
             ),
-            SizedBox(height: compact ? 4 : 12),
+            SizedBox(height: shortCompactViewport ? 2 : compact ? 4 : 12),
             Wrap(
               key: const ValueKey('wallet-history-filters'),
               spacing: 8,
@@ -1651,7 +1653,7 @@ class _WalletPageState extends State<WalletPage> {
               ],
             ),
             SizedBox(
-              height: tightViewport ? 4 : (compact ? 8 : 12),
+              height: shortCompactViewport ? 0 : tightViewport ? 4 : (compact ? 8 : 12),
             ),
             if (_visibleTransactions().isEmpty)
               HopeAsyncState(
