@@ -1218,10 +1218,7 @@ class _WalletPageState extends State<WalletPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // English provider/status labels need a vertical rail on compact phones.
-            if (width < 340 ||
-                (_isEnglish && width < 400) ||
-                enlargedText ||
-                longTotalBalance)
+            if (width < 400 || enlargedText || longTotalBalance)
               Column(
                 key: const ValueKey('wallet-provider-status'),
                 crossAxisAlignment: CrossAxisAlignment.start,
