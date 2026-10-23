@@ -355,9 +355,9 @@ class _ChartCard extends StatelessWidget {
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final baseChartHeight =
-        shortViewport ? 122.0 : compact ? 156.0 : 172.0;
+        shortViewport ? 138.0 : compact ? 172.0 : 172.0;
     final chartHeight =
-        (baseChartHeight + math.max(0.0, textScale - 1.0) * 112.0).toDouble();
+        (baseChartHeight + math.max(0.0, textScale - 1.0) * 160.0).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -697,7 +697,7 @@ class _BarChart extends StatelessWidget {
                     ).toDouble();
                     final hasHorizontalOverflow =
                         chartWidth > chartViewportWidth;
-                    final scrollHintHeight = math.max(32.0, 28.0 * textScale).toDouble();
+                    final scrollHintHeight = math.max(36.0, 40.0 * textScale).toDouble();
                     final chartViewportHeight = math.max(
                       1.0,
                       constraints.maxHeight -
@@ -731,7 +731,7 @@ class _BarChart extends StatelessWidget {
                                     english
                                         ? 'Swipe the cash-flow chart sideways to view other months'
                                         : 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
-                                    maxLines: 2,
+                                    maxLines: null,
                                     softWrap: true,
                                     overflow: TextOverflow.visible,
                                     textAlign: TextAlign.end,
@@ -1072,7 +1072,7 @@ class _LineChart extends StatelessWidget {
           points.length * pointWidth,
         ).toDouble();
         final hasHorizontalOverflow = chartWidth > chartViewportWidth;
-        final scrollHintHeight = math.max(32.0, 28.0 * textScale).toDouble();
+        final scrollHintHeight = math.max(36.0, 40.0 * textScale).toDouble();
         final chartViewportHeight = math.max(
           1.0,
           constraints.maxHeight -
