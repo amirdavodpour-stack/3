@@ -1679,9 +1679,10 @@ class _WalletPageState extends State<WalletPage> {
                       child: PremiumPanel(
                         key: ValueKey('wallet-history-entry-${item.id}'),
                         glass: false,
+                        // Keep the signed amount above the fixed dock on short phones.
                         padding: EdgeInsets.symmetric(
                           horizontal: compact ? 12 : 14,
-                          vertical: compact ? 9 : 12,
+                          vertical: compact ? 4 : 12,
                         ),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
