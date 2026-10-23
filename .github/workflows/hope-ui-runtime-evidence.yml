@@ -345,5 +345,3 @@ jobs:
 
 # [runtime-capture-fa] certify current HEAD after isolated auth-tail recovery fix.
 # [runtime-capture-fa] exact-head certification after resilient auth-tail recovery fix.
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

@@ -177,5 +177,3 @@ function main(args) {
 }
 
 process.exitCode = main(process.argv.slice(2));
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

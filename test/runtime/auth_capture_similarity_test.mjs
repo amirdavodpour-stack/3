@@ -133,5 +133,3 @@ try {
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
