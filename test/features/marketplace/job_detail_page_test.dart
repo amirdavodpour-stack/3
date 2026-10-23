@@ -665,7 +665,12 @@ void main() {
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);
-    final matchCaption = find.text('MATCH');
+    final matchCaption = find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          (widget.data == 'MATCH' || widget.data == 'تطبیق'),
+      description: 'localized Match score caption',
+    );
     expect(matchCaption, findsOneWidget);
     expect(
       tester.widget<Text>(matchCaption).style?.fontSize,

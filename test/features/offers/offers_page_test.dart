@@ -565,6 +565,24 @@ testWidgets('accepting an offer disables the financial action until completion',
           of: find.textContaining(prefixes.last),
           matching: find.byType(PremiumFilterChip),
         );
+        bool terminalFilterFullyVisible() {
+          final chipBounds = tester.getRect(terminalChip);
+          final viewportBounds = tester.getRect(rail);
+          return chipBounds.left >= viewportBounds.left &&
+              chipBounds.right <= viewportBounds.right;
+        }
+
+        for (var attempt = 0;
+            attempt < 6 && !terminalFilterFullyVisible();
+            attempt++) {
+          await tester.drag(rail, Offset(isRtl ? 180 : -180, 0));
+          await tester.pumpAndSettle();
+        }
+        expect(
+          terminalFilterFullyVisible(),
+          isTrue,
+          reason: 'Repeated physical swipes must bring the final Offers filter fully into view.',
+        );
         final terminalBounds = tester.getRect(terminalChip);
         final endRailBounds = tester.getRect(rail);
         expect(
@@ -597,8 +615,24 @@ testWidgets('accepting an offer disables the financial action until completion',
           isTrue,
           reason: 'The final status filter must be tappable and reflect its selected state after a real swipe.',
         );
-        await tester.drag(rail, Offset(isRtl ? -400 : 400, 0));
-        await tester.pumpAndSettle();
+        bool leadingFilterFullyVisible() {
+          final chipBounds = tester.getRect(leadingChip);
+          final viewportBounds = tester.getRect(rail);
+          return chipBounds.left >= viewportBounds.left &&
+              chipBounds.right <= viewportBounds.right;
+        }
+
+        for (var attempt = 0;
+            attempt < 6 && !leadingFilterFullyVisible();
+            attempt++) {
+          await tester.drag(rail, Offset(isRtl ? -180 : 180, 0));
+          await tester.pumpAndSettle();
+        }
+        expect(
+          leadingFilterFullyVisible(),
+          isTrue,
+          reason: 'A reverse physical swipe must restore the leading Offers filter fully into view.',
+        );
         final restoredLeadingBounds = tester.getRect(leadingChip);
         final restoredRailBounds = tester.getRect(rail);
         expect(
