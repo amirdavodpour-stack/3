@@ -1465,6 +1465,112 @@ void main() {
 
 
   testWidgets(
+    'financial chart axes and scroll cues keep readable 12sp text at 2x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: TextScaler.linear(2),
+              ),
+              child: const FinancialInsightsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cashFlowHint = find.text(
+        'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
+      );
+      await tester.scrollUntilVisible(
+        cashFlowHint,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(cashFlowHint, findsOneWidget);
+      expect(
+        tester.widget<Text>(cashFlowHint).style?.fontSize,
+        greaterThanOrEqualTo(12),
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(cashFlowHint).didExceedMaxLines,
+        isFalse,
+        reason: 'The chart scroll cue must wrap instead of truncating at 2x.',
+      );
+
+      final cashFlowUnit = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit'),
+      );
+      expect(tester.widget<Text>(cashFlowUnit).style?.fontSize, greaterThanOrEqualTo(12));
+      final cashFlowAxis = find.byKey(
+        const ValueKey('financial-cashflow-y-axis'),
+      );
+      for (final tick in tester.widgetList<Text>(
+        find.descendant(of: cashFlowAxis, matching: find.byType(Text)),
+      )) {
+        expect(tick.style?.fontSize, greaterThanOrEqualTo(12));
+        expect(
+          tester.renderObject<RenderParagraph>(find.byWidget(tick)).didExceedMaxLines,
+          isFalse,
+          reason: 'Cash-flow tick labels must not be ellipsized at 2x.',
+        );
+      }
+
+      final balanceHint = find.text(
+        'برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید',
+      );
+      await tester.scrollUntilVisible(
+        balanceHint,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(balanceHint, findsOneWidget);
+      expect(
+        tester.widget<Text>(balanceHint).style?.fontSize,
+        greaterThanOrEqualTo(12),
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(balanceHint).didExceedMaxLines,
+        isFalse,
+        reason: 'The balance scroll cue must wrap instead of truncating at 2x.',
+      );
+      final balanceAxis = find.byKey(
+        const ValueKey('financial-balance-y-axis'),
+      );
+      for (final tick in tester.widgetList<Text>(
+        find.descendant(of: balanceAxis, matching: find.byType(Text)),
+      )) {
+        expect(tick.style?.fontSize, greaterThanOrEqualTo(12));
+        expect(
+          tester.renderObject<RenderParagraph>(find.byWidget(tick)).didExceedMaxLines,
+          isFalse,
+          reason: 'Balance tick labels must not be ellipsized at 2x.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'cash-flow axis unit aligns with the tick-label edge in Persian RTL',
     (tester) async {
       tester.view.physicalSize = const Size(360, 900);

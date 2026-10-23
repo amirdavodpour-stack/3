@@ -714,6 +714,85 @@ void main() {
   );
 
   testWidgets(
+    'meaningful navigation labels retain a 12sp floor without FittedBox shrinkage',
+    (tester) async {
+      final scenarios = [
+        (width: 320.0, locale: 'fa', scale: 1.0, dark: false),
+        (width: 360.0, locale: 'en', scale: 1.5, dark: true),
+        (width: 360.0, locale: 'fa', scale: 2.0, dark: false),
+      ];
+
+      for (final scenario in scenarios) {
+        tester.view.physicalSize = Size(scenario.width, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final labels = scenario.locale == 'fa'
+            ? ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']
+            : ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile'];
+        final destinationsForLocale = labels
+            .map(
+              (label) => NavigationDestination(
+                icon: const Icon(HopeV2Icons.home, size: 24),
+                selectedIcon: const Icon(HopeV2Icons.homeSelected, size: 24),
+                label: label,
+              ),
+            )
+            .toList(growable: false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: scenario.dark ? AppTheme.dark() : AppTheme.light(),
+            locale: Locale(scenario.locale),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: TextScaler.linear(scenario.scale),
+              ),
+              child: Scaffold(
+                body: const SizedBox.expand(),
+                bottomNavigationBar: PremiumNavigationBar(
+                  selectedIndex: 0,
+                  onDestinationSelected: (_) {},
+                  destinations: destinationsForLocale,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final label in labels) {
+          final target = find.text(label);
+          expect(target, findsOneWidget);
+          expect(
+            tester.widget<Text>(target).style?.fontSize,
+            greaterThanOrEqualTo(12),
+            reason: 'Meaningful dock label "$label" must use at least 12sp.',
+          );
+          expect(
+            find.ancestor(of: target, matching: find.byType(FittedBox)),
+            findsNothing,
+            reason: 'The dock must reflow meaningful labels rather than scale them below 12sp.',
+          );
+          expect(
+            tester.renderObject<RenderParagraph>(target).didExceedMaxLines,
+            isFalse,
+            reason: 'The dock must display the complete label "$label".',
+          );
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    },
+  );
+
+  testWidgets(
     'primary navigation uses a coherent Cupertino glyph family and neutral labels',
     (tester) async {
       await tester.pumpWidget(

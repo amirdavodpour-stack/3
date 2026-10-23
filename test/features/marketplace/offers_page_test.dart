@@ -151,6 +151,85 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'fa RTL offers filters keep both logical rail endpoints fully visible',
+    (tester) async {
+      for (final width in [320.0, 360.0]) {
+        tester.view.physicalSize = Size(width, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: Provider<OfferRepository>.value(
+              value: _FakeOffers(),
+              child: const OffersPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final rail = find.byKey(const ValueKey('offers-status-filter-scroll'));
+        expect(rail, findsOneWidget);
+        expect(
+          Directionality.of(tester.element(rail)),
+          TextDirection.rtl,
+          reason: 'The Persian filter rail must use RTL scroll direction.',
+        );
+        expect(
+          find.byKey(const ValueKey('offers-status-filter-scroll-cue')),
+          findsOneWidget,
+        );
+
+        final railRect = tester.getRect(rail);
+        final firstLabel = find.textContaining('همه');
+        expect(firstLabel, findsOneWidget);
+        final firstChip = find.ancestor(
+          of: firstLabel,
+          matching: find.byType(InkWell),
+        ).first;
+        final firstRect = tester.getRect(firstChip);
+        expect(
+          firstRect.left,
+          greaterThanOrEqualTo(railRect.left),
+          reason: 'The first RTL filter must not be clipped at the left viewport edge.',
+        );
+        expect(
+          firstRect.right,
+          lessThanOrEqualTo(railRect.right),
+          reason: 'The first RTL filter must not be clipped at the right viewport edge.',
+        );
+
+        final finalLabel = find.textContaining('رد شده');
+        expect(finalLabel, findsOneWidget);
+        await tester.ensureVisible(finalLabel);
+        await tester.pumpAndSettle();
+        final finalChip = find.ancestor(
+          of: finalLabel,
+          matching: find.byType(InkWell),
+        ).first;
+        final finalRect = tester.getRect(finalChip);
+        final currentRailRect = tester.getRect(rail);
+        expect(finalRect.left, greaterThanOrEqualTo(currentRailRect.left));
+        expect(finalRect.right, lessThanOrEqualTo(currentRailRect.right));
+
+        await tester.tap(finalLabel);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    },
+  );
+
   testWidgets('offers do not expose unknown backend statuses',
       (tester) async {
     await tester.pumpWidget(

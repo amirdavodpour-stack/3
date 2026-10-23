@@ -1282,6 +1282,96 @@ void main() {
     );
   });
 
+  testWidgets(
+    'meaningful tags and compact progress labels keep the 12sp minimum',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const lifecycleLabels = [
+        'تأمین وجه',
+        'در امانت',
+        'در حال انجام',
+        'تحویل',
+        'تأیید',
+        'تسویه',
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: const Scaffold(
+              body: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PremiumTag(label: 'تکمیل‌شده', allowWrap: true),
+                    HopeCreationProgress(activeIndex: 1),
+                    HopeLifecycleRail(
+                      labels: lifecycleLabels,
+                      icons: [
+                        Icons.account_balance_wallet_outlined,
+                        Icons.lock_outline,
+                        Icons.work_outline,
+                        Icons.upload_outlined,
+                        Icons.verified_outlined,
+                        Icons.payments_outlined,
+                      ],
+                      current: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['تکمیل‌شده', ...lifecycleLabels]) {
+        final target = find.text(label);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Meaningful state label "$label" must not be smaller than 12sp.',
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(target).didExceedMaxLines,
+          isFalse,
+          reason: 'Meaningful state label "$label" must not be clipped.',
+        );
+      }
+
+      for (final label in ['نوع', 'جزئیات', 'مبلغ', 'شرایط', 'بازبینی']) {
+        final target = find.text(label);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Creation progress label "$label" must be at least 12sp.',
+        );
+      }
+      for (final digit in ['۱', '۲', '۳', '۴', '۵']) {
+        final target = find.text(digit);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Progress ordinal "$digit" must be at least 12sp.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('default icon tiles render green, teal, clay and trust accents by role',
       (tester) async {
     await tester.pumpWidget(
