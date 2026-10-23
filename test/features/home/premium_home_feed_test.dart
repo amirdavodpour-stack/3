@@ -669,6 +669,19 @@ void main() {
     expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
     final metrics = find.byKey(const ValueKey('home-pulse-compact-metrics'));
     expect(metrics, findsOneWidget);
+    final compactMetricTexts = find.descendant(
+      of: metrics,
+      matching: find.byType(Text),
+    );
+    expect(compactMetricTexts, findsAtLeastNWidgets(8));
+    for (final text in compactMetricTexts.evaluate()) {
+      final textWidget = text.widget as Text;
+      expect(
+        textWidget.style?.fontSize ?? 0,
+        greaterThanOrEqualTo(12),
+        reason: 'Compact Home Pulse values and labels must retain the 12sp floor without truncating the amount.',
+      );
+    }
     final metricsRect = tester.getRect(metrics);
     final chipRects = <Rect>[];
     for (var index = 0; index < 4; index++) {

@@ -284,7 +284,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 9,
+                    fontSize: 12,
                     height: 1,
                     fontWeight: FontWeight.w900,
                   ),

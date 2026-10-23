@@ -464,7 +464,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                           text: TextSpan(
                             text: item.jobCity!,
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               height: 1,
                               fontWeight: FontWeight.w700,
                             ),
@@ -706,7 +706,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                                   .textTheme
                                   .labelSmall
                                   ?.copyWith(
-                                    fontSize: 10.5,
+                                    fontSize: 12,
                                     height: 1.1,
                                     fontWeight: active
                                         ? FontWeight.w900
@@ -770,12 +770,12 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   message: label,
                   child: Text(
                     label,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 9.5,
+                          fontSize: 12,
                           height: 1.1,
                           fontWeight:
                               active ? FontWeight.w900 : FontWeight.w600,

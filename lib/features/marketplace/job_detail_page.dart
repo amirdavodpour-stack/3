@@ -1880,7 +1880,7 @@ class _MatchIntelligence extends StatelessWidget {
                                       .textTheme
                                       .labelSmall
                                       ?.copyWith(
-                                        fontSize: 7,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: HopeV2SemanticColors.info(context),
                                         letterSpacing: .4,
@@ -2031,7 +2031,7 @@ class _MatchIntelligence extends StatelessWidget {
                                     locale: Localizations.localeOf(context).languageCode,
                                   ), style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
-                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.info(context), letterSpacing: .6)),
+                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.info(context), letterSpacing: .6)),
                             ]),
                           ],
                         ),

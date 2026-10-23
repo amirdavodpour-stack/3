@@ -669,7 +669,7 @@ class OpportunityCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: 10.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                   color: HopeV2SemanticColors.textSecondary(context),
                 ),
@@ -704,7 +704,7 @@ class OpportunityCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 10.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),

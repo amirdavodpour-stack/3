@@ -27,6 +27,17 @@ void main() {
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
   });
 
+  test('Material NavigationBar theme preserves a 12sp meaningful-label floor', () {
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      final labelStyle = theme.navigationBarTheme.labelTextStyle?.resolve({});
+      expect(
+        labelStyle?.fontSize,
+        greaterThanOrEqualTo(12),
+        reason: 'Material NavigationBar labels must not fall below the 12sp meaningful-text floor.',
+      );
+    }
+  });
+
   test('FilledButton theme roles meet WCAG AA contrast in light and dark modes', () {
     final light = AppTheme.light().colorScheme;
     expect(light.primary, AppColors.primaryAction);

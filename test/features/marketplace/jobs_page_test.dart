@@ -673,6 +673,16 @@ void main() {
       const ValueKey('hope-opportunity-refinement-active-count'),
     );
     expect(activeCount, findsOneWidget);
+    final activeCountText = find.descendant(
+      of: activeCount,
+      matching: find.byType(Text),
+    );
+    expect(activeCountText, findsOneWidget);
+    expect(
+      tester.widget<Text>(activeCountText).style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'The active-filter count is a meaningful numeric status label and must stay readable.',
+    );
     expect(find.text('۱', skipOffstage: false), findsWidgets);
   });
 

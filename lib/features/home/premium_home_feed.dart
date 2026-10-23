@@ -577,7 +577,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                               softWrap: false,
                                               overflow: TextOverflow.ellipsis,
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                    fontSize: 10,
+                                                    fontSize: 12,
                                                     fontWeight: FontWeight.w800,
                                                     color: Theme.of(context).colorScheme.onSurface,
                                                   ),
@@ -593,7 +593,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                               softWrap: false,
                                               overflow: TextOverflow.ellipsis,
                                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                    fontSize: 10,
+                                                    fontSize: 12,
                                                     fontWeight: FontWeight.w800,
                                                     color: Theme.of(context).colorScheme.onSurface,
                                                   ),
@@ -814,7 +814,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 maxLines: 3,
                 softWrap: true,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 1.0,
                       color: HopeV2Colors.darkMuted,
                     ),

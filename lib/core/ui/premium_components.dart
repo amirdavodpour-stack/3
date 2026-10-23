@@ -1618,7 +1618,7 @@ class PremiumHero extends StatelessWidget {
                                       style: TextStyle(
                                         color: HopeV2Colors.darkText,
                                         fontWeight: FontWeight.w900,
-                                        fontSize: 10,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
@@ -1633,7 +1633,7 @@ class PremiumHero extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white70,
                               fontWeight: FontWeight.w700,
-                              fontSize: 10.5,
+                              fontSize: 12,
                               letterSpacing: .7,
                             ),
                           ),

@@ -1128,5 +1128,5 @@ class HopeV2Type {
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .4);
+      .copyWith(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: .4);
 }

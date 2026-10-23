@@ -130,7 +130,7 @@ class _TypeHero extends StatelessWidget {
                   Text(
                     sub,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12,
                       height: 1.3,
                       color: selected ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: .78) : null,
                     ),
