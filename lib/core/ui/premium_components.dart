@@ -192,6 +192,7 @@ class _PremiumNavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
     final icon = selected ? destination.selectedIcon ?? destination.icon : destination.icon;
     final labelColor = HopeV2SemanticColors.navigationLabel(
       context,
@@ -229,7 +230,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         destination.label,
-                        maxLines: compact ? 3 : 1,
+                        maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),
                         softWrap: true,
                         overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
