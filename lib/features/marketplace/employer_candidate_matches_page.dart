@@ -180,7 +180,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
           )
         : null;
 
-    if (enlargedText) {
+    if (enlargedText || MediaQuery.sizeOf(context).width < 400) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
