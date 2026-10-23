@@ -116,6 +116,8 @@ jobs:
         run: bash test/runtime/android_emulator_install_retry_test.sh
       - name: Test Android screenshot transport contract
         run: bash test/runtime/android_screenshot_transport_test.sh
+      - name: Test auth screenshot near-duplicate validator
+        run: node test/runtime/auth_capture_similarity_test.mjs
       - name: Test TalkBack bound-service contract
         run: bash test/runtime/hope_enable_talkback_test.sh
 
@@ -286,6 +288,11 @@ jobs:
           jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --arg theme "$HOPE_CAPTURE_THEME" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
             '.sha == $sha and .capture_locale == $locale and .theme == $theme and .text_scale == $scale and .screens == 19 and .responsive_screens == 7 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 26 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 26 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
             docs/audit/evidence/android-runtime/metadata.json
+          auth_locale_suffix="en-ltr"
+          if [ "$HOPE_CAPTURE_LOCALE" = "fa" ]; then auth_locale_suffix="fa-rtl"; fi
+          node tools/validate-auth-capture-pair.mjs \
+            "docs/audit/evidence/android-runtime/register-${auth_locale_suffix}.png" \
+            "docs/audit/evidence/android-runtime/password-reset-${auth_locale_suffix}.png"
 
       - name: Validate home-only diagnostic artifact contents
         if: ${{ success() && github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') }}
@@ -338,3 +345,5 @@ jobs:
 
 # [runtime-capture-fa] certify current HEAD after isolated auth-tail recovery fix.
 # [runtime-capture-fa] exact-head certification after resilient auth-tail recovery fix.
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

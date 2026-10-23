@@ -94,6 +94,8 @@ jobs:
         run: bash test/runtime/android_runtime_golden_baseline_test.sh
       - name: Android runtime screenshot and TalkBack contract
         run: bash test/runtime/android_screenshot_transport_test.sh
+      - name: Auth screenshot near-duplicate regression
+        run: node test/runtime/auth_capture_similarity_test.mjs
       - name: TalkBack exact-bound-service regression
         run: bash test/runtime/hope_enable_talkback_test.sh
       - name: Flutter analyze
@@ -155,3 +157,5 @@ jobs:
             test/core/config/backend_capabilities_repository_test.dart \
             test/features/wallet/backend_capability_wallet_actions_test.dart \
             test/features/wallet/wallet_page_test.dart
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
