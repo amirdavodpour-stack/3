@@ -592,6 +592,36 @@ String _cashFlowAxisLabel(int value, String locale) {
   return HopeDisplayFormatter.integer(value, locale: locale);
 }
 
+double _financialAxisLabelWidth(
+  BuildContext context,
+  Iterable<int> tickValues,
+  String locale,
+) {
+  final style =
+      (Theme.of(context).textTheme.labelSmall ?? const TextStyle()).copyWith(
+    fontSize: 12,
+    height: 1,
+    fontWeight: FontWeight.w800,
+  );
+  final painter = TextPainter(
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: Localizations.localeOf(context),
+    maxLines: 1,
+  );
+  var widestLabel = 0.0;
+  for (final value in tickValues) {
+    painter.text = TextSpan(
+      text: _cashFlowAxisLabel(value, locale),
+      style: style,
+    );
+    painter.layout();
+    widestLabel = math.max(widestLabel, painter.width);
+  }
+  painter.dispose();
+  return math.max(70.0, widestLabel + 12.0).toDouble();
+}
+
 String _localizeAxisScale(double value, String locale) {
   final rounded = (value * 100).round() / 100;
   final raw = rounded == rounded.roundToDouble()
@@ -680,11 +710,16 @@ class _BarChart extends StatelessWidget {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final textScale = MediaQuery.textScalerOf(context).scale(1);
-                    final axisWidth = textScale > 1.5
-                        ? 112.0
-                        : textScale > 1.2
-                            ? 90.0
-                            : 70.0;
+                    final axisTicks = textScale > 1.2
+                        ? const [4, 2, 0]
+                        : const [4, 3, 2, 1, 0];
+                    final axisWidth = _financialAxisLabelWidth(
+                      context,
+                      axisTicks.map(
+                        (tick) => (scaleMaximum * tick / 4).round(),
+                      ),
+                      locale,
+                    );
                     const axisGap = 8.0;
                     final monthWidth = math.max(58.0, 58.0 * textScale);
                     final chartViewportWidth = math.max(
@@ -707,10 +742,6 @@ class _BarChart extends StatelessWidget {
                       chartViewportHeight < 150 ? 20.0 : 24.0,
                       14.0 * textScale,
                     ).toDouble();
-                    final axisTicks = textScale > 1.2
-                        ? const [4, 2, 0]
-                        : const [4, 3, 2, 1, 0];
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -785,9 +816,9 @@ class _BarChart extends StatelessWidget {
                                                   locale,
                                                 ),
                                                 key: ValueKey('financial-cashflow-y-tick-$tick'),
-                                                maxLines: 2,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                softWrap: false,
+                                                overflow: TextOverflow.clip,
                                                 textAlign: TextAlign.end,
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                       fontSize: 12,
@@ -1030,11 +1061,6 @@ class _LineChart extends StatelessWidget {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final pointWidth = math.max(64.0, 64.0 * textScale);
-        final axisWidth = textScale > 1.5
-            ? 112.0
-            : textScale > 1.2
-                ? 90.0
-                : 70.0;
         const axisGap = 8.0;
         final values = recordedPoints
             .map((point) => point.value!)
@@ -1063,6 +1089,11 @@ class _LineChart extends StatelessWidget {
           ((scaleMaximum + scaleMinimum) / 2).round(),
           scaleMinimum.round(),
         ];
+        final axisWidth = _financialAxisLabelWidth(
+          context,
+          axisValues,
+          locale,
+        );
         final chartViewportWidth = math.max(
           0.0,
           constraints.maxWidth - axisWidth - axisGap,
@@ -1138,9 +1169,9 @@ class _LineChart extends StatelessWidget {
                                 for (final tick in axisValues)
                                   Text(
                                     _cashFlowAxisLabel(tick, locale),
-                                    maxLines: 2,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.clip,
                                     textAlign: TextAlign.end,
                                     style: Theme.of(context)
                                         .textTheme
