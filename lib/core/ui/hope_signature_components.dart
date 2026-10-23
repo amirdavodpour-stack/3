@@ -659,7 +659,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
 
     return PremiumPanel(
       key: const ValueKey('opportunity-dna-signature'),
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       quiet: true,
       glass: false,
       semanticLabel: _t(
@@ -693,7 +693,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 400;
@@ -714,7 +714,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                       child: SizedBox(
                         width: width,
                         child: Container(
-                          constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+                          constraints: BoxConstraints(minHeight: compact ? 46 : 58),
                           padding: EdgeInsets.symmetric(
                             horizontal: compact ? 8 : 9,
                             vertical: compact ? 6 : 8,
