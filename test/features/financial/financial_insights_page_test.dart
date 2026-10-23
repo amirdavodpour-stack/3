@@ -1572,6 +1572,83 @@ void main() {
   );
 
   testWidgets(
+    'Persian balance-chart y-axis ticks fit on one line at 360dp',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final axis = find.byKey(
+        const ValueKey('financial-balance-y-axis'),
+      );
+      await tester.scrollUntilVisible(
+        axis,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(axis, findsOneWidget);
+
+      final ticks = find.descendant(
+        of: axis,
+        matching: find.byType(Text),
+      );
+      expect(ticks, findsNWidgets(3));
+      for (var index = 0; index < ticks.evaluate().length; index++) {
+        final tickFinder = ticks.at(index);
+        final tick = tester.widget<Text>(tickFinder);
+        final context = tester.element(tickFinder);
+        final painter = TextPainter(
+          text: TextSpan(text: tick.data, style: tick.style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          locale: Localizations.localeOf(context),
+          maxLines: 1,
+        )..layout();
+        final singleLineWidth = painter.width;
+        painter.dispose();
+
+        expect(
+          singleLineWidth,
+          lessThanOrEqualTo(tester.getSize(tickFinder).width + 0.5),
+          reason:
+              'Persian balance tick "${tick.data}" must fit its axis width without wrapping.',
+        );
+        expect(
+          tick.maxLines,
+          1,
+          reason: 'Persian balance tick "${tick.data}" must not wrap into stacked fragments.',
+        );
+        expect(
+          tick.softWrap,
+          isFalse,
+          reason: 'Persian balance tick "${tick.data}" must stay on one line.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'cash-flow axis unit aligns with the tick-label edge in Persian RTL',
     (tester) async {
       tester.view.physicalSize = const Size(360, 900);
