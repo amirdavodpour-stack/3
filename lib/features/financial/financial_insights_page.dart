@@ -578,15 +578,21 @@ List<int> _gregorianToSolarHijri(int gy, int gm, int gd) {
   return <int>[jy, jm, jd];
 }
 
-String _cashFlowAxisLabel(int value, String locale) {
+String _cashFlowAxisLabel(
+  int value,
+  String locale, {
+  num? scaleMaximum,
+}) {
   final fa = locale.toLowerCase().startsWith('fa');
-  if (value >= 1000000000) {
+  if (value == 0) return HopeDisplayFormatter.integer(value, locale: locale);
+  final magnitude = (scaleMaximum ?? value.abs()).abs();
+  if (magnitude >= 1000000000) {
     return '${_localizeAxisScale(value / 1000000000, locale)}${fa ? 'میلیارد' : 'B'}';
   }
-  if (value >= 1000000) {
+  if (magnitude >= 1000000) {
     return '${_localizeAxisScale(value / 1000000, locale)}${fa ? 'م' : 'M'}';
   }
-  if (value >= 1000) {
+  if (magnitude >= 1000) {
     return '${_localizeAxisScale(value / 1000, locale)}${fa ? 'هزار' : 'k'}';
   }
   return HopeDisplayFormatter.integer(value, locale: locale);
@@ -595,8 +601,17 @@ String _cashFlowAxisLabel(int value, String locale) {
 double _financialAxisLabelWidth(
   BuildContext context,
   Iterable<int> tickValues,
-  String locale,
-) {
+  String locale, {
+  num? scaleMaximum,
+}) {
+  final values = tickValues.toList(growable: false);
+  final axisMagnitude = (scaleMaximum ??
+          values.fold<int>(
+            0,
+            (largest, value) =>
+                value.abs() > largest ? value.abs() : largest,
+          ))
+      .abs();
   final style =
       (Theme.of(context).textTheme.labelSmall ?? const TextStyle()).copyWith(
     fontSize: 12,
@@ -610,9 +625,13 @@ double _financialAxisLabelWidth(
     maxLines: 1,
   );
   var widestLabel = 0.0;
-  for (final value in tickValues) {
+  for (final value in values) {
     painter.text = TextSpan(
-      text: _cashFlowAxisLabel(value, locale),
+      text: _cashFlowAxisLabel(
+        value,
+        locale,
+        scaleMaximum: axisMagnitude,
+      ),
       style: style,
     );
     painter.layout();
@@ -710,7 +729,7 @@ class _BarChart extends StatelessWidget {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final textScale = MediaQuery.textScalerOf(context).scale(1);
-                    final axisTicks = textScale > 1.2
+                    final axisTicks = textScale > 1.2 || shortViewport
                         ? const [4, 2, 0]
                         : const [4, 3, 2, 1, 0];
                     final axisWidth = _financialAxisLabelWidth(
@@ -719,6 +738,7 @@ class _BarChart extends StatelessWidget {
                         (tick) => (scaleMaximum * tick / 4).round(),
                       ),
                       locale,
+                      scaleMaximum: scaleMaximum,
                     );
                     const axisGap = 8.0;
                     final monthWidth = math.max(58.0, 58.0 * textScale);
@@ -814,6 +834,7 @@ class _BarChart extends StatelessWidget {
                                                 _cashFlowAxisLabel(
                                                   (scaleMaximum * tick / 4).round(),
                                                   locale,
+                                                  scaleMaximum: scaleMaximum,
                                                 ),
                                                 key: ValueKey('financial-cashflow-y-tick-$tick'),
                                                 maxLines: 1,
@@ -1089,10 +1110,13 @@ class _LineChart extends StatelessWidget {
           ((scaleMaximum + scaleMinimum) / 2).round(),
           scaleMinimum.round(),
         ];
+        final axisScaleMaximum =
+            math.max(scaleMaximum.abs(), scaleMinimum.abs());
         final axisWidth = _financialAxisLabelWidth(
           context,
           axisValues,
           locale,
+          scaleMaximum: axisScaleMaximum,
         );
         final chartViewportWidth = math.max(
           0.0,
@@ -1168,7 +1192,11 @@ class _LineChart extends StatelessWidget {
                               children: [
                                 for (final tick in axisValues)
                                   Text(
-                                    _cashFlowAxisLabel(tick, locale),
+                                    _cashFlowAxisLabel(
+                                      tick,
+                                      locale,
+                                      scaleMaximum: axisScaleMaximum,
+                                    ),
                                     maxLines: 1,
                                     softWrap: false,
                                     overflow: TextOverflow.clip,

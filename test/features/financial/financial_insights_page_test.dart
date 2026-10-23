@@ -1658,9 +1658,9 @@ void main() {
   );
 
   testWidgets(
-    'Persian cash-flow chart y-axis ticks fit on one line at 360dp',
+    'Persian cash-flow axis uses consistent compact million labels on a tall 360dp viewport',
     (tester) async {
-      tester.view.physicalSize = const Size(360, 640);
+      tester.view.physicalSize = const Size(360, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -1699,7 +1699,11 @@ void main() {
         matching: find.byType(Text),
       );
       expect(ticks, findsNWidgets(5));
-      expect(find.text('۵۰۰هزار'), findsOneWidget);
+      expect(find.text('۲م'), findsOneWidget);
+      expect(find.text('۱٫۵م'), findsOneWidget);
+      expect(find.text('۱م'), findsOneWidget);
+      expect(find.text('۰٫۵م'), findsOneWidget);
+      expect(find.text('۵۰۰هزار'), findsNothing);
       for (var index = 0; index < ticks.evaluate().length; index++) {
         final tickFinder = ticks.at(index);
         final tick = tester.widget<Text>(tickFinder);
@@ -1733,6 +1737,67 @@ void main() {
         );
       }
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'short Persian cash-flow chart uses three major axis ticks without crowding',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Future<void> verifyAtScale(double textScale) async {
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _LargeCashFlowAxisInsightsRepository(),
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              builder: (context, child) => MediaQuery(
+                data: MediaQueryData.fromView(tester.view).copyWith(
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: child!,
+              ),
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final axis = find.byKey(
+          const ValueKey('financial-cashflow-y-axis'),
+        );
+        await tester.scrollUntilVisible(
+          axis,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(axis, findsOneWidget);
+
+        final ticks = find.descendant(
+          of: axis,
+          matching: find.byType(Text),
+        );
+        expect(ticks, findsNWidgets(3));
+        expect(find.text('۲م'), findsOneWidget);
+        expect(find.text('۱م'), findsOneWidget);
+        expect(find.text('۰'), findsOneWidget);
+        expect(find.text('۵۰۰هزار'), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+
+      await verifyAtScale(1.0);
+      await verifyAtScale(1.5);
     },
   );
 
