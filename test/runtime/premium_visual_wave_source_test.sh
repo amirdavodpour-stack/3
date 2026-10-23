@@ -191,7 +191,7 @@ navigation_selection_block="$(sed -n '/hope-navigation-selection-plate/,+16p' "$
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'RoundedRectangleBorder('
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'borderRadius: BorderRadius.circular(10)'
 grep -Fq 'HopeV2SemanticColors.navigationLabel(' "$premium"
-grep -Fq 'maxLines: compact ? 3 : 1' "$premium"
+grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' "$premium"
 grep -Fq 'fontSize: 12' "$premium"
 grep -Fq 'softWrap: true' "$premium"
 if grep -Fq 'fit: BoxFit.scaleDown' "$premium"; then
