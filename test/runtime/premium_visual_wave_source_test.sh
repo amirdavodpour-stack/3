@@ -189,7 +189,7 @@ navigation_selection_block="$(sed -n '/hope-navigation-selection-plate/,+16p' "$
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'RoundedRectangleBorder('
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'borderRadius: BorderRadius.circular(10)'
 grep -Fq 'HopeV2SemanticColors.navigationLabel(' "$premium"
-grep -Fq 'maxLines: compact ? 2 : 1' "$premium"
+grep -Fq 'maxLines: compact ? 3 : 1' "$premium"
 grep -Fq 'fontSize: 12' "$premium"
 grep -Fq 'softWrap: true' "$premium"
 if grep -Fq 'fit: BoxFit.scaleDown' "$premium"; then
@@ -473,7 +473,7 @@ grep -Fq "ValueKey('chat-message-input')" "lib/features/chat/chat_page.dart"
 grep -Fq "final shortViewport = MediaQuery.sizeOf(context).height < 800;" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "painter.paint(canvas, Offset(x, 0));" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "final plotTop = labelHeight + 3;" "lib/features/financial/financial_insights_page.dart"
-grep -Fq "shortViewport ? 122.0 : compact ? 156.0 : 172.0" "lib/features/financial/financial_insights_page.dart"
+grep -Fq "final baseChartHeight = shortViewport ? 138.0 : 172.0;" "lib/features/financial/financial_insights_page.dart"
 grep -Fq "HopeV2Icons.mail, size: 18, key: ValueKey('auth-email-field-icon')" "lib/features/auth/login_page.dart"
 grep -Fq "HopeV2Icons.userAdd, size: 18, key: ValueKey('auth-name-field-icon')" "lib/features/auth/register_page.dart"
 grep -Fq "auth-password-field-icon" "lib/features/auth/login_page.dart"
@@ -560,12 +560,10 @@ grep -Fq "final compactLayout = constraints.maxWidth < 380 ||" "lib/features/tra
 grep -Fq "Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x" "test/features/transactions/transaction_page_test.dart"
 echo "PASS: Wave45 exact monetary value readability on Wallet and Transaction Detail"
 
-# Wave45 follow-up: long total balance avoids the compact mid-width two-column split;
+# Wave45 follow-up: long totals and provider/status chips reflow on compact phones;
 # transaction identity/status reflows when enlarged text is active.
 grep -Fq "final longTotalBalance = totalBalanceValue.length > 18;" "lib/features/wallet/wallet_page.dart"
-grep -Fq "if (width < 340 ||" "lib/features/wallet/wallet_page.dart"
-grep -Fq "(_isEnglish && width < 400) ||" "lib/features/wallet/wallet_page.dart"
-grep -Fq "longTotalBalance)" "lib/features/wallet/wallet_page.dart"
+grep -Fq "if (width < 400 || enlargedText || longTotalBalance)" "lib/features/wallet/wallet_page.dart"
 grep -Fq "final enlargedText =" "lib/features/transactions/transaction_widgets.part.dart"
 grep -Fq "children: [statusTag, refreshButton]" "lib/features/transactions/transaction_widgets.part.dart"
 echo "PASS: Wave45 follow-up for long total balances and enlarged transaction headings"
