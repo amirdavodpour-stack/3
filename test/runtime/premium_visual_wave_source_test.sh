@@ -180,7 +180,7 @@ test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
 # Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
 grep -Fq 'final compactLabels = width < 400 || textScale > 1.2;' "$premium"
-grep -Fq 'maxLines: compact ? 3 : 1,' "$premium"
+grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' "$premium"
 lifecycle_block="$(sed -n '/class HopeLifecycleRail extends StatelessWidget/,/^}/p' "$premium")"
 printf '%s\n' "$lifecycle_block" | grep -Fq 'maxLines: null,'
 grep -Fq 'showLabel: true,' "$premium"
