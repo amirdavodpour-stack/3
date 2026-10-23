@@ -351,7 +351,7 @@ grep -Fq 'radius: MediaQuery.sizeOf(context).width < 500 ? 24 : 32' lib/features
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-wave-1-static.yml
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
-grep -Fq 'height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 40 : 0)' lib/core/ui/premium_components.dart
+grep -Fq 'height: HopeV2Navigation.barHeight +' lib/core/ui/premium_components.dart
 grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
 grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
 grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
@@ -532,7 +532,7 @@ grep -Fq "ValueKey('home-pulse-stat-grid')" "lib/features/home/premium_home_feed
 grep -Fq "if (textScale <= 1) return child!;" "test/features/home/premium_home_feed_test.dart"
 grep -Fq "home pulse adapts its metric rows to the actual responsive rail width" "test/features/home/premium_home_feed_test.dart"
 grep -Fq "final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;" "lib/features/wallet/wallet_page.dart"
-grep -Fq "height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 40 : 0)" "lib/core/ui/premium_components.dart"
+grep -Fq "(textScale > 1.5 ? 56 : textScale > 1.2 ? 40 : 0)" "lib/core/ui/premium_components.dart"
 grep -Fq "Wave30 English navigation dock expands vertically at 1.5x" "test/core/ui/premium_navigation_test.dart"
 echo "PASS: Wave30 responsive Home rail, enlarged Wallet status and navigation dock fit contracts"
 
