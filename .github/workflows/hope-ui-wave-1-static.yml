@@ -21,7 +21,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.action == 'synchronize' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) }}
     name: Wave 1 Flutter + backend + visual guardrails
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -74,10 +74,12 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
       - name: Compile Android debug APK (Kotlin/Gradle)
-        timeout-minutes: 9
+        # Cold runner Gradle dependency resolution can exceed eight minutes.
+        # Keep a bounded build step without starving the remaining verification gates.
+        timeout-minutes: 14
         run: |
           set -euo pipefail
-          timeout --foreground --signal=TERM --kill-after=30s 480s flutter build apk --debug --no-pub
+          timeout --foreground --signal=TERM --kill-after=30s 720s flutter build apk --debug --no-pub
           test -s build/app/outputs/flutter-apk/app-debug.apk
           echo "PASS: Android debug APK compiled, including MainActivity Kotlin source."
       - name: Contrast guard
