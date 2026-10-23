@@ -79,7 +79,7 @@ class PremiumNavigationBar extends StatelessWidget {
       minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 12 : 0),
+        height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 24 : 0),
         padding: EdgeInsets.fromLTRB(compactLabels ? 2 : 6, 4, compactLabels ? 2 : 6, 3),
         decoration: BoxDecoration(
           color: dark
@@ -225,21 +225,18 @@ class _PremiumNavigationItem extends StatelessWidget {
                     ),
                     if (showLabel) ...[
                       const SizedBox(height: 1),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.center,
-                        child: Text(
-                          destination.label,
-                          maxLines: 1,
-                          softWrap: false,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: labelColor,
-                            fontSize: compact ? 10.5 : 11.5,
-                            height: compact ? .95 : 1.0,
-                            fontWeight:
-                                selected ? FontWeight.w800 : FontWeight.w500,
-                          ),
+                      Text(
+                        destination.label,
+                        maxLines: compact ? 2 : 1,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: labelColor,
+                          fontSize: 12,
+                          height: 1.0,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -2080,7 +2077,7 @@ class PremiumTag extends StatelessWidget {
                     : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 1.0,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2714,6 +2711,12 @@ class HopeCreationProgress extends StatelessWidget {
     const persianDigits = ['۱', '۲', '۳', '۴', '۵'];
     final en = Localizations.localeOf(context).languageCode == 'en';
     final safeIndex = activeIndex.clamp(0, labelsFa.length - 1).toInt();
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final stepIndicatorSize = textScale > 1.5
+        ? 38.0
+        : textScale > 1.2
+            ? 32.0
+            : 26.0;
     final currentStep = en
         ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
         : 'مرحله ${persianDigits[safeIndex]} از ۵';
@@ -2769,8 +2772,8 @@ class HopeCreationProgress extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Container(
-                            width: 26,
-                            height: 26,
+                            width: stepIndicatorSize,
+                            height: stepIndicatorSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: step == safeIndex
@@ -2795,7 +2798,7 @@ class HopeCreationProgress extends StatelessWidget {
                                 color: step <= safeIndex
                                     ? HopeV2SemanticColors.textPrimary(context)
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -2803,8 +2806,9 @@ class HopeCreationProgress extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             en ? labelsEn[step] : labelsFa[step],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: step == safeIndex
@@ -2813,7 +2817,7 @@ class HopeCreationProgress extends StatelessWidget {
                                   fontWeight: step == safeIndex
                                       ? FontWeight.w900
                                       : FontWeight.w700,
-                                  fontSize: 9.5,
+                                  fontSize: 12,
                                 ),
                           ),
                         ],
@@ -2976,11 +2980,12 @@ class HopeLifecycleRail extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
                         labels[i],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 3,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
+                              fontSize: 12,
                               height: 1.05,
                               fontWeight: i == safeCurrent ? FontWeight.w900 : FontWeight.w700,
                               color: i <= safeCurrent ? HopeV2SemanticColors.textPrimary(context) : muted,

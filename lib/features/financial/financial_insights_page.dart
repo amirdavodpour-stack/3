@@ -679,9 +679,13 @@ class _BarChart extends StatelessWidget {
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    const axisWidth = 70.0;
-                    const axisGap = 8.0;
                     final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final axisWidth = textScale > 1.5
+                        ? 112.0
+                        : textScale > 1.2
+                            ? 90.0
+                            : 70.0;
+                    const axisGap = 8.0;
                     final monthWidth = math.max(58.0, 58.0 * textScale);
                     final chartViewportWidth = math.max(
                       0.0,
@@ -693,7 +697,7 @@ class _BarChart extends StatelessWidget {
                     ).toDouble();
                     final hasHorizontalOverflow =
                         chartWidth > chartViewportWidth;
-                    final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
+                    final scrollHintHeight = math.max(32.0, 28.0 * textScale).toDouble();
                     final chartViewportHeight = math.max(
                       1.0,
                       constraints.maxHeight -
@@ -727,12 +731,13 @@ class _BarChart extends StatelessWidget {
                                     english
                                         ? 'Swipe the cash-flow chart sideways to view other months'
                                         : 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
                                     textAlign: TextAlign.end,
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
-                                      fontSize: 11,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
@@ -758,7 +763,7 @@ class _BarChart extends StatelessWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.clip,
                                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                fontSize: 9,
+                                                fontSize: 12,
                                                 fontWeight: FontWeight.w800,
                                                 color: theme.colorScheme.onSurfaceVariant,
                                               ),
@@ -780,11 +785,12 @@ class _BarChart extends StatelessWidget {
                                                   locale,
                                                 ),
                                                 key: ValueKey('financial-cashflow-y-tick-$tick'),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 2,
+                                                softWrap: true,
+                                                overflow: TextOverflow.visible,
                                                 textAlign: TextAlign.end,
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                      fontSize: 10,
+                                                      fontSize: 12,
                                                       height: 1,
                                                       fontWeight: tick == 0 || tick == 4
                                                           ? FontWeight.w800
@@ -1024,8 +1030,11 @@ class _LineChart extends StatelessWidget {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final pointWidth = math.max(64.0, 64.0 * textScale);
-        final axisWidth =
-            math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
+        final axisWidth = textScale > 1.5
+            ? 112.0
+            : textScale > 1.2
+                ? 90.0
+                : 70.0;
         const axisGap = 8.0;
         final values = recordedPoints
             .map((point) => point.value!)
@@ -1063,7 +1072,7 @@ class _LineChart extends StatelessWidget {
           points.length * pointWidth,
         ).toDouble();
         final hasHorizontalOverflow = chartWidth > chartViewportWidth;
-        final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
+        final scrollHintHeight = math.max(32.0, 28.0 * textScale).toDouble();
         final chartViewportHeight = math.max(
           1.0,
           constraints.maxHeight -
@@ -1095,13 +1104,14 @@ class _LineChart extends StatelessWidget {
                         english
                             ? 'Swipe the balance chart sideways to view other months'
                             : 'برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
                         textAlign: TextAlign.end,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color:
                                   Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontSize: 11,
+                              fontSize: 12,
                             ),
                       ),
                     ),
@@ -1128,14 +1138,15 @@ class _LineChart extends StatelessWidget {
                                 for (final tick in axisValues)
                                   Text(
                                     _cashFlowAxisLabel(tick, locale),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
                                     textAlign: TextAlign.end,
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelSmall
                                         ?.copyWith(
-                                          fontSize: 10,
+                                          fontSize: 12,
                                           height: 1,
                                           fontWeight: FontWeight.w700,
                                           color: Theme.of(context)

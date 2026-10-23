@@ -696,8 +696,13 @@ void main() {
         );
         expect(
           find.ancestor(of: text, matching: find.byType(FittedBox)),
-          findsOneWidget,
-          reason: 'Navigation labels must scale down before being clipped: $label',
+          findsNothing,
+          reason: 'Navigation labels must reflow rather than scale below the 12sp floor: $label',
+        );
+        expect(
+          tester.widget<Text>(text).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Navigation labels must preserve the canonical readable type scale: $label',
         );
         final selected = label == 'خانه';
         expect(
