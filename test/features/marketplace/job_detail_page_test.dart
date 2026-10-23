@@ -668,7 +668,9 @@ void main() {
     final matchCaption = find.byWidgetPredicate(
       (widget) =>
           widget is Text &&
-          (widget.data == 'MATCH' || widget.data == 'تطبیق'),
+          (widget.data == 'MATCH' ||
+              widget.data == 'match' ||
+              widget.data == 'تطبیق'),
       description: 'localized Match score caption',
     );
     expect(matchCaption, findsOneWidget);

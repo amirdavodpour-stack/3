@@ -747,7 +747,7 @@ class OpportunityCard extends StatelessWidget {
             softWrap: true,
             overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: enlargedText ? 10.5 : 11.5,
+                  fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
@@ -781,7 +781,7 @@ class OpportunityCard extends StatelessWidget {
             softWrap: true,
             overflow: enlargedText ? TextOverflow.visible : TextOverflow.clip,
             style: TextStyle(
-              fontSize: enlargedText ? 11.5 : 10.5,
+              fontSize: 12,
               height: 1.12,
               fontWeight: FontWeight.w900,
               color: HopeV2SemanticColors.amount(context),

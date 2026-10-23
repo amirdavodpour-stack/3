@@ -639,10 +639,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     final colors = Theme.of(context).colorScheme;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
 
-    // On enlarged text, a six-column rail compresses stage names into ellipses.
-    // Reflow to two rows of three compact editorial steps while keeping the
-    // same status semantics, ordering, tooltips and reached/active colors.
-    if (textScale > 1.2) {
+    // A six-column rail compresses meaningful stage names at small widths and
+    // enlarged scales. Reflow to three columns so all six labels remain readable.
+    // Status semantics, ordering, tooltips and reached/active colors are unchanged.
+    if (textScale > 1.2 ||
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact) {
       return LayoutBuilder(
         builder: (context, constraints) {
           const gap = 6.0;
@@ -662,7 +663,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 child: Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 4,
-                    vertical: textScale > 1.2 ? 4 : 6,
+                    vertical: textScale > 1.2 ? 3 : 6,
                   ),
                   decoration: BoxDecoration(
                     color: active
