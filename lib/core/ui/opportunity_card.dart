@@ -653,7 +653,7 @@ class OpportunityCard extends StatelessWidget {
   ) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.15;
-    final mediaHeight = 40.0;
+    final mediaHeight = 34.0;
     final categoryValue = _categoryValue();
     final category = categoryValue == null
         ? ''

@@ -392,7 +392,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               ? 11
               : 13,
           vertical: compactLargeText
-              ? 5
+              ? 3
               : (MediaQuery.sizeOf(context).width <
                       HopeV2Breakpoints.compact
                   ? 11
@@ -443,10 +443,10 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   ),
                 ],
               ),
-            SizedBox(height: compactLargeText ? 4 : 6),
+            SizedBox(height: compactLargeText ? 2 : 6),
             Wrap(
               spacing: 6,
-              runSpacing: 4,
+              runSpacing: compactLargeText ? 2 : 4,
               children: [
                 PremiumTag(
                   icon: HopeV2Icons.activity,
@@ -559,7 +559,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                     ),
               ],
             ),
-            SizedBox(height: compactLargeText ? 6 : 9),
+            SizedBox(height: compactLargeText ? 3 : 9),
             _timeline(item),
             if (item.status.toUpperCase() == 'ACCEPTED' &&
                 item.jobId.trim().isNotEmpty) ...[
@@ -576,7 +576,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ),
             ],
-            SizedBox(height: compactLargeText ? 4 : 8),
+            SizedBox(height: compactLargeText ? 2 : 8),
             Row(
               children: [
                 Expanded(
@@ -647,12 +647,13 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       return LayoutBuilder(
         builder: (context, constraints) {
           const gap = 6.0;
+          const runGap = 3.0;
           const columns = 3;
           final itemWidth =
               (constraints.maxWidth - gap * (columns - 1)) / columns;
           return Wrap(
             spacing: gap,
-            runSpacing: gap,
+            runSpacing: textScale > 1.2 ? runGap : gap,
             children: List.generate(stages.length, (index) {
               final stage = stages[index];
               final reached = current >= 0 && index <= current;
