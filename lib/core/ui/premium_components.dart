@@ -213,7 +213,7 @@ class _PremiumNavigationItem extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: compact ? 0 : 4,
-                  vertical: compact ? 2 : 4,
+                  vertical: compact ? 1 : 4,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
