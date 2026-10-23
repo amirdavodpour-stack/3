@@ -69,7 +69,7 @@ class PremiumNavigationBar extends StatelessWidget {
     final surface = HopeV2Surfaces.navigation(context);
     final width = MediaQuery.sizeOf(context).width;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final compactLabels = width < 340 || textScale > 1.2;
+    final compactLabels = width < 400 || textScale > 1.2;
     final horizontalInset = compactLabels ? 4.0 : 12.0;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final activeIndex = selectedIndex.clamp(0, destinations.length - 1).toInt();
@@ -79,8 +79,8 @@ class PremiumNavigationBar extends StatelessWidget {
       minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 24 : 0),
-        padding: EdgeInsets.fromLTRB(compactLabels ? 2 : 6, 4, compactLabels ? 2 : 6, 3),
+        height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 40 : 0),
+        padding: EdgeInsets.fromLTRB(compactLabels ? 0 : 6, 4, compactLabels ? 0 : 6, 3),
         decoration: BoxDecoration(
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
@@ -212,7 +212,7 @@ class _PremiumNavigationItem extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 1 : 4,
+                  horizontal: compact ? 0 : 4,
                   vertical: compact ? 2 : 4,
                 ),
                 child: Column(
@@ -227,7 +227,7 @@ class _PremiumNavigationItem extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         destination.label,
-                        maxLines: compact ? 2 : 1,
+                        maxLines: compact ? 3 : 1,
                         softWrap: true,
                         overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
@@ -2980,7 +2980,7 @@ class HopeLifecycleRail extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
                         labels[i],
-                        maxLines: 3,
+                        maxLines: null,
                         softWrap: true,
                         overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
