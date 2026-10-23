@@ -44,6 +44,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text("منتشر شده"), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text("منتشر شده")).style?.fontSize,
+        greaterThanOrEqualTo(12),
+        reason: "A status pill communicates the current state and must keep the 12sp floor.",
+      );
       expect(find.byIcon(Icons.work_rounded), findsOneWidget);
       expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
     } finally {

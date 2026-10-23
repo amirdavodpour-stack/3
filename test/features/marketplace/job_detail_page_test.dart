@@ -665,6 +665,13 @@ void main() {
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);
+    final matchCaption = find.text('MATCH');
+    expect(matchCaption, findsOneWidget);
+    expect(
+      tester.widget<Text>(matchCaption).style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'The visible Match score caption is meaningful text, not decorative microcopy.',
+    );
     expect(find.text('Quick decision'), findsOneWidget);
     expect(find.text('Match signals'), findsOneWidget);
     expect(tester.getTopLeft(decision).dy, lessThan(300));

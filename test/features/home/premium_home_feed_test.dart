@@ -987,6 +987,19 @@ void main() {
       ].map((key) => find.byKey(ValueKey(key))).toList(growable: false);
       for (final stat in keys) {
         expect(stat, findsOneWidget);
+        final texts = find.descendant(
+          of: stat,
+          matching: find.byType(Text),
+        );
+        expect(texts, findsAtLeastNWidgets(2));
+        for (final text in texts.evaluate()) {
+          final textWidget = text.widget as Text;
+          expect(
+            textWidget.style?.fontSize ?? 0,
+            greaterThanOrEqualTo(12),
+            reason: 'Every meaningful Home Pulse metric value/label must retain the 12sp minimum.',
+          );
+        }
       }
       final rects = keys.map((finder) => tester.getRect(finder)).toList(growable: false);
       expect((rects[0].top - rects[1].top).abs(), lessThan(1.0));

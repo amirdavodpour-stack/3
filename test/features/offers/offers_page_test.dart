@@ -553,8 +553,13 @@ testWidgets('accepting an offer disables the financial action until completion',
           greaterThan(0),
           reason: 'The narrow status rail must retain genuine horizontal scroll extent.',
         );
-        scrollPosition.jumpTo(scrollPosition.maxScrollExtent);
+        await tester.drag(rail, Offset(isRtl ? 400 : -400, 0));
         await tester.pumpAndSettle();
+        expect(
+          scrollPosition.pixels,
+          greaterThan(0),
+          reason: 'A real horizontal swipe must move the Offers rail in both RTL and LTR.',
+        );
 
         final terminalChip = find.ancestor(
           of: find.textContaining(prefixes.last),
@@ -585,6 +590,27 @@ testWidgets('accepting an offer disables the financial action until completion',
             reason: 'The LTR terminal filter must have at least 12dp breathing room from the right viewport edge.',
           );
         }
+        await tester.tap(terminalChip);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<PremiumFilterChip>(terminalChip).selected,
+          isTrue,
+          reason: 'The final status filter must be tappable and reflect its selected state after a real swipe.',
+        );
+        await tester.drag(rail, Offset(isRtl ? -400 : 400, 0));
+        await tester.pumpAndSettle();
+        final restoredLeadingBounds = tester.getRect(leadingChip);
+        final restoredRailBounds = tester.getRect(rail);
+        expect(
+          restoredLeadingBounds.left,
+          greaterThanOrEqualTo(restoredRailBounds.left),
+          reason: 'A reverse swipe must return the first filter fully into view.',
+        );
+        expect(
+          restoredLeadingBounds.right,
+          lessThanOrEqualTo(restoredRailBounds.right),
+          reason: 'A reverse swipe must return the first filter fully into view.',
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();

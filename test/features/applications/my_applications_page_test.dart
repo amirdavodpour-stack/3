@@ -718,6 +718,11 @@ void main() {
           of: label,
           matching: find.text(entry.value),
         );
+        expect(
+          tester.widget<Text>(textFinder).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: '${entry.value} is a meaningful application status and must retain the 12sp floor at 1.5x.',
+        );
         final paragraph = tester.renderObject<RenderParagraph>(textFinder);
         expect(
           paragraph.didExceedMaxLines,
