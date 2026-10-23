@@ -4,6 +4,11 @@ name: HOPE UI Wave 24 Expanded Superwave Verification
 on:
   # Verification is PR-scoped so one commit produces one authoritative static record.
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
     branches:
       - feat/google-sign-in-2026-09-20
       - feat/ui-v2-wave-1-execution-2026-10-07
@@ -18,7 +23,7 @@ permissions:
 
 jobs:
   verify:
-    if: ${{ github.event_name != 'pull_request' || github.event.action == 'synchronize' || (!contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.action == 'synchronize' || (github.event.action == 'edited' && github.event.changes.title != null && !contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) || (github.event.action != 'edited' && !contains(github.event.pull_request.title, '[runtime-capture-fa]') && !contains(github.event.pull_request.title, '[runtime-capture-fa-home]') && !contains(github.event.pull_request.title, '[runtime-capture-en-scale]')) }}
     name: Wave 1 Flutter + backend + visual guardrails
     runs-on: ubuntu-latest
     timeout-minutes: 12
