@@ -354,7 +354,8 @@ class _ChartCard extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final baseChartHeight = shortViewport ? 146.0 : 172.0;
+    // The short viewport needs a little more room for the wrapped 12sp legend.
+    final baseChartHeight = shortViewport ? 150.0 : 172.0;
     final chartHeight =
         (baseChartHeight + math.max(0.0, textScale - 1.0) * 160.0).toDouble();
     return Column(
