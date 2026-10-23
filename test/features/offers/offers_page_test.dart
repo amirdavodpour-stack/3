@@ -818,6 +818,46 @@ testWidgets('accepting an offer disables the financial action until completion',
   });
 
   testWidgets(
+    'Offers horizontal scrollbar ignores the system bottom inset',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(bottom: 24);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+
+      await tester.pumpWidget(
+        _host(
+          _FixedOfferRepository([
+            _offer(id: 'pending-offer', status: 'PENDING'),
+            _offer(id: 'accepted-offer', status: 'ACCEPTED'),
+            _offer(id: 'rejected-offer', status: 'REJECTED'),
+          ]),
+          locale: const Locale('fa'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(
+        const ValueKey('offers-status-filter-scroll'),
+      );
+      expect(rail, findsOneWidget);
+      final scrollbar = find.ancestor(
+        of: rail,
+        matching: find.byType(Scrollbar),
+      );
+      expect(scrollbar, findsOneWidget);
+      expect(
+        MediaQuery.paddingOf(tester.element(scrollbar)).bottom,
+        0,
+        reason: 'System bottom padding must not offset the horizontal thumb into the chip rail.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'offers status filters remain a single horizontal rail on compact viewports',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
