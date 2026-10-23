@@ -48,6 +48,92 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
       );
 }
 
+class _LargeCashFlowAxisInsightsRepository
+    implements FinancialInsightsRepository {
+  const _LargeCashFlowAxisInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '1500000',
+          lockedBalance: '250000',
+          totalInflow: '7900000',
+          totalOutflow: '5200000',
+          totalReserved: '1200000',
+          netCashFlow: '2700000',
+        ),
+        monthlyCashFlow: [
+          HopeMonthlyCashFlow(
+            month: '2026-05',
+            label: 'اردیبهشت',
+            inflow: '1950000',
+            outflow: '1250000',
+            reserved: '350000',
+            net: '350000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-06',
+            label: 'خرداد',
+            inflow: '1600000',
+            outflow: '1100000',
+            reserved: '300000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-07',
+            label: 'تیر',
+            inflow: '1750000',
+            outflow: '1300000',
+            reserved: '250000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-08',
+            label: 'مرداد',
+            inflow: '1450000',
+            outflow: '950000',
+            reserved: '300000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-09',
+            label: 'شهریور',
+            inflow: '1800000',
+            outflow: '1200000',
+            reserved: '400000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-10',
+            label: 'مهر',
+            inflow: '1350000',
+            outflow: '900000',
+            reserved: '350000',
+            net: '100000',
+          ),
+        ],
+        balanceTrend: [
+          HopeBalancePoint(date: '2026-05', balance: '700000'),
+          HopeBalancePoint(date: '2026-06', balance: '820000'),
+          HopeBalancePoint(date: '2026-07', balance: '950000'),
+          HopeBalancePoint(date: '2026-08', balance: '1000000'),
+          HopeBalancePoint(date: '2026-09', balance: '1100000'),
+          HopeBalancePoint(date: '2026-10', balance: '1200000'),
+        ],
+        bySource: [
+          HopeFinancialSource(
+            source: 'JOB',
+            credit: '7900000',
+            debit: '5200000',
+            amount: '2700000',
+          ),
+        ],
+      );
+}
+
 class _LongSummaryInsightsRepository implements FinancialInsightsRepository {
   const _LongSummaryInsightsRepository();
 
@@ -1565,6 +1651,85 @@ void main() {
           tester.renderObject<RenderParagraph>(find.byWidget(tick)).didExceedMaxLines,
           isFalse,
           reason: 'Balance tick labels must not be ellipsized at 2x.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Persian cash-flow chart y-axis ticks fit on one line at 360dp',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _LargeCashFlowAxisInsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final axis = find.byKey(
+        const ValueKey('financial-cashflow-y-axis'),
+      );
+      await tester.scrollUntilVisible(
+        axis,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(axis, findsOneWidget);
+
+      final ticks = find.descendant(
+        of: axis,
+        matching: find.byType(Text),
+      );
+      expect(ticks, findsNWidgets(5));
+      expect(find.text('۵۰۰هزار'), findsOneWidget);
+      for (var index = 0; index < ticks.evaluate().length; index++) {
+        final tickFinder = ticks.at(index);
+        final tick = tester.widget<Text>(tickFinder);
+        final context = tester.element(tickFinder);
+        final painter = TextPainter(
+          text: TextSpan(text: tick.data, style: tick.style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          locale: Localizations.localeOf(context),
+          maxLines: 1,
+        )..layout();
+        final singleLineWidth = painter.width;
+        painter.dispose();
+
+        expect(
+          singleLineWidth,
+          lessThanOrEqualTo(tester.getSize(tickFinder).width + 0.5),
+          reason:
+              'Persian cash-flow tick "${tick.data}" must fit its axis width without wrapping.',
+        );
+        expect(
+          tick.maxLines,
+          1,
+          reason:
+              'Persian cash-flow tick "${tick.data}" must not wrap into stacked fragments.',
+        );
+        expect(
+          tick.softWrap,
+          isFalse,
+          reason: 'Persian cash-flow tick "${tick.data}" must stay on one line.',
         );
       }
       expect(tester.takeException(), isNull);
