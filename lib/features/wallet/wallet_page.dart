@@ -1682,7 +1682,7 @@ class _WalletPageState extends State<WalletPage> {
                         // Keep the signed amount above the fixed dock on short phones.
                         padding: EdgeInsets.symmetric(
                           horizontal: compact ? 12 : 14,
-                          vertical: compact ? 4 : 12,
+                          vertical: compact ? 0 : 12,
                         ),
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
