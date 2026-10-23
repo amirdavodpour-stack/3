@@ -175,4 +175,58 @@ void main() {
     expect(find.text('UNKNOWN_OFFER_STATE'), findsNothing);
   });
 
+
+  testWidgets(
+    'compact Persian RTL offers filters keep the final status reachable',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Provider<OfferRepository>.value(
+            value: _FakeOffers(),
+            child: const OffersPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(const ValueKey('offers-status-filter-scroll'));
+      expect(rail, findsOneWidget);
+      expect(
+        Directionality.of(tester.element(rail)),
+        TextDirection.rtl,
+      );
+      expect(
+        find.byKey(const ValueKey('offers-status-filter-scroll-cue')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('برای دیدن فیلترهای دیگر، افقی بکشید'),
+        findsOneWidget,
+      );
+
+      final finalStatus = find.text('رد شده (0)');
+      expect(finalStatus, findsOneWidget);
+      await tester.ensureVisible(finalStatus);
+      await tester.pumpAndSettle();
+
+      final bounds = tester.getRect(finalStatus);
+      expect(bounds.left, greaterThanOrEqualTo(0));
+      expect(bounds.right, lessThanOrEqualTo(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
