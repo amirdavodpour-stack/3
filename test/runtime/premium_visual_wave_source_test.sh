@@ -352,6 +352,8 @@ grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .g
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
 grep -Fq 'height: HopeV2Navigation.barHeight +' lib/core/ui/premium_components.dart
+grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' lib/core/ui/premium_components.dart
+grep -Fq 'vertical: compact ? 0 : 12,' lib/features/wallet/wallet_page.dart
 grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
 grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
 grep -Fq 'work-center-lifecycle-${job.id}' lib/features/transactions/transactions_page.dart
