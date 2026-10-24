@@ -519,7 +519,6 @@ void main() {
             textDirection: paragraph.textDirection,
             textScaler: scale,
             maxLines: null,
-            softWrap: true,
           )..layout(maxWidth: 1000);
           final naturalBoxes =
               naturalPainter.getBoxesForSelection(workshopSelection);
