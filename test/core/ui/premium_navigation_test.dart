@@ -504,9 +504,25 @@ void main() {
           reason: 'Large-text navigation painted a clipped label: $label',
         );
         if (label == 'Workshop') {
-          final workshopSelectionBoxes = paragraph.getBoxesForSelection(
-            const TextSelection(baseOffset: 0, extentOffset: 'Workshop'.length),
+          const workshopSelection = TextSelection(
+            baseOffset: 0,
+            extentOffset: 'Workshop'.length,
           );
+          final workshopSelectionBoxes =
+              paragraph.getBoxesForSelection(workshopSelection);
+          final scale = MediaQuery.textScalerOf(
+            tester.element(find.text(label)),
+          );
+          final naturalPainter = TextPainter(
+            text: paragraph.text,
+            textAlign: paragraph.textAlign,
+            textDirection: paragraph.textDirection,
+            textScaler: scale,
+            maxLines: null,
+            softWrap: true,
+          )..layout(maxWidth: 1000);
+          final naturalBoxes =
+              naturalPainter.getBoxesForSelection(workshopSelection);
           final layoutTrace = <String>[];
           RenderObject? renderNode = paragraph;
           for (var depth = 0; renderNode != null && depth < 12; depth++) {
@@ -517,16 +533,29 @@ void main() {
             }
             renderNode = renderNode.parent;
           }
-          final renderedTextScale = MediaQuery.textScalerOf(
-            tester.element(find.text(label)),
-          ).scale(1);
+          final renderedTextScale = scale.scale(1);
+          final codepoints = paragraph.text.toPlainText().runes
+              .map((rune) => rune.toRadixString(16))
+              .join(',');
           print(
             'HOPE_NAV_WORKSHOP_LAYOUT_DIAGNOSTIC:'
             'mediaScale=$renderedTextScale:'
             'dock=${tester.getSize(dock)}:'
             'paragraph=${paragraph.size}:'
             'fontSize=${paragraph.text.style?.fontSize}:'
-            'boxes=${workshopSelectionBoxes.length}:'
+            'maxLines=${paragraph.maxLines}:'
+            'softWrap=${paragraph.softWrap}:'
+            'textAlign=${paragraph.textAlign}:'
+            'text=${paragraph.text.toPlainText()}:'
+            'codepoints=$codepoints:'
+            'renderedLines=${paragraph.computeLineMetrics().length}:'
+            'renderedBoxes=${workshopSelectionBoxes.length}:'
+            'renderedBoxGeometry=${workshopSelectionBoxes.map((box) => '${box.left},${box.top},${box.right},${box.bottom}').join(';')}:'
+            'naturalWidth=${naturalPainter.width}:'
+            'naturalHeight=${naturalPainter.height}:'
+            'naturalLines=${naturalPainter.computeLineMetrics().length}:'
+            'naturalBoxes=${naturalBoxes.length}:'
+            'naturalBoxGeometry=${naturalBoxes.map((box) => '${box.left},${box.top},${box.right},${box.bottom}').join(';')}:'
             'chain=${layoutTrace.join(' > ')}',
           );
           expect(
