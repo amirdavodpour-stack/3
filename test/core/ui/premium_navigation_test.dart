@@ -519,6 +519,7 @@ void main() {
             textDirection: paragraph.textDirection,
             textScaler: scale,
             maxLines: null,
+            textWidthBasis: TextWidthBasis.longestLine,
           )..layout(maxWidth: 1000);
           final naturalBoxes =
               naturalPainter.getBoxesForSelection(workshopSelection);
@@ -547,7 +548,6 @@ void main() {
             'textAlign=${paragraph.textAlign}:'
             'text=${paragraph.text.toPlainText()}:'
             'codepoints=$codepoints:'
-            'renderedLines=${paragraph.computeLineMetrics().length}:'
             'renderedBoxes=${workshopSelectionBoxes.length}:'
             'renderedBoxGeometry=${workshopSelectionBoxes.map((box) => '${box.left},${box.top},${box.right},${box.bottom}').join(';')}:'
             'naturalWidth=${naturalPainter.width}:'
