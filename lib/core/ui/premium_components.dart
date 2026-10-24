@@ -123,6 +123,7 @@ class PremiumNavigationBar extends StatelessWidget {
               nextStart += itemWidth;
             }
             return Stack(
+              fit: StackFit.expand,
               clipBehavior: Clip.hardEdge,
               children: [
                 AnimatedPositionedDirectional(
