@@ -42,9 +42,11 @@ sh test/runtime/editorial_media_fixture_scope_test.sh
 grep -Fq 'String? mediaUrl' "$opportunity"
 grep -Fq '_fallbackMedia(context, primary)' "$opportunity"
 grep -Fq "final media = ClipRRect(" "$opportunity"
-grep -Fq "final mediaSize = compactViewport ? 56.0 : 88.0;" "$opportunity"
-grep -Fq "height: 72" "$opportunity"
-# Narrow standard cards use a 56px thumbnail; compact-grid media stays 72px.
+grep -Fq "final mediaSize =" "$opportunity"
+grep -Fq "MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact" "$opportunity"
+grep -Fq "width: mediaSize" "$opportunity"
+grep -Fq "height: mediaSize" "$opportunity"
+# Compact phone cards use a 64px thumbnail while wider layouts retain 72px media.
 
 grep -Fq 'class _HeroEditorialFallback extends StatelessWidget' "$premium"
 grep -Fq 'static const darkBorder = Color(0x1FFFFFFF);' "$theme"

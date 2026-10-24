@@ -302,7 +302,10 @@ void main() {
       );
       final decoration = surface.decoration! as BoxDecoration;
       expect(decoration.color, HopeV2Colors.darkSurface);
-      expect(find.textContaining('تومان'), findsOneWidget);
+      final renderedBudget = tester.widget<Text>(budgetFinder).data!;
+      expect(renderedBudget, contains('۱۵٬۰۰۰٬۰۰۰'));
+      expect(renderedBudget, contains('۲۵٬۰۰۰٬۰۰۰'));
+      expect(renderedBudget, contains('تومان'));
       expect(tester.takeException(), isNull);
     },
   );
@@ -333,8 +336,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
     final media = tester.getSize(find.byKey(const ValueKey('opportunity-compact-media')));
-    expect(media.width, 72);
-    expect(media.height, 72);
+    expect(media.width, 64);
+    expect(media.height, 64);
     expect(find.text('طراحی محصول برای اپلیکیشن'), findsOneWidget);
     expect(find.textContaining('تومان'), findsOneWidget);
     expect(tester.takeException(), isNull);

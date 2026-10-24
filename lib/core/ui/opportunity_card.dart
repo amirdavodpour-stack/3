@@ -164,7 +164,9 @@ class OpportunityCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: featured || featuredScan
               ? null
-              : HopeV2Surfaces.panel(context),
+              : (compact && dark
+                  ? HopeV2Colors.darkSurface
+                  : HopeV2Surfaces.panel(context)),
           gradient: featured || featuredScan
               ? LinearGradient(
                   begin: AlignmentDirectional.topStart,
@@ -814,12 +816,56 @@ class OpportunityCard extends StatelessWidget {
   ) {
     final locationColor = Theme.of(context).colorScheme.onSurfaceVariant;
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final mediaSize =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact
+            ? 64.0
+            : 72.0;
+    final locationRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HopeIcon(
+          HopeV2Icons.location,
+          size: 13,
+          color: locationColor,
+          strokeWidth: 1.8,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            city,
+            key: const ValueKey('opportunity-card-compact-location'),
+            maxLines: enlargedText ? null : 1,
+            softWrap: true,
+            overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: locationColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ),
+      ],
+    );
+    final budgetText = Text(
+      _formatCompactRangeAmount(amount, context),
+      key: const ValueKey('opportunity-card-compact-budget'),
+      // Never truncate a server-provided amount: allow long Toman ranges to
+      // wrap naturally, including when text scaling is enabled.
+      softWrap: true,
+      textAlign: TextAlign.start,
+      style: TextStyle(
+        fontSize: 13,
+        height: 1.2,
+        fontWeight: FontWeight.w900,
+        color: HopeV2SemanticColors.amount(context),
+      ),
+    );
     final media = ClipRRect(
       key: const ValueKey('opportunity-compact-media'),
       borderRadius: BorderRadius.circular(HopeV2Radii.md),
       child: SizedBox(
-        width: 72,
-        height: 72,
+        width: mediaSize,
+        height: mediaSize,
         child: mediaUrl != null && mediaUrl.trim().isNotEmpty
             ? Image.network(
                 mediaUrl,
@@ -851,38 +897,21 @@ class OpportunityCard extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 5),
-              Row(
-                children: [
-                  HopeIcon(HopeV2Icons.location, size: 13, color: locationColor, strokeWidth: 1.8),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      city,
-                      key: const ValueKey('opportunity-card-compact-location'),
-                      maxLines: enlargedText ? null : 1,
-                      softWrap: true,
-                      overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: locationColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ),
+              if (!enlargedText && amount.isNotEmpty)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(flex: 2, child: locationRow),
+                    const SizedBox(width: 6),
+                    Expanded(flex: 3, child: budgetText),
+                  ],
+                )
+              else ...[
+                locationRow,
+                if (amount.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  budgetText,
                 ],
-              ),
-              if (amount.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  _formatCompactRangeAmount(amount, context),
-                  key: const ValueKey('opportunity-card-compact-budget'),
-                  // Long Toman ranges can wrap each bound and unit separately
-                  // at narrow widths and enlarged text. Let the text expand
-                  // naturally rather than clipping any server-provided amount.
-                  softWrap: true,
-                  textAlign: TextAlign.start,
-                  style: TextStyle(fontSize: 13, height: 1.2, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.amount(context)),
-                ),
               ],
             ],
           ),

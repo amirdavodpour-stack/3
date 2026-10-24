@@ -1047,7 +1047,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       const SizedBox(height: HopeV2Spacing.sm),
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= 1080 ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
-        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
+        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.md), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
         final gap = HopeV2Spacing.md;
         final cardWidth =
             (constraints.maxWidth - gap * (columns - 1)) / columns;

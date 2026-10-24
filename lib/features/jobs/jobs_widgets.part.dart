@@ -140,11 +140,11 @@ class _JobsResultsSliver extends StatelessWidget {
                       ),
                     ),
                   if (featuredJob != null && remaining.isNotEmpty)
-                    const SizedBox(height: HopeV2Spacing.sm),
+                    const SizedBox(height: HopeV2Spacing.md),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
-                        bottom: HopeV2Spacing.sm,
+                        bottom: HopeV2Spacing.md,
                       ),
                       child: AnimatedEntrance(
                         delay: Duration(
