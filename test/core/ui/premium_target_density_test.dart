@@ -13,8 +13,8 @@ import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('dense mobile headers use a low-noise editorial eyebrow', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
+  testWidgets('dense mobile headers preserve the 12sp meaningful-eyebrow floor', (tester) async {
+    tester.view.physicalSize = const Size(320, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -49,7 +49,68 @@ void main() {
     expect(eyebrow, findsOneWidget);
     final style = tester.widget<Text>(eyebrow).style;
     expect(style?.fontWeight, isNotNull);
-    expect(style?.fontSize, lessThanOrEqualTo(11));
+    expect(
+      style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'A visible section label is meaningful UI text and must follow the DS 2.0 12sp minimum.',
+    );
+    expect(
+      find.ancestor(of: eyebrow, matching: find.byType(FittedBox)),
+      findsNothing,
+      reason: 'The header must reflow the eyebrow label rather than shrink it below the readable type scale.',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dense header eyebrow stays readable at 2x text scale on 320dp', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: MediaQuery(
+          data: MediaQueryData.fromView(tester.view).copyWith(
+            textScaler: TextScaler.linear(2.0),
+          ),
+          child: const Scaffold(
+            body: Padding(
+              padding: EdgeInsets.all(16),
+              child: PremiumHeader(
+                dense: true,
+                eyebrow: 'Explore',
+                title: 'Find your next opportunity',
+                subtitle: 'Choose work that fits your goals.',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final eyebrow = find.text('EXPLORE');
+    expect(eyebrow, findsOneWidget);
+    expect(
+      tester.widget<Text>(eyebrow).style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'Text scaling must enlarge meaningful content rather than rely on a sub-12sp base size.',
+    );
+    expect(
+      find.ancestor(of: eyebrow, matching: find.byType(FittedBox)),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('compact lifecycle remains vertically compact for six payment stages', (tester) async {

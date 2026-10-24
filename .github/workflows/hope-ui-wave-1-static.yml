@@ -125,6 +125,8 @@ jobs:
             test/features/marketplace/employer_candidate_matches_page_test.dart \
             test/features/jobs/job_satisfaction_page_test.dart \
             test/core/ui/premium_navigation_test.dart \
+            test/core/ui/premium_target_density_test.dart \
+            test/core/ui/ui_components_test.dart \
             test/core/ui/premium_hero_editorial_density_test.dart \
             test/features/about/about_page_test.dart \
             test/features/privacy/privacy_center_editorial_density_test.dart \
