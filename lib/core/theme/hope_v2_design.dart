@@ -31,7 +31,7 @@ class HopeV2Colors {
   static const googleSignInLightSurface = Color(0xFFF2F2F2);
   static const googleSignInLightForeground = Color(0xFF1F1F1F);
   static const googleSignInDisabledLightSurface = Color(0xFFE8EAED);
-  static const googleSignInDisabledLightForeground = Color(0xFF5F6368);
+  static const googleSignInDisabledLightForeground = Color(0xFF4F5358);
   static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);

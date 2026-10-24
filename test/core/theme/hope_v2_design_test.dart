@@ -159,7 +159,7 @@ void main() {
             : const Color(0xFFE8EAED);
         final expectedDisabledForeground = dark
             ? const Color(0xFF8E918F)
-            : const Color(0xFF5F6368);
+            : const Color(0xFF4F5358);
 
         expect(googleStyle.backgroundColor?.resolve({}), expectedSurface);
         expect(googleStyle.foregroundColor?.resolve({}), expectedForeground);
