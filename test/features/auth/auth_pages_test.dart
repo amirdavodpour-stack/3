@@ -188,8 +188,20 @@ void main() {
       final googleButton = tester.widget<OutlinedButton>(
         find.byKey(const ValueKey('auth-google-sign-in')),
       );
-      expect(googleButton.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
-      expect(googleButton.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
+      expect(googleButton.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInLightSurface);
+      expect(googleButton.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInLightForeground);
+      expect(find.byKey(const ValueKey('auth-google-sign-in-logo')), findsOneWidget);
+      expect(
+        tester.widget<Image>(find.byKey(const ValueKey('auth-google-sign-in-logo'))).image,
+        isA<AssetImage>(),
+      );
+      expect(
+        (tester.widget<Container>(
+          find.byKey(const ValueKey('auth-google-sign-in-logo-surface')),
+        ).decoration! as BoxDecoration).color,
+        Colors.white,
+        reason: 'The standard multicolor Google G must remain on its white logo surface.',
+      );
       expect(find.text('یا'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -215,8 +227,20 @@ void main() {
       final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
       expect(googleButton, findsOneWidget);
       final googleWidget = tester.widget<OutlinedButton>(googleButton);
-      expect(googleWidget.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
-      expect(googleWidget.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
+      expect(googleWidget.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInLightSurface);
+      expect(googleWidget.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInLightForeground);
+      expect(find.byKey(const ValueKey('auth-google-sign-in-logo')), findsOneWidget);
+      expect(
+        tester.widget<Image>(find.byKey(const ValueKey('auth-google-sign-in-logo'))).image,
+        isA<AssetImage>(),
+      );
+      expect(
+        (tester.widget<Container>(
+          find.byKey(const ValueKey('auth-google-sign-in-logo-surface')),
+        ).decoration! as BoxDecoration).color,
+        Colors.white,
+        reason: 'The standard multicolor Google G must remain on its white logo surface.',
+      );
       expect(find.text('یا'), findsOneWidget);
       final bounds = tester.getRect(googleButton);
       expect(bounds.left, greaterThanOrEqualTo(0));

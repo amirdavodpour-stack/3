@@ -10,7 +10,7 @@ import 'package:flutter/semantics.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart' show MatrixUtils;
-import 'package:flutter/rendering.dart' show RenderView;
+import 'package:flutter/rendering.dart' show RenderImage, RenderView;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -1509,6 +1509,31 @@ Future<void> _waitForRuntimeRenderToSettle(WidgetTester tester) async {
   }
 }
 
+Future<void> _waitForRuntimeGoogleLogo(
+  WidgetTester tester,
+  String marker,
+) async {
+  final logo = find.byKey(const ValueKey('auth-google-sign-in-logo'));
+  for (var attempt = 0; attempt < 8; attempt++) {
+    if (logo.evaluate().isNotEmpty) {
+      final image = tester.renderObject<RenderImage>(logo);
+      if (image.attached &&
+          image.hasSize &&
+          !image.size.isEmpty &&
+          image.image != null) {
+        print('HOPE_RUNTIME_GOOGLE_LOGO_READY:$marker');
+        return;
+      }
+    }
+    // A bounded zero-duration frame allows the async AssetImage decode to
+    // reach RenderImage without a timed settle at the screenshot-driver boundary.
+    await tester.pump();
+  }
+  throw StateError(
+    'Google sign-in logo did not finish painting before runtime capture: $marker.',
+  );
+}
+
 Future<void> _waitForRuntimeRegisterGoogleCta(WidgetTester tester) async {
   final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
   for (var attempt = 0; attempt < 6; attempt++) {
@@ -1563,10 +1588,15 @@ Future<void> _captureRuntimeScreen(
   await _prepareRuntimeScreenshotSurface(tester);
   print('HOPE_RUNTIME_SCREEN_PUMP_DONE:$marker');
   if (child is LoginPage) {
-    // _prepareRuntimeScreenshotSurface already commits one frame after the
-    // Android surface conversion. A second timed pump at this boundary has
-    // repeatedly stalled the headless VM-service driver before takeScreenshot.
-    // Capture immediately after the proven surface-commit boundary.
+    // Login is the cold-start auth screen, so its local Google logo is not yet
+    // guaranteed to be in the ImageCache. Require the actual RenderImage frame
+    // only when the configured CTA is present, then take the native capture.
+    if (find
+        .byKey(const ValueKey('auth-google-sign-in'))
+        .evaluate()
+        .isNotEmpty) {
+      await _waitForRuntimeGoogleLogo(tester, marker);
+    }
     print('HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {

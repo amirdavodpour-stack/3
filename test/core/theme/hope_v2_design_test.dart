@@ -129,32 +129,67 @@ void main() {
     );
   });
 
-  test('Google sign-in dark-mode tokens match the official dark theme', () {
-    expect(HopeV2Colors.googleSignInSurface, const Color(0xFF131314));
-    expect(HopeV2Colors.googleSignInBorder, const Color(0xFF8E918F));
-    expect(HopeV2Colors.googleSignInForeground, const Color(0xFFE3E3E3));
-    expect(
-      _contrastRatio(
-        HopeV2Colors.googleSignInForeground,
-        HopeV2Colors.googleSignInSurface,
-      ),
-      greaterThanOrEqualTo(4.5),
-    );
-    expect(
-      _contrastRatio(
-        HopeV2Colors.googleSignInDisabledForeground,
-        HopeV2Colors.googleSignInDisabledSurface,
-      ),
-      greaterThanOrEqualTo(4.5),
-    );
+  testWidgets(
+    'Google sign-in button uses official dark and neutral themes with readable labels',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        final dark = brightness == Brightness.dark;
+        final theme = dark ? AppTheme.dark() : AppTheme.light();
+        late ButtonStyle googleStyle;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Builder(
+              builder: (context) {
+                googleStyle = HopeV2ButtonStyles.googleSignIn(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
 
-    final googleStyle = HopeV2ButtonStyles.googleSignIn();
-    expect(googleStyle.backgroundColor?.resolve({}), HopeV2Colors.googleSignInSurface);
-    expect(googleStyle.foregroundColor?.resolve({}), HopeV2Colors.googleSignInForeground);
-    expect(googleStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.googleSignInDisabledSurface);
+        final expectedSurface = dark
+            ? const Color(0xFF131314)
+            : const Color(0xFFF2F2F2);
+        final expectedForeground = dark
+            ? const Color(0xFFE3E3E3)
+            : const Color(0xFF1F1F1F);
+        final expectedDisabledSurface = dark
+            ? const Color(0xFF242528)
+            : const Color(0xFFE8EAED);
+        final expectedDisabledForeground = dark
+            ? const Color(0xFF8E918F)
+            : const Color(0xFF5F6368);
 
-    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
-  });
+        expect(googleStyle.backgroundColor?.resolve({}), expectedSurface);
+        expect(googleStyle.foregroundColor?.resolve({}), expectedForeground);
+        expect(
+          googleStyle.backgroundColor?.resolve({WidgetState.disabled}),
+          expectedDisabledSurface,
+        );
+        expect(
+          googleStyle.foregroundColor?.resolve({WidgetState.disabled}),
+          expectedDisabledForeground,
+        );
+        expect(
+          googleStyle.side?.resolve({}),
+          dark
+              ? const BorderSide(color: Color(0xFF8E918F), width: 1)
+              : BorderSide.none,
+        );
+        expect(
+          _contrastRatio(expectedForeground, expectedSurface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrastRatio(expectedDisabledForeground, expectedDisabledSurface),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+
+      expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
+    },
+  );
 
   testWidgets('match-score chart token is teal in both themes, not the indigo action hue',
       (tester) async {

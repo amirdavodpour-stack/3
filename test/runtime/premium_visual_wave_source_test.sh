@@ -84,6 +84,11 @@ grep -Fq 'padding: EdgeInsets.all(compact ? 10 : HopeV2Spacing.md)' "lib/core/ui
 grep -Fq '<item name="android:navigationBarColor">#070A12</item>' "$android_theme"
 grep -Fq '<item name="android:windowLightNavigationBar">false</item>' "$android_theme_v26"
 
+login_block="$(sed -n '/if (child is LoginPage)/,/if (child is RegisterPage)/p' "$runtime_driver")"
+printf '%s\n' "$login_block" | grep -Fq 'await _waitForRuntimeGoogleLogo(tester, marker)'
+printf '%s\n' "$login_block" | grep -Fq 'HOPE_RUNTIME_LOGIN_DIRECT_CAPTURE:$marker'
+grep -Fq 'HOPE_RUNTIME_GOOGLE_LOGO_READY:' "$runtime_driver"
+
 register_block="$(sed -n '/if (child is RegisterPage)/,/if (child is PasswordResetPage)/p' "$runtime_driver")"
 register_capture_block="$(printf '%s\n' "$register_block" | sed '/if (child is RegisterPage)/,/return;/p')"
 printf '%s\n' "$register_capture_block" | grep -Fq "HOPE_RUNTIME_REGISTER_READY_CAPTURE"

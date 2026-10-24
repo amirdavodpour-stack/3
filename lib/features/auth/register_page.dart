@@ -220,14 +220,24 @@ class _RegisterPageState extends State<RegisterPage> {
                             width: double.infinity,
                             child: OutlinedButton.icon(
                                key: const ValueKey('auth-google-sign-in'),
-                              style: HopeV2ButtonStyles.googleSignIn(),
+                              style: HopeV2ButtonStyles.googleSignIn(context),
                               onPressed: loading ? null : submitGoogle,
-                              icon: Image.asset(
-                                key: const ValueKey('auth-google-sign-in-logo'),
-                                'assets/branding/google_g.png',
-                                width: 20,
-                                height: 20,
-                                excludeFromSemantics: true,
+                              icon: Container(
+                                key: const ValueKey('auth-google-sign-in-logo-surface'),
+                                width: 24,
+                                height: 24,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Image.asset(
+                                  key: const ValueKey('auth-google-sign-in-logo'),
+                                  'assets/branding/google_g.png',
+                                  width: 18,
+                                  height: 18,
+                                  excludeFromSemantics: true,
+                                ),
                               ),
                               label: Text(
                                 AppLocalizations.of(context).signInWithGoogle,
