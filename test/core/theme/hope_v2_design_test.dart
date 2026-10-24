@@ -129,10 +129,10 @@ void main() {
     );
   });
 
-  test('teal data-chart token and Google sign-in surface preserve contrast and color roles', () {
-    expect(HopeV2Colors.googleSignInSurface, const Color(0xFFE3F0EB));
-    expect(HopeV2Colors.googleSignInBorder, const Color(0xFFAFCFC4));
-    expect(HopeV2Colors.googleSignInForeground, const Color(0xFF173B34));
+  test('Google sign-in dark-mode tokens match the official dark theme', () {
+    expect(HopeV2Colors.googleSignInSurface, const Color(0xFF131314));
+    expect(HopeV2Colors.googleSignInBorder, const Color(0xFF8E918F));
+    expect(HopeV2Colors.googleSignInForeground, const Color(0xFFE3E3E3));
     expect(
       _contrastRatio(
         HopeV2Colors.googleSignInForeground,
