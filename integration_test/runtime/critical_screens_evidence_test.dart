@@ -1669,15 +1669,21 @@ Future<void> _captureRuntimeScreen(
         'Runtime Wallet capture reached screenshot boundary before the loaded financial state.',
       );
     }
+    final walletTotal = locale.languageCode == 'fa'
+        ? '۳٬۵۰۰٬۰۰۰ تومان'
+        : '3,500,000 TOMAN';
+    final walletAvailable = locale.languageCode == 'fa'
+        ? '۲٬۵۰۰٬۰۰۰ تومان'
+        : '2,500,000 TOMAN';
     expect(
-      find.text('۳٬۵۰۰٬۰۰۰ تومان'),
+      find.text(walletTotal),
       findsOneWidget,
-      reason: 'Wallet total must match the runtime fixture exactly.',
+      reason: 'Wallet total must match the locale-specific runtime fixture exactly.',
     );
     expect(
-      find.text('۲٬۵۰۰٬۰۰۰ تومان'),
+      find.text(walletAvailable),
       findsOneWidget,
-      reason: 'Wallet available balance must match the runtime fixture exactly.',
+      reason: 'Wallet available balance must match the locale-specific runtime fixture exactly.',
     );
     print('HOPE_RUNTIME_WALLET_LOADED_STATE_ASSERTED:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
