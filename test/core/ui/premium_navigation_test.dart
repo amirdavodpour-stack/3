@@ -503,6 +503,14 @@ void main() {
           isFalse,
           reason: 'Large-text navigation painted a clipped label: $label',
         );
+        if (label == 'Workshop') {
+          expect(
+            paragraph.computeLineMetrics(),
+            hasLength(1),
+            reason:
+                'At 1.5x, Workshop must remain a single readable line; a lone trailing "p" is not acceptable reflow.',
+          );
+        }
       }
       expect(tester.takeException(), isNull);
     },
