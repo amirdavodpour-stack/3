@@ -29,6 +29,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
   bool _operationBusy = false;
+  bool _initialLoadPending = true;
   Set<String> _permissions = <String>{};
   bool _hasPermission(String permission) => _permissions.contains(permission);
 
@@ -70,7 +71,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _initialLoadPending = false);
   }
 
   String _t(String fa, String en) =>
@@ -198,7 +199,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Widget _loadingOrError<T>(AsyncSnapshot<T> s, Widget Function(T data) child) {
-    if (s.connectionState == ConnectionState.waiting) {
+    if (_initialLoadPending || s.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
     if (s.hasError) {
@@ -542,45 +543,52 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                 : constraints.maxWidth >= 420
                     ? 2
                     : 1;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final enlargedText = textScale > 1.2;
+        const gap = 8.0;
+        final metricWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
 
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            mainAxisExtent: columns == 1 ? 82 : 96,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: entries.take(20).length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            return PremiumPanel(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _value(entry.value),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w900),
+        // Metrics are data cards, not fixed-height dashboard tiles: long backend
+        // values and larger system text must expand instead of being clipped.
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final entry in entries.take(20))
+              SizedBox(
+                width: metricWidth,
+                child: PremiumPanel(
+                  padding: EdgeInsets.all(enlargedText ? 10 : 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _value(entry.value),
+                        softWrap: true,
+                        maxLines: null,
+                        overflow: TextOverflow.visible,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.key,
+                        softWrap: true,
+                        maxLines: enlargedText ? null : 2,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    entry.key,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+                ),
               ),
-            );
-          },
+          ],
         );
       },
     );

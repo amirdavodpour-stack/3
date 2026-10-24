@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -11,28 +10,28 @@ import 'package:hope_mobile/core/ui/premium_components.dart';
 void main() {
   const destinations = <NavigationDestination>[
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
+      icon: Icon(HopeV2Icons.home, size: 24),
+      selectedIcon: Icon(HopeV2Icons.homeSelected, size: 24),
       label: 'خانه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.search, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.search, size: 24),
+      icon: Icon(HopeV2Icons.search, size: 24),
+      selectedIcon: Icon(HopeV2Icons.search, size: 24),
       label: 'کاوش',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      icon: Icon(HopeV2Icons.workshop, size: 24),
+      selectedIcon: Icon(HopeV2Icons.workshopSelected, size: 24),
       label: 'کارگاه',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
+      icon: Icon(HopeV2Icons.wallet, size: 24),
+      selectedIcon: Icon(HopeV2Icons.walletSelected, size: 24),
       label: 'کیف پول',
     ),
     NavigationDestination(
-      icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
-      selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
+      icon: Icon(HopeV2Icons.profile, size: 24),
+      selectedIcon: Icon(HopeV2Icons.profileSelected, size: 24),
       label: 'پروفایل',
     ),
   ];
@@ -89,6 +88,18 @@ void main() {
       ),
     );
     expect(find.byKey(const ValueKey('hope-navigation-selection-plate')), findsOneWidget);
+    final activeRail = tester.widget<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(const ValueKey('hope-navigation-selection-accent')),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    final railDecoration = activeRail.decoration as BoxDecoration;
+    expect(
+      railDecoration.color,
+      HopeV2TonalPalettes.forest.shade700.withValues(alpha: .86),
+      reason: 'The green identity accent should complement, not replace, the indigo selection plate.',
+    );
   });
 
   testWidgets('default dark premium panels use the canonical opaque surface', (tester) async {
@@ -126,6 +137,7 @@ void main() {
                 label: 'Applications',
                 icon: HopeV2Icons.mission,
                 primary: true,
+                primaryActionColor: HopeV2Colors.markedPrimaryActionDarkGreen,
               ),
               PremiumQuickAction(
                 label: 'Offers',
@@ -141,6 +153,15 @@ void main() {
     expect(find.byType(PremiumPanel), findsNothing);
     expect(find.text('Applications'), findsOneWidget);
     expect(find.text('Offers'), findsOneWidget);
+    final actionInk = find.ancestor(
+      of: find.text('Applications'),
+      matching: find.byType(Ink),
+    ).first;
+    final decoration = tester.widget<Ink>(actionInk).decoration as BoxDecoration;
+    expect(
+      decoration.color,
+      HopeV2Colors.markedPrimaryActionDarkGreen.withValues(alpha: .92),
+    );
   });
 
   testWidgets('highlighted premium panels expose a restrained gradient layer',
@@ -189,6 +210,15 @@ void main() {
       find.byType(NavigationRail),
     );
     expect(rail.destinations, hasLength(5));
+    expect(
+      rail.selectedIconTheme?.color,
+      HopeV2TonalPalettes.forest.shade700,
+      reason: 'Desktop navigation should expose the green identity accent without recoloring labels.',
+    );
+    expect(
+      rail.selectedLabelTextStyle?.color,
+      HopeV2SemanticColors.textPrimary(tester.element(find.byType(NavigationRail))),
+    );
     expect(
       tester.getSize(find.byType(PremiumNavigationRail)).width,
       greaterThanOrEqualTo(210),
@@ -265,7 +295,7 @@ void main() {
     final button = find.byType(PremiumIconButton);
     expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
     expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.refresh), findsOneWidget);
     expect(find.byType(InkWell), findsOneWidget);
   });
 
@@ -473,6 +503,14 @@ void main() {
           isFalse,
           reason: 'Large-text navigation painted a clipped label: $label',
         );
+        if (label == 'Workshop') {
+          expect(
+            paragraph.getLineBoundary(const TextPosition(offset: 0)).end,
+            'Workshop'.length,
+            reason:
+                'At 1.5x, Workshop must remain a single readable line; a lone trailing "p" is not acceptable reflow.',
+          );
+        }
       }
       expect(tester.takeException(), isNull);
     },
@@ -666,8 +704,13 @@ void main() {
         );
         expect(
           find.ancestor(of: text, matching: find.byType(FittedBox)),
-          findsOneWidget,
-          reason: 'Navigation labels must scale down before being clipped: $label',
+          findsNothing,
+          reason: 'Navigation labels must reflow rather than scale below the 12sp floor: $label',
+        );
+        expect(
+          tester.widget<Text>(text).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Navigation labels must preserve the canonical readable type scale: $label',
         );
         final selected = label == 'خانه';
         expect(
@@ -680,6 +723,85 @@ void main() {
         );
       }
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'meaningful navigation labels retain a 12sp floor without FittedBox shrinkage',
+    (tester) async {
+      final scenarios = [
+        (width: 320.0, locale: 'fa', scale: 1.0, dark: false),
+        (width: 360.0, locale: 'en', scale: 1.5, dark: true),
+        (width: 360.0, locale: 'fa', scale: 2.0, dark: false),
+      ];
+
+      for (final scenario in scenarios) {
+        tester.view.physicalSize = Size(scenario.width, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final labels = scenario.locale == 'fa'
+            ? ['خانه', 'کاوش', 'کارگاه', 'کیف پول', 'پروفایل']
+            : ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile'];
+        final destinationsForLocale = labels
+            .map(
+              (label) => NavigationDestination(
+                icon: const Icon(HopeV2Icons.home, size: 24),
+                selectedIcon: const Icon(HopeV2Icons.homeSelected, size: 24),
+                label: label,
+              ),
+            )
+            .toList(growable: false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: scenario.dark ? AppTheme.dark() : AppTheme.light(),
+            locale: Locale(scenario.locale),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: TextScaler.linear(scenario.scale),
+              ),
+              child: Scaffold(
+                body: const SizedBox.expand(),
+                bottomNavigationBar: PremiumNavigationBar(
+                  selectedIndex: 0,
+                  onDestinationSelected: (_) {},
+                  destinations: destinationsForLocale,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final label in labels) {
+          final target = find.text(label);
+          expect(target, findsOneWidget);
+          expect(
+            tester.widget<Text>(target).style?.fontSize,
+            greaterThanOrEqualTo(12),
+            reason: 'Meaningful dock label "$label" must use at least 12sp.',
+          );
+          expect(
+            find.ancestor(of: target, matching: find.byType(FittedBox)),
+            findsNothing,
+            reason: 'The dock must reflow meaningful labels rather than scale them below 12sp.',
+          );
+          expect(
+            tester.renderObject<RenderParagraph>(target).didExceedMaxLines,
+            isFalse,
+            reason: 'The dock must display the complete label "$label".',
+          );
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
     },
   );
 

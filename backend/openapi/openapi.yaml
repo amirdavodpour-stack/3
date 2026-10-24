@@ -213,6 +213,95 @@ components:
         providerPayout: {type: string}
         policyVersion: {type: string}
         currency: {type: string}
+    ChatAttachment:
+      type: object
+      required: [id, filename, contentType, size, downloadPath]
+      properties:
+        id: {type: string, format: uuid}
+        filename: {type: string, maxLength: 255}
+        contentType: {type: string, enum: [application/pdf, image/png, image/jpeg, image/webp, text/plain, audio/mp4, audio/mpeg, audio/wav]}
+        size: {type: integer, minimum: 1}
+        downloadPath: {type: string}
+    ChatReadReceipt:
+      type: object
+      required: [userId, userName, readAt]
+      properties:
+        userId: {type: string, format: uuid}
+        userName: {type: string}
+        readAt: {type: string, format: date-time}
+    ChatPresence:
+      type: object
+      required: [userId, userName, online, typing]
+      properties:
+        userId: {type: string, format: uuid}
+        userName: {type: string}
+        online: {type: boolean}
+        typing: {type: boolean}
+        lastSeenAt: {type: string, format: date-time, nullable: true}
+    ChatConversation:
+      type: object
+      required: [id, kind, jobId, status, title, lastMessageBody, lastMessageType, unreadCount, isPinned, isImportant, isArchived]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [JOB, ADMIN]}
+        jobId: {type: string, description: Empty for the admin room}
+        status: {type: string, enum: [OPEN, CLOSED]}
+        title: {type: string}
+        otherUserName: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time, nullable: true}
+        closedAt: {type: string, format: date-time, nullable: true}
+        lastMessageBody: {type: string}
+        lastMessageType: {type: string, enum: [TEXT, ATTACHMENT, VOICE]}
+        lastMessageAt: {type: string, format: date-time, nullable: true}
+        unreadCount: {type: integer, minimum: 0}
+        isPinned: {type: boolean}
+        isImportant: {type: boolean}
+        isArchived: {type: boolean}
+    ChatMessage:
+      type: object
+      required: [id, conversationId, senderId, senderName, body, messageType, createdAt, attachments, readReceipts]
+      properties:
+        id: {type: string, format: uuid}
+        conversationId: {type: string, format: uuid}
+        senderId: {type: string, format: uuid}
+        senderName: {type: string}
+        body: {type: string, maxLength: 4000}
+        messageType: {type: string, enum: [TEXT, ATTACHMENT, VOICE]}
+        createdAt: {type: string, format: date-time}
+        attachments:
+          type: array
+          items: {$ref: '#/components/schemas/ChatAttachment'}
+        readReceipts:
+          type: array
+          items: {$ref: '#/components/schemas/ChatReadReceipt'}
+    ChatPresenceUpdate:
+      type: object
+      required: [conversationId, userId, online, typing]
+      properties:
+        conversationId: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        online: {type: boolean}
+        typing: {type: boolean}
+        lastSeenAt: {type: string, format: date-time, nullable: true}
+    ChatConversationPreferences:
+      type: object
+      required: [conversationId, isPinned, isImportant, isArchived, updatedAt]
+      properties:
+        conversationId: {type: string, format: uuid}
+        isPinned: {type: boolean}
+        isImportant: {type: boolean}
+        isArchived: {type: boolean}
+        updatedAt: {type: string, format: date-time, nullable: true}
+    ChatUpload:
+      type: object
+      required: [key, filename, contentType, size, uploadedBy, createdAt]
+      properties:
+        key: {type: string}
+        filename: {type: string, maxLength: 255}
+        contentType: {type: string, enum: [application/pdf, image/png, image/jpeg, image/webp, text/plain, audio/mp4, audio/mpeg, audio/wav]}
+        size: {type: integer, minimum: 1, description: Positive byte count bounded by server configuration}
+        uploadedBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
     UploadIntent:
       type: object
       properties: {intentId: {type: string, format: uuid}, key: {type: string}, url: {type: string, format: uri}, uploadedBy: {type: string, format: uuid}}
@@ -325,8 +414,234 @@ paths:
     post: {security: [{bearerAuth: []}], parameters: [{name: jobId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Funded}, '200': {description: Idempotent replay}, '409': {description: State conflict}}}
   /payments/release/{jobId}:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Released}, '409': {description: Payment state conflict}}}
+  /messaging/conversations:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List conversations visible to the authenticated participant
+      responses:
+        '200':
+          description: Participant-safe inbox with previews, unread counts, and per-user organization preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatConversation'}
+        '401': {description: Authentication required}
+  /messaging/conversations/{conversationId}:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: Read a conversation and its messages
+      responses:
+        '200':
+          description: Conversation history, including attachment metadata and read receipts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [conversation, messages]
+                    properties:
+                      conversation: {$ref: '#/components/schemas/ChatConversation'}
+                      messages:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatMessage'}
+        '404': {description: Conversation not found or not visible to the participant}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Send a text, attachment, or voice message to an open conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: {type: string, maxLength: 4000}
+                messageType: {type: string, enum: [TEXT, ATTACHMENT, VOICE], default: TEXT}
+                attachments:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: object
+                    required: [key]
+                    properties:
+                      key: {type: string}
+                      filename: {type: string, maxLength: 255}
+              anyOf:
+                - {required: [message]}
+                - {required: [attachments]}
+      responses:
+        '201':
+          description: Created message with associated attachments and initial read receipts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatMessage'}
+        '400': {description: Invalid message, attachment, or message type}
+        '403': {description: Conversation is closed or caller is not a participant}
+        '404': {description: Conversation not found}
+  /messaging/conversations/{conversationId}/read:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Mark incoming messages in a conversation as read
+      responses:
+        '200':
+          description: Read receipt insertion result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [conversationId, readCount, readAt]
+                    properties:
+                      conversationId: {type: string, format: uuid}
+                      readCount: {type: integer, minimum: 0}
+                      readAt: {type: string, format: date-time}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/conversations/{conversationId}/presence:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: List recent participant presence and typing state
+      responses:
+        '200':
+          description: Online participants; typing state is time-bounded by the server
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatPresence'}
+        '404': {description: Conversation not found or not visible to the participant}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Update the authenticated participant's online and typing state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                online: {type: boolean, default: true}
+                typing: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Presence state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatPresenceUpdate'}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/conversations/{conversationId}/preferences:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      security: [{bearerAuth: []}]
+      summary: Update the authenticated participant's pin, importance, or archive preference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                isPinned: {type: boolean}
+                isImportant: {type: boolean}
+                isArchived: {type: boolean}
+      responses:
+        '200':
+          description: Updated per-user conversation preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatConversationPreferences'}
+        '400': {description: Conversation preferences must be boolean}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/attachments/{attachmentId}/content:
+    parameters:
+      - {name: attachmentId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: Download an attachment after participant authorization
+      responses:
+        '200':
+          description: Private binary attachment content
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
+        '404': {description: Attachment not found or not visible to the participant}
   /storage/upload:
-    post: {security: [{bearerAuth: []}], responses: {'201': {description: Uploaded}}}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Upload one private chat attachment or voice-note source file
+      description: >
+        Multipart upload accepts only validated PDF, PNG, JPEG, WebP, plain text,
+        M4A/MP4 audio, MP3, and WAV data. The server validates content signatures,
+        rejects MIME/signature mismatches, and enforces the configured maximum upload size.
+        When a multipart client reports application/octet-stream, the server may infer
+        a supported MIME only from an allowlisted filename extension and still validates
+        the file signature.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Private upload stored and associated with the authenticated uploader
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {$ref: '#/components/schemas/ChatUpload'}
+        '400': {description: Missing, empty, or malformed multipart file}
+        '401': {description: Authentication required}
+        '413': {description: File exceeds the configured upload size limit}
+        '415': {description: Unsupported type, mismatched extension, or invalid file signature}
   /storage/presign:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}}
   /storage/complete:

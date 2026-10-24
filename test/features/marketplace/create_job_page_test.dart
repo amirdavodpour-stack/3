@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show debugDumpRenderTree;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
@@ -190,6 +189,11 @@ Future<void> _advance(WidgetTester tester) async {
     next.hitTestable(),
     findsOneWidget,
     reason: 'The persistent Create Opportunity action must stay available.',
+  );
+  final button = tester.widget<FilledButton>(next);
+  expect(
+    button.style?.backgroundColor?.resolve({}),
+    HopeV2Colors.markedPrimaryActionDarkGreen,
   );
   await tester.tap(next);
   await tester.pumpAndSettle();
@@ -942,16 +946,16 @@ void main() {
       );
       await _open(tester);
 
-      final previousIcon = tester.widget<HugeIcon>(
+      final previousIcon = tester.widget<HopeIcon>(
         find.descendant(
           of: find.byKey(const ValueKey('create-opportunity-previous-step')),
-          matching: find.byType(HugeIcon),
+          matching: find.byType(HopeIcon),
         ),
       );
-      final nextIcon = tester.widget<HugeIcon>(
+      final nextIcon = tester.widget<HopeIcon>(
         find.descendant(
           of: find.byKey(const ValueKey('create-opportunity-next-step')),
-          matching: find.byType(HugeIcon),
+          matching: find.byType(HopeIcon),
         ),
       );
 

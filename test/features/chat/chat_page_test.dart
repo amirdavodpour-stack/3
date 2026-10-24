@@ -1,8 +1,16 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import 'package:hope_mobile/core/auth/auth_controller.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/features/chat/chat_page.dart';
 
 class FakeChatRepository implements ChatRepository {
@@ -10,10 +18,12 @@ class FakeChatRepository implements ChatRepository {
   bool failSend = false;
   String conversationStatus = 'OPEN';
   HopeChatThread? threadOverride;
+  List<HopeChatConversation>? conversationsOverride;
 
   @override
   Future<List<HopeChatConversation>> listConversations() async {
     if (failList) throw StateError('list failed');
+    if (conversationsOverride != null) return conversationsOverride!;
     return [
       HopeChatConversation(
         id: 'chat-1',
@@ -61,7 +71,220 @@ class FakeChatRepository implements ChatRepository {
   }
 }
 
+
+class RacingChatRepository extends FakeChatRepository
+    implements ChatCapabilitiesRepository {
+  final Completer<HopeChatThread> stalePoll = Completer<HopeChatThread>();
+  final Completer<HopeChatMessage> pendingTextSend = Completer<HopeChatMessage>();
+  bool holdTextSend = false;
+  int getMessagesCalls = 0;
+
+  @override
+  Future<HopeChatMessage> sendMessage(
+    String conversationId,
+    String message,
+  ) {
+    if (holdTextSend) return pendingTextSend.future;
+    return super.sendMessage(conversationId, message);
+  }
+
+  @override
+  Future<HopeChatThread> getMessages(String conversationId) async {
+    getMessagesCalls++;
+    if (getMessagesCalls == 2) return stalePoll.future;
+    return super.getMessages(conversationId);
+  }
+
+  @override
+  Future<HopeChatMessage> sendMessageWithAttachments(
+    String conversationId,
+    String message, {
+    required String messageType,
+    required List<Map<String, String>> attachments,
+  }) async =>
+      sendMessage(conversationId, message);
+
+  @override
+  Future<Map<String, dynamic>> uploadChatFile(String path) async =>
+      {'key': 'uploaded/file', 'filename': Uri.file(path).pathSegments.last};
+
+  @override
+  Future<Uint8List> downloadAttachment(String downloadPath) async =>
+      Uint8List(0);
+
+  @override
+  Future<void> markRead(String conversationId) async {}
+
+  @override
+  Future<void> updatePresence(
+    String conversationId, {
+    required bool online,
+    required bool typing,
+  }) async {}
+
+  @override
+  Future<List<HopeChatPresence>> listPresence(String conversationId) async =>
+      const [];
+
+  @override
+  Future<void> updatePreferences(
+    String conversationId, {
+    bool? isPinned,
+    bool? isImportant,
+    bool? isArchived,
+  }) async {}
+}
+
 void main() {
+  testWidgets(
+    'chat inbox initial load failure exposes an actionable retry',
+    (tester) async {
+      final repository = FakeChatRepository()..failList = true;
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('chat-inbox-retry')), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      repository.failList = false;
+      await tester.tap(find.byKey(const ValueKey('chat-inbox-retry')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Worker'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-retry')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'a send completing after a live refresh preserves newly received messages',
+    (tester) async {
+      final repository = RacingChatRepository()..holdTextSend = true;
+      await tester.pumpWidget(
+        Provider<AuthController?>.value(
+          value: null,
+          child: MaterialApp(
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(repository.getMessagesCalls, 1);
+
+      // Start a live poll and hold both requests so the reverse ordering is deterministic.
+      await tester.pump(const Duration(seconds: 6));
+      expect(repository.getMessagesCalls, 2);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-message-input')),
+        'outgoing message in flight',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+      await tester.pump();
+      expect(repository.pendingTextSend.isCompleted, isFalse);
+
+      final incoming = HopeChatMessage(
+        id: 'incoming-during-send',
+        conversationId: 'chat-1',
+        senderId: 'worker-1',
+        senderName: 'Worker',
+        body: 'incoming while send is pending',
+        createdAt: DateTime(2026, 10, 17, 13, 0),
+      );
+      repository.stalePoll.complete(
+        HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: [incoming],
+        ),
+      );
+      // Keep pumping without settling: the send is still held pending, so its
+      // busy indicator is expected to keep animating.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('incoming while send is pending'), findsOneWidget);
+
+      repository.pendingTextSend.complete(
+        HopeChatMessage(
+          id: 'outgoing-during-poll',
+          conversationId: 'chat-1',
+          senderId: 'me',
+          senderName: 'Me',
+          body: 'outgoing message in flight',
+          createdAt: DateTime(2026, 10, 17, 13, 1),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('outgoing message in flight'), findsOneWidget);
+      expect(
+        find.text('incoming while send is pending'),
+        findsOneWidget,
+        reason: 'Completing a send must merge into current thread state, not replace a message received while the send was awaiting the server.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a stale live poll cannot replace a newly sent message',
+    (tester) async {
+      final repository = RacingChatRepository();
+      await tester.pumpWidget(
+        MaterialApp(home: ChatPage(repository: repository, jobId: 'job-1')),
+      );
+      await tester.pumpAndSettle();
+      expect(repository.getMessagesCalls, 1);
+
+      // Start a live refresh and hold its stale snapshot until after send commits.
+      await tester.pump(const Duration(seconds: 6));
+      expect(repository.getMessagesCalls, 2);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-message-input')),
+        'message sent during refresh',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('chat-send-button')));
+      await tester.pumpAndSettle();
+      expect(find.text('message sent during refresh'), findsOneWidget);
+
+      repository.stalePoll.complete(
+        HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('message sent during refresh'),
+        findsOneWidget,
+        reason: 'An older in-flight poll must not replace the locally newer thread state.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
   testWidgets(
     'Wave49 Chat send failure keeps full error and Retry reachable at 1.5x in both directions',
     (tester) async {
@@ -138,6 +361,86 @@ void main() {
         expect(retryRect.top, greaterThanOrEqualTo(bannerRect.top));
         expect(retryRect.bottom, lessThanOrEqualTo(bannerRect.bottom));
         expect(composerRect.bottom, lessThanOrEqualTo(640));
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'Chat header keeps full participant and job titles visible at 1.5x on compact phones',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in const [Locale('fa'), Locale('en')]) {
+        final isEnglish = locale.languageCode == 'en';
+        final participantName = isEnglish
+            ? 'Senior product designer responsible for international delivery'
+            : 'طراح ارشد محصول مسئول تحویل و هماهنگی بین‌المللی';
+        final jobTitle = isEnglish
+            ? 'Cross-functional mobile product redesign and acceptance review'
+            : 'بازطراحی محصول موبایل و بازبینی معیارهای پذیرش';
+        final repository = FakeChatRepository()
+          ..threadOverride = HopeChatThread(
+            conversation: HopeChatConversation(
+              id: 'chat-1',
+              kind: 'JOB',
+              jobId: 'job-1',
+              status: 'OPEN',
+              title: jobTitle,
+              otherUserName: participantName,
+            ),
+            messages: const [],
+          );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleFinder = find.byKey(
+          const ValueKey('chat-conversation-title'),
+        );
+        final contextFinder = find.byKey(
+          const ValueKey('chat-conversation-context'),
+        );
+        expect(titleFinder, findsOneWidget);
+        expect(contextFinder, findsOneWidget);
+        expect(
+          tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+          isFalse,
+          reason: 'The full participant name must wrap rather than truncate in the compact 320dp / 1.5x layout.',
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(contextFinder).didExceedMaxLines,
+          isFalse,
+          reason: 'The full job context must wrap rather than truncate in the compact 320dp / 1.5x layout.',
+        );
+        expect(tester.getRect(titleFinder).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(titleFinder).right, lessThanOrEqualTo(320));
+        expect(tester.getRect(contextFinder).left, greaterThanOrEqualTo(0));
+        expect(tester.getRect(contextFinder).right, lessThanOrEqualTo(320));
+        expect(
+          tester.getRect(find.byKey(const ValueKey('chat-composer-panel'))).bottom,
+          lessThanOrEqualTo(640),
+        );
         expect(tester.takeException(), isNull);
       }
     },
@@ -334,6 +637,79 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'Chat sender name wraps instead of truncating on a compact large-text viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const senderName =
+          'Senior product designer responsible for international delivery';
+      final repository = FakeChatRepository()
+        ..threadOverride = HopeChatThread(
+          conversation: const HopeChatConversation(
+            id: 'chat-1',
+            kind: 'JOB',
+            jobId: 'job-1',
+            status: 'OPEN',
+            title: 'Test job',
+            otherUserName: 'Worker',
+          ),
+          messages: [
+            HopeChatMessage(
+              id: 'long-sender',
+              conversationId: 'chat-1',
+              senderId: 'worker-1',
+              senderName: senderName,
+              body: 'Please review the attached delivery.',
+              createdAt: DateTime(2026, 1, 1, 13, 45),
+            ),
+          ],
+        );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: ChatPage(repository: repository, jobId: 'job-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final senderFinder = find.byKey(
+        const ValueKey('chat-sender-long-sender'),
+      );
+      final timestampFinder = find.byKey(
+        const ValueKey('chat-message-timestamp-long-sender'),
+      );
+      expect(senderFinder, findsOneWidget);
+      expect(timestampFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(senderFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'The full sender name must be readable when the sender/timestamp row is narrow and text is enlarged.',
+      );
+      expect(tester.getRect(senderFinder).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(senderFinder).right, lessThanOrEqualTo(320));
+      expect(tester.getRect(timestampFinder).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(timestampFinder).right, lessThanOrEqualTo(320));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('Wave 28 groups consecutive messages from the same sender',
       (tester) async {
     final repository = FakeChatRepository()
@@ -381,5 +757,229 @@ void main() {
     expect(find.text('Second line'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  
+  testWidgets(
+    'Persian inbox search normalizes Arabic Yeh and Kaf variants',
+    (tester) async {
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'persian-search',
+            kind: 'JOB',
+            jobId: 'job-persian-search',
+            status: 'OPEN',
+            title: 'پروژه طراحی محصول',
+            otherUserName: 'علی رضایی',
+            lastMessageBody: 'پیام درباره تحویل کار',
+            lastMessageAt: DateTime(2026, 10, 17, 12),
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('chat-inbox-card-persian-search')),
+        findsOneWidget,
+      );
+      // Arabic Yeh (U+064A), commonly present in pasted text, should match
+      // the Persian Yeh (U+06CC) used in the stored participant name.
+      await tester.enterText(
+        find.byKey(const ValueKey('chat-inbox-search')),
+        'علي',
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('chat-inbox-card-persian-search')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Indigo inbox filters by participant and context text', (tester) async {
+    final repository = FakeChatRepository();
+    await tester.pumpWidget(MaterialApp(home: ChatPage(repository: repository)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('chat-inbox-search')), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-inbox-list')), findsOneWidget);
+    expect(find.text('Worker'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const ValueKey('chat-inbox-search')), 'missing-conversation');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching conversations.'), findsOneWidget);
+    expect(find.text('Worker'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+
+  testWidgets(
+    'Indigo Atelier inbox cards show editorial context and search/filter correctly',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'orion',
+            kind: 'JOB',
+            jobId: 'job-orion',
+            status: 'OPEN',
+            title: 'Orion Website Refresh',
+            otherUserName: 'Mina Rahimi',
+            lastMessageBody: 'Deliverables are ready for review.',
+            lastMessageAt: DateTime.now(),
+            unreadCount: 2,
+            isPinned: true,
+          ),
+          HopeChatConversation(
+            id: 'atlas',
+            kind: 'JOB',
+            jobId: 'job-atlas',
+            status: 'OPEN',
+            title: 'Atlas Mobile App',
+            otherUserName: 'Daniel Reed',
+            lastMessageBody: 'The schedule was updated.',
+            lastMessageAt: DateTime.now().subtract(const Duration(days: 1)),
+          ),
+          const HopeChatConversation(
+            id: 'admin',
+            kind: 'ADMIN',
+            jobId: '',
+            status: 'OPEN',
+            title: 'HOPE Admin Room',
+            otherUserName: '',
+            lastMessageBody: 'Operations check-in.',
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsOneWidget);
+      expect(find.text('PROJECT CHAT'), findsNWidgets(2));
+      expect(find.text('HOPE TEAM'), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-context-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-preview-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-time-orion')), findsOneWidget);
+      expect(find.text('2 UNREAD'), findsOneWidget);
+      final unreadBadge = tester.widget<Container>(
+        find.byKey(const ValueKey('chat-inbox-unread-orion')),
+      );
+      expect(
+        (unreadBadge.decoration as BoxDecoration).color,
+        HopeV2Colors.primaryAction,
+      );
+      expect(find.text('PINNED'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      final search = find.byKey(const ValueKey('chat-inbox-search'));
+      await tester.enterText(search, 'Atlas');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+
+      await tester.enterText(search, '');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unread'));
+      await tester.tap(find.text('Unread'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+
+      await tester.ensureVisible(find.text('Projects'));
+      await tester.tap(find.text('Projects'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('chat-inbox-card-orion')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-atlas')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-card-admin')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Indigo Atelier inbox cards remain inside a compact RTL viewport at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = FakeChatRepository()
+        ..conversationsOverride = [
+          HopeChatConversation(
+            id: 'compact',
+            kind: 'JOB',
+            jobId: 'job-compact',
+            status: 'OPEN',
+            title: 'بازطراحی محصول موبایل و هماهنگی بین‌المللی',
+            otherUserName: 'طراح ارشد محصول مسئول تحویل نهایی',
+            lastMessageBody: 'نسخه نهایی برای بازبینی و تأیید ارسال شده است.',
+            lastMessageAt: DateTime.now(),
+            unreadCount: 3,
+            isPinned: true,
+            isImportant: true,
+          ),
+        ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: ChatPage(repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final card = find.byKey(const ValueKey('chat-inbox-card-compact'));
+      expect(card, findsOneWidget);
+      expect(tester.getRect(card).left, greaterThanOrEqualTo(0));
+      expect(tester.getRect(card).right, lessThanOrEqualTo(320));
+      expect(find.byKey(const ValueKey('chat-inbox-name-compact')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-inbox-preview-compact')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
 }

@@ -80,15 +80,24 @@ class PremiumPaymentSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final amount = payment.amount;
     final fees = payment.fees;
+    final baseAmount = fees?.baseAmount ?? amount;
+    final employerCharge = fees?.employerCharge;
+    final workerPayout = fees?.providerPayout;
     final status = _statusLabel(context);
+    final semanticSeparator =
+        Localizations.localeOf(context).languageCode == 'en' ? ', ' : '، ';
+    final semanticLabel = <String>[
+      _label(context, 'وضعیت پرداخت: $status', 'Payment status: $status'),
+      '${_label(context, 'مبلغ پایه', 'Base amount')} ${_money(context, baseAmount)}',
+      if (employerCharge != null)
+        '${_label(context, 'مبلغ پرداختی کارفرما', 'Employer charge')} ${_money(context, employerCharge)}',
+      if (workerPayout != null)
+        '${_label(context, 'دریافتی کارجو', 'Worker payout')} ${_money(context, workerPayout)}',
+    ].join(semanticSeparator);
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label: _label(
-        context,
-        'وضعیت پرداخت: $status، مبلغ ${_money(context, amount)}',
-        'Payment status: $status, amount ${_money(context, amount)}',
-      ),
+      label: semanticLabel,
       child: PremiumPanel(
         quiet: true,
         padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
@@ -111,13 +120,26 @@ class PremiumPaymentSummary extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
-                if (amount != null)
-                  Text(
-                    _money(context, amount),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: HopeV2SemanticColors.price(context),
-                      fontWeight: FontWeight.w900,
-                    ),
+                if (baseAmount != null)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _label(context, 'مبلغ پایه', 'Base amount'),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        _money(context, baseAmount),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: HopeV2SemanticColors.price(context),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -127,14 +149,24 @@ class PremiumPaymentSummary extends StatelessWidget {
                 spacing: HopeV2Spacing.md,
                 runSpacing: HopeV2Spacing.sm,
                 children: [
+                  if (fees.employerFee != null)
+                    _Metric(
+                      label: _label(context, 'کارمزد کارفرما', 'Employer fee'),
+                      value: _money(context, fees.employerFee),
+                    ),
+                  if (fees.workerFee != null)
+                    _Metric(
+                      label: _label(context, 'کارمزد کارجو', 'Worker fee'),
+                      value: _money(context, fees.workerFee),
+                    ),
                   if (fees.employerCharge != null)
                     _Metric(
-                      label: _label(context, 'مبلغ نهایی', 'Total charge'),
+                      label: _label(context, 'مبلغ پرداختی کارفرما', 'Employer charge'),
                       value: _money(context, fees.employerCharge),
                     ),
                   if (fees.providerPayout != null)
                     _Metric(
-                      label: _label(context, 'دریافتی مجری', 'Provider payout'),
+                      label: _label(context, 'دریافتی کارجو', 'Worker payout'),
                       value: _money(context, fees.providerPayout),
                     ),
                   if (fees.platformFee != null)

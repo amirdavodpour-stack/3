@@ -201,7 +201,7 @@ void main() {
     ),
   );
   await tester.pump();
-  expect(tester.getSize(find.byType(PremiumHero)).height, 176);
+  expect(tester.getSize(find.byType(PremiumHero)).height, 146);
   expect(tester.takeException(), isNull);
 });
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -89,6 +90,7 @@ Future<void> _pump(
   ProfileRepository? repository,
   bool settle = true,
   ThemeData? theme,
+  double textScale = 1.0,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -113,15 +115,20 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: Scaffold(
-      body: MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: settings),
-          ChangeNotifierProvider(create: (_) => ThemeController(settings)),
-          ChangeNotifierProvider.value(value: auth),
-          Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
-        ],
-        child: const ProfilePage(),
+    home: MediaQuery(
+      data: MediaQueryData.fromView(tester.view).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: Scaffold(
+        body: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: settings),
+            ChangeNotifierProvider(create: (_) => ThemeController(settings)),
+            ChangeNotifierProvider.value(value: auth),
+            Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
+          ],
+          child: const ProfilePage(),
+        ),
       ),
     ),
   ));
@@ -227,6 +234,36 @@ testWidgets('profile keeps application management in the dedicated work destinat
       expect(tester.takeException(), isNull, reason: 'render exception at $width dp');
     }
   });
+
+  testWidgets(
+    'compact profile setting labels fully wrap at 1.5x text scale',
+    (tester) async {
+      await _pump(
+        tester,
+        authenticated: true,
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+      );
+
+      const label = 'پیشنهادهای شخصی‌سازی‌شده';
+      final finder = find.text(label);
+      expect(finder, findsOneWidget);
+      final widget = tester.widget<Text>(finder);
+      expect(
+        widget.maxLines,
+        isNull,
+        reason:
+            'Compact account settings must preserve full setting names at enlarged text scale.',
+      );
+      expect(widget.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(finder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('authenticated profile compresses secondary settings on narrow screens', (tester) async {
     await _pump(tester, authenticated: true, width: 390);
@@ -350,5 +387,44 @@ testWidgets('profile keeps application management in the dedicated work destinat
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'compact appearance action keeps a 48dp rendered and semantic target',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          authenticated: true,
+          width: 390,
+          height: 844,
+          theme: AppTheme.dark(),
+        );
+
+        final appearanceLabel = find.text('ظاهر برنامه');
+        expect(appearanceLabel, findsOneWidget);
+        final appearanceTile = find.ancestor(
+          of: appearanceLabel,
+          matching: find.byType(ListTile),
+        ).first;
+        await tester.ensureVisible(appearanceTile);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.getSize(appearanceTile).height,
+          greaterThanOrEqualTo(48),
+        );
+        expect(
+          tester.getSemantics(appearanceTile).rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The TalkBack action target must meet the 48dp minimum.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
 
 }

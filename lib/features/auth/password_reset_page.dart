@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
@@ -66,8 +65,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HugeIcon(
-                          icon: Localizations.localeOf(context).languageCode == 'en'
+                        icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
                           size: 21,
@@ -100,13 +98,14 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
+                            prefixIcon: const Icon(HopeV2Icons.mail, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
+                            style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                             onPressed: loading ? null : submit,
                             child: loading
                                 ? const SizedBox(
@@ -121,10 +120,45 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  EmptyState(
-                    icon: HopeV2Icons.secure,
-                    title: HopeCopy.of(context).copy_you_are_covered_1bbe449,
-                    message: HopeCopy.of(context).copy_for_security_the_response_is_intentionally_6574fa6,
+                  PremiumPanel(
+                    key: const ValueKey('password-reset-privacy-note'),
+                    quiet: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        HopeIcon(
+                          HopeV2Icons.secure,
+                          size: 20,
+                          color: HopeV2SemanticColors.info(context),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                HopeCopy.of(context).copy_you_are_covered_1bbe449,
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                HopeCopy.of(context).copy_for_security_the_response_is_intentionally_6574fa6,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      height: 1.3,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

@@ -395,7 +395,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(PremiumNavigationBar),
-        matching: find.text('Work'),
+        matching: find.text('Workshop'),
       ),
     );
     await tester.pumpAndSettle();

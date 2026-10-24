@@ -67,7 +67,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'language': 'en'});
 
       final settings = HopeSettingsController();
       await settings.load();
@@ -114,6 +114,13 @@ void main() {
       );
       final dock = find.byKey(const ValueKey('hope-navigation-dock'));
 
+      await tester.scrollUntilVisible(
+        title,
+        120,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 20,
+      );
+      await tester.pumpAndSettle();
       expect(title, findsOneWidget);
       expect(selector, findsOneWidget);
       expect(dock, findsOneWidget);

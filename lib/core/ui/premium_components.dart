@@ -69,7 +69,7 @@ class PremiumNavigationBar extends StatelessWidget {
     final surface = HopeV2Surfaces.navigation(context);
     final width = MediaQuery.sizeOf(context).width;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final compactLabels = width < 340 || textScale > 1.2;
+    final compactLabels = width < 400 || textScale > 1.2;
     final horizontalInset = compactLabels ? 4.0 : 12.0;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
     final activeIndex = selectedIndex.clamp(0, destinations.length - 1).toInt();
@@ -79,8 +79,10 @@ class PremiumNavigationBar extends StatelessWidget {
       minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        height: HopeV2Navigation.barHeight + (textScale > 1.2 ? 12 : 0),
-        padding: EdgeInsets.fromLTRB(compactLabels ? 2 : 6, 4, compactLabels ? 2 : 6, 3),
+        // At 2x text scaling, reserve an additional line for long localized labels.
+        height: HopeV2Navigation.barHeight +
+            (textScale > 1.5 ? 72 : textScale > 1.2 ? 40 : 0),
+        padding: EdgeInsets.fromLTRB(compactLabels ? 0 : 6, 4, compactLabels ? 0 : 6, 3),
         decoration: BoxDecoration(
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
@@ -141,7 +143,10 @@ class PremiumNavigationBar extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: primary.withValues(alpha: dark ? .72 : .68),
+                      color: (dark
+                              ? HopeV2TonalPalettes.forest.shade300
+                              : HopeV2TonalPalettes.forest.shade700)
+                          .withValues(alpha: dark ? .92 : .86),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -187,6 +192,7 @@ class _PremiumNavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
     final icon = selected ? destination.selectedIcon ?? destination.icon : destination.icon;
     final labelColor = HopeV2SemanticColors.navigationLabel(
       context,
@@ -209,8 +215,8 @@ class _PremiumNavigationItem extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 1 : 4,
-                  vertical: compact ? 2 : 4,
+                  horizontal: compact ? 0 : 4,
+                  vertical: compact ? 1 : 4,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -222,21 +228,18 @@ class _PremiumNavigationItem extends StatelessWidget {
                     ),
                     if (showLabel) ...[
                       const SizedBox(height: 1),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.center,
-                        child: Text(
-                          destination.label,
-                          maxLines: 1,
-                          softWrap: false,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: labelColor,
-                            fontSize: compact ? 10.5 : 11.5,
-                            height: compact ? .95 : 1.0,
-                            fontWeight:
-                                selected ? FontWeight.w800 : FontWeight.w500,
-                          ),
+                      Text(
+                        destination.label,
+                        maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: labelColor,
+                          fontSize: 12,
+                          height: 1.0,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w500,
                         ),
                       ),
                     ],
@@ -378,6 +381,18 @@ class PremiumNavigationRail extends StatelessWidget {
             labelType: extended
                 ? NavigationRailLabelType.none
                 : NavigationRailLabelType.all,
+            // Keep desktop navigation multi-accent too: green identifies the
+            // selected destination; readable labels remain neutral.
+            selectedIconTheme: IconThemeData(
+              color: dark
+                  ? HopeV2TonalPalettes.forest.shade300
+                  : HopeV2TonalPalettes.forest.shade700,
+              size: 24,
+            ),
+            unselectedIconTheme: IconThemeData(
+              color: HopeV2SemanticColors.navigationLabel(context, selected: false),
+              size: 24,
+            ),
             selectedLabelTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: HopeV2SemanticColors.textPrimary(context),
               fontWeight: FontWeight.w800,
@@ -532,6 +547,7 @@ class PremiumIconButton extends StatelessWidget {
     this.color,
     this.selected = false,
     this.semanticsIdentifier,
+    this.targetSize = HopeV2Touch.minimum,
   });
 
   final Object icon;
@@ -542,6 +558,7 @@ class PremiumIconButton extends StatelessWidget {
 
   /// Stable native-accessibility/test identifier for this action.
   final String? semanticsIdentifier;
+  final double targetSize;
 
   @override
   Widget build(BuildContext context) {
@@ -571,8 +588,8 @@ class PremiumIconButton extends StatelessWidget {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Radii.button),
           child: Ink(
-            width: HopeV2Touch.minimum,
-            height: HopeV2Touch.minimum,
+            width: targetSize,
+            height: targetSize,
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(HopeV2Radii.button),
@@ -604,6 +621,7 @@ class PremiumQuickAction {
     required this.icon,
     this.onPressed,
     this.primary = false,
+    this.primaryActionColor,
     this.semanticLabel,
   });
 
@@ -611,6 +629,8 @@ class PremiumQuickAction {
   final Object icon;
   final VoidCallback? onPressed;
   final bool primary;
+  /// Optional fill override for an individually marked primary action.
+  final Color? primaryActionColor;
   final String? semanticLabel;
 }
 
@@ -632,8 +652,9 @@ class _PremiumQuickActionButton extends StatelessWidget {
             ? Colors.white
             : Theme.of(context).colorScheme.onSurface)
         : Theme.of(context).colorScheme.onSurfaceVariant;
+    final primaryAccent = action.primaryActionColor ?? accent;
     final background = action.primary
-        ? accent.withValues(alpha: dark ? .92 : .96)
+        ? primaryAccent.withValues(alpha: dark ? .92 : .96)
         : Colors.transparent;
 
     return Semantics(
@@ -654,7 +675,7 @@ class _PremiumQuickActionButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(HopeV2Radii.md),
               border: Border.all(
                 color: action.primary
-                    ? accent.withValues(alpha: dark ? .30 : .20)
+                    ? primaryAccent.withValues(alpha: dark ? .30 : .20)
                     : Colors.transparent,
               ),
             ),
@@ -877,19 +898,25 @@ class PremiumHeader extends StatelessWidget {
     super.key,
     required this.eyebrow,
     required this.title,
+    this.titleKey,
     this.subtitle,
+    this.subtitleKey,
     this.trailing,
     this.domain,
     this.page,
+    this.expandText = false,
     this.dense = false,
   });
 
   final String eyebrow;
   final String title;
+  final Key? titleKey;
   final String? subtitle;
+  final Key? subtitleKey;
   final Widget? trailing;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  final bool expandText;
   final bool dense;
 
   @override
@@ -902,8 +929,9 @@ class PremiumHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: compact ? 2 : 3,
-                overflow: TextOverflow.ellipsis,
+                key: titleKey,
+                maxLines: expandText ? null : (compact ? 2 : 3),
+                overflow: expandText ? TextOverflow.visible : TextOverflow.ellipsis,
                 style: HopeV2Type.display(context).copyWith(
                   fontSize: compact ? 19.5 : 25.5,
                   height: compact ? 1.12 : 1.08,
@@ -914,8 +942,9 @@ class PremiumHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle!,
-                  maxLines: compact ? 2 : 4,
-                  overflow: TextOverflow.ellipsis,
+                  key: subtitleKey,
+                  maxLines: expandText ? null : (compact ? 2 : 4),
+                  overflow: expandText ? TextOverflow.visible : TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? HopeV2Colors.darkMuted
@@ -1353,6 +1382,8 @@ class PremiumHero extends StatelessWidget {
     this.semanticLabel,
     this.domain,
     this.page,
+    this.expandForAccessibilityText = false,
+    this.maxHeightOverride,
   });
   final String eyebrow;
   final String title;
@@ -1367,22 +1398,29 @@ class PremiumHero extends StatelessWidget {
   final String? semanticLabel;
   final HopeProductDomain? domain;
   final HopePageId? page;
+  /// Lets a long title grow naturally only when users enlarge system text.
+  final bool expandForAccessibilityText;
+  /// Optional page-level maximum for a content-specific responsive hero.
+  final double? maxHeightOverride;
 
   @override
   Widget build(BuildContext context) {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
+    final accessibilityTitleExpansion = expandForAccessibilityText &&
+        MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final resolvedDomain = domain ?? page?.spec.domain;
     // Editorial density is content-aware: informational heroes without an
     // action should not reserve the same vertical budget as a conversion hero.
     // Explicit short bands survive, while oversized caller values are capped.
-    final maxHeroHeight = compactHero
-        ? 148.0
-        : action != null
-            ? (compact ? 184.0 : 208.0)
-            : message.trim().isEmpty
-                ? (compact ? 132.0 : 152.0)
-                : (compact ? 164.0 : 184.0);
+    final maxHeroHeight = maxHeightOverride ??
+        (compactHero
+            ? 148.0
+            : action != null
+                ? (compact ? 184.0 : 208.0)
+                : message.trim().isEmpty
+                    ? (compact ? 132.0 : 152.0)
+                    : (compact ? 164.0 : 184.0));
     final minHeroHeight = compactHero ? 88.0 : (compact ? 112.0 : 152.0);
     final heroHeight = height.clamp(minHeroHeight, maxHeroHeight).toDouble();
     final horizontal = compactHero
@@ -1395,7 +1433,7 @@ class PremiumHero extends StatelessWidget {
       container: true,
       label: semanticLabel ?? title,
       child: Container(
-        height: heroHeight,
+        height: accessibilityTitleExpansion ? null : heroHeight,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(HopeV2Radii.hero),
           boxShadow: Theme.of(context).brightness == Brightness.dark
@@ -1404,7 +1442,9 @@ class PremiumHero extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
-          fit: StackFit.expand,
+          fit: accessibilityTitleExpansion
+              ? StackFit.loose
+              : StackFit.expand,
           children: [
             if (mediaUrl != null && mediaUrl!.trim().isNotEmpty)
               Positioned.fill(
@@ -1533,7 +1573,7 @@ class PremiumHero extends StatelessWidget {
                 horizontal: horizontal,
                 // Compact auth heroes have short fixed heights; the full-size
                 // vertical gutter can force wrapped copy to overflow at 360dp.
-                vertical: compactHero ? 4 : (compact ? (action != null ? 10 : 12) : 16),
+                vertical: compactHero ? 4 : (compact ? (action != null ? 8 : 10) : 16),
               ),
               child: Align(
                 alignment: AlignmentDirectional.bottomStart,
@@ -1578,7 +1618,7 @@ class PremiumHero extends StatelessWidget {
                                       style: TextStyle(
                                         color: HopeV2Colors.darkText,
                                         fontWeight: FontWeight.w900,
-                                        fontSize: 10,
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ),
@@ -1593,7 +1633,7 @@ class PremiumHero extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white70,
                               fontWeight: FontWeight.w700,
-                              fontSize: 10.5,
+                              fontSize: 12,
                               letterSpacing: .7,
                             ),
                           ),
@@ -1602,8 +1642,13 @@ class PremiumHero extends StatelessWidget {
                           ),
                           Text(
                             title,
-                            maxLines: compactHero ? 2 : (dense ? 2 : 3),
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: accessibilityTitleExpansion
+                                ? null
+                                : (compactHero ? 2 : (dense ? 2 : 3)),
+                            softWrap: true,
+                            overflow: accessibilityTitleExpansion
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: compactHero ? 19 : (dense ? 20 : 21),
@@ -1913,7 +1958,10 @@ class PremiumEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
-    final accent = Theme.of(context).colorScheme.primary;
+    final accent = HopeV2IconAccents.resolve(
+      icon,
+      brightness: Theme.of(context).brightness,
+    );
     return Semantics(
       container: true,
       child: PremiumPanel(
@@ -1924,16 +1972,11 @@ class PremiumEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: dense ? 40 : 46,
-              height: dense ? 40 : 46,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                border: Border.all(color: accent.withValues(alpha: .18)),
-              ),
-              alignment: Alignment.center,
-              child: HopeIcon(icon, size: dense ? 20 : 23, color: accent),
+            HopeKineticGlyph(
+              width: dense ? 44 : 52,
+              height: dense ? 42 : 50,
+              color: accent,
+              child: HopeIcon(icon, size: dense ? 18 : 21, color: accent),
             ),
             SizedBox(height: dense ? 8 : 10),
             Text(
@@ -1976,16 +2019,22 @@ class PremiumTag extends StatelessWidget {
     this.icon,
     this.color,
     this.inverse = false,
+    this.allowWrap = false,
+    this.domain,
   });
 
   final String label;
   final Object? icon;
   final Color? color;
   final bool inverse;
+  final HopeProductDomain? domain;
+  /// Allows labels to grow naturally at enlarged accessibility text scales.
+  /// Defaults to the compact one-line contract for existing callers.
+  final bool allowWrap;
 
   @override
   Widget build(BuildContext context) {
-    final base = color ?? Theme.of(context).colorScheme.primary;
+    final base = color ?? domain?.spec.accentFor(context) ?? Theme.of(context).colorScheme.primary;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final foreground = inverse ? Colors.white : HopeV2SemanticColors.textPrimary(context);
     final iconForeground = inverse ? Colors.white : base;
@@ -2024,11 +2073,14 @@ class PremiumTag extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: allowWrap ? null : 1,
+                softWrap: allowWrap,
+                overflow: allowWrap
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
                 style: TextStyle(
                   color: foreground,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 1.0,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2205,6 +2257,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
     required this.location,
     required this.kind,
     this.accent,
+    this.highlightHighScore = true,
     this.breakdown = const <String, double>{},
     this.recommendationReasons = const <String>[],
   });
@@ -2215,6 +2268,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   final String location;
   final String kind;
   final Color? accent;
+  final bool highlightHighScore;
   final Map<String, double> breakdown;
   final List<String> recommendationReasons;
 
@@ -2243,6 +2297,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = accent ?? Theme.of(context).colorScheme.primary;
+    final chartColor = HopeV2ChartColors.matchSignal(context);
     final scoreForeground = HopeV2SemanticColors.info(context);
     final neutralForeground = HopeV2SemanticColors.textSecondary(context);
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
@@ -2287,8 +2342,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : 1,
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).brightness == Brightness.dark
                               ? HopeV2Colors.darkMuted
@@ -2299,8 +2357,11 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     value,
-                    maxLines: compact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: enlargedText ? null : (compact ? 2 : 1),
+                    softWrap: true,
+                    overflow: enlargedText
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w900,
                         ),
@@ -2357,7 +2418,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                   minHeight: 4,
                   value: value,
                   backgroundColor: HopeV2Surfaces.border(context).withValues(alpha: .32),
-                  valueColor: AlwaysStoppedAnimation<Color>(primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(chartColor),
                 ),
               ),
             ],
@@ -2392,12 +2453,14 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
       label: _t(context, 'خلاصه تصمیم فرصت', 'Opportunity decision summary'),
       child: PremiumPanel(
         key: const ValueKey('opportunity-decision-strip'),
-        highlight: score != null && score >= 90,
+        // The page can suppress the indigo wash while retaining the compact
+        // decision hierarchy; the score is carried by the teal data series.
+        highlight: highlightHighScore && score != null && score >= 90,
         padding: EdgeInsets.fromLTRB(
-          compact ? 10 : 12,
-          compact ? 9 : 11,
-          compact ? 10 : 12,
-          compact ? 9 : 11,
+          compact ? 9 : 12,
+          compact ? 7 : 11,
+          compact ? 9 : 12,
+          compact ? 7 : 11,
         ),
         child: compact
             ? Column(
@@ -2426,6 +2489,53 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                     fontWeight: FontWeight.w900,
                                   ),
                             ),
+                            if (compact &&
+                                !enlargedText &&
+                                ((location.trim().isNotEmpty &&
+                                        location.trim() != '—') ||
+                                    matchRationaleTag != null)) ...[
+                              const SizedBox(height: 3),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 3,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  if (location.trim().isNotEmpty &&
+                                      location.trim() != '—')
+                                    Row(
+                                      key: const ValueKey(
+                                        'opportunity-decision-location-inline',
+                                      ),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const HopeIcon(
+                                          HopeV2Icons.location,
+                                          size: 13,
+                                          color: HopeV2Colors.secondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Semantics(
+                                            label: '${_t(context, 'مکان', 'Location')}: ${location.trim()}',
+                                            child: ExcludeSemantics(
+                                              child: Text(
+                                                location.trim(),
+                                                maxLines: enlargedText ? null : 1,
+                                                overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                      color: neutralForeground,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (matchRationaleTag != null) matchRationaleTag,
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -2444,7 +2554,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                   backgroundColor: HopeV2Surfaces.border(context)
                                       .withValues(alpha: .42),
                                   valueColor:
-                                      AlwaysStoppedAnimation<Color>(primary),
+                                      AlwaysStoppedAnimation<Color>(chartColor),
                                 ),
                               ),
                               Column(
@@ -2452,6 +2562,7 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                 children: [
                                   Text(
                                     scoreLabel,
+                                    key: const ValueKey('opportunity-detail-hero-match'),
                                     style: HopeV2Type.metric(context).copyWith(
                                       color: scoreForeground,
                                       fontSize: enlargedText ? 14 : 17,
@@ -2467,8 +2578,8 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                                         ?.copyWith(
                                           color: scoreForeground,
                                           fontWeight: FontWeight.w800,
-                                          fontSize: enlargedText ? 10 : null,
-                                          height: enlargedText ? 1 : null,
+                                          fontSize: 12,
+                                          height: 1,
                                         ),
                                   ),
                                 ],
@@ -2478,17 +2589,46 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 5,
-                    children: [
-                      fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
-                      fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
-                      fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
-                    ],
-                  ),
-                  if (matchRationaleTag != null) ...[
+                  const SizedBox(height: 4),
+                  if (enlargedText)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        fact(
+                          _t(context, 'بودجه', 'Budget'),
+                          budget,
+                          HopeV2Icons.payments,
+                          primary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'دسته‌بندی', 'Category'),
+                          category,
+                          HopeV2Icons.category,
+                          HopeV2Colors.secondary,
+                        ),
+                        const SizedBox(height: 6),
+                        fact(
+                          _t(context, 'مکان', 'Location'),
+                          location,
+                          HopeV2Icons.location,
+                          HopeV2Colors.secondary,
+                        ),
+                      ],
+                    )
+                  else
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 5,
+                      children: [
+                        fact(_t(context, 'بودجه', 'Budget'), budget, HopeV2Icons.payments, primary),
+                        fact(_t(context, 'دسته‌بندی', 'Category'), category, HopeV2Icons.category, HopeV2Colors.secondary),
+                        if (!compact || enlargedText)
+                          fact(_t(context, 'مکان', 'Location'), location, HopeV2Icons.location, HopeV2Colors.secondary),
+                      ],
+                    ),
+                  if (matchRationaleTag != null &&
+                      (!compact || enlargedText)) ...[
                     const SizedBox(height: 6),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
@@ -2516,14 +2656,14 @@ class HopeOpportunityDecisionStrip extends StatelessWidget {
                       constraints: const BoxConstraints(minWidth: 70, minHeight: 60),
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: primary.withValues(alpha: .12),
+                        color: chartColor.withValues(alpha: .12),
                         borderRadius: BorderRadius.circular(HopeV2Radii.md),
-                        border: Border.all(color: primary.withValues(alpha: .22)),
+                        border: Border.all(color: chartColor.withValues(alpha: .22)),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(scoreLabel, style: HopeV2Type.metric(context).copyWith(color: scoreForeground, fontSize: 24)),
+                          Text(scoreLabel, key: const ValueKey('opportunity-detail-hero-match'), style: HopeV2Type.metric(context).copyWith(color: scoreForeground, fontSize: 24)),
                           Text(_t(context, 'تطبیق', 'match'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scoreForeground)),
                         ],
                       ),
@@ -2574,6 +2714,12 @@ class HopeCreationProgress extends StatelessWidget {
     const persianDigits = ['۱', '۲', '۳', '۴', '۵'];
     final en = Localizations.localeOf(context).languageCode == 'en';
     final safeIndex = activeIndex.clamp(0, labelsFa.length - 1).toInt();
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final stepIndicatorSize = textScale > 1.5
+        ? 38.0
+        : textScale > 1.2
+            ? 32.0
+            : 26.0;
     final currentStep = en
         ? 'Step ${safeIndex + 1} of ${labelsEn.length}'
         : 'مرحله ${persianDigits[safeIndex]} از ۵';
@@ -2629,8 +2775,8 @@ class HopeCreationProgress extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Container(
-                            width: 26,
-                            height: 26,
+                            width: stepIndicatorSize,
+                            height: stepIndicatorSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: step == safeIndex
@@ -2655,7 +2801,7 @@ class HopeCreationProgress extends StatelessWidget {
                                 color: step <= safeIndex
                                     ? HopeV2SemanticColors.textPrimary(context)
                                     : Theme.of(context).colorScheme.onSurfaceVariant,
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
@@ -2663,8 +2809,9 @@ class HopeCreationProgress extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             en ? labelsEn[step] : labelsFa[step],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: step == safeIndex
@@ -2673,7 +2820,7 @@ class HopeCreationProgress extends StatelessWidget {
                                   fontWeight: step == safeIndex
                                       ? FontWeight.w900
                                       : FontWeight.w700,
-                                  fontSize: 9.5,
+                                  fontSize: 12,
                                 ),
                           ),
                         ],
@@ -2804,7 +2951,7 @@ class HopeLifecycleRail extends StatelessWidget {
                           ),
                         ),
                         child: HopeIcon(
-                          i < safeCurrent ? Icons.check_rounded : icons[i],
+                          i < safeCurrent ? HopeV2Icons.completed : icons[i],
                           size: i < safeCurrent ? 14 : 13,
                           color: i < safeCurrent
                               ? Theme.of(context).colorScheme.onPrimary
@@ -2836,11 +2983,12 @@ class HopeLifecycleRail extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
                         labels[i],
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: null,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              fontSize: 9,
+                              fontSize: 12,
                               height: 1.05,
                               fontWeight: i == safeCurrent ? FontWeight.w900 : FontWeight.w700,
                               color: i <= safeCurrent ? HopeV2SemanticColors.textPrimary(context) : muted,

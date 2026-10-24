@@ -115,7 +115,7 @@ test('financial insights and satisfaction UI are wired to scoped backend capabil
 test('shared financial summary keeps status and financial language localized', () => {
   const summary = read('lib/core/ui/premium_payment_summary.dart');
   const activity = read('lib/features/transactions/transactions_page.dart');
-  for (const marker of ['Localizations.localeOf(context).languageCode', 'Funds held', 'وجه در امانت', 'Total charge', 'مبلغ نهایی']) {
+  for (const marker of ['Localizations.localeOf(context).languageCode', 'Funds held', 'وجه در امانت', 'Base amount', 'مبلغ پایه', 'Employer charge', 'مبلغ پرداختی کارفرما', 'Worker payout', 'دریافتی کارجو']) {
     assert.ok(summary.includes(marker), `missing ${marker}`);
   }
   for (const marker of ['PUBLISHED', 'ASSIGNED', 'IN_PROGRESS', 'DELIVERED', 'UNDER_REVIEW', 'COMPLETED', 'Settled', 'تسویه شده']) {
@@ -124,6 +124,68 @@ test('shared financial summary keeps status and financial language localized', (
 });
 
 
+test('payment fee values flow from the canonical backend response into the Flutter model without UI recalculation', () => {
+  const view = read('backend/src/application/view_helpers.js');
+  const model = read('lib/core/transactions/payment.dart');
+  const summary = read('lib/core/ui/premium_payment_summary.dart');
+
+  assert.match(view, /fees:\s*\{\s*baseAmount:\s*payment\.baseAmount/);
+  for (const field of ['baseAmount', 'employerFee', 'workerFee', 'platformFee', 'employerCharge', 'providerPayout']) {
+    assert.ok(view.includes(field + ': payment.' + field), 'payment view is missing ' + field);
+  }
+  assert.match(model, /fees: map\['fees'\] is Map/);
+  assert.match(model, /HopePaymentFees\.fromMap/);
+  assert.match(summary, /final fees = payment\.fees;/);
+  for (const field of ['employerFee', 'workerFee', 'platformFee', 'employerCharge', 'providerPayout']) {
+    assert.ok(summary.includes('fees.' + field), 'payment summary does not display API field ' + field);
+  }
+  assert.doesNotMatch(summary, /calculatePaymentBreakdown|employerFeeRate|workerFeeRate/);
+});
+
+test('wallet and financial-insights API envelopes match the Flutter repositories', () => {
+  const walletRoutes = read('backend/src/application/wallet_routes.js');
+  const walletRepository = read('lib/core/transactions/wallet_repository.dart');
+  const insightsRoutes = read('backend/src/routes/financial_insights_routes.js');
+  const insightsRepository = read('lib/core/financial/financial_insights_repository.dart');
+
+  assert.match(walletRoutes, /\{ wallet: wallet \|\|/);
+  assert.match(walletRepository, /map\['wallet'\]/);
+  assert.match(walletRoutes, /transactions: result\.items, nextCursor: result\.nextCursor/);
+  assert.match(walletRepository, /map\['transactions'\]/);
+  assert.match(walletRepository, /map\['nextCursor'\]/);
+  assert.match(insightsRoutes, /sendJson\(res, 200, insights\)/);
+  assert.match(insightsRepository, /\/wallet\/financial-insights\?months=\$safeMonths/);
+  assert.match(insightsRepository, /HopeFinancialInsights\.fromMap/);
+});
+
+test('opportunity fee disclosures match backend fee policy in Persian and English', () => {
+  const view = read('backend/src/application/view_helpers.js');
+  const financial = read('backend/src/financial.js');
+  const createPage = read('lib/features/marketplace/create_job_widgets.part.dart');
+  const feeDisclosureStart = createPage.indexOf("title: translate('کارمزد HOPE'");
+  const feeDisclosureEnd = createPage.indexOf("title: translate('معیار پذیرش'");
+  assert.ok(feeDisclosureStart >= 0 && feeDisclosureEnd > feeDisclosureStart);
+  const feeDisclosure = createPage.slice(feeDisclosureStart, feeDisclosureEnd);
+  const faCopy = read('lib/l10n/generated/app_localizations_fa.dart');
+  const enCopy = read('lib/l10n/generated/app_localizations_en.dart');
+
+  assert.match(view, /employerRate: 0\.10, candidateRate: 0\.10, model: 'PER_MISSION'/);
+  assert.match(view, /employerRate: 0\.30, candidateRate: 0, model: 'FIRST_MONTH_SALARY'/);
+  assert.match(financial, /employerFeeRate = normalizedKind === 'MISSION' \? 10 : 30/);
+  assert.match(financial, /workerFeeRate = normalizedKind === 'MISSION' \? 10 : 0/);
+  assert.match(feeDisclosure, /kind\s*==\s*'MISSION'\s*\?[\s\S]*copy_10_from_the_employer_and_10_from_the_candi_cf15dfa[\s\S]*:[\s\S]*copy_30_of_the_candidate_s_first_month_pay_is_c_d6da53b/);
+  assert.match(faCopy, /۱۰٪ از کارفرما و ۱۰٪ از کارجو/);
+  assert.match(faCopy, /۳۰٪ از دستمزد ماه اول کارجو از سمت کارفرما/);
+  assert.match(enCopy, /10% from the employer and 10% from the candidate/);
+  assert.match(enCopy, /30% of the candidate.*first-month pay is charged to the employer/);
+});
+test('customer financial copy does not expose implementation-only accounting terms', () => {
+  const insightsPage = read('lib/features/financial/financial_insights_page.dart');
+  const walletPage = read('lib/features/wallet/wallet_page.dart');
+
+  assert.doesNotMatch(insightsPage, /\bledger\b|لجر|transaction reference|نوع مرجع تراکنش/i);
+  assert.doesNotMatch(walletPage, /\bledger\b|لجر|Entry type|Reference type|نوع ثبت|نوع مرجع/i);
+});
 test('create opportunity UI preserves exact Toman input and recovers category/deadline dependencies', () => {
   const page = `${read('lib/features/marketplace/create_job_page.dart')}\n${read('lib/features/marketplace/create_job_widgets.part.dart')}`;
   const payload = read('lib/features/marketplace/create_job_payload.dart');

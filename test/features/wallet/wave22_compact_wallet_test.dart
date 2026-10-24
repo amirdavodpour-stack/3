@@ -85,6 +85,13 @@ class _Wave22WalletRepository implements WalletRepository {
       const {};
 }
 
+class _PendingInitialWalletRepository extends _Wave22WalletRepository {
+  final Completer<HopeWallet> pendingWallet = Completer<HopeWallet>();
+
+  @override
+  Future<HopeWallet> getWallet() => pendingWallet.future;
+}
+
 class _Wave22CapabilitiesRepository implements BackendCapabilitiesRepository {
   const _Wave22CapabilitiesRepository();
 
@@ -165,6 +172,55 @@ Future<void> _pumpWalletResponsiveMatrix(
 }
 
 void main() {
+  testWidgets(
+    'Wallet initial loading uses a finance-shaped skeleton instead of a generic status panel',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final auth = AuthController(_Wave22AuthRepository(), SecureStore());
+      await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'Ali'});
+      final wallet = _PendingInitialWalletRepository();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: auth),
+              Provider<WalletRepository>.value(value: wallet),
+              Provider<BackendCapabilitiesRepository>.value(
+                value: const _Wave22CapabilitiesRepository(),
+              ),
+            ],
+            child: WalletPage(repository: wallet),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('wallet-loading-skeleton')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wallet-loading-balance-hero')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wallet-loading-actions')), findsOneWidget);
+      expect(find.byKey(const ValueKey('wallet-loading-history-row-0')), findsOneWidget);
+      expect(
+        find.text('در حال بارگذاری'),
+        findsNothing,
+        reason: 'Initial Wallet loading should preserve page structure instead of replacing it with a generic state.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave48 Wallet adapts hero/action composition across FA-RTL and EN-LTR viewports',
     (tester) async {
@@ -344,6 +400,16 @@ void main() {
       expect(availableText.overflow, TextOverflow.visible);
 
       final heroRect = tester.getRect(hero);
+      final lockedMetric = find.byKey(
+        const ValueKey('wallet-balance-metric-locked-total'),
+      );
+      expect(lockedMetric, findsOneWidget);
+      expect(
+        heroRect.bottom - tester.getRect(lockedMetric).bottom,
+        greaterThanOrEqualTo(8),
+        reason:
+            'Compact Wallet balance metrics need visible bottom breathing room inside the hero.',
+      );
       expect(
         tester.getRect(availableMetric).width,
         lessThan(220),
@@ -423,7 +489,7 @@ void main() {
       expect(
         firstTransactionRect.top,
         lessThan(initialDockRect.top - 40),
-        reason: 'The first ledger entry should enter the compact first fold, not start under the dock.',
+        reason: 'The first transaction summary should enter the compact first fold, not start under the dock.',
       );
       expect(
         firstAmountRect.bottom,
@@ -646,20 +712,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(signature, findsOneWidget);
-      expect(find.text('Money flow in the ledger'), findsOneWidget);
+      expect(find.text('Money flow'), findsOneWidget);
       final flowHeading = tester.widget<Text>(
-        find.text('Money flow in the ledger'),
+        find.text('Money flow'),
       );
       expect(flowHeading.maxLines, isNull);
       expect(flowHeading.overflow, isNull);
       final flowExplanation = tester.widget<Text>(
         find.text(
-          'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+          'Reserved funds are released after work approval.',
         ),
       );
       expect(flowExplanation.maxLines, isNull);
       expect(flowExplanation.overflow, TextOverflow.visible);
-      for (final label in ['Ledger entry', 'Hold for approval', 'Release funds']) {
+      for (final label in ['Transaction', 'Hold for approval', 'Release funds']) {
         expect(find.text(label), findsOneWidget);
       }
       expect(tester.takeException(), isNull);

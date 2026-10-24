@@ -184,35 +184,77 @@ class _OffersPageState extends State<OffersPage> {
                 const SizedBox(height: 10),
               ],
               if (!_loading && (_loadError == null || _items.isNotEmpty))
-                Scrollbar(
-                  controller: _filterScrollController,
-                  thumbVisibility: true,
-                  interactive: true,
-                  thickness: 2,
-                  radius: const Radius.circular(99),
-                  child: SingleChildScrollView(
+                // The parent ListView has bottom padding for its scroll tail.
+                // Flutter's horizontal Scrollbar painter also sees inherited
+                // MediaQuery bottom padding and can offset its thumb into the
+                // chip rail. Remove only that inherited inset for this subtree;
+                // the page's own scroll-end padding remains unchanged.
+                MediaQuery.removePadding(
+                  context: context,
+                  removeBottom: true,
+                  child: Scrollbar(
                     controller: _filterScrollController,
-                    key: const ValueKey('offers-status-filter-scroll'),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8),
-                            child: PremiumFilterChip(
-                              selected: _filter == x,
-                              label: x == 'ALL'
-                                  ? '${_t('همه', 'All')} (${all.length})'
-                                  : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
-                              color: x == 'ALL'
-                                  ? Theme.of(context).colorScheme.primary
-                                  : _statusColor(context, x),
-                              onTap: () => setState(() => _filter = x),
+                    thumbVisibility: true,
+                    interactive: true,
+                    thickness: 2,
+                    radius: const Radius.circular(99),
+                    child: SingleChildScrollView(
+                      controller: _filterScrollController,
+                      key: const ValueKey('offers-status-filter-scroll'),
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final x in const ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED'])
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 8),
+                              child: PremiumFilterChip(
+                                selected: _filter == x,
+                                label: x == 'ALL'
+                                    ? '${_t('همه', 'All')} (${all.length})'
+                                    : '${_statusLabel(x)} (${all.where((o) => o.status.toUpperCase() == x).length})',
+                                color: x == 'ALL'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : _statusColor(context, x),
+                                onTap: () => setState(() => _filter = x),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
+                  ),
+                ),
+              if (!_loading &&
+                  (_loadError == null || _items.isNotEmpty) &&
+                  (MediaQuery.sizeOf(context).width < 420 ||
+                      MediaQuery.textScalerOf(context).scale(1) > 1.2))
+                Padding(
+                  key: const ValueKey('offers-status-filter-scroll-cue'),
+                  padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 8, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      HopeIcon(
+                        HopeV2Icons.arrowLeft,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          _t('برای دیدن فیلترهای دیگر، افقی بکشید',
+                              'Swipe to see more filters'),
+                          key: const ValueKey('offers-status-filter-scroll-cue-text'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               const SizedBox(height: 8),
@@ -312,10 +354,20 @@ class _OffersPageState extends State<OffersPage> {
                   if (o.message.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        o.message,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                      child: Builder(
+                        builder: (context) {
+                          final preserveFullMessage =
+                              MediaQuery.sizeOf(context).width < 380 ||
+                              MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                          return Text(
+                            o.message,
+                            softWrap: true,
+                            maxLines: preserveFullMessage ? null : 3,
+                            overflow: preserveFullMessage
+                                ? TextOverflow.visible
+                                : TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -342,6 +394,7 @@ class _OffersPageState extends State<OffersPage> {
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: FilledButton.icon(
+                style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                 onPressed: _acceptingId == o.id ? null : () => _accept(o),
                 icon: _acceptingId == o.id
                     ? const SizedBox(
@@ -389,59 +442,64 @@ class _OffersPageState extends State<OffersPage> {
         showDragHandle: true,
         isScrollControlled: true,
         builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(_t('جزئیات پیشنهاد','Offer details'), style: Theme.of(ctx).textTheme.headlineSmall),
-                const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const HopeIcon(HopeV2Icons.payments, size: 20),
-                  title: Text(_t('مبلغ','Amount')),
-                  subtitle: Text(_money(detail.price)),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const HopeIcon(HopeV2Icons.pending, size: 20),
-                  title: Text(_t('وضعیت','Status')),
-                  subtitle: Text(_statusLabel(detail.status)),
-                ),
-                if (detail.message.trim().isNotEmpty)
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _t('جزئیات پیشنهاد', 'Offer details'),
+                    style: Theme.of(ctx).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 12),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const HopeIcon(HopeV2Icons.activity, size: 20),
-                    title: Text(_t('پیام','Message')),
-                    subtitle: Text(detail.message),
+                    leading: const HopeIcon(HopeV2Icons.payments, size: 20),
+                    title: Text(_t('مبلغ', 'Amount')),
+                    subtitle: Text(_money(detail.price)),
                   ),
-                if (opportunityTitle != null && opportunityTitle.isNotEmpty)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const HopeIcon(HopeV2Icons.job, size: 20),
-                    title: Text(_t('فرصت','Opportunity')),
-                    subtitle: Text(opportunityTitle),
-                  ),
-                if (createdAtLabel != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const HopeIcon(HopeV2Icons.pending, size: 20),
-                    title: Text(_t('ایجاد شده','Created')),
-                    subtitle: Text(createdAtLabel),
+                    title: Text(_t('وضعیت', 'Status')),
+                    subtitle: Text(_statusLabel(detail.status)),
                   ),
-                if (widget.jobId != null && detail.isPending)
-                  FilledButton.icon(
-                    onPressed: _acceptingId == detail.id
-                        ? null
-                        : () async {
-                            Navigator.pop(ctx);
-                            await _accept(detail);
-                          },
-                    icon: const HopeIcon(HopeV2Icons.completed, size: 19),
-                    label: Text(_t('پذیرش پیشنهاد','Accept offer')),
-                  ),
-              ],
+                  if (detail.message.trim().isNotEmpty)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const HopeIcon(HopeV2Icons.activity, size: 20),
+                      title: Text(_t('پیام', 'Message')),
+                      subtitle: Text(detail.message),
+                    ),
+                  if (opportunityTitle != null && opportunityTitle.isNotEmpty)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const HopeIcon(HopeV2Icons.job, size: 20),
+                      title: Text(_t('فرصت', 'Opportunity')),
+                      subtitle: Text(opportunityTitle),
+                    ),
+                  if (createdAtLabel != null)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const HopeIcon(HopeV2Icons.pending, size: 20),
+                      title: Text(_t('ایجاد شده', 'Created')),
+                      subtitle: Text(createdAtLabel),
+                    ),
+                  if (widget.jobId != null && detail.isPending)
+                    FilledButton.icon(
+                      onPressed: _acceptingId == detail.id
+                          ? null
+                          : () async {
+                              Navigator.pop(ctx);
+                              await _accept(detail);
+                            },
+                      icon: const HopeIcon(HopeV2Icons.completed, size: 19),
+                      label: Text(_t('پذیرش پیشنهاد', 'Accept offer')),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

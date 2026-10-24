@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
-import 'package:hugeicons/hugeicons.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/backend_capabilities.dart';
@@ -33,6 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool obscure = true;
   bool loading = false;
   bool _capabilitiesLookupAttempted = false;
+  bool _googleLogoPrecacheStarted = false;
   BackendCapabilities? _backendCapabilities;
 
   bool get _canUseGoogleSignIn =>
@@ -42,6 +42,18 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Prime the small bundled logo before the first Google CTA frame. The
+    // login screen is captured first on cold start, so no earlier route has
+    // necessarily warmed Flutter's asset image cache yet.
+    if (!_googleLogoPrecacheStarted) {
+      _googleLogoPrecacheStarted = true;
+      unawaited(
+        precacheImage(
+          const AssetImage('assets/branding/google_g.png'),
+          context,
+        ),
+      );
+    }
     if (_capabilitiesLookupAttempted) return;
     _capabilitiesLookupAttempted = true;
     try {
@@ -176,8 +188,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.maybePop(context),
-                        icon: HugeIcon(
-                          icon: Localizations.localeOf(context).languageCode == 'en'
+                        icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                               ? HopeV2Icons.arrowLeft
                               : HopeV2Icons.arrowRight,
                           size: 21,
@@ -209,21 +220,24 @@ class _RegisterPageState extends State<RegisterPage> {
                             width: double.infinity,
                             child: OutlinedButton.icon(
                                key: const ValueKey('auth-google-sign-in'),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF1F1F1F),
-                                side: const BorderSide(color: Color(0xFFDADCE0)),
-                                minimumSize: const Size.fromHeight(48),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              style: HopeV2ButtonStyles.googleSignIn(context),
                               onPressed: loading ? null : submitGoogle,
-                              icon: Image.asset(
-                                'assets/branding/google_g.png',
-                                width: 20,
-                                height: 20,
-                                excludeFromSemantics: true,
+                              icon: Container(
+                                key: const ValueKey('auth-google-sign-in-logo-surface'),
+                                width: 24,
+                                height: 24,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Image.asset(
+                                  key: const ValueKey('auth-google-sign-in-logo'),
+                                  'assets/branding/google_g.png',
+                                  width: 18,
+                                  height: 18,
+                                  excludeFromSemantics: true,
+                                ),
                               ),
                               label: Text(
                                 AppLocalizations.of(context).signInWithGoogle,
@@ -259,7 +273,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_full_name_c7448f1,
-                            prefixIcon: const Icon(Icons.person_add_alt_1_rounded, size: 18, key: ValueKey('auth-name-field-icon')),
+                            prefixIcon: const Icon(HopeV2Icons.userAdd, size: 18, key: ValueKey('auth-name-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -270,7 +284,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_email_0cc870e,
-                            prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
+                            prefixIcon: const Icon(HopeV2Icons.mail, size: 18, key: ValueKey('auth-email-field-icon')),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -280,10 +294,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
                             labelText: HopeCopy.of(context).copy_password_656eabe,
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
+                            prefixIcon: const Icon(HopeV2Icons.password, size: 18, key: ValueKey('auth-password-field-icon')),
                             suffixIcon: IconButton(
-                              icon: HugeIcon(
-                                icon: obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
+                              icon: HopeIcon( obscure ? HopeV2Icons.viewOff : HopeV2Icons.view,
                                 size: 20,
                               ),
                               tooltip: obscure
@@ -305,6 +318,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
+                            style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                             onPressed: loading ? null : submit,
                             child: loading
                                 ? const SizedBox(

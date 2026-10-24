@@ -8,6 +8,7 @@ import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
 import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/hope_l10n.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/auth/login_page.dart';
@@ -184,15 +185,36 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      final googleButton = tester.widget<OutlinedButton>(
+        find.byKey(const ValueKey('auth-google-sign-in')),
+      );
+      expect(googleButton.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInLightSurface);
+      expect(googleButton.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInLightForeground);
+      expect(find.byKey(const ValueKey('auth-google-sign-in-logo')), findsOneWidget);
+      expect(
+        tester.widget<Image>(find.byKey(const ValueKey('auth-google-sign-in-logo'))).image,
+        isA<AssetImage>(),
+      );
+      expect(
+        (tester.widget<Container>(
+          find.byKey(const ValueKey('auth-google-sign-in-logo-surface')),
+        ).decoration! as BoxDecoration).color,
+        Colors.white,
+        reason: 'The standard multicolor Google G must remain on its white logo surface.',
+      );
       expect(find.text('یا'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets(
-    'register shows configured Google sign-in when backend capability is enabled',
+    'register shows configured Google sign-in visibly within a compact viewport',
     (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(await _screen(
         const RegisterPage(),
         googleSignIn: GoogleSignInService(serverClientId: 'test-server-client'),
@@ -202,8 +224,37 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('auth-google-sign-in')), findsOneWidget);
+      final googleButton = find.byKey(const ValueKey('auth-google-sign-in'));
+      expect(googleButton, findsOneWidget);
+      final googleWidget = tester.widget<OutlinedButton>(googleButton);
+      expect(googleWidget.style?.backgroundColor?.resolve({}), HopeV2Colors.googleSignInLightSurface);
+      expect(googleWidget.style?.foregroundColor?.resolve({}), HopeV2Colors.googleSignInLightForeground);
+      expect(find.byKey(const ValueKey('auth-google-sign-in-logo')), findsOneWidget);
+      expect(
+        tester.widget<Image>(find.byKey(const ValueKey('auth-google-sign-in-logo'))).image,
+        isA<AssetImage>(),
+      );
+      expect(
+        (tester.widget<Container>(
+          find.byKey(const ValueKey('auth-google-sign-in-logo-surface')),
+        ).decoration! as BoxDecoration).color,
+        Colors.white,
+        reason: 'The standard multicolor Google G must remain on its white logo surface.',
+      );
       expect(find.text('یا'), findsOneWidget);
+      final bounds = tester.getRect(googleButton);
+      expect(bounds.left, greaterThanOrEqualTo(0));
+      expect(bounds.right, lessThanOrEqualTo(360));
+      expect(
+        bounds.top,
+        greaterThanOrEqualTo(0),
+        reason: 'The configured Google CTA must not be hidden above the captured frame.',
+      );
+      expect(
+        bounds.bottom,
+        lessThanOrEqualTo(640),
+        reason: 'The configured Google CTA must be visible in the 360x640dp Register viewport.',
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -326,6 +377,27 @@ void main() {
     );
   });
 
+  testWidgets('marked auth submit actions use the scoped green CTA token', (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      final button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(
+        button.style?.backgroundColor?.resolve({}),
+        HopeV2Colors.markedPrimaryActionDarkGreen,
+      );
+      expect(
+        button.style?.foregroundColor?.resolve({}),
+        HopeV2Colors.darkText,
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
     for (final screen in [
       const LoginPage(),
@@ -371,6 +443,53 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PasswordResetPage), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets(
+    'password reset renders reset-specific copy and no registration controls',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(await _screen(const PasswordResetPage()));
+      await tester.pumpAndSettle();
+
+      final screen = find.byType(PasswordResetPage);
+      expect(screen, findsOneWidget);
+      expect(find.byType(RegisterPage), findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byType(FilledButton), findsOneWidget);
+
+      final copy = HopeCopy.of(tester.element(screen));
+      expect(find.text(copy.copy_reset_password_18b5d1c), findsOneWidget);
+      expect(find.text(copy.copy_send_request_0480e80), findsOneWidget);
+      expect(
+        find.text(copy.copy_start_a_good_collaboration_9df52cf),
+        findsNothing,
+      );
+      expect(find.text(copy.copy_full_name_c7448f1), findsNothing);
+      expect(find.text(copy.copy_password_656eabe), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('password-reset privacy reassurance stays compact on a phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(await _screen(const PasswordResetPage()));
+    await tester.pumpAndSettle();
+
+    final note = find.byKey(const ValueKey('password-reset-privacy-note'));
+    expect(note, findsOneWidget);
+    expect(tester.getSize(note).height, lessThanOrEqualTo(140));
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
   testWidgets('Wave 28 auth prefix glyphs have deterministic compact render bounds',
       (tester) async {

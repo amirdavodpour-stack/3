@@ -290,7 +290,7 @@ class StatusPill extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: resolved,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -305,15 +305,132 @@ class StatusPill extends StatelessWidget {
       HopeV2SemanticColors.readableAccent(context, c);
 }
 
+/// Small kinetic editorial frame for a semantic glyph.
+/// The ornament remains subordinate to the icon and never replaces its label.
+class HopeKineticGlyph extends StatelessWidget {
+  const HopeKineticGlyph({
+    super.key,
+    required this.child,
+    required this.color,
+    this.width = 52,
+    this.height = 48,
+    this.alert = false,
+  });
+
+  final Widget child;
+  final Color color;
+  final double width;
+  final double height;
+  final bool alert;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(
+          painter: _HopeKineticGlyphPainter(
+            color: color,
+            // Keep the frame genuinely duotone: botanical green complements
+            // indigo product actions, while teal remains the information accent.
+            motionColor: dark
+                ? HopeV2TonalPalettes.forest.shade300
+                : HopeV2TonalPalettes.forest.shade700,
+            infoColor: dark ? HopeV2Colors.secondaryDark : HopeV2Colors.secondaryStrong,
+            alert: alert,
+          ),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+class _HopeKineticGlyphPainter extends CustomPainter {
+  const _HopeKineticGlyphPainter({
+    required this.color,
+    required this.motionColor,
+    required this.infoColor,
+    required this.alert,
+  });
+
+  final Color color;
+  final Color motionColor;
+  final Color infoColor;
+  final bool alert;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final center = Offset(size.width * .5, size.height * .5);
+    final radius = size.shortestSide * .31;
+    final orbit = Rect.fromCircle(center: center, radius: radius);
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.45
+      ..strokeCap = StrokeCap.round
+      ..color = color.withValues(alpha: .46);
+    final motion = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.35
+      ..strokeCap = StrokeCap.round
+      ..color = motionColor.withValues(alpha: .52);
+    final infoFill = Paint()
+      ..color = infoColor.withValues(alpha: .76);
+    final motionFill = Paint()
+      ..color = motionColor.withValues(alpha: .13);
+    canvas.drawArc(orbit, -.72, 2.35, false, ring);
+    canvas.drawArc(orbit, 2.68, .86, false, motion);
+    final slash = Path()
+      ..moveTo(1, size.height * .74)
+      ..lineTo(size.width * .24, size.height * .53)
+      ..lineTo(size.width * .33, size.height * .53)
+      ..lineTo(size.width * .10, size.height * .78)
+      ..close()
+      ..moveTo(size.width * .78, size.height * .22)
+      ..lineTo(size.width * .94, size.height * .08)
+      ..lineTo(size.width * .98, size.height * .08)
+      ..lineTo(size.width * .84, size.height * .25)
+      ..close();
+    canvas.drawPath(slash, motionFill);
+    canvas.drawCircle(
+      Offset(size.width * .91, size.height * .77),
+      size.shortestSide * .045,
+      infoFill,
+    );
+    canvas.drawCircle(
+      Offset(size.width * .19, size.height * .17),
+      size.shortestSide * .035,
+      Paint()..color = color.withValues(alpha: .7),
+    );
+    if (alert) {
+      final cut = Path()
+        ..moveTo(size.width * .74, size.height * .02)
+        ..lineTo(size.width * .98, size.height * .02)
+        ..lineTo(size.width * .98, size.height * .27);
+      canvas.drawPath(cut, ring);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HopeKineticGlyphPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.motionColor != motionColor ||
+      oldDelegate.infoColor != infoColor ||
+      oldDelegate.alert != alert;
+}
+
 class HopeIconTile extends StatelessWidget {
   const HopeIconTile(this.icon,
       {super.key,
-      this.color = HopeV2Colors.primary,
+      this.color,
       this.size = 40,
       this.filled = false,
       this.semanticLabel});
   final Object icon;
-  final Color color;
+  final Color? color;
   final double size;
   final bool filled;
   final String? semanticLabel;
@@ -321,24 +438,28 @@ class HopeIconTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = color ?? HopeV2IconAccents.resolve(
+      icon,
+      brightness: Theme.of(context).brightness,
+    );
     final radius =
         BorderRadius.circular((size * .26).clamp(10.0, 16.0).toDouble());
     final fill = filled
-        ? color.withValues(alpha: dark ? .76 : .93)
-        : color.withValues(alpha: dark ? .09 : .08);
-    final iconColor = filled ? Colors.white : color;
+        ? accent.withValues(alpha: dark ? .76 : .93)
+        : accent.withValues(alpha: dark ? .09 : .08);
+    final iconColor = filled ? Colors.white : accent;
     final decoration = BoxDecoration(
       color: fill,
       borderRadius: radius,
       border: Border.all(
         color: filled
             ? Colors.white.withValues(alpha: dark ? .08 : .16)
-            : color.withValues(alpha: dark ? .15 : .14),
+            : accent.withValues(alpha: dark ? .15 : .14),
       ),
       boxShadow: filled
           ? [
               BoxShadow(
-                color: color.withValues(alpha: dark ? .025 : .035),
+                color: accent.withValues(alpha: dark ? .025 : .035),
                 blurRadius: size * .08,
                 offset: Offset(0, size * .035),
               ),
@@ -400,11 +521,11 @@ class MetricTile extends StatelessWidget {
       required this.label,
       required this.value,
       this.icon,
-      this.color = HopeV2Colors.primary});
+      this.color});
   final String label;
   final String value;
   final Object? icon;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => HopeSurface(
@@ -750,55 +871,89 @@ class _SkeletonBoxState extends State<SkeletonBox>
 }
 
 class OpportunitySkeletonCard extends StatelessWidget {
-  const OpportunitySkeletonCard({super.key});
+  const OpportunitySkeletonCard({
+    super.key,
+    this.compact = false,
+    this.horizontal = false,
+  });
+
+  /// Uses a short media band and a single metadata rail for first-fold cards.
+  /// The default keeps the richer placeholder used by non-compact surfaces.
+  final bool compact;
+
+  /// Mirrors the horizontal, media-leading summary used by phone Explore cards.
+  final bool horizontal;
 
   @override
-  Widget build(BuildContext context) => HopeSurface(
+  Widget build(BuildContext context) {
+    if (horizontal) {
+      return HopeSurface(
+        child: Padding(
+          padding: const EdgeInsets.all(HopeV2Spacing.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SkeletonBox(
+                width: 72,
+                height: 72,
+                radius: HopeV2Radii.md,
+              ),
+              const SizedBox(width: HopeV2Spacing.sm),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final titleWidth = width < 220 ? width : 220.0;
+                    final subtitleWidth = width < 160 ? width : 160.0;
+                    final budgetWidth = width < 140 ? width : 140.0;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonBox(height: 18, width: titleWidth),
+                        const SizedBox(height: 5),
+                        SkeletonBox(height: 12, width: subtitleWidth),
+                        const SizedBox(height: 8),
+                        SkeletonBox(height: 14, width: budgetWidth),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (compact) {
+      return HopeSurface(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SkeletonBox(height: 110, radius: HopeV2Radii.xl),
+            const SkeletonBox(height: 72, radius: HopeV2Radii.md),
             Padding(
-              padding: const EdgeInsets.all(HopeV2Spacing.lg),
+              padding: const EdgeInsets.all(HopeV2Spacing.sm),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final titleWidth = width < 240 ? width : 240.0;
+                  final titleWidth = width < 220 ? width : 220.0;
                   final subtitleWidth = width < 180 ? width : 180.0;
-                  final detailWidth = width < 150 ? width : 150.0;
-                  final stack = width < 240;
-                  const items = [
-                    SkeletonBox(height: 28, width: 100),
-                    SkeletonBox(height: 28, width: 118),
-                  ];
+                  final chipWidth = width > 6 ? (width - 6) / 2 : width;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SkeletonBox(height: 20, width: titleWidth),
-                      const SizedBox(height: 9),
-                      SkeletonBox(height: 14, width: subtitleWidth),
-                      const SizedBox(height: 15),
-                      SkeletonBox(height: 14, width: detailWidth),
+                      SkeletonBox(height: 18, width: titleWidth),
+                      const SizedBox(height: 5),
+                      SkeletonBox(height: 12, width: subtitleWidth),
                       const SizedBox(height: 8),
-                      SkeletonBox(height: 20, width: detailWidth),
-                      const SizedBox(height: 12),
-                      if (stack)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            items[0],
-                            const SizedBox(height: 8),
-                            items[1],
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            items[0],
-                            const SizedBox(width: 8),
-                            items[1],
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          SkeletonBox(height: 20, width: chipWidth),
+                          const SizedBox(width: 6),
+                          SkeletonBox(height: 20, width: chipWidth),
+                        ],
+                      ),
                     ],
                   );
                 },
@@ -807,5 +962,61 @@ class OpportunitySkeletonCard extends StatelessWidget {
           ],
         ),
       );
-}
+    }
 
+    return HopeSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonBox(height: 110, radius: HopeV2Radii.xl),
+          Padding(
+            padding: const EdgeInsets.all(HopeV2Spacing.lg),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final titleWidth = width < 240 ? width : 240.0;
+                final subtitleWidth = width < 180 ? width : 180.0;
+                final detailWidth = width < 150 ? width : 150.0;
+                final stack = width < 240;
+                const items = [
+                  SkeletonBox(height: 28, width: 100),
+                  SkeletonBox(height: 28, width: 118),
+                ];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(height: 20, width: titleWidth),
+                    const SizedBox(height: 9),
+                    SkeletonBox(height: 14, width: subtitleWidth),
+                    const SizedBox(height: 15),
+                    SkeletonBox(height: 14, width: detailWidth),
+                    const SizedBox(height: 8),
+                    SkeletonBox(height: 20, width: detailWidth),
+                    const SizedBox(height: 12),
+                    if (stack)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          items[0],
+                          const SizedBox(height: 8),
+                          items[1],
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          items[0],
+                          const SizedBox(width: 8),
+                          items[1],
+                        ],
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

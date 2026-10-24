@@ -298,8 +298,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           borderRadius: BorderRadius.circular(HopeV2Radii.md),
           onLongPress: unread ? () => _read(n.id) : null,
           child: Semantics(
-            button: unread,
-            label: unread
+            // Match screen-reader semantics to the actual tap contract:
+            // read notifications with a valid destination remain actionable.
+            button: unread || n.hasAction,
+            label: unread || n.hasAction
                 ? '${n.title}، ${n.hasAction ? n.actionLabel : HopeCopy.of(context).copy_tap_to_mark_as_read_5c9917a}'
                 : n.title,
             child: Row(

@@ -130,7 +130,7 @@ class _TypeHero extends StatelessWidget {
                   Text(
                     sub,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 12,
                       height: 1.3,
                       color: selected ? Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: .78) : null,
                     ),
@@ -402,7 +402,7 @@ class _CreateJobForm extends StatelessWidget {
                                 IconButton(
                                   tooltip: HopeCopy.of(context).copy_retry_49f3eba,
                                   onPressed: () => onRetryCategories(),
-                                  icon: const HugeIcon(icon: HopeV2Icons.refresh, size: 19),
+                                  icon: const HopeIcon( HopeV2Icons.refresh, size: 19),
                                 ),
                               ],
                             ),
@@ -744,8 +744,7 @@ class _CreateJobForm extends StatelessWidget {
                           onPressed: activeStep == 0 || busy
                               ? null
                               : () => onStepChanged(activeStep - 1),
-                          icon: HugeIcon(
-                            icon: Directionality.of(context) == ui.TextDirection.rtl
+                          icon: HopeIcon( Directionality.of(context) == ui.TextDirection.rtl
                                 ? HopeV2Icons.arrowRight
                                 : HopeV2Icons.arrowLeft,
                             size: 18,
@@ -756,6 +755,7 @@ class _CreateJobForm extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
+                          style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                           key: const ValueKey('create-opportunity-next-step'),
                           onPressed: busy
                               ? null
@@ -768,8 +768,7 @@ class _CreateJobForm extends StatelessWidget {
                                   height: 18,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : HugeIcon(
-                                  icon: activeStep < 4
+                              : HopeIcon( activeStep < 4
                                       ? (Directionality.of(context) == ui.TextDirection.rtl
                                           ? HopeV2Icons.arrowLeft
                                           : HopeV2Icons.arrowRight)

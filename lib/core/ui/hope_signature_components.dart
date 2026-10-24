@@ -231,16 +231,16 @@ class HopeWalletFlowSignature extends StatelessWidget {
     final compact =
         MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact &&
             !enlargedText;
-    final currencyLabel = wallet.currency == 'TOMAN'
-        ? _t(context, 'تومان داخلی', 'Internal Toman')
-        : wallet.currency;
-    const compactFa = ['دفترکل', 'رزرو', 'آزادسازی'];
-    const compactEn = ['Ledger', 'Hold', 'Release'];
+    // Wallet amounts in this product are displayed in Toman.
+    // Never surface external/backend currency codes such as IRR in the UI.
+    final currencyLabel = _t(context, 'تومان', 'Toman');
+    const compactFa = ['تراکنش', 'رزرو', 'آزادسازی'];
+    const compactEn = ['Transaction', 'Hold', 'Release'];
     final steps = <({Object icon, String fa, String en, Color color})>[
       (
         icon: HopeV2Icons.wallet,
-        fa: 'ثبت دفترکل',
-        en: 'Ledger entry',
+        fa: 'ثبت تراکنش',
+        en: 'Transaction',
         color: HopeV2Colors.primary,
       ),
       (
@@ -310,7 +310,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
                       const SizedBox(width: 9),
                       Expanded(
                         child: Text(
-                          _t(context, 'گردش وجه در دفترکل', 'Money flow in the ledger'),
+                          _t(context, 'گردش وجه', 'Money flow'),
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w900,
                               ),
@@ -339,8 +339,8 @@ class HopeWalletFlowSignature extends StatelessWidget {
                     child: Text(
                       _t(
                         context,
-                        compact ? 'گردش وجه' : 'گردش وجه در دفترکل',
-                        compact ? 'Money flow' : 'Money flow in the ledger',
+                        'گردش وجه',
+                        'Money flow',
                       ),
                       style: (compact
                               ? Theme.of(context).textTheme.labelMedium
@@ -366,10 +366,10 @@ class HopeWalletFlowSignature extends StatelessWidget {
                 context,
                 compact
                   ? 'رزرو وجه تا تأیید کار'
-                  : 'تغییرات موجودی در دفترکل داخلی ثبت می‌شود؛ وجه رزروشده پس از تأیید کار آزاد می‌شود.',
+                  : 'وجه رزروشده پس از تأیید کار آزاد می‌شود.',
               compact
                   ? 'Funds held until work approval'
-                  : 'Balance movements are recorded in the internal ledger; reserved funds are released after work approval.',
+                  : 'Reserved funds are released after work approval.',
             ),
             maxLines: enlargedText ? null : (compact ? 1 : 2),
             overflow: enlargedText ? TextOverflow.visible : TextOverflow.ellipsis,
@@ -659,7 +659,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
 
     return PremiumPanel(
       key: const ValueKey('opportunity-dna-signature'),
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       quiet: true,
       glass: false,
       semanticLabel: _t(
@@ -693,7 +693,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 400;
@@ -714,7 +714,7 @@ class HopeOpportunityDnaSignature extends StatelessWidget {
                       child: SizedBox(
                         width: width,
                         child: Container(
-                          constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+                          constraints: BoxConstraints(minHeight: compact ? 46 : 58),
                           padding: EdgeInsets.symmetric(
                             horizontal: compact ? 8 : 9,
                             vertical: compact ? 6 : 8,

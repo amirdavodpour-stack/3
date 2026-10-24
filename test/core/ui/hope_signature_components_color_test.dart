@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/transactions/wallet.dart';
 import 'package:hope_mobile/core/ui/hope_signature_components.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets(
@@ -189,4 +192,68 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'wallet flow signature uses customer-facing copy without accounting implementation terms',
+    (tester) async {
+      const wallet = HopeWallet(
+        id: 'wallet-1',
+        userId: 'user-1',
+        currency: 'TOMAN',
+        availableBalance: 125000,
+        lockedBalance: 25000,
+        status: 'ACTIVE',
+      );
+
+      Widget render(Locale locale) => MaterialApp(
+            locale: locale,
+            supportedLocales: const [Locale('en'), Locale('fa')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: HopeWalletFlowSignature(wallet: wallet),
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(render(const Locale('en')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          RegExp(r'ledger|internal toman|دفترکل|دفتر\s*کل|لجر', caseSensitive: false),
+        ),
+        findsNothing,
+      );
+      expect(find.text('Money flow'), findsOneWidget);
+      expect(find.text('Transaction'), findsOneWidget);
+      expect(find.text('Toman'), findsOneWidget);
+      expect(
+        find.text('Reserved funds are released after work approval.'),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(render(const Locale('fa')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          RegExp(r'ledger|internal toman|دفترکل|دفتر\s*کل|لجر', caseSensitive: false),
+        ),
+        findsNothing,
+      );
+      expect(find.text('گردش وجه'), findsOneWidget);
+      expect(find.text('ثبت تراکنش'), findsOneWidget);
+      expect(find.text('تومان'), findsOneWidget);
+      expect(
+        find.text('وجه رزروشده پس از تأیید کار آزاد می‌شود.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
