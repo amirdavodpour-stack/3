@@ -505,8 +505,8 @@ void main() {
         );
         if (label == 'Workshop') {
           expect(
-            paragraph.computeLineMetrics(),
-            hasLength(1),
+            paragraph.getLineBoundary(const TextPosition(offset: 0)).end,
+            'Workshop'.length,
             reason:
                 'At 1.5x, Workshop must remain a single readable line; a lone trailing "p" is not acceptable reflow.',
           );
