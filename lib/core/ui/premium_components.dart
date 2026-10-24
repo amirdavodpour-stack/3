@@ -151,9 +151,10 @@ class PremiumNavigationBar extends StatelessWidget {
                 ),
                 AnimatedPositionedDirectional(
                   key: const ValueKey('hope-navigation-selection-accent'),
-                  start: itemWidth * activeIndex + itemWidth * .27,
+                  start: itemStarts[activeIndex] +
+                      itemWidths[activeIndex] * .27,
                   top: 4,
-                  width: itemWidth * .46,
+                  width: itemWidths[activeIndex] * .46,
                   height: 2,
                   duration: reduceMotion
                       ? Duration.zero
