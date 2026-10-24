@@ -139,6 +139,9 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             theme: theme,
+            // Avoid sampling the previous palette during MaterialApp's default
+            // animated theme transition between the light and dark iterations.
+            themeAnimationDuration: Duration.zero,
             home: Builder(
               builder: (context) {
                 googleStyle = HopeV2ButtonStyles.googleSignIn(context);
