@@ -234,6 +234,79 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'compact opportunity keeps city beside the full budget on a darker, shorter card',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final job = HopeJob.fromMap({
+        'id': 'compact-city-budget-inline',
+        'title': 'توسعه Flutter برای محصول جدید',
+        'category': 'نرم‌افزار',
+        'kind': 'JOB',
+        'status': 'OPEN',
+        'visibility': 'PUBLIC',
+        'budgetMin': '15000000',
+        'budgetMax': '25000000',
+        'city': 'تهران',
+      });
+
+      await tester.pumpWidget(MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.compact,
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final cityFinder = find.byKey(
+        const ValueKey('opportunity-card-compact-location'),
+      );
+      final budgetFinder = find.byKey(
+        const ValueKey('opportunity-card-compact-budget'),
+      );
+      final cityRect = tester.getRect(cityFinder);
+      final budgetRect = tester.getRect(budgetFinder);
+      expect(find.text('تهران'), findsOneWidget);
+      expect(
+        cityRect.top < budgetRect.bottom && budgetRect.top < cityRect.bottom,
+        isTrue,
+        reason:
+            'At default text scale a short city must share the budget metadata row instead of adding a separate line.',
+      );
+
+      final media = tester.getSize(
+        find.byKey(const ValueKey('opportunity-compact-media')),
+      );
+      expect(media.width, 64);
+      expect(media.height, 64);
+
+      final surface = tester.widget<Container>(
+        find.byKey(const ValueKey('opportunity-card-surface')),
+      );
+      final decoration = surface.decoration! as BoxDecoration;
+      expect(decoration.color, HopeV2Colors.darkSurface);
+      expect(find.textContaining('تومان'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('compact opportunity cards give media and value a non-competing editorial stack', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
