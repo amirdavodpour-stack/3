@@ -1056,7 +1056,7 @@ Future<void> _captureRuntimeScreenshot(
   final shouldRevealCandidateMatchesTarget =
       _talkbackRequired &&
       _semanticsOnly &&
-      marker == 'candidate-matches-fa-rtl';
+      marker.startsWith('candidate-matches-');
   if (shouldRevealReportTarget ||
       shouldRevealTransactionTarget ||
       shouldRevealCandidateMatchesTarget) {
