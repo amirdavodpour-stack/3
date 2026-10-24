@@ -505,8 +505,10 @@ void main() {
         );
         if (label == 'Workshop') {
           expect(
-            paragraph.getLineBoundary(const TextPosition(offset: 0)).end,
-            'Workshop'.length,
+            paragraph.getBoxesForSelection(
+              const TextSelection(baseOffset: 0, extentOffset: 'Workshop'.length),
+            ).length,
+            1,
             reason:
                 'At 1.5x, Workshop must remain a single readable line; a lone trailing "p" is not acceptable reflow.',
           );
