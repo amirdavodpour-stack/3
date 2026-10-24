@@ -504,10 +504,33 @@ void main() {
           reason: 'Large-text navigation painted a clipped label: $label',
         );
         if (label == 'Workshop') {
+          final workshopSelectionBoxes = paragraph.getBoxesForSelection(
+            const TextSelection(baseOffset: 0, extentOffset: 'Workshop'.length),
+          );
+          final layoutTrace = <String>[];
+          RenderObject? renderNode = paragraph;
+          for (var depth = 0; renderNode != null && depth < 12; depth++) {
+            if (renderNode is RenderBox) {
+              layoutTrace.add(
+                '${renderNode.runtimeType}:size=${renderNode.size}:constraints=${renderNode.constraints}',
+              );
+            }
+            renderNode = renderNode.parent;
+          }
+          final renderedTextScale = MediaQuery.textScalerOf(
+            tester.element(find.text(label)),
+          ).scale(1);
+          print(
+            'HOPE_NAV_WORKSHOP_LAYOUT_DIAGNOSTIC:'
+            'mediaScale=$renderedTextScale:'
+            'dock=${tester.getSize(dock)}:'
+            'paragraph=${paragraph.size}:'
+            'fontSize=${paragraph.text.style?.fontSize}:'
+            'boxes=${workshopSelectionBoxes.length}:'
+            'chain=${layoutTrace.join(' > ')}',
+          );
           expect(
-            paragraph.getBoxesForSelection(
-              const TextSelection(baseOffset: 0, extentOffset: 'Workshop'.length),
-            ).length,
+            workshopSelectionBoxes.length,
             1,
             reason:
                 'At 1.5x, Workshop must remain a single readable line; a lone trailing "p" is not acceptable reflow.',
