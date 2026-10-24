@@ -103,15 +103,33 @@ class PremiumNavigationBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final itemWidth = constraints.maxWidth / destinations.length;
+            // At enlarged text scales, reserve more horizontal room for
+            // long destination labels instead of letting a single word wrap
+            // into several cramped lines. Keep equal widths at default scale.
+            final flexFactors = destinations.map((destination) {
+              final longLabelAtLargeScale =
+                  textScale >= 1.5 && destination.label.trim().length >= 8;
+              return compactLabels && longLabelAtLargeScale ? 7 : 5;
+            }).toList(growable: false);
+            final totalFlex =
+                flexFactors.fold<int>(0, (total, factor) => total + factor);
+            final itemWidths = flexFactors
+                .map((factor) => constraints.maxWidth * factor / totalFlex)
+                .toList(growable: false);
+            final itemStarts = <double>[];
+            var nextStart = 0.0;
+            for (final itemWidth in itemWidths) {
+              itemStarts.add(nextStart);
+              nextStart += itemWidth;
+            }
             return Stack(
               clipBehavior: Clip.hardEdge,
               children: [
                 AnimatedPositionedDirectional(
-                  start: itemWidth * activeIndex + 2,
+                  start: itemStarts[activeIndex] + 2,
                   top: 2,
                   bottom: 2,
-                  width: itemWidth - 4,
+                  width: itemWidths[activeIndex] - 4,
                   duration: reduceMotion
                       ? Duration.zero
                       : const Duration(milliseconds: 220),
@@ -156,6 +174,7 @@ class PremiumNavigationBar extends StatelessWidget {
                   children: [
                     for (var index = 0; index < destinations.length; index++)
                       Expanded(
+                        flex: flexFactors[index],
                         child: _PremiumNavigationItem(
                           destination: destinations[index],
                           selected: index == activeIndex,
