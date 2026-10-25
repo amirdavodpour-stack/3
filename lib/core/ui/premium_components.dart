@@ -103,48 +103,71 @@ class PremiumNavigationBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // At enlarged text scales, allocate space using each localized
-            // label's measured single-line width. A fixed "long-label" weight
-            // steals space from ordinary English labels such as Explore.
+            // At enlarged text scales, proportional natural-width weights
+            // can still starve the widest label because the sum of all natural
+            // widths exceeds the viewport. Reserve the widest label first, then
+            // share the remaining width equally so Explore is not squeezed.
             // Default-scale tabs intentionally remain equal-width.
             final flexFactors = compactLabels && textScale >= 1.5
-                ? destinations.asMap().entries.map((entry) {
-                    final labelStyle = DefaultTextStyle.of(context).style.merge(
-                      TextStyle(
-                        fontSize: 12,
-                        height: 1.0,
-                        fontWeight: entry.key == activeIndex
-                            ? FontWeight.w800
-                            : FontWeight.w500,
-                      ),
+                ? (() {
+                    final measuredWidths = destinations.map((destination) {
+                      final labelStyle = DefaultTextStyle.of(context).style.merge(
+                        TextStyle(
+                          fontSize: 12,
+                          height: 1.0,
+                          fontWeight:
+                              destinations.indexOf(destination) == activeIndex
+                                  ? FontWeight.w800
+                                  : FontWeight.w500,
+                        ),
+                      );
+                      final painter = TextPainter(
+                        text: TextSpan(
+                          text: destination.label,
+                          style: labelStyle,
+                        ),
+                        textAlign: TextAlign.center,
+                        textDirection: Directionality.of(context),
+                        textScaler: MediaQuery.textScalerOf(context),
+                        maxLines: 1,
+                        textWidthBasis: TextWidthBasis.longestLine,
+                      )..layout();
+                      final width = painter.width;
+                      painter.dispose();
+                      return width;
+                    }).toList(growable: false);
+                    var widestIndex = 0;
+                    for (var index = 1; index < measuredWidths.length; index++) {
+                      if (measuredWidths[index] > measuredWidths[widestIndex]) {
+                        widestIndex = index;
+                      }
+                    }
+                    // Regression evidence: 49dp clips Explore while 55dp passes;
+                    // use the midpoint as a floor for the four remaining tabs.
+                    const minimumOtherWidth = 51.5;
+                    final maxWidestWidth = constraints.maxWidth -
+                        minimumOtherWidth * (destinations.length - 1);
+                    final desiredWidestWidth = measuredWidths[widestIndex] <
+                            minimumOtherWidth
+                        ? minimumOtherWidth
+                        : measuredWidths[widestIndex];
+                    final widestWidth = maxWidestWidth < minimumOtherWidth
+                        ? constraints.maxWidth / destinations.length
+                        : (desiredWidestWidth < maxWidestWidth
+                            ? desiredWidestWidth
+                            : maxWidestWidth);
+                    final otherWidth = (constraints.maxWidth - widestWidth) /
+                        (destinations.length - 1);
+                    return List<int>.generate(
+                      destinations.length,
+                      (index) => ((index == widestIndex
+                                  ? widestWidth
+                                  : otherWidth) *
+                              1000)
+                          .round(),
+                      growable: false,
                     );
-                    final painter = TextPainter(
-                      text: TextSpan(
-                        text: entry.value.label,
-                        style: labelStyle,
-                      ),
-                      textAlign: TextAlign.center,
-                      textDirection: Directionality.of(context),
-                      textScaler: MediaQuery.textScalerOf(context),
-                      maxLines: 1,
-                      textWidthBasis: TextWidthBasis.longestLine,
-                    )..layout();
-                    final width = painter.width;
-                    painter.dispose();
-                    // The rendered 1.5x Workshop regression shows the
-                    // Paragraph can still wrap at its proportional share.
-                    // Add a small width reserve to long labels only; measure
-                    // all labels and keep the ordinary-scale rail equal-width.
-                    final needsWrapReserve =
-                        compactLabels &&
-                        textScale >= 1.5 &&
-                        entry.value.label.trim().length >= 8;
-                    final reservedWidth = width + (needsWrapReserve ? 24.0 : 0.0);
-                    return (reservedWidth * 1000)
-                        .ceil()
-                        .clamp(1, 2147483647)
-                        .toInt();
-                  }).toList(growable: false)
+                  })()
                 : List<int>.filled(destinations.length, 5, growable: false);
             final totalFlex =
                 flexFactors.fold<int>(0, (total, factor) => total + factor);
