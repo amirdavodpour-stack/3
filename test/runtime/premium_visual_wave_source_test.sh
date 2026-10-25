@@ -187,7 +187,11 @@ test -f "test/core/ui/premium_visual_wave_15_test.dart"
 
 # Wave 17: viewport fill, compact navigation labels and financial-value wrapping.
 grep -Fq 'final compactLabels = width < 400 || textScale > 1.2;' "$premium"
-grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' "$premium"
+grep -Fq 'maxLines: textScale >= 1.5 ? 1 : (compact ? 3 : 1),' "$premium"
+grep -Fq 'final scrollableLabels = compactLabels && textScale >= 1.5;' "$premium"
+grep -Fq 'return SingleChildScrollView(' "$premium"
+grep -Fq 'final naturalWidth = painter.width;' "$premium"
+grep -Fq 'softWrap: textScale < 1.5,' "$premium"
 lifecycle_block="$(sed -n '/class HopeLifecycleRail extends StatelessWidget/,/^}/p' "$premium")"
 printf '%s\n' "$lifecycle_block" | grep -Fq 'maxLines: null,'
 grep -Fq 'showLabel: true,' "$premium"
@@ -198,7 +202,7 @@ navigation_selection_block="$(sed -n '/hope-navigation-selection-plate/,+16p' "$
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'RoundedRectangleBorder('
 printf '%s\n' "$navigation_selection_block" | grep -Fq 'borderRadius: BorderRadius.circular(10)'
 grep -Fq 'HopeV2SemanticColors.navigationLabel(' "$premium"
-grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' "$premium"
+grep -Fq 'maxLines: textScale >= 1.5 ? 1 : (compact ? 3 : 1),' "$premium"
 grep -Fq 'fontSize: 12' "$premium"
 grep -Fq 'softWrap: true' "$premium"
 if grep -Fq 'fit: BoxFit.scaleDown' "$premium"; then
@@ -359,7 +363,7 @@ grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .g
 grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
 grep -Fq 'height: HopeV2Navigation.barHeight +' lib/core/ui/premium_components.dart
-grep -Fq 'maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),' lib/core/ui/premium_components.dart
+grep -Fq 'maxLines: textScale >= 1.5 ? 1 : (compact ? 3 : 1),' lib/core/ui/premium_components.dart
 grep -Fq 'vertical: compact ? 0 : 12,' lib/features/wallet/wallet_page.dart
 grep -Fq 'wallet-history-entry-${item.id}' lib/features/wallet/wallet_page.dart
 grep -Fq 'profile-language-selector' lib/features/profile/profile_page.dart
