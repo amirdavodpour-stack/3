@@ -271,9 +271,15 @@ void main() {
       ),
     );
 
+    final semanticTarget =
+        find.bySemanticsIdentifier('home-refresh-action');
+    expect(semanticTarget, findsOneWidget);
     expect(
-      find.bySemanticsIdentifier('home-refresh-action'),
-      findsOneWidget,
+      tester.getSemantics(semanticTarget)
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'PremiumIconButton must expose an actual semantic tap action, not only a button label.',
     );
   });
 
