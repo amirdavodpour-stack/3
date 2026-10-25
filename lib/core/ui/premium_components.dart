@@ -103,22 +103,23 @@ class PremiumNavigationBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // At enlarged text scales, proportional natural-width weights
-            // can still starve the widest label because the sum of all natural
-            // widths exceeds the viewport. Reserve the widest label first, then
-            // share the remaining width equally so Explore is not squeezed.
+            // At enlarged text scales, give every label enough room for its
+            // measured single-line width before sharing any remaining space.
+            // A single-widest-label reserve starves the second-longest label
+            // (for example, Explore beside Workshop) and causes clipping.
             // Default-scale tabs intentionally remain equal-width.
             final flexFactors = compactLabels && textScale >= 1.5
                 ? (() {
                     final measuredWidths = destinations.map((destination) {
-                      final labelStyle = DefaultTextStyle.of(context).style.merge(
+                      final labelStyle =
+                          DefaultTextStyle.of(context).style.merge(
                         TextStyle(
                           fontSize: 12,
                           height: 1.0,
-                          fontWeight:
-                              destinations.indexOf(destination) == activeIndex
-                                  ? FontWeight.w800
-                                  : FontWeight.w500,
+                          fontWeight: destinations.indexOf(destination) ==
+                                  activeIndex
+                              ? FontWeight.w800
+                              : FontWeight.w500,
                         ),
                       );
                       final painter = TextPainter(
@@ -136,37 +137,33 @@ class PremiumNavigationBar extends StatelessWidget {
                       painter.dispose();
                       return width;
                     }).toList(growable: false);
-                    var widestIndex = 0;
-                    for (var index = 1; index < measuredWidths.length; index++) {
-                      if (measuredWidths[index] > measuredWidths[widestIndex]) {
-                        widestIndex = index;
-                      }
-                    }
-                    // Regression evidence: 49dp clips Explore while 55dp passes;
-                    // use the midpoint as a floor for the four remaining tabs.
-                    const minimumOtherWidth = 55.0;
-                    final maxWidestWidth = constraints.maxWidth -
-                        minimumOtherWidth * (destinations.length - 1);
-                    final desiredWidestWidth = measuredWidths[widestIndex] <
-                            minimumOtherWidth
-                        ? minimumOtherWidth
-                        : measuredWidths[widestIndex];
-                    final widestWidth = maxWidestWidth < minimumOtherWidth
-                        ? constraints.maxWidth / destinations.length
-                        : (desiredWidestWidth < maxWidestWidth
-                            ? desiredWidestWidth
-                            : maxWidestWidth);
-                    final otherWidth = (constraints.maxWidth - widestWidth) /
-                        (destinations.length - 1);
-                    return List<int>.generate(
-                      destinations.length,
-                      (index) => ((index == widestIndex
-                                  ? widestWidth
-                                  : otherWidth) *
-                              1000)
-                          .round(),
-                      growable: false,
+                    // Compact labels have no horizontal padding, but keep a
+                    // small safety gutter so glyphs never touch adjacent tabs.
+                    const horizontalSafetyGutter = 4.0;
+                    final desiredWidths = measuredWidths
+                        .map((width) => width + horizontalSafetyGutter)
+                        .toList(growable: false);
+                    final requiredWidth = desiredWidths.fold<double>(
+                      0,
+                      (total, width) => total + width,
                     );
+                    // Use natural widths whenever feasible; if rounding or a
+                    // narrow viewport makes them exceed the budget, compress
+                    // proportionally rather than privileging one destination.
+                    final allocatedWidths = requiredWidth <= constraints.maxWidth
+                        ? desiredWidths
+                            .map((width) =>
+                                width +
+                                (constraints.maxWidth - requiredWidth) /
+                                    destinations.length)
+                            .toList(growable: false)
+                        : desiredWidths
+                            .map((width) =>
+                                width * constraints.maxWidth / requiredWidth)
+                            .toList(growable: false);
+                    return allocatedWidths
+                        .map((width) => (width * 1000).round())
+                        .toList(growable: false);
                   })()
                 : List<int>.filled(destinations.length, 5, growable: false);
             final totalFlex =
