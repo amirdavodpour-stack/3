@@ -232,8 +232,12 @@ void main() {
       for (final label in ['Mission', 'Software', '94% match']) {
         final finder = find.text(label);
         expect(finder, findsOneWidget, reason: '$label must remain available.');
+        final paragraph = tester.renderObject<RenderParagraph>(finder);
+        final lineBoxes = paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: label.length),
+        );
         expect(
-          tester.renderObject<RenderParagraph>(finder).computeLineMetrics(),
+          lineBoxes,
           hasLength(1),
           reason: '$label must not split across multiple lines at 1.5x.',
         );
