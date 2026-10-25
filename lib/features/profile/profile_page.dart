@@ -412,6 +412,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
+            key: const ValueKey('profile-about-hope-semantic-target'),
             onPressed: () => Navigator.push(context, HopeRoutes.about()),
             icon: const HopeIcon(HopeV2Icons.insights, size: 19),
             label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
