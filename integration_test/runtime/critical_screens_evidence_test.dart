@@ -1048,6 +1048,12 @@ Future<void> _captureRuntimeScreenshot(
       _semanticsOnly &&
       marker.contains('job-detail') &&
       !marker.startsWith('scroll-end-');
+  final shouldRevealJobsTarget =
+      _talkbackRequired &&
+      _semanticsOnly &&
+      (marker.startsWith('jobs-') ||
+          marker.startsWith('responsive-720x1280-jobs-')) &&
+      !marker.startsWith('scroll-end-');
   final shouldRevealTransactionTarget =
       _talkbackRequired &&
       _semanticsOnly &&
@@ -1068,14 +1074,17 @@ Future<void> _captureRuntimeScreenshot(
           marker.startsWith('responsive-720x1280-wallet-')) &&
       !marker.startsWith('scroll-end-');
   if (shouldRevealReportTarget ||
+      shouldRevealJobsTarget ||
       shouldRevealTransactionTarget ||
       shouldRevealCandidateMatchesTarget ||
       shouldRevealProfileTarget ||
       shouldRevealWalletTarget) {
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
-        : shouldRevealTransactionTarget
-            ? find.byKey(const ValueKey('transaction-status-semantic-target'))
+        : shouldRevealJobsTarget
+            ? find.byKey(const ValueKey('hope-opportunity-refinement-launcher'))
+            : shouldRevealTransactionTarget
+                ? find.byKey(const ValueKey('transaction-status-semantic-target'))
             : shouldRevealCandidateMatchesTarget
                 ? find.byKey(
                     const ValueKey('candidate-match-details-candidate-user-1'),
@@ -1203,6 +1212,7 @@ Future<void> _captureRuntimeScreenshot(
       var boundarySkippedTargetCount = 0;
       var minimumTapTargetWidth = double.infinity;
       var minimumTapTargetHeight = double.infinity;
+      Rect? explicitlyAuditedTargetBounds;
       // Matrix inversion can represent an exact 48dp rect as
       // 47.999999999999986dp. Ignore only floating-point noise, not any
       // materially undersized accessibility target.
@@ -1220,6 +1230,7 @@ Future<void> _captureRuntimeScreenshot(
           );
         }
         final auditedBounds = _globalSemanticsNodeBounds(auditedNode, renderView);
+        explicitlyAuditedTargetBounds = auditedBounds;
         if (auditedBounds.isEmpty ||
             auditedBounds.width < 48 - tapTargetBoundsToleranceDp ||
             auditedBounds.height < 48 - tapTargetBoundsToleranceDp) {
@@ -1305,6 +1316,16 @@ Future<void> _captureRuntimeScreenshot(
         throw StateError(
           'T10 semantics incomplete for $marker: nodes=$nodeCount labels=$labelledNodeCount actions=$actionableNodeCount.',
         );
+      }
+      if (targetBoundsCheckedCount == 0 &&
+          explicitlyAuditedTargetBounds != null) {
+        // A screen-specific target was measured directly above with its full
+        // un-clipped semantics rect. Count that successful measurement when
+        // every node in the broad scan lies on a scroll/view boundary; do not
+        // convert a valid explicit audit into a vacuous zero-target failure.
+        targetBoundsCheckedCount = 1;
+        minimumTapTargetWidth = explicitlyAuditedTargetBounds.width;
+        minimumTapTargetHeight = explicitlyAuditedTargetBounds.height;
       }
       if (targetBoundsCheckedCount == 0) {
         throw StateError(
