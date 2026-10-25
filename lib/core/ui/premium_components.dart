@@ -131,7 +131,7 @@ class PremiumNavigationBar extends StatelessWidget {
                     )..layout();
                     final width = painter.width;
                     painter.dispose();
-                    return (width * 1000).ceil().clamp(1, 2147483647);
+                    return (width * 1000).ceil().clamp(1, 2147483647).toInt();
                   }).toList(growable: false)
                 : List<int>.filled(destinations.length, 5, growable: false);
             final totalFlex =
