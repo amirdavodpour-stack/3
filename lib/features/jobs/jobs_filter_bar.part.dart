@@ -451,6 +451,7 @@ class _JobsFilterHeader extends StatelessWidget {
           const SizedBox(height: 8),
           SegmentedButton<String>(
             key: const ValueKey('hope-explore-kind-filters'),
+            showSelectedIcon: false,
             segments: [
               ButtonSegment<String>(
                 value: 'ALL',
