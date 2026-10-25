@@ -140,6 +140,11 @@ grep -Fq '"transaction-detail-$scroll_suffix"' "tools/hope-wallet-runtime-eviden
 grep -Fq '"create-job-$scroll_suffix"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '"profile-$scroll_suffix"' "tools/hope-wallet-runtime-evidence.sh"
 grep -Fq '.scroll_end_screens == 10' ".github/workflows/hope-ui-runtime-evidence.yml"
+# Profile TalkBack audit reveals a real bottom-page action before measuring 48dp bounds.
+grep -Fq "ValueKey('profile-about-hope-semantic-target')" "lib/features/profile/profile_page.dart"
+grep -Fq 'final shouldRevealProfileTarget =' "$runtime_driver"
+grep -Fq "responsive-720x1280-profile-" "$runtime_driver"
+grep -Fq "ValueKey('profile-about-hope-semantic-target')" "$runtime_driver"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_PASS:' "$runtime_driver"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_FAIL:' "$runtime_driver"
 grep -Fq 'Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView)' "$runtime_driver"
