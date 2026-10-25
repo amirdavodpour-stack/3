@@ -1150,22 +1150,44 @@ void main() {
       final filter = find.byKey(
         const ValueKey('hope-explore-kind-filters'),
       );
+      expect(filter, findsOneWidget);
+      expect(filter, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(filter).scrollDirection,
+        Axis.horizontal,
+        reason: 'Enlarged Explore filters must preserve each label natural width.',
+      );
+
+      for (final label in ['All', 'Jobs', 'Missions']) {
+        final labelFinder = find.descendant(
+          of: filter,
+          matching: find.text(label),
+        );
+        expect(labelFinder, findsOneWidget);
+        final boxes = tester
+            .renderObject<RenderParagraph>(labelFinder)
+            .getBoxesForSelection(
+              TextSelection(baseOffset: 0, extentOffset: label.length),
+            );
+        expect(
+          boxes,
+          hasLength(1),
+          reason: '$label must remain on a single readable line at 1.5x.',
+        );
+      }
+
       final missionLabel = find.descendant(
         of: filter,
         matching: find.text('Missions'),
       );
-      expect(filter, findsOneWidget);
-      expect(missionLabel, findsOneWidget);
-      final missionLabelBoxes = tester
-          .renderObject<RenderParagraph>(missionLabel)
-          .getBoxesForSelection(
-            const TextSelection(baseOffset: 0, extentOffset: 8),
-          );
-      expect(
-        missionLabelBoxes,
-        hasLength(1),
-        reason: 'The MISSION label must not split the word at an enlarged text scale.',
+      final missionChip = find.ancestor(
+        of: missionLabel,
+        matching: find.byType(ChoiceChip),
       );
+      await tester.ensureVisible(missionChip);
+      await tester.tap(missionChip);
+      await tester.pumpAndSettle();
+      expect(tester.widget<ChoiceChip>(missionChip).selected, isTrue);
       expect(tester.getSize(filter).height, greaterThanOrEqualTo(48));
       expect(tester.takeException(), isNull);
     },
