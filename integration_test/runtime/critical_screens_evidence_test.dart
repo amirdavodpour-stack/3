@@ -1051,7 +1051,8 @@ Future<void> _captureRuntimeScreenshot(
   final shouldRevealTransactionTarget =
       _talkbackRequired &&
       _semanticsOnly &&
-      marker.startsWith('transactions-') &&
+      (marker.startsWith('transactions-') ||
+          marker.startsWith('responsive-720x1280-transactions-')) &&
       !marker.startsWith('scroll-end-');
   final shouldRevealCandidateMatchesTarget =
       _talkbackRequired &&

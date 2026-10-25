@@ -145,6 +145,10 @@ grep -Fq "ValueKey('profile-about-hope-semantic-target')" "lib/features/profile/
 grep -Fq 'final shouldRevealProfileTarget =' "$runtime_driver"
 grep -Fq "responsive-720x1280-profile-" "$runtime_driver"
 grep -Fq "ValueKey('profile-about-hope-semantic-target')" "$runtime_driver"
+# Transactions TalkBack audit reveals the actual status action on regular and responsive viewports.
+grep -Fq "ValueKey('transaction-status-semantic-target')" "lib/features/transactions/transactions_page.dart"
+grep -Fq "marker.startsWith('responsive-720x1280-transactions-')" "$runtime_driver"
+grep -Fq "ValueKey('transaction-status-semantic-target')" "$runtime_driver"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_PASS:' "$runtime_driver"
 grep -Fq 'HOPE_T10_TARGET_BOUNDS_FAIL:' "$runtime_driver"
 grep -Fq 'Rect _globalSemanticsNodeBounds(SemanticsNode node, RenderView renderView)' "$runtime_driver"
