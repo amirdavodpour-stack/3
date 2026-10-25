@@ -466,6 +466,67 @@ void main() {
 
 
   testWidgets(
+    'Wave30 enlarged navigation preserves Explore and Workshop when selected',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final selectedIndex in [1, 2]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: TextScaler.linear(1.5),
+              ),
+              child: PremiumPrimaryNavigationScaffold(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (_) {},
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        for (final label in ['Home', 'Explore', 'Workshop', 'Wallet', 'Profile']) {
+          final target = find.text(label);
+          expect(target, findsOneWidget);
+          final paragraph = tester.renderObject<RenderParagraph>(target);
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: 'At selected index $selectedIndex, "$label" must not clip.',
+          );
+          expect(
+            find.ancestor(of: target, matching: find.byType(FittedBox)),
+            findsNothing,
+            reason: 'Large-text navigation must preserve the 12sp floor for "$label".',
+          );
+          if (label == 'Explore' || label == 'Workshop') {
+            final selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: label.length,
+            );
+            final boxes = paragraph.getBoxesForSelection(selection);
+            expect(
+              boxes.length,
+              1,
+              reason:
+                  'At selected index $selectedIndex, "$label" must remain a single readable line.',
+            );
+          }
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'Wave30 English navigation dock expands vertically at 1.5x without label overflow',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
