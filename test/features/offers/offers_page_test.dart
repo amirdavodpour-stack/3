@@ -491,6 +491,11 @@ testWidgets('accepting an offer disables the financial action until completion',
           reason: 'The logical leading All filter remains active in both directions.',
         );
         final leadingBounds = tester.getRect(leadingChip);
+        expect(
+          railBounds.bottom - leadingBounds.bottom,
+          greaterThanOrEqualTo(6),
+          reason: 'The horizontal scrollbar thumb must have a visible gutter below the filter chip hit area.',
+        );
         final isRtl = scenario.locale.languageCode == 'fa';
         expect(leadingBounds.left, greaterThanOrEqualTo(railBounds.left));
         expect(leadingBounds.right, lessThanOrEqualTo(railBounds.right));
