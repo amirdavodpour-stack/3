@@ -1156,9 +1156,13 @@ void main() {
       );
       expect(filter, findsOneWidget);
       expect(missionLabel, findsOneWidget);
+      final missionLabelBoxes = tester
+          .renderObject<RenderParagraph>(missionLabel)
+          .getBoxesForSelection(
+            const TextSelection(baseOffset: 0, extentOffset: 8),
+          );
       expect(
-        tester.renderObject<RenderParagraph>(missionLabel)
-            .computeLineMetrics(),
+        missionLabelBoxes,
         hasLength(1),
         reason: 'The MISSION label must not split the word at an enlarged text scale.',
       );
