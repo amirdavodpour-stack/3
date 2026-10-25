@@ -176,6 +176,73 @@ void main() {
   );
 
   testWidgets(
+    'featured scan tags keep complete labels on one line at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'featured-scan-tags-large-text',
+        'title': 'Senior software designer opportunity',
+        'description': 'Large-text tag wrapping regression.',
+        'categoryId': 'software',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1000000',
+        'budgetMax': '1500000',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'Tehran',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(14),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featuredScan,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['Mission', 'Software', '94% match']) {
+        final finder = find.text(label);
+        expect(finder, findsOneWidget, reason: '$label must remain available.');
+        expect(
+          tester.renderObject<RenderParagraph>(finder).computeLineMetrics(),
+          hasLength(1),
+          reason: '$label must not split across multiple lines at 1.5x.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
       'featured scan opportunity cards prioritize real category, match and budget in a compact composition',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
