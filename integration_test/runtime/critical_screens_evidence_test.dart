@@ -1057,16 +1057,25 @@ Future<void> _captureRuntimeScreenshot(
       _talkbackRequired &&
       _semanticsOnly &&
       marker.startsWith('candidate-matches-');
+  final shouldRevealProfileTarget = _talkbackRequired &&
+      _semanticsOnly &&
+      (marker.startsWith('profile-') ||
+          marker.startsWith('responsive-720x1280-profile-'));
   if (shouldRevealReportTarget ||
       shouldRevealTransactionTarget ||
-      shouldRevealCandidateMatchesTarget) {
+      shouldRevealCandidateMatchesTarget ||
+      shouldRevealProfileTarget) {
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
         : shouldRevealTransactionTarget
             ? find.byKey(const ValueKey('transaction-status-semantic-target'))
-            : find.byKey(
-                const ValueKey('candidate-match-details-candidate-user-1'),
-              );
+            : shouldRevealCandidateMatchesTarget
+                ? find.byKey(
+                    const ValueKey('candidate-match-details-candidate-user-1'),
+                  )
+                : find.byKey(
+                    const ValueKey('profile-about-hope-semantic-target'),
+                  );
     auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it
