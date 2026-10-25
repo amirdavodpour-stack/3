@@ -1151,7 +1151,6 @@ void main() {
         const ValueKey('hope-explore-kind-filters'),
       );
       expect(filter, findsOneWidget);
-      expect(filter, findsOneWidget);
       expect(
         tester.widget<SingleChildScrollView>(filter).scrollDirection,
         Axis.horizontal,
