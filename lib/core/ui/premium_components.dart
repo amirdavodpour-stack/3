@@ -48,7 +48,7 @@ class HopeNavigationGlyph extends StatelessWidget {
   }
 }
 
-class PremiumNavigationBar extends StatelessWidget {
+class PremiumNavigationBar extends StatefulWidget {
   const PremiumNavigationBar({
     super.key,
     required this.selectedIndex,
@@ -61,7 +61,38 @@ class PremiumNavigationBar extends StatelessWidget {
   final List<NavigationDestination> destinations;
 
   @override
+  State<PremiumNavigationBar> createState() => _PremiumNavigationBarState();
+}
+
+class _PremiumNavigationBarState extends State<PremiumNavigationBar> {
+  final ScrollController _scrollController = ScrollController();
+  bool _centerOnNextLayout = true;
+
+  @override
+  void didUpdateWidget(covariant PremiumNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedIndex != oldWidget.selectedIndex ||
+        widget.destinations.length != oldWidget.destinations.length) {
+      _centerOnNextLayout = true;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-center after locale, viewport, or system text scale changes.
+    _centerOnNextLayout = true;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final destinations = widget.destinations;
     if (destinations.isEmpty) return const SizedBox.shrink();
 
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -70,25 +101,32 @@ class PremiumNavigationBar extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     final compactLabels = width < 400 || textScale > 1.2;
+    final scrollableLabels = compactLabels && textScale >= 1.5;
     final horizontalInset = compactLabels ? 4.0 : 12.0;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final activeIndex = selectedIndex.clamp(0, destinations.length - 1).toInt();
+    final activeIndex =
+        widget.selectedIndex.clamp(0, destinations.length - 1).toInt();
 
     return SafeArea(
       top: false,
       minimum: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 6),
       child: Container(
         key: const ValueKey('hope-navigation-dock'),
-        // At 2x text scaling, reserve an additional line for long localized labels.
+        // Keep the larger-text dock tall enough for icon, label, and breathing
+        // room. At >=1.5x the labels move to a horizontal, naturally-sized
+        // viewport rather than being compressed into unreadable fragments.
         height: HopeV2Navigation.barHeight +
             (textScale > 1.5 ? 72 : textScale > 1.2 ? 40 : 0),
-        padding: EdgeInsets.fromLTRB(compactLabels ? 0 : 6, 4, compactLabels ? 0 : 6, 3),
+        padding: EdgeInsets.fromLTRB(
+          compactLabels ? 0 : 6,
+          4,
+          compactLabels ? 0 : 6,
+          3,
+        ),
         decoration: BoxDecoration(
           color: dark
               ? HopeV2Colors.navigationDark.withValues(alpha: .985)
               : surface.withValues(alpha: .98),
-          // A restrained, full-width navigation rail: the page content is
-          // the visual focus, not a floating decorative container.
           borderRadius: const BorderRadiusDirectional.only(
             topStart: Radius.circular(14),
             topEnd: Radius.circular(14),
@@ -103,146 +141,170 @@ class PremiumNavigationBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // At enlarged text scales, give every label enough room for its
-            // measured single-line width before sharing any remaining space.
-            // A single-widest-label reserve starves the second-longest label
-            // (for example, Explore beside Workshop) and causes clipping.
-            // Default-scale tabs intentionally remain equal-width.
-            final flexFactors = compactLabels && textScale >= 1.5
-                ? (() {
-                    final measuredWidths = destinations.map((destination) {
-                      final labelStyle =
-                          DefaultTextStyle.of(context).style.merge(
-                        TextStyle(
-                          fontSize: 12,
-                          height: 1.0,
-                          fontWeight: destinations.indexOf(destination) ==
-                                  activeIndex
-                              ? FontWeight.w800
-                              : FontWeight.w500,
-                        ),
-                      );
-                      final painter = TextPainter(
-                        text: TextSpan(
-                          text: destination.label,
-                          style: labelStyle,
-                        ),
-                        textAlign: TextAlign.center,
-                        textDirection: Directionality.of(context),
-                        textScaler: MediaQuery.textScalerOf(context),
-                        maxLines: 1,
-                        textWidthBasis: TextWidthBasis.longestLine,
-                      )..layout();
-                      final width = painter.width;
-                      painter.dispose();
-                      return width;
-                    }).toList(growable: false);
-                    // Compact labels have no horizontal padding, but keep a
-                    // small safety gutter so glyphs never touch adjacent tabs.
-                    const horizontalSafetyGutter = 4.0;
-                    final desiredWidths = measuredWidths
-                        .map((width) => width + horizontalSafetyGutter)
-                        .toList(growable: false);
-                    final requiredWidth = desiredWidths.fold<double>(
-                      0,
-                      (total, width) => total + width,
+            final itemWidths = scrollableLabels
+                ? destinations.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final destination = entry.value;
+                    final labelStyle =
+                        DefaultTextStyle.of(context).style.merge(
+                      TextStyle(
+                        fontSize: 12,
+                        height: 1.0,
+                        fontWeight: index == activeIndex
+                            ? FontWeight.w800
+                            : FontWeight.w500,
+                      ),
                     );
-                    // Use natural widths whenever feasible; if rounding or a
-                    // narrow viewport makes them exceed the budget, compress
-                    // proportionally rather than privileging one destination.
-                    final allocatedWidths = requiredWidth <= constraints.maxWidth
-                        ? desiredWidths
-                            .map((width) =>
-                                width +
-                                (constraints.maxWidth - requiredWidth) /
-                                    destinations.length)
-                            .toList(growable: false)
-                        : desiredWidths
-                            .map((width) =>
-                                width * constraints.maxWidth / requiredWidth)
-                            .toList(growable: false);
-                    return allocatedWidths
-                        .map((width) => (width * 1000).round())
-                        .toList(growable: false);
-                  })()
-                : List<int>.filled(destinations.length, 5, growable: false);
-            final totalFlex =
-                flexFactors.fold<int>(0, (total, factor) => total + factor);
-            final itemWidths = flexFactors
-                .map((factor) => constraints.maxWidth * factor / totalFlex)
-                .toList(growable: false);
+                    final painter = TextPainter(
+                      text: TextSpan(
+                        text: destination.label,
+                        style: labelStyle,
+                      ),
+                      textAlign: TextAlign.center,
+                      textDirection: Directionality.of(context),
+                      textScaler: MediaQuery.textScalerOf(context),
+                      maxLines: 1,
+                      textWidthBasis: TextWidthBasis.longestLine,
+                    )..layout();
+                    final naturalWidth = painter.width;
+                    painter.dispose();
+                    // Preserve full-size text at the system scale. The content
+                    // can exceed the viewport; swipe to reveal each destination.
+                    return (naturalWidth + 16).clamp(48.0, double.infinity);
+                  }).toList(growable: false)
+                : List<double>.filled(
+                    destinations.length,
+                    constraints.maxWidth / destinations.length,
+                    growable: false,
+                  );
+
+            final contentWidth =
+                itemWidths.fold<double>(0, (sum, itemWidth) => sum + itemWidth);
+            final layoutWidth = scrollableLabels
+                ? (contentWidth > constraints.maxWidth
+                    ? contentWidth
+                    : constraints.maxWidth)
+                : constraints.maxWidth;
+
             final itemStarts = <double>[];
             var nextStart = 0.0;
             for (final itemWidth in itemWidths) {
               itemStarts.add(nextStart);
               nextStart += itemWidth;
             }
-            return Stack(
-              fit: StackFit.expand,
-              clipBehavior: Clip.hardEdge,
-              children: [
-                AnimatedPositionedDirectional(
-                  start: itemStarts[activeIndex] + 2,
-                  top: 2,
-                  bottom: 2,
-                  width: itemWidths[activeIndex] - 4,
-                  duration: reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: DecoratedBox(
-                    key: const ValueKey('hope-navigation-selection-plate'),
-                    decoration: ShapeDecoration(
-                      color: dark
-                          ? HopeV2Colors.navigationIndicatorDark
-                          : HopeV2Colors.navigationIndicatorLight,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: primary.withValues(alpha: dark ? .22 : .16),
+
+            if (scrollableLabels && _centerOnNextLayout) {
+              _centerOnNextLayout = false;
+              final selectedStart = itemStarts[activeIndex];
+              final selectedWidth = itemWidths[activeIndex];
+              final viewportWidth = constraints.maxWidth;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || !_scrollController.hasClients) return;
+                final position = _scrollController.position;
+                final desiredOffset =
+                    selectedStart + selectedWidth / 2 - viewportWidth / 2;
+                _scrollController.jumpTo(
+                  desiredOffset.clamp(0.0, position.maxScrollExtent),
+                );
+              });
+            }
+
+            Widget navigationContent() {
+              return Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  AnimatedPositionedDirectional(
+                    start: itemStarts[activeIndex] + 2,
+                    top: 2,
+                    bottom: 2,
+                    width: itemWidths[activeIndex] - 4,
+                    duration: reduceMotion
+                        ? Duration.zero
+                        : const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: DecoratedBox(
+                      key: const ValueKey('hope-navigation-selection-plate'),
+                      decoration: ShapeDecoration(
+                        color: dark
+                            ? HopeV2Colors.navigationIndicatorDark
+                            : HopeV2Colors.navigationIndicatorLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color:
+                                primary.withValues(alpha: dark ? .22 : .16),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                AnimatedPositionedDirectional(
-                  key: const ValueKey('hope-navigation-selection-accent'),
-                  start: itemStarts[activeIndex] +
-                      itemWidths[activeIndex] * .27,
-                  top: 4,
-                  width: itemWidths[activeIndex] * .46,
-                  height: 2,
-                  duration: reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: (dark
-                              ? HopeV2TonalPalettes.forest.shade300
-                              : HopeV2TonalPalettes.forest.shade700)
-                          .withValues(alpha: dark ? .92 : .86),
-                      borderRadius: BorderRadius.circular(2),
+                  AnimatedPositionedDirectional(
+                    key: const ValueKey('hope-navigation-selection-accent'),
+                    start: itemStarts[activeIndex] +
+                        itemWidths[activeIndex] * .27,
+                    top: 4,
+                    width: itemWidths[activeIndex] * .46,
+                    height: 2,
+                    duration: reduceMotion
+                        ? Duration.zero
+                        : const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: (dark
+                                ? HopeV2TonalPalettes.forest.shade300
+                                : HopeV2TonalPalettes.forest.shade700)
+                            .withValues(alpha: dark ? .92 : .86),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var index = 0; index < destinations.length; index++)
-                      Expanded(
-                        flex: flexFactors[index],
-                        child: _PremiumNavigationItem(
-                          destination: destinations[index],
-                          selected: index == activeIndex,
-                          onPressed: () => onDestinationSelected(index),
-                          compact: compactLabels,
-                          showLabel: true,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var index = 0;
+                          index < destinations.length;
+                          index++)
+                        if (scrollableLabels)
+                          SizedBox(
+                            width: itemWidths[index],
+                            child: _PremiumNavigationItem(
+                              destination: destinations[index],
+                              selected: index == activeIndex,
+                              onPressed: () =>
+                                  widget.onDestinationSelected(index),
+                              compact: true,
+                              showLabel: true,
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: _PremiumNavigationItem(
+                              destination: destinations[index],
+                              selected: index == activeIndex,
+                              onPressed: () =>
+                                  widget.onDestinationSelected(index),
+                              compact: compactLabels,
+                              showLabel: true,
+                            ),
+                          ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            if (!scrollableLabels) return navigationContent();
+            return SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              child: SizedBox(
+                width: layoutWidth,
+                height: constraints.maxHeight,
+                child: navigationContent(),
+              ),
             );
           },
         ),
@@ -306,8 +368,8 @@ class _PremiumNavigationItem extends StatelessWidget {
                       const SizedBox(height: 1),
                       Text(
                         destination.label,
-                        maxLines: textScale > 1.5 ? null : (compact ? 3 : 1),
-                        softWrap: true,
+                        maxLines: textScale >= 1.5 ? 1 : (compact ? 3 : 1),
+                        softWrap: textScale < 1.5,
                         overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
                         style: TextStyle(
