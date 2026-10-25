@@ -131,7 +131,19 @@ class PremiumNavigationBar extends StatelessWidget {
                     )..layout();
                     final width = painter.width;
                     painter.dispose();
-                    return (width * 1000).ceil().clamp(1, 2147483647).toInt();
+                    // The rendered 1.5x Workshop regression shows the
+                    // Paragraph can still wrap at its proportional share.
+                    // Add a small width reserve to long labels only; measure
+                    // all labels and keep the ordinary-scale rail equal-width.
+                    final needsWrapReserve =
+                        compactLabels &&
+                        textScale >= 1.5 &&
+                        entry.value.label.trim().length >= 8;
+                    final reservedWidth = width + (needsWrapReserve ? 24.0 : 0.0);
+                    return (reservedWidth * 1000)
+                        .ceil()
+                        .clamp(1, 2147483647)
+                        .toInt();
                   }).toList(growable: false)
                 : List<int>.filled(destinations.length, 5, growable: false);
             final totalFlex =
