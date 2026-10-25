@@ -103,14 +103,37 @@ class PremiumNavigationBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // At enlarged text scales, reserve more horizontal room for
-            // long destination labels instead of letting a single word wrap
-            // into several cramped lines. Keep equal widths at default scale.
-            final flexFactors = destinations.map((destination) {
-              final longLabelAtLargeScale =
-                  textScale >= 1.5 && destination.label.trim().length >= 8;
-              return compactLabels && longLabelAtLargeScale ? 16 : 5;
-            }).toList(growable: false);
+            // At enlarged text scales, allocate space using each localized
+            // label's measured single-line width. A fixed "long-label" weight
+            // steals space from ordinary English labels such as Explore.
+            // Default-scale tabs intentionally remain equal-width.
+            final flexFactors = compactLabels && textScale >= 1.5
+                ? destinations.asMap().entries.map((entry) {
+                    final labelStyle = DefaultTextStyle.of(context).style.merge(
+                      TextStyle(
+                        fontSize: 12,
+                        height: 1.0,
+                        fontWeight: entry.key == activeIndex
+                            ? FontWeight.w800
+                            : FontWeight.w500,
+                      ),
+                    );
+                    final painter = TextPainter(
+                      text: TextSpan(
+                        text: entry.value.label,
+                        style: labelStyle,
+                      ),
+                      textAlign: TextAlign.center,
+                      textDirection: Directionality.of(context),
+                      textScaler: MediaQuery.textScalerOf(context),
+                      maxLines: 1,
+                      textWidthBasis: TextWidthBasis.longestLine,
+                    )..layout();
+                    final width = painter.width;
+                    painter.dispose();
+                    return (width * 1000).ceil().clamp(1, 2147483647);
+                  }).toList(growable: false)
+                : List<int>.filled(destinations.length, 5, growable: false);
             final totalFlex =
                 flexFactors.fold<int>(0, (total, factor) => total + factor);
             final itemWidths = flexFactors
