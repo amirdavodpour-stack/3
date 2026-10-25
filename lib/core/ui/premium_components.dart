@@ -109,7 +109,7 @@ class PremiumNavigationBar extends StatelessWidget {
             final flexFactors = destinations.map((destination) {
               final longLabelAtLargeScale =
                   textScale >= 1.5 && destination.label.trim().length >= 8;
-              return compactLabels && longLabelAtLargeScale ? 12 : 5;
+              return compactLabels && longLabelAtLargeScale ? 16 : 5;
             }).toList(growable: false);
             final totalFlex =
                 flexFactors.fold<int>(0, (total, factor) => total + factor);
