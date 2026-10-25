@@ -985,23 +985,26 @@ bool _isSemanticsTapTargetAtScrollableBoundary(
   SemanticsNode node,
   RenderView renderView,
 ) {
-  var paintBounds = node.rect;
-  SemanticsNode? current = node;
+  // SemanticsNode.rect is local to that node. Compare target and viewport in
+  // the same logical view coordinate space; comparing a transformed child
+  // against an ancestor's local rect can incorrectly classify every child of
+  // a scrollable as clipped at its boundary.
+  final targetBounds = _globalSemanticsNodeBounds(node, renderView);
+  SemanticsNode? current = node.parent;
   while (current != null) {
-    final transform = current.transform;
-    if (transform != null) {
-      paintBounds = MatrixUtils.transformRect(transform, paintBounds);
-    }
-    if (current.flagsCollection.hasImplicitScrolling &&
-        _isAtSemanticsBoundary(paintBounds, current.rect)) {
-      return true;
+    if (current.flagsCollection.hasImplicitScrolling) {
+      final viewportBounds = _globalSemanticsNodeBounds(current, renderView);
+      if (_isAtSemanticsBoundary(targetBounds, viewportBounds)) {
+        return true;
+      }
     }
     current = current.parent;
   }
-  final viewRect = Offset.zero & renderView.flutterView.physicalSize;
-  return _isAtSemanticsBoundary(paintBounds, viewRect);
+  // _globalSemanticsNodeBounds removes RenderView's root transform, so use the
+  // RenderView's logical size, not flutterView.physicalSize, for this test.
+  final viewRect = Offset.zero & renderView.size;
+  return _isAtSemanticsBoundary(targetBounds, viewRect);
 }
-
 int _runtimeFreshFrameCount(String marker) {
   // Register's readiness gate waits for the Google CTA to be fully painted before
   // capture; one post-drain ImageReader delivery validates that target-screen frame.
