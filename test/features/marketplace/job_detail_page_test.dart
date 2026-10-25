@@ -843,6 +843,49 @@ void main() {
   );
 
   testWidgets(
+    'Wave53 long RTL Job Detail title does not overlap Back at 1.5x in LTR',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      final backFinder = find.byTooltip('Back');
+      expect(titleFinder, findsOneWidget);
+      expect(backFinder, findsOneWidget);
+
+      final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
+      final visibleGlyphRects = paragraph
+          .getBoxesForSelection(
+            TextSelection(baseOffset: 0, extentOffset: title.length),
+          )
+          .map((box) {
+        final local = box.toRect();
+        return Rect.fromPoints(
+          paragraph.localToGlobal(local.topLeft),
+          paragraph.localToGlobal(local.bottomRight),
+        );
+      }).toList();
+      final backRect = tester.getRect(backFinder);
+      expect(visibleGlyphRects, isNotEmpty);
+      expect(
+        visibleGlyphRects.any((rect) => rect.overlaps(backRect)),
+        isFalse,
+        reason: 'The overlaid Back control must not cover visible title glyphs at 1.5x.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Job Detail snapshot facts fully wrap long values at 1.5x text scale',
     (tester) async {
       const longLocation =

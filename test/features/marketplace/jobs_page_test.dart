@@ -1132,6 +1132,42 @@ void main() {
 
 
   testWidgets(
+    'Wave53 Explore kind filter labels stay on one line at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(
+        tester,
+        _Repo(),
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      final filter = find.byKey(
+        const ValueKey('hope-explore-kind-filters'),
+      );
+      final missionLabel = find.descendant(
+        of: filter,
+        matching: find.text('Missions'),
+      );
+      expect(filter, findsOneWidget);
+      expect(missionLabel, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(missionLabel)
+            .computeLineMetrics(),
+        hasLength(1),
+        reason: 'The MISSION label must not split the word at an enlarged text scale.',
+      );
+      expect(tester.getSize(filter).height, greaterThanOrEqualTo(48));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 29 final Explore opportunity stays reachable above the fixed dock at 360x640',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
