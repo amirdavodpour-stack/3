@@ -1084,8 +1084,8 @@ Future<void> _captureRuntimeScreenshot(
                     ? find.byWidgetPredicate(
                         (widget) =>
                             widget is Semantics &&
-                            widget.button == true &&
-                            widget.label ==
+                            widget.properties.button == true &&
+                            widget.properties.label ==
                                 (marker.endsWith('-fa-rtl')
                                     ? 'برداشت'
                                     : 'Withdraw'),
