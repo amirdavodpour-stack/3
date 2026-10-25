@@ -480,8 +480,8 @@ class _JobsFilterHeader extends StatelessWidget {
               minimumSize: WidgetStatePropertyAll(
                 Size(0, enlargedText ? 56 : 48),
               ),
-              padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 7),
+              padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: enlargedText ? 2 : 7),
               ),
             ),
           ),
