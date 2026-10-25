@@ -144,7 +144,7 @@ class PremiumNavigationBar extends StatelessWidget {
                     }
                     // Regression evidence: 49dp clips Explore while 55dp passes;
                     // use the midpoint as a floor for the four remaining tabs.
-                    const minimumOtherWidth = 51.5;
+                    const minimumOtherWidth = 55.0;
                     final maxWidestWidth = constraints.maxWidth -
                         minimumOtherWidth * (destinations.length - 1);
                     final desiredWidestWidth = measuredWidths[widestIndex] <
