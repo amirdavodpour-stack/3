@@ -434,6 +434,83 @@ class _JobsFilterHeader extends StatelessWidget {
             ),
           );
 
+    Widget enlargedKindChip(String value, String label) {
+      final colors = Theme.of(context).colorScheme;
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8),
+        child: ChoiceChip(
+          label: Text(label, softWrap: false),
+          selected: kind == value,
+          showCheckmark: false,
+          onSelected: (_) => onKindChanged(value),
+          selectedColor: colors.secondaryContainer,
+          backgroundColor: colors.surface,
+          side: BorderSide(
+            color: kind == value ? colors.secondary : colors.outlineVariant,
+          ),
+          labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: kind == value
+                    ? colors.onSecondaryContainer
+                    : colors.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+          materialTapTargetSize: MaterialTapTargetSize.padded,
+          visualDensity: VisualDensity.standard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          ),
+        ),
+      );
+    }
+
+    final Widget kindFilters = enlargedText
+        ? SizedBox(
+            height: 56,
+            child: SingleChildScrollView(
+              key: const ValueKey('hope-explore-kind-filters'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  enlargedKindChip('ALL', copy.copy_all_ba7d5b6),
+                  enlargedKindChip('JOB', copy.copy_jobs_ebf9a80),
+                  enlargedKindChip('MISSION', copy.copy_missions_a833d13),
+                ],
+              ),
+            ),
+          )
+        : SegmentedButton<String>(
+            key: const ValueKey('hope-explore-kind-filters'),
+            segments: [
+              ButtonSegment<String>(
+                value: 'ALL',
+                label: Text(copy.copy_all_ba7d5b6),
+              ),
+              ButtonSegment<String>(
+                value: 'JOB',
+                label: Text(copy.copy_jobs_ebf9a80),
+                icon: const HopeIcon(HopeV2Icons.job, size: 15),
+              ),
+              ButtonSegment<String>(
+                value: 'MISSION',
+                label: Text(copy.copy_missions_a833d13),
+                icon: const HopeIcon(HopeV2Icons.mission, size: 15),
+              ),
+            ],
+            selected: {kind},
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) onKindChanged(selected.first);
+            },
+            style: const ButtonStyle(
+              minimumSize: WidgetStatePropertyAll(Size(0, 48)),
+              padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 7),
+              ),
+            ),
+          );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,42 +526,7 @@ class _JobsFilterHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          SegmentedButton<String>(
-            key: const ValueKey('hope-explore-kind-filters'),
-            showSelectedIcon: !enlargedText,
-            segments: [
-              ButtonSegment<String>(
-                value: 'ALL',
-                label: Text(copy.copy_all_ba7d5b6),
-              ),
-              ButtonSegment<String>(
-                value: 'JOB',
-                label: Text(copy.copy_jobs_ebf9a80),
-                icon: enlargedText
-                    ? null
-                    : const HopeIcon(HopeV2Icons.job, size: 15),
-              ),
-              ButtonSegment<String>(
-                value: 'MISSION',
-                label: Text(copy.copy_missions_a833d13),
-                icon: enlargedText
-                    ? null
-                    : const HopeIcon(HopeV2Icons.mission, size: 15),
-              ),
-            ],
-            selected: {kind},
-            onSelectionChanged: (selected) {
-              if (selected.isNotEmpty) onKindChanged(selected.first);
-            },
-            style: ButtonStyle(
-              minimumSize: WidgetStatePropertyAll(
-                Size(0, enlargedText ? 56 : 48),
-              ),
-              padding: WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: enlargedText ? 2 : 7),
-              ),
-            ),
-          ),
+          kindFilters,
         ] else
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
