@@ -1132,6 +1132,33 @@ void main() {
 
 
   testWidgets(
+    'Wave54 Explore refinement launcher exposes a semantic tap target',
+    (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+      addTearDown(semanticsHandle.dispose);
+
+      await _pump(tester, _Repo(), locale: const Locale('en'));
+      await tester.pumpAndSettle();
+
+      final launcher =
+          find.bySemanticsIdentifier('hope-opportunity-refinement-launcher');
+      expect(launcher, findsOneWidget);
+      expect(
+        tester.getSemantics(launcher).getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: 'The Explore refinement launcher must expose an actual tap action.',
+      );
+      expect(
+        tester.getSize(launcher).height,
+        greaterThanOrEqualTo(48),
+        reason: 'The Explore refinement launcher must remain at least 48dp high.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave53 Explore kind filter labels stay on one line at 1.5x text scale',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
