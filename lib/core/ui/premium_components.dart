@@ -720,9 +720,11 @@ class PremiumIconButton extends StatelessWidget {
         label: tooltip,
         selected: selected,
         identifier: semanticsIdentifier,
+        onTap: onPressed,
         child: Material(
         color: Colors.transparent,
         child: InkWell(
+          excludeFromSemantics: true,
           onTap: onPressed,
           borderRadius: BorderRadius.circular(HopeV2Radii.button),
           child: Ink(

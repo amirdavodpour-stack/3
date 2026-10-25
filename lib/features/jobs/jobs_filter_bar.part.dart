@@ -254,6 +254,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
           // Leave 2dp of headroom so transformed semantic bounds remain above
           // the strict 48dp accessibility floor at fractional viewport offsets.
           targetSize: HopeV2Touch.minimum + 2,
+          semanticsIdentifier: 'hope-opportunity-refinement-launcher',
           icon: HopeV2Icons.filter,
           tooltip: label,
           selected: activeCount > 0,

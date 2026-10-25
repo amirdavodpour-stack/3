@@ -1085,7 +1085,7 @@ Future<void> _captureRuntimeScreenshot(
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
         : shouldRevealJobsTarget
-            ? find.byKey(const ValueKey('hope-opportunity-refinement-launcher'))
+            ? find.bySemanticsIdentifier('hope-opportunity-refinement-launcher')
             : shouldRevealTransactionTarget
                 ? find.byKey(const ValueKey('transaction-status-semantic-target'))
             : shouldRevealCandidateMatchesTarget
