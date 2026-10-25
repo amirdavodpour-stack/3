@@ -1304,7 +1304,15 @@ class OpportunityCard extends StatelessWidget {
                       for (final tag in visibleTags)
                         ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxWidth: compactViewport ? 92 : 130,
+                            // At enlarged text scales, keep short metadata tags
+                            // at their natural width; the parent Wrap can place
+                            // them on additional rows rather than splitting
+                            // labels such as "Mission" and "Software" mid-word.
+                            maxWidth: enlargedText
+                                ? MediaQuery.sizeOf(context).width - 100
+                                : compactViewport
+                                    ? 92
+                                    : 130,
                           ),
                           child: tag,
                         ),
