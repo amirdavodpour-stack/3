@@ -170,7 +170,7 @@ class _PremiumNavigationBarState extends State<PremiumNavigationBar> {
                     painter.dispose();
                     // Preserve full-size text at the system scale. The content
                     // can exceed the viewport; swipe to reveal each destination.
-                    return (naturalWidth + 16).clamp(48.0, double.infinity);
+                    return (naturalWidth + 16).clamp(48.0, double.infinity).toDouble();
                   }).toList(growable: false)
                 : List<double>.filled(
                     destinations.length,
@@ -204,7 +204,7 @@ class _PremiumNavigationBarState extends State<PremiumNavigationBar> {
                 final desiredOffset =
                     selectedStart + selectedWidth / 2 - viewportWidth / 2;
                 _scrollController.jumpTo(
-                  desiredOffset.clamp(0.0, position.maxScrollExtent),
+                  desiredOffset.clamp(0.0, position.maxScrollExtent).toDouble(),
                 );
               });
             }
