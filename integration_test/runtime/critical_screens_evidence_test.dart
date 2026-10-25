@@ -1062,10 +1062,16 @@ Future<void> _captureRuntimeScreenshot(
       _semanticsOnly &&
       (marker.startsWith('profile-') ||
           marker.startsWith('responsive-720x1280-profile-'));
+  final shouldRevealWalletTarget = _talkbackRequired &&
+      _semanticsOnly &&
+      (marker.startsWith('wallet-') ||
+          marker.startsWith('responsive-720x1280-wallet-')) &&
+      !marker.startsWith('scroll-end-');
   if (shouldRevealReportTarget ||
       shouldRevealTransactionTarget ||
       shouldRevealCandidateMatchesTarget ||
-      shouldRevealProfileTarget) {
+      shouldRevealProfileTarget ||
+      shouldRevealWalletTarget) {
     final auditedTarget = shouldRevealReportTarget
         ? find.byKey(const ValueKey('opportunity-report-semantic-target'))
         : shouldRevealTransactionTarget
@@ -1074,9 +1080,19 @@ Future<void> _captureRuntimeScreenshot(
                 ? find.byKey(
                     const ValueKey('candidate-match-details-candidate-user-1'),
                   )
-                : find.byKey(
-                    const ValueKey('profile-about-hope-semantic-target'),
-                  );
+                : shouldRevealWalletTarget
+                    ? find.byWidgetPredicate(
+                        (widget) =>
+                            widget is Semantics &&
+                            widget.button == true &&
+                            widget.label ==
+                                (marker.endsWith('-fa-rtl')
+                                    ? 'برداشت'
+                                    : 'Withdraw'),
+                      )
+                    : find.byKey(
+                        const ValueKey('profile-about-hope-semantic-target'),
+                      );
     auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it
