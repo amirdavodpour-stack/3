@@ -5,7 +5,7 @@ export const PRIVACY_VERSION = '1.2';
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
 const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
-const telemetryExportSensitiveKeyPattern = /(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|token|password|authorization|cookie|national|iban|card|cvv/i;
+const telemetryExportSensitiveKeyPattern = /^(?:name|lat|lng|lon)$|(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|resume|document|token|password|authorization|cookie|national|iban|card|cvv/i;
 
 function sanitizeExportObject(value, depth = 0) {
   if (value == null || typeof value !== 'object') return value;

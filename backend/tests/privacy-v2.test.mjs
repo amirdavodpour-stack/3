@@ -326,3 +326,53 @@ test('data export redacts compound PII aliases in stored telemetry recursively',
   assert.equal(out.crashReports[0].context.coordinates, undefined);
   assert.equal(out.crashReports[0].context.safe, true);
 });
+
+
+test('data export redacts simple PII aliases from stored telemetry but preserves owned profile data and safe event metadata', () => {
+  const telemetryFields = {
+    name: 'Private Person',
+    lat: 52.52,
+    lng: 13.405,
+    lon: 13.406,
+    resumeText: 'Sensitive resume payload',
+    documentUrl: 'https://private.invalid/resume.pdf',
+    nested: {
+      name: 'Nested Private Person',
+      lat: 52.5,
+      lng: 13.4,
+      lon: 13.41,
+      resumeText: 'Nested resume payload',
+      documentUrl: 'https://private.invalid/nested.pdf',
+      safe_count: 9,
+    },
+  };
+  const out = buildDataExport({
+    user: { id:'u10', email:'owner@example.com', displayName:'Owner', role:'USER', status:'ACTIVE', createdAt:'now' },
+    recommendationProfile: { resumeText: 'The account holder\'s own resume', skills: ['Flutter'] },
+    analyticsEvents: [{
+      id:'a10',
+      eventName:'screen_view',
+      properties: { ...telemetryFields, eventName:'screen_view', safe_count:7, platform:'ANDROID' },
+    }],
+    crashReports: [{
+      id:'c10',
+      message:'crash',
+      context: { ...telemetryFields, safe:true },
+    }],
+  });
+
+  for (const payload of [out.analyticsEvents[0].properties, out.crashReports[0].context]) {
+    for (const key of ['name', 'lat', 'lng', 'lon', 'resumeText', 'documentUrl']) {
+      assert.equal(payload[key], undefined, `telemetry export should redact ${key}`);
+      assert.equal(payload.nested[key], undefined, `telemetry export should recursively redact ${key}`);
+    }
+  }
+  assert.equal(out.analyticsEvents[0].eventName, 'screen_view');
+  assert.equal(out.analyticsEvents[0].properties.eventName, 'screen_view');
+  assert.equal(out.analyticsEvents[0].properties.safe_count, 7);
+  assert.equal(out.analyticsEvents[0].properties.platform, 'ANDROID');
+  assert.equal(out.analyticsEvents[0].properties.nested.safe_count, 9);
+  assert.equal(out.crashReports[0].context.safe, true);
+  assert.equal(out.recommendationProfile.resumeText, 'The account holder\'s own resume');
+  assert.deepEqual(out.recommendationProfile.skills, ['Flutter']);
+});
