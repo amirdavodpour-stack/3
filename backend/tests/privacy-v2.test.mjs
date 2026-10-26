@@ -313,6 +313,7 @@ test('data export redacts compound PII aliases in stored telemetry recursively',
     }],
   });
 
+  assert.equal(out.analyticsEvents[0].eventName, 'screen_view');
   assert.equal(out.analyticsEvents[0].properties.email_address, undefined);
   assert.equal(out.analyticsEvents[0].properties.phone_number, undefined);
   assert.equal(out.analyticsEvents[0].properties.safe_count, 7);
