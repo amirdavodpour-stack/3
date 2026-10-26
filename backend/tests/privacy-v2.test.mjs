@@ -85,7 +85,7 @@ test('data export strips internal payment and telemetry transport fields recursi
   assert.equal(out.provider.providerRef, undefined);
 });
 
-test('data export includes the user's recommendation profile and satisfaction history', () => {
+test("data export includes the user recommendation profile and satisfaction history", () => {
   const out = buildDataExport({
     user: { id: 'u5', email: 'a@b.c', displayName: 'A', role: 'USER', status: 'ACTIVE', createdAt: 'now' },
     recommendationProfile: {
