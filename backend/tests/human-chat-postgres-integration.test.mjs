@@ -20,7 +20,50 @@ const dbModule = modules[0];
 const migration = modules[1]?.migration;
 const { closeJobChatForJob, postChatMessage } = modules[2] || {};
 
-if (enabled) await dbModule.initDatabase();
+let fixture = null;
+if (enabled) {
+  await dbModule.initDatabase();
+  const pool = dbModule.getPool();
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: owners } = await pool.query(`
+    INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+    VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 chat owner','USER','ACTIVE',0,NOW())
+    RETURNING id
+  `, [`r05-owner-${suffix}@example.test`]);
+  const { rows: workers } = await pool.query(`
+    INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+    VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 chat worker','USER','ACTIVE',0,NOW())
+    RETURNING id
+  `, [`r05-worker-${suffix}@example.test`]);
+  const { rows: categories } = await pool.query(`
+    SELECT id FROM categories WHERE is_active=TRUE ORDER BY created_at NULLS FIRST,id LIMIT 1
+  `);
+  if (!categories[0]) throw new Error('R05 fixture requires at least one active category');
+  const { rows: jobs } = await pool.query(`
+    INSERT INTO jobs(
+      id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+      budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+      created_at,updated_at
+    )
+    VALUES(
+      gen_random_uuid(),$1,$2,'R05 PostgreSQL chat fixture','Integration-only fixture',
+      $3,'FIXED','FIXED',100,100,1,'R05 integration fixture','IN_PROGRESS',
+      'R05 test','MISSION','PUBLIC',NOW(),NOW()
+    )
+    RETURNING id
+  `, [owners[0].id, workers[0].id, categories[0].id]);
+  const { rows: conversations } = await pool.query(`
+    INSERT INTO chat_conversations(id,kind,job_id,status,title)
+    VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 PostgreSQL chat fixture')
+    RETURNING id
+  `, [jobs[0].id]);
+  fixture = {
+    ownerId: owners[0].id,
+    workerId: workers[0].id,
+    jobId: jobs[0].id,
+    conversationId: conversations[0].id,
+  };
+}
 
 async function waitForConversationRowLock(pool, timeoutMs = 6000) {
   const deadline = Date.now() + timeoutMs;
@@ -73,15 +116,11 @@ test('migration 034 up is idempotent against real PostgreSQL', { skip: !enabled 
 
 test('migration 034 downgrade preserves retained read, presence and preference data', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
-  const { rows: conversations } = await pool.query(`
-    SELECT c.id, j.owner_id
-    FROM chat_conversations c
-    JOIN jobs j ON j.id = c.job_id
-    ORDER BY c.created_at DESC
-    LIMIT 1
-  `);
-  assert.ok(conversations[0], 'postgres repository e2e fixture must provide a job conversation');
-  const conversation = conversations[0];
+  const conversation = {
+    id: fixture.conversationId,
+    owner_id: fixture.ownerId,
+    job_id: fixture.jobId,
+  };
 
   const { rows: messages } = await pool.query(`
     INSERT INTO chat_messages(id, conversation_id, sender_id, body, message_type)
@@ -153,16 +192,11 @@ test('migration 034 downgrade preserves retained read, presence and preference d
 
 test('send waits for an in-flight close and rejects when CLOSED commits first', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
-  const { rows } = await pool.query(`
-    SELECT c.id AS conversation_id, c.job_id, j.owner_id
-    FROM chat_conversations c
-    JOIN jobs j ON j.id = c.job_id
-    WHERE c.kind = 'JOB'
-    ORDER BY c.created_at DESC
-    LIMIT 1
-  `);
-  assert.ok(rows[0], 'postgres repository e2e fixture must provide a job conversation');
-  const conversation = rows[0];
+  const conversation = {
+    conversation_id: fixture.conversationId,
+    job_id: fixture.jobId,
+    owner_id: fixture.ownerId,
+  };
 
   // Re-open only this disposable integration fixture so the close transaction
   // and send can race from a known OPEN state.
