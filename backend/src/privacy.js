@@ -44,7 +44,7 @@ export function sanitizeTelemetryProperties(input = {}) {
 export function anonymizedEmail(userId) { return `deleted+${String(userId).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32)}@invalid.local`; }
 export function deletionCredential() { return crypto.randomBytes(48).toString('hex'); }
 
-export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [] }) {
+export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
   const safeAccount = sanitizeExportObject({
     id: user.id, email: user.email, displayName: user.displayName, role: user.role, status: user.status, createdAt: user.createdAt,
   });
@@ -66,5 +66,6 @@ export function buildDataExport({ user, provider, jobs = [], applications = [], 
     notificationPreferences: sanitizeExportObject(preferences),
     recommendationProfile: sanitizeExportObject(recommendationProfile),
     satisfactionHistory: sanitizeExportObject(satisfactionHistory),
+    savedSearches: sanitizeExportObject(savedSearches),
   };
 }
