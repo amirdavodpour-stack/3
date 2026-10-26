@@ -10,11 +10,12 @@ export function createHumanChatRoutes({authUser,sendJson,readBody,HttpError,repo
       const a=await repo.getChatAttachmentForUser(parts[2],me.id,me.role);
       if(!a)throw new HttpError(404,'CHAT_ATTACHMENT_NOT_FOUND','Attachment not found');
       let object;try{object=await storage.get({key:a.storageKey});}catch{throw new HttpError(404,'CHAT_ATTACHMENT_NOT_FOUND','Attachment not found');}
+      if(!object?.body||typeof object.body.pipe!=='function')
+        throw new HttpError(500,'CHAT_ATTACHMENT_STREAM_UNAVAILABLE','Attachment stream is unavailable');
       res.writeHead(200,{'Content-Type':a.contentType,'Content-Length':String(a.size||object.size||0),
         'Content-Disposition':"inline; filename*=UTF-8''"+encodeURIComponent(a.filename),
         'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});
-      if(object.body&&typeof object.body.pipe==='function'){object.body.on('error',e=>res.destroy(e));object.body.pipe(res);return;}
-      throw new HttpError(500,'CHAT_ATTACHMENT_STREAM_UNAVAILABLE','Attachment stream is unavailable');
+      object.body.on('error',e=>res.destroy(e));object.body.pipe(res);return;
     }
     if(parts.length>=3&&parts[1]==='conversations'){
       const id=parts[2];
