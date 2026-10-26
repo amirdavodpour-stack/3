@@ -115,8 +115,10 @@ test('migration 034 downgrade preserves retained read, presence and preference d
     try {
       await client.query('BEGIN');
       inTransaction = true;
-      await client.query('SAVEPOINT before_downgrade');
+      // The capability row exists before the rollback attempt, so rollback to
+      // the savepoint restores the schema but retains the pre-existing data.
       await client.query(item.insert, item.values);
+      await client.query('SAVEPOINT before_downgrade');
 
       try {
         await migration.down(client);
@@ -142,6 +144,10 @@ test('migration 034 downgrade preserves retained read, presence and preference d
       [item.table],
     );
     assert.equal(remains.length, 1, `${item.table} must remain after rejected downgrade`);
+    const { rows: retainedRows } = await pool.query(
+      `SELECT 1 FROM ${item.table} LIMIT 1`,
+    );
+    assert.equal(retainedRows.length, 1, `${item.table} records must survive a rejected downgrade`);
   }
 });
 
@@ -169,21 +175,27 @@ test('send waits for an in-flight close and rejects when CLOSED commits first', 
   let closeTransactionOpen = false;
   let waitError;
   const body = `R05 concurrent close/send ${Date.now()}`;
-  const sendOutcome = postChatMessage(
-    conversation.conversation_id,
-    conversation.owner_id,
-    'USER',
-    body,
-  ).then(
-    (message) => ({ outcome: 'fulfilled', message }),
-    (error) => ({ outcome: 'rejected', error }),
-  );
+  let sendOutcome;
 
   try {
     await closeClient.query('BEGIN');
     closeTransactionOpen = true;
     const closed = await closeJobChatForJob(conversation.job_id, closeClient);
     assert.equal(closed, true);
+
+    // Launch only after the close UPDATE owns the conversation row lock.
+    // Under READ COMMITTED, the sender's initial non-locking precheck can
+    // still observe OPEN; its in-transaction FOR UPDATE must wait and then
+    // reject after this close commits.
+    sendOutcome = postChatMessage(
+      conversation.conversation_id,
+      conversation.owner_id,
+      'USER',
+      body,
+    ).then(
+      (message) => ({ outcome: 'fulfilled', message }),
+      (error) => ({ outcome: 'rejected', error }),
+    );
 
     try {
       await waitForConversationRowLock(pool);
