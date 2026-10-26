@@ -1180,6 +1180,24 @@ void main() {
               ),
             ],
           ),
+          HopeChatMessage(
+            id: 'voice-message-switch',
+            conversationId: 'chat-1',
+            senderId: 'worker-1',
+            senderName: 'Worker',
+            body: 'Second voice message',
+            createdAt: DateTime(2026, 10, 26, 0, 1),
+            messageType: 'VOICE',
+            attachments: const [
+              HopeChatAttachment(
+                id: 'attachment-switch',
+                filename: 'second-voice-note.m4a',
+                contentType: 'audio/mp4',
+                size: 4,
+                downloadPath: '/messaging/attachments/attachment-switch/content',
+              ),
+            ],
+          ),
         ],
       );
       const channel = MethodChannel('hope.chat/voice');
@@ -1231,6 +1249,24 @@ void main() {
         contains('/fake/hope-voice-1'),
         reason: 'completed voice playback must release the temporary media directory',
       );
+
+      // Starting a different message must stop and release the previous file.
+      final secondPlayButton =
+          find.byKey(const ValueKey('chat-voice-voice-message-switch'));
+      await tester.ensureVisible(secondPlayButton);
+      await tester.tap(secondPlayButton);
+      await tester.pumpAndSettle();
+      expect(fileStore.createdTemporaryMediaFiles, 2);
+
+      // Tapping the active message again is a stop action and releases it too.
+      await tester.tap(secondPlayButton);
+      await tester.pumpAndSettle();
+      expect(
+        fileStore.deletedDirectories,
+        contains('/fake/hope-voice-2'),
+        reason: 'manually stopping voice playback must release its temporary directory',
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 

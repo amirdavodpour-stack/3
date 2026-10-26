@@ -101,6 +101,8 @@ class _ChatPageState extends State<ChatPage> {
   Timer? _typingTimer;
   bool _pollingLive = false;
   final List<String> _voiceTempDirs = [];
+  String? _activeVoiceTempDirectory;
+  int _voicePlaybackRequestId = 0;
 
   bool get _isInbox => widget.conversationId == null && widget.jobId == null && !widget.adminRoom;
   ChatCapabilitiesRepository? get _capabilities =>
@@ -112,6 +114,11 @@ class _ChatPageState extends State<ChatPage> {
     _repository = widget.repository ?? context.read<ChatRepository>();
     _fileStore = widget.fileStore ?? const IoChatLocalFileStore();
     _voicePlaybackSubscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
+      final directoryPath = _activeVoiceTempDirectory;
+      _activeVoiceTempDirectory = null;
+      if (directoryPath != null) {
+        unawaited(_deleteVoiceTempDirectory(directoryPath));
+      }
       if (!mounted || _playingVoiceMessageId == null) return;
       setState(() => _playingVoiceMessageId = null);
     });
@@ -120,6 +127,9 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    // Invalidate downloads that have not produced a playable file yet.
+    _voicePlaybackRequestId++;
+    _activeVoiceTempDirectory = null;
     _liveTimer?.cancel();
     _typingTimer?.cancel();
     final voicePlaybackSubscription = _voicePlaybackSubscription;
@@ -138,7 +148,7 @@ class _ChatPageState extends State<ChatPage> {
     if (!_recordingVoice && pendingVoice != null) {
       unawaited(_fileStore.deleteFile(pendingVoice).catchError((Object _) {}));
     }
-    for (final directoryPath in _voiceTempDirs) {
+    for (final directoryPath in List<String>.of(_voiceTempDirs)) {
       unawaited(_deleteVoiceTempDirectory(directoryPath));
     }
     _controller.dispose();
@@ -147,7 +157,13 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _deleteVoiceTempDirectory(String directoryPath) async {
-    try { await _fileStore.deleteDirectory(directoryPath); } catch (_) {}
+    _voiceTempDirs.remove(directoryPath);
+    if (_activeVoiceTempDirectory == directoryPath) {
+      _activeVoiceTempDirectory = null;
+    }
+    try {
+      await _fileStore.deleteDirectory(directoryPath);
+    } catch (_) {}
   }
 
   Future<void> _discardActiveRecording() async {
@@ -400,31 +416,80 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _playVoiceMessage(HopeChatMessage message) async {
     final capabilities = _capabilities;
     if (capabilities == null || message.attachments.isEmpty) return;
+
+    // Tapping the active item stops it and releases its temporary media.
     if (_playingVoiceMessageId == message.id) {
-      await HopeChatVoiceBridge.stopPlayback();
-      if (mounted) setState(() => _playingVoiceMessageId = null);
+      final requestId = ++_voicePlaybackRequestId;
+      final directoryPath = _activeVoiceTempDirectory;
+      _activeVoiceTempDirectory = null;
+      try {
+        await HopeChatVoiceBridge.stopPlayback();
+      } catch (_) {
+        // File cleanup must still happen if the native stop fails.
+      }
+      if (directoryPath != null) {
+        await _deleteVoiceTempDirectory(directoryPath);
+      }
+      if (mounted && requestId == _voicePlaybackRequestId) {
+        setState(() => _playingVoiceMessageId = null);
+      }
       return;
     }
+
+    // A newer tap supersedes any previous download in flight.
+    final requestId = ++_voicePlaybackRequestId;
+    final previousDirectory = _activeVoiceTempDirectory;
+    _activeVoiceTempDirectory = null;
+    if (previousDirectory != null || _playingVoiceMessageId != null) {
+      try {
+        await HopeChatVoiceBridge.stopPlayback();
+      } catch (_) {
+        // Continue with the new message; stale media is still deleted below.
+      }
+      if (previousDirectory != null) {
+        await _deleteVoiceTempDirectory(previousDirectory);
+      }
+      if (!mounted || requestId != _voicePlaybackRequestId) return;
+      setState(() => _playingVoiceMessageId = null);
+    }
+
+    ChatTemporaryMediaFile? temporary;
     try {
       final attachment = message.attachments.first;
       final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
-      if (!mounted) return;
-      final extension = attachment.filename.contains('.') ? attachment.filename.split('.').last : 'm4a';
-      final temporary = await _fileStore.createTemporaryMediaFile(bytes, extension);
-      if (!mounted) {
+      if (!mounted || requestId != _voicePlaybackRequestId) return;
+
+      final extension = attachment.filename.contains('.')
+          ? attachment.filename.split('.').last
+          : 'm4a';
+      temporary = await _fileStore.createTemporaryMediaFile(bytes, extension);
+      if (!mounted || requestId != _voicePlaybackRequestId) {
         await _deleteVoiceTempDirectory(temporary.directoryPath);
         return;
       }
+
       _voiceTempDirs.add(temporary.directoryPath);
+      _activeVoiceTempDirectory = temporary.directoryPath;
       // Set the active ID before starting native playback so an extremely short
       // clip cannot finish and emit playbackCompleted before the state is set.
-      setState(() { _playingVoiceMessageId = message.id; _error = null; });
+      setState(() {
+        _playingVoiceMessageId = message.id;
+        _error = null;
+      });
       await HopeChatVoiceBridge.playFile(temporary.path);
     } catch (e) {
-      if (mounted) setState(() {
-        if (_playingVoiceMessageId == message.id) _playingVoiceMessageId = null;
-        _error = apiErrorMessage(e, fallback: _t('پخش پیام صوتی ممکن نشد.', 'Could not play voice message.'));
-      });
+      if (temporary != null) {
+        await _deleteVoiceTempDirectory(temporary.directoryPath);
+      }
+      if (mounted && requestId == _voicePlaybackRequestId) {
+        setState(() {
+          _playingVoiceMessageId = null;
+          _error = apiErrorMessage(
+            e,
+            fallback: _t('پخش پیام صوتی ممکن نشد.', 'Could not play voice message.'),
+          );
+        });
+      }
     }
   }
 
