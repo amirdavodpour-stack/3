@@ -5,7 +5,11 @@ export const migration = {
     await client.query(`
       ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'TEXT';
       DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='chat_messages_message_type_check') THEN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conrelid = 'chat_messages'::regclass
+            AND conname = 'chat_messages_message_type_check'
+        ) THEN
           ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_message_type_check CHECK (message_type IN ('TEXT','ATTACHMENT','VOICE'));
         END IF;
       END $$;
