@@ -182,3 +182,48 @@ test('account deletion removes recommendation profile data', () => {
   const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
   assert.match(deletion, /DELETE FROM recommendation_profiles WHERE user_id=\$1/);
 });
+
+
+test('data export includes user-owned saved searches', () => {
+  const out = buildDataExport({
+    user: { id:'u8', email:'a@b.c', displayName:'A', role:'USER', status:'ACTIVE', createdAt:'now' },
+    savedSearches: [{
+      id:'search-1',
+      name:'Remote Flutter',
+      query:'Flutter',
+      kind:'JOB',
+      visibility:'ALL',
+      city:'Berlin',
+      category:'Software',
+      createdAt:'now',
+      updatedAt:'now',
+    }],
+  });
+
+  assert.deepEqual(out.savedSearches, [{
+    id:'search-1',
+    name:'Remote Flutter',
+    query:'Flutter',
+    kind:'JOB',
+    visibility:'ALL',
+    city:'Berlin',
+    category:'Software',
+    createdAt:'now',
+    updatedAt:'now',
+  }]);
+});
+
+test('PostgreSQL privacy export and deletion handle saved searches', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(repository, /SELECT \* FROM saved_searches WHERE user_id=\$1 ORDER BY updated_at DESC/);
+  assert.match(repository, /savedSearches: savedSearches\.rows/);
+  assert.match(deletion, /DELETE FROM saved_searches WHERE user_id=\$1/);
+});
+
+test('legacy privacy export and deletion handle saved searches', () => {
+  const legacy = readFileSync(path.join(ROOT, 'src/application/legacy/account_legacy.js'), 'utf8');
+  assert.match(legacy, /savedSearches: db\.collection\.savedSearches\.filter/);
+  assert.match(legacy, /db\.collection\.savedSearches = db\.collection\.savedSearches\.filter/);
+  assert.match(legacy, /db\.touch\([^)]*savedSearches/);
+});
