@@ -156,7 +156,7 @@ void main() {
     expect(find.text('2,500,000 Toman'), findsNothing);
     expect(
       find.bySemanticsLabel(
-        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman',
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer fee 100,000 Toman, Worker fee 100,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman, Platform fee 200,000 Toman',
       ),
       findsOneWidget,
     );
@@ -239,6 +239,12 @@ void main() {
     expect(find.text('9,000,000 Toman'), findsNWidgets(2));
     expect(find.text('0 Toman'), findsOneWidget);
     expect(find.text('39,000,000 Toman'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, Base amount 30,000,000 Toman, Employer fee 9,000,000 Toman, Worker fee 0 Toman, Employer charge 39,000,000 Toman, Worker payout 30,000,000 Toman, Platform fee 9,000,000 Toman',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(
@@ -334,7 +340,7 @@ void main() {
     await tester.pump();
     expect(
       find.bySemanticsLabel(
-        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman',
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer fee 100,000 Toman, Worker fee 100,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman, Platform fee 200,000 Toman',
       ),
       findsOneWidget,
     );
