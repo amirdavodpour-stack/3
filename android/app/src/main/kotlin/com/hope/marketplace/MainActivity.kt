@@ -77,6 +77,7 @@ class MainActivity : FlutterActivity() {
         chatVoiceChannel.setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startRecording" -> startChatVoiceRecording(result)
+                    "cancelPendingRecording" -> cancelPendingChatVoiceRecording(result)
                     "stopRecording" -> stopChatVoiceRecording(result)
                     "playFile" -> playChatVoiceFile(call.argument<String>("path"), result)
                     "stopPlayback" -> stopChatVoicePlayback(result)
@@ -147,9 +148,22 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun cancelPendingChatVoiceRecording(result: MethodChannel.Result) {
+        // Clear the callback before completing it: a late permission result must
+        // see no pending request and therefore must not start microphone capture.
+        val pending = pendingChatVoiceStartResult
+        pendingChatVoiceStartResult = null
+        pending?.error("VOICE_RECORDING_CANCELLED", "Voice recording start was cancelled.", null)
+        result.success(null)
+    }
+
     private fun startChatVoiceRecording(result: MethodChannel.Result) {
         if (chatVoiceRecorder != null) {
             result.error("VOICE_RECORDING_ACTIVE", "A voice message is already being recorded.", null)
+            return
+        }
+        if (pendingChatVoiceStartResult != null) {
+            result.error("VOICE_PERMISSION_REQUEST_PENDING", "A microphone permission request is already pending.", null)
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
