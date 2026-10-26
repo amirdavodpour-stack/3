@@ -249,6 +249,58 @@ void main() {
   );
 
   testWidgets(
+    'pending voice permission request is cancelled when leaving chat and cannot be duplicated',
+    (tester) async {
+      final repository = RacingChatRepository();
+      final startRequest = Completer<String>();
+      const channel = MethodChannel('hope.chat/voice');
+      final nativeCalls = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        nativeCalls.add(call.method);
+        if (call.method == 'startRecording') return startRequest.future;
+        if (call.method == 'cancelPendingRecording') return true;
+        return true;
+      });
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance
+          .defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null));
+
+      await tester.pumpWidget(
+        Provider<AuthController?>.value(
+          value: null,
+          child: MaterialApp(
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final recordButton =
+          find.byKey(const ValueKey('chat-voice-record-button'));
+      await tester.tap(recordButton);
+      await tester.pump();
+
+      // Repeated taps while Android's permission prompt is unresolved must not
+      // issue a second native start request or orphan the first MethodChannel result.
+      await tester.tap(recordButton);
+      await tester.pump();
+      expect(
+        nativeCalls.where((method) => method == 'startRecording').length,
+        1,
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pump();
+      expect(nativeCalls, contains('cancelPendingRecording'));
+
+      startRequest.completeError(
+        PlatformException(code: 'VOICE_RECORDING_CANCELLED'),
+      );
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
     'chat inbox initial load failure exposes an actionable retry',
     (tester) async {
       final repository = FakeChatRepository()..failList = true;
