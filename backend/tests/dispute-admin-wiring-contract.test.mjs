@@ -34,3 +34,10 @@ test('admin panel exposes a verification state endpoint and UI checks it before 
   assert.match(repo, /getPanelAccess/);
   assert.match(page, /_checkPanelAccess|checkingPanel|verified/);
 });
+test('admin dispute gate honors the configured Admin Panel verification duration', () => {
+  const app = read('backend/src/app.js');
+  const route = read('backend/src/routes/job_dispute_routes.js');
+  assert.match(app, /createJobDisputeRoutes\(\{[^\n]*config/);
+  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\.adminPanelVerificationMinutes\)/);
+  assert.doesNotMatch(route, /repo\.isAdminPanelVerified\(me\.id,\s*15\)/);
+});
