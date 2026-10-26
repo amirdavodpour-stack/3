@@ -4,6 +4,7 @@ import { requirePool } from './context.js';
 import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
+import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.js';
 
 const RELEASE_STATES = new Set(['RELEASE_PENDING', 'RELEASE_FAILED']);
 
@@ -41,10 +42,12 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
     if(!pr[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
     const p=pr[0];
 
-    // Provider references belong to the provider operation being acknowledged:
-    // HOLD uses the hold reference, RELEASE uses a distinct release reference,
-    // and REFUND uses its own refund reference. They must not be compared to the
-    // payment's original hold reference.
+    // Release/refund events must carry the operation's own provider reference.
+    // Replaying the original hold reference is a trust-boundary mismatch; a valid
+    // releaseRef/refundRef is intentionally allowed to differ from that hold ref.
+    if (operationProviderRefMismatch(eventType, providerRef, p.provider_ref)) {
+      throw conflict('PROVIDER_REF_MISMATCH', 'Webhook provider reference must identify the release/refund operation, not the original hold');
+    }
     const {rows:insertedEvents}=await client.query(
       `INSERT INTO payment_webhook_events(id,event_id,event_type,payment_id,provider_ref,payload,processed_at,created_at)
        VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW(),NOW())
