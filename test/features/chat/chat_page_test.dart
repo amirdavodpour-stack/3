@@ -1238,7 +1238,10 @@ void main() {
       await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .handlePlatformMessage(
         'hope.chat/voice',
-        codec.encodeMethodCall(const MethodCall('playbackCompleted')),
+        codec.encodeMethodCall(const MethodCall(
+          'playbackCompleted',
+          '/fake/hope-voice-1/voice.m4a',
+        )),
         (_) {},
       );
       await tester.pump();
@@ -1257,6 +1260,24 @@ void main() {
       await tester.tap(secondPlayButton);
       await tester.pumpAndSettle();
       expect(fileStore.createdTemporaryMediaFiles, 2);
+
+      // A delayed completion event from the first playback must not release the second file.
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .handlePlatformMessage(
+        'hope.chat/voice',
+        codec.encodeMethodCall(const MethodCall(
+          'playbackCompleted',
+          '/fake/hope-voice-1/voice.m4a',
+        )),
+        (_) {},
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        fileStore.deletedDirectories,
+        isNot(contains('/fake/hope-voice-2')),
+        reason: 'a stale completion must not delete the active playback directory',
+      );
 
       // Tapping the active message again is a stop action and releases it too.
       await tester.tap(secondPlayButton);
