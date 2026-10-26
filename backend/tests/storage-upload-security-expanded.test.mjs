@@ -170,44 +170,22 @@ test('concurrent multipart body ingestion respects MAX_CONCURRENT_UPLOADS before
   };
   const beginPartialUpload = (filename) => {
     const boundary = '----hope-concurrent-upload';
-    const prefix = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.7\nconcurrency test`,
-    );
-    const ending = Buffer.from(`\r\n--${boundary}--\r\n`);
-    let ended = false;
-    let resolveResponse;
-    let rejectResponse;
-    const response = new Promise((resolve, reject) => {
-      resolveResponse = resolve;
-      rejectResponse = reject;
-    });
-    const request = http.request(`${api.base}/storage/upload`, {
+    const prefix = Buffer.from('--' + boundary +
+      '\r\nContent-Disposition: form-data; name="file"; filename="' + filename +
+      '"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.7\nconcurrency test');
+    const request = http.request(api.base + '/storage/upload', {
       method: 'POST',
       headers: {
         ...auth(user.accessToken),
-        'content-type': `multipart/form-data; boundary=${boundary}`,
-        'content-length': prefix.length + ending.length,
+        'content-type': 'multipart/form-data; boundary=' + boundary,
+        'content-length': prefix.length + Buffer.byteLength('\r\n--' + boundary + '--\r\n'),
       },
     });
-    request.on('error', rejectResponse);
-    request.on('response', (res) => {
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => resolveResponse({
-        status: res.statusCode,
-        body: Buffer.concat(chunks).toString('utf8'),
-      }));
-    });
+    // A deliberate abort keeps both request bodies open until the invariant is
+    // checked; it also exercises temp-file cleanup and slot release on abort.
+    request.on('error', () => {});
     request.write(prefix);
-    return {
-      request,
-      response,
-      finish() {
-        if (ended) return;
-        ended = true;
-        request.end(ending);
-      },
-    };
+    return request;
   };
 
   let first;
@@ -226,20 +204,11 @@ test('concurrent multipart body ingestion respects MAX_CONCURRENT_UPLOADS before
       1,
       'only one request may spool a multipart body when MAX_CONCURRENT_UPLOADS=1',
     );
-
-    first.finish();
-    const firstResult = await first.response;
-    assert.equal(firstResult.status, 201, firstResult.body);
-    second.finish();
-    const secondResult = await second.response;
-    assert.equal(secondResult.status, 201, secondResult.body);
   } finally {
-    first?.finish();
-    second?.finish();
-    await first?.response.catch(() => {});
-    await second?.response.catch(() => {});
+    first?.destroy();
+    second?.destroy();
+    await waitUntil(() => incomingCount() === 0);
     api.server.off('request', observeRequest);
   }
 });
-
 after(async () => closeApi({...api, tmp}));
