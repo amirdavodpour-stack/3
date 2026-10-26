@@ -296,6 +296,7 @@ test('account deletion strips pseudonymous telemetry identifiers and raw crash p
 test('data export redacts compound PII aliases in stored telemetry recursively', () => {
   const out = buildDataExport({
     user: { id:'u9', email:'a@b.c', displayName:'A', role:'USER', status:'ACTIVE', createdAt:'now' },
+    recommendationProfile:{resumeText:'My own resume text',skills:['Flutter']},
     analyticsEvents: [{
       id:'a9',
       eventName:'screen_view',
@@ -313,6 +314,9 @@ test('data export redacts compound PII aliases in stored telemetry recursively',
     }],
   });
 
+  assert.equal(out.account.email, 'a@b.c');
+  assert.equal(out.recommendationProfile.resumeText, 'My own resume text');
+  assert.deepEqual(out.recommendationProfile.skills, ['Flutter']);
   assert.equal(out.analyticsEvents[0].eventName, 'screen_view');
   assert.equal(out.analyticsEvents[0].properties.email_address, undefined);
   assert.equal(out.analyticsEvents[0].properties.phone_number, undefined);
