@@ -271,3 +271,10 @@ test('account deletion removes user-only chat state', () => {
     assert.match(tables, new RegExp("'" + table + "'"));
   }
 });
+
+
+test('account deletion erases applicant resume content while retaining application history', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion, /UPDATE job_applications SET resume_text='', skills='' WHERE candidate_id=\$1/);
+});
