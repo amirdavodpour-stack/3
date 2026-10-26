@@ -5,7 +5,7 @@ export const PRIVACY_VERSION = '1.2';
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
 const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
-const exportSensitiveKeyPattern = /(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|resume|token|password|authorization|cookie|national|iban|card|cvv/i;
+const telemetryExportSensitiveKeyPattern = /(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|token|password|authorization|cookie|national|iban|card|cvv/i;
 
 function sanitizeExportObject(value, depth = 0) {
   if (value == null || typeof value !== 'object') return value;
@@ -15,12 +15,41 @@ function sanitizeExportObject(value, depth = 0) {
   const out = {};
   for (const [key, val] of Object.entries(value)) {
     const normalizedKey = normalizeFieldKey(key);
-    if (exportSensitiveKeys.has(normalizedKey) || exportSensitiveKeyPattern.test(normalizedKey)) continue;
+    if (exportSensitiveKeys.has(normalizedKey)) continue;
     if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
       out[key] = val.slice(0, 4000);
     } else {
       out[key] = sanitizeExportObject(val, depth + 1);
     }
+  }
+  return out;
+}
+
+function sanitizeTelemetryExportObject(value, depth = 0) {
+  if (value == null || typeof value !== 'object') return value;
+  if (depth > 4) return null;
+  if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeTelemetryExportObject(v, depth + 1));
+  const out = {};
+  for (const [key, val] of Object.entries(value)) {
+    const normalizedKey = normalizeFieldKey(key);
+    if (exportSensitiveKeys.has(normalizedKey) || telemetryExportSensitiveKeyPattern.test(normalizedKey)) continue;
+    if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
+      out[key] = val.slice(0, 4000);
+    } else {
+      out[key] = sanitizeTelemetryExportObject(val, depth + 1);
+    }
+  }
+  return out;
+}
+
+function sanitizeTelemetryExportRecord(value) {
+  const out = sanitizeExportObject(value);
+  if (!out || typeof out !== 'object' || Array.isArray(out)) return out;
+  if (Object.prototype.hasOwnProperty.call(out, 'properties')) {
+    out.properties = sanitizeTelemetryExportObject(out.properties);
+  }
+  if (Object.prototype.hasOwnProperty.call(out, 'context')) {
+    out.context = sanitizeTelemetryExportObject(out.context);
   }
   return out;
 }
@@ -63,8 +92,8 @@ export function buildDataExport({ user, provider, jobs = [], applications = [], 
     payments: sanitizeExportObject(payments),
     notifications: sanitizeExportObject(notifications),
     evidence: sanitizeExportObject(evidence),
-    analyticsEvents: sanitizeExportObject(analyticsEvents),
-    crashReports: sanitizeExportObject(crashReports),
+    analyticsEvents: sanitizeExportObject(analyticsEvents.map(sanitizeTelemetryExportRecord)),
+    crashReports: sanitizeExportObject(crashReports.map(sanitizeTelemetryExportRecord)),
     trustReports: sanitizeExportObject(trustReports),
     uploads: sanitizeExportObject(uploads),
     notificationPreferences: sanitizeExportObject(preferences),
