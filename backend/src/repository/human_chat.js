@@ -103,6 +103,27 @@ export async function postChatMessage(conversationId,userId,role,body,options={}
   if(messageType==='ATTACHMENT'&&files.length===0){const e=new Error('CHAT_ATTACHMENT_REQUIRED');e.code='CHAT_ATTACHMENT_REQUIRED';throw e;}
   if(messageType==='TEXT'&&files.length){const e=new Error('CHAT_ATTACHMENTS_INVALID');e.code='CHAT_ATTACHMENTS_INVALID';throw e;}
   return withSqlTransaction(async(client)=>{
+    // Serialize sends against closeJobChatForJob. The outer precheck improves
+    // fast rejection, but only this locked read is authoritative: a concurrent
+    // close may commit after that precheck and before this transaction starts.
+    const {rows: lockedRows}=await client.query(`
+      SELECT c.*,j.owner_id,j.provider_id AS worker_id,
+        CASE WHEN j.owner_id=$2 THEN wu.display_name ELSE ou.display_name END AS other_user_name
+      FROM chat_conversations c
+      LEFT JOIN jobs j ON j.id=c.job_id
+      LEFT JOIN users ou ON ou.id=j.owner_id
+      LEFT JOIN users wu ON wu.id=j.provider_id
+      WHERE c.id=$1 AND (
+        (c.kind='JOB' AND (j.owner_id=$2 OR j.provider_id=$2))
+        OR (c.kind='ADMIN' AND UPPER($3)='ADMIN')
+      )
+      FOR UPDATE OF c
+    `,[conversationId,userId,role]);
+    const lockedConversation=conversationFromRow(lockedRows[0]);
+    if(!lockedConversation||!canSendToConversation(lockedConversation,userId,role)){
+      const e=new Error('CHAT_CLOSED_OR_FORBIDDEN');e.code='CHAT_CLOSED_OR_FORBIDDEN';throw e;
+    }
+
     let uploads=[];
     if(keys.length){
       const {rows}=await client.query('SELECT id,storage_key,uploaded_by,content_type,size FROM uploads WHERE storage_key=ANY($1::text[]) AND uploaded_by=$2 FOR UPDATE',[keys,userId]);
