@@ -42,9 +42,20 @@ export const migration = {
     `);
   },
   async down(client) {
-    const {rows: attachments}=await client.query('SELECT 1 FROM chat_message_attachments LIMIT 1');
-    const {rows: nonText}=await client.query("SELECT 1 FROM chat_messages WHERE message_type <> 'TEXT' LIMIT 1");
-    if(attachments.length||nonText.length)throw new Error('Cannot rollback chat_capabilities while non-text messages or attachments exist');
+    const {rows: guards}=await client.query(`
+      SELECT
+        EXISTS(SELECT 1 FROM chat_message_attachments LIMIT 1) AS has_attachments,
+        EXISTS(SELECT 1 FROM chat_messages WHERE message_type <> 'TEXT' LIMIT 1) AS has_non_text,
+        EXISTS(SELECT 1 FROM chat_message_reads LIMIT 1) AS has_reads,
+        EXISTS(SELECT 1 FROM chat_presence LIMIT 1) AS has_presence,
+        EXISTS(SELECT 1 FROM chat_conversation_preferences LIMIT 1) AS has_preferences
+    `);
+    const guard=guards[0]||{};
+    if(Object.values(guard).some(Boolean)){
+      throw new Error(
+        'Cannot rollback chat_capabilities while capability data exists (attachments, non-text messages, read receipts, presence, or preferences)',
+      );
+    }
     await client.query(`
       DROP TABLE IF EXISTS chat_conversation_preferences;
       DROP TABLE IF EXISTS chat_presence;
