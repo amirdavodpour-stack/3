@@ -38,6 +38,6 @@ test('admin dispute gate honors the configured Admin Panel verification duration
   const app = read('backend/src/app.js');
   const route = read('backend/src/routes/job_dispute_routes.js');
   assert.match(app, /createJobDisputeRoutes\(\{[^\n]*config/);
-  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\.adminPanelVerificationMinutes\)/);
+  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15\)/);
   assert.doesNotMatch(route, /repo\.isAdminPanelVerified\(me\.id,\s*15\)/);
 });
