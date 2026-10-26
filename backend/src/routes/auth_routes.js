@@ -93,6 +93,9 @@ export function createAuthRoutes({
         if (error?.code === '23505') {
           const raced = process.env.DATABASE_URL ? await repo.findUserByGoogleSubject(identity.subject) : null;
           if (raced) {
+            if (raced.status !== 'ACTIVE') {
+              throw new HttpError(401, 'INVALID_CREDENTIALS', 'Account is not active');
+            }
             const session = await issueSession(raced);
             await createAudit('AUTH_GOOGLE_LOGIN', raced.id, 'user', raced.id);
             return sendJson(res, 200, { ...session, user: authUserView(raced) });
