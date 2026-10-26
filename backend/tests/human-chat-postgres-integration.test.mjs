@@ -1,5 +1,8 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { Readable, Writable } from 'node:stream';
+import { createHumanChatRoutes } from '../src/routes/human_chat_routes.js';
 
 const enabled = Boolean(process.env.DATABASE_URL);
 if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
@@ -18,7 +21,17 @@ const modules = enabled
   : [];
 const dbModule = modules[0];
 const migration = modules[1]?.migration;
-const { closeJobChatForJob, postChatMessage } = modules[2] || {};
+const {
+  closeJobChatForJob,
+  postChatMessage,
+  getChatConversationForUser,
+  listChatMessages,
+  markChatConversationRead,
+  updateChatPresence,
+  listChatPresence,
+  updateChatConversationPreferences,
+  getChatAttachmentForUser,
+} = modules[2] || {};
 
 let fixture = null;
 if (enabled) {
@@ -35,6 +48,16 @@ if (enabled) {
     VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 chat worker','USER','ACTIVE',0,NOW())
     RETURNING id
   `, [`r05-worker-${suffix}@example.test`]);
+  const { rows: outsiders } = await pool.query(`
+    INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+    VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 chat outsider','USER','ACTIVE',0,NOW())
+    RETURNING id
+  `, [`r05-outsider-${suffix}@example.test`]);
+  const { rows: admins } = await pool.query(`
+    INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+    VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 chat admin','ADMIN','ACTIVE',0,NOW())
+    RETURNING id
+  `, [`r05-admin-${suffix}@example.test`]);
   const { rows: categories } = await pool.query(`
     SELECT id FROM categories WHERE is_active=TRUE ORDER BY created_at NULLS FIRST,id LIMIT 1
   `);
@@ -57,11 +80,19 @@ if (enabled) {
     VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 PostgreSQL chat fixture')
     RETURNING id
   `, [jobs[0].id]);
+  const { rows: adminConversations } = await pool.query(`
+    INSERT INTO chat_conversations(id,kind,job_id,status,title)
+    VALUES(gen_random_uuid(),'ADMIN',NULL,'OPEN','R05 PostgreSQL admin fixture')
+    RETURNING id
+  `);
   fixture = {
     ownerId: owners[0].id,
     workerId: workers[0].id,
+    outsiderId: outsiders[0].id,
+    adminId: admins[0].id,
     jobId: jobs[0].id,
     conversationId: conversations[0].id,
+    adminConversationId: adminConversations[0].id,
   };
 }
 
@@ -192,6 +223,197 @@ test('migration 034 downgrade preserves retained read, presence and preference d
     assert.equal(retainedRows.length, 1, `${item.table} records must survive a rejected downgrade`);
     await pool.query(item.cleanup, item.values);
   }
+});
+
+test('chat participants, read receipts, presence and preferences enforce PostgreSQL authorization', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const conversationId = fixture.conversationId;
+
+  assert.ok(await getChatConversationForUser(conversationId, fixture.ownerId, 'USER'));
+  assert.ok(await getChatConversationForUser(conversationId, fixture.workerId, 'USER'));
+  assert.equal(await getChatConversationForUser(conversationId, fixture.outsiderId, 'USER'), null);
+  assert.equal(await getChatConversationForUser(conversationId, fixture.adminId, 'ADMIN'), null);
+  assert.ok(await getChatConversationForUser(fixture.adminConversationId, fixture.adminId, 'ADMIN'));
+  assert.equal(await getChatConversationForUser(fixture.adminConversationId, fixture.outsiderId, 'USER'), null);
+
+  const workerMessage = await postChatMessage(
+    conversationId, fixture.workerId, 'USER', 'R05 unread message',
+  );
+  const firstRead = await markChatConversationRead(conversationId, fixture.ownerId, 'USER');
+  const repeatedRead = await markChatConversationRead(conversationId, fixture.ownerId, 'USER');
+  assert.equal(firstRead.readCount, 1);
+  assert.equal(repeatedRead.readCount, 0);
+
+  const listed = await listChatMessages(conversationId, fixture.ownerId, 'USER');
+  const readMessage = listed.messages.find((message) => message.id === workerMessage.id);
+  assert.ok(readMessage);
+  assert.ok(readMessage.readReceipts.some((receipt) => receipt.userId === fixture.ownerId));
+
+  const presence = await updateChatPresence(
+    conversationId, fixture.ownerId, 'USER', { online: true, typing: true },
+  );
+  assert.equal(presence.online, true);
+  const visiblePresence = await listChatPresence(conversationId, fixture.workerId, 'USER');
+  assert.ok(visiblePresence.some((entry) => entry.userId === fixture.ownerId));
+  assert.equal(
+    await updateChatPresence(conversationId, fixture.outsiderId, 'USER', { online: true }),
+    null,
+  );
+  assert.equal(await listChatPresence(conversationId, fixture.outsiderId, 'USER'), null);
+
+  const preferences = await updateChatConversationPreferences(
+    conversationId, fixture.ownerId, 'USER', { isPinned: true, isImportant: true },
+  );
+  assert.equal(preferences.isPinned, true);
+  assert.equal(preferences.isImportant, true);
+  assert.equal(
+    await updateChatConversationPreferences(
+      conversationId, fixture.outsiderId, 'USER', { isPinned: true },
+    ),
+    null,
+  );
+  const { rows: outsiderPreferences } = await pool.query(
+    'SELECT 1 FROM chat_conversation_preferences WHERE conversation_id=$1 AND user_id=$2',
+    [conversationId, fixture.outsiderId],
+  );
+  assert.equal(outsiderPreferences.length, 0);
+});
+
+test('attachment ownership, voice consumption and private download are enforced by PostgreSQL-backed chat', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const makeUpload = async (userId, contentType, suffix) => {
+    const key = `r05/${suffix}/${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const { rows } = await pool.query(`
+      INSERT INTO uploads(id,storage_key,uploaded_by,content_type,size,created_at)
+      VALUES(gen_random_uuid(),$1,$2,$3,24,NOW())
+      RETURNING id,storage_key
+    `, [key, userId, contentType]);
+    return rows[0];
+  };
+
+  const ownerUpload = await makeUpload(fixture.ownerId, 'application/pdf', 'owner-file');
+  await assert.rejects(
+    postChatMessage(fixture.conversationId, fixture.workerId, 'USER', '', {
+      messageType: 'ATTACHMENT',
+      attachments: [{ key: ownerUpload.storage_key, filename: 'owner.pdf' }],
+    }),
+    (error) => error.code === 'CHAT_ATTACHMENT_UPLOAD_NOT_FOUND',
+  );
+
+  const fileUpload = await makeUpload(fixture.ownerId, 'application/pdf', 'download-file');
+  const fileBody = `R05 attachment one-shot ${Date.now()}`;
+  const fileResults = await Promise.allSettled([
+    postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', fileBody, {
+      messageType: 'ATTACHMENT',
+      attachments: [{ key: fileUpload.storage_key, filename: 'quarterly report.pdf' }],
+    }),
+    postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', fileBody, {
+      messageType: 'ATTACHMENT',
+      attachments: [{ key: fileUpload.storage_key, filename: 'quarterly report.pdf' }],
+    }),
+  ]);
+  const acceptedFiles = fileResults.filter((result) => result.status === 'fulfilled');
+  const rejectedFiles = fileResults.filter((result) => result.status === 'rejected');
+  assert.equal(acceptedFiles.length, 1);
+  assert.equal(rejectedFiles.length, 1);
+  assert.equal(rejectedFiles[0].reason.code, 'CHAT_ATTACHMENT_ALREADY_USED');
+  assert.equal(acceptedFiles[0].value.attachments.length, 1);
+
+  const attachmentId = acceptedFiles[0].value.attachments[0].id;
+  const ownerMetadata = await getChatAttachmentForUser(attachmentId, fixture.ownerId, 'USER');
+  assert.ok(ownerMetadata);
+  assert.equal(ownerMetadata.filename, 'quarterly report.pdf');
+  assert.ok(await getChatAttachmentForUser(attachmentId, fixture.workerId, 'USER'));
+  assert.equal(await getChatAttachmentForUser(attachmentId, fixture.outsiderId, 'USER'), null);
+  assert.equal(await getChatAttachmentForUser(attachmentId, fixture.adminId, 'ADMIN'), null);
+
+  const payload = Buffer.from('R05 private attachment bytes', 'utf8');
+  let storageReads = 0;
+  let viewer = { id: fixture.ownerId, role: 'USER' };
+  const route = createHumanChatRoutes({
+    authUser: async () => viewer,
+    sendJson: (res, status, body) => {
+      res.statusCode = status;
+      res.payload = body;
+      return body;
+    },
+    readBody: async () => ({}),
+    HttpError: class TestHttpError extends Error {
+      constructor(status, code, message) {
+        super(message);
+        this.status = status;
+        this.code = code;
+      }
+    },
+    repo: { getChatAttachmentForUser },
+    storage: {
+      get: async ({ key }) => {
+        storageReads += 1;
+        assert.equal(key, fileUpload.storage_key);
+        return { size: payload.length, body: Readable.from([payload]) };
+      },
+    },
+  });
+
+  const responseChunks = [];
+  const response = new Writable({
+    write(chunk, encoding, callback) {
+      responseChunks.push(Buffer.from(chunk));
+      callback();
+    },
+  });
+  response.writeHead = (status, headers) => {
+    response.statusCode = status;
+    response.headers = headers;
+    return response;
+  };
+  const finished = once(response, 'finish');
+  await route(
+    { method: 'GET' },
+    response,
+    ['messaging', 'attachments', attachmentId, 'content'],
+  );
+  await finished;
+  assert.equal(response.statusCode, 200);
+  assert.equal(Buffer.concat(responseChunks).toString('utf8'), payload.toString('utf8'));
+  assert.equal(response.headers['Cache-Control'], 'private, no-store');
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.match(response.headers['Content-Disposition'], /quarterly%20report.pdf/);
+
+  viewer = { id: fixture.outsiderId, role: 'USER' };
+  await assert.rejects(
+    route({ method: 'GET' }, new Writable({ write(chunk, encoding, callback) { callback(); } }),
+      ['messaging', 'attachments', attachmentId, 'content']),
+    (error) => error.status === 404 && error.code === 'CHAT_ATTACHMENT_NOT_FOUND',
+  );
+  assert.equal(storageReads, 1, 'unauthorized download must not read from storage');
+
+  const voiceUpload = await makeUpload(fixture.ownerId, 'audio/mpeg', 'voice-note');
+  const voiceBody = `R05 concurrent voice ${Date.now()}`;
+  const voiceResults = await Promise.allSettled([
+    postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', '', {
+      messageType: 'VOICE',
+      attachments: [{ key: voiceUpload.storage_key, filename: 'voice-note.mp3' }],
+    }),
+    postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', '', {
+      messageType: 'VOICE',
+      attachments: [{ key: voiceUpload.storage_key, filename: 'voice-note.mp3' }],
+    }),
+  ]);
+  const acceptedVoice = voiceResults.filter((result) => result.status === 'fulfilled');
+  const rejectedVoice = voiceResults.filter((result) => result.status === 'rejected');
+  assert.equal(acceptedVoice.length, 1);
+  assert.equal(rejectedVoice.length, 1);
+  assert.equal(rejectedVoice[0].reason.code, 'CHAT_ATTACHMENT_ALREADY_USED');
+  assert.equal(acceptedVoice[0].value.messageType, 'VOICE');
+  assert.equal(acceptedVoice[0].value.attachments.length, 1);
+
+  const { rows: voiceRows } = await pool.query(
+    `SELECT COUNT(*)::int AS messages
+     FROM chat_messages WHERE conversation_id=$1 AND message_type='VOICE' AND body='Voice message'`,
+    [fixture.conversationId],
+  );
+  assert.equal(voiceRows[0].messages, 1, 'voice message and attachment must commit once, atomically');
 });
 
 test('send waits for an in-flight close and rejects when CLOSED commits first', { skip: !enabled }, async () => {
