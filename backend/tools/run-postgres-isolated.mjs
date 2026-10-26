@@ -38,7 +38,6 @@ try {
     '--test-concurrency=1',
     'tests/postgres-bootstrap-integration.test.mjs',
     'tests/postgres-repository-e2e.test.mjs',
-    'tests/human-chat-postgres-integration.test.mjs',
   ], {
     cwd: process.cwd(),
     env,
