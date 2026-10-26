@@ -277,4 +277,9 @@ test('account deletion erases applicant resume content while retaining applicati
   const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
   const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
   assert.match(deletion, /UPDATE job_applications SET resume_text='', skills='' WHERE candidate_id=\$1/);
+
+  const legacy = readFileSync(path.join(ROOT, 'src/application/legacy/account_legacy.js'), 'utf8');
+  const legacyDeletion = legacy.slice(legacy.indexOf('async deleteUserPrivacyBundle'));
+  assert.match(legacyDeletion, /x\.resumeText = ''; x\.skills = ''/);
+  assert.match(legacyDeletion, /'jobApplications'/);
 });
