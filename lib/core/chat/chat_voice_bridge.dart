@@ -32,6 +32,11 @@ class HopeChatVoiceBridge {
     return path;
   }
 
+  /// Cancels an outstanding microphone permission/recording-start request.
+  /// Safe to call when no request is pending.
+  static Future<void> cancelPendingRecording() =>
+      _channel.invokeMethod<void>('cancelPendingRecording');
+
   static Future<String> stopRecording() async {
     final path = await _channel.invokeMethod<String>('stopRecording');
     if (path == null || path.isEmpty) throw PlatformException(code: 'VOICE_RECORDING_FAILED');
