@@ -51,6 +51,7 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     await client.query(`UPDATE users SET email=$2,password_hash=$3,display_name='Deleted user',status='DELETED',session_version=session_version+1 WHERE id=$1`, [userId,replacement.email,replacement.passwordHash]);
     await client.query(`UPDATE audit_logs SET actor_id=NULL WHERE actor_id=$1`, [userId]);
     await client.query(`DELETE FROM trust_reports WHERE reporter_id=$1`, [userId]);
+    await client.query(`DELETE FROM recommendation_profiles WHERE user_id=$1`, [userId]);
     await client.query(`DELETE FROM job_satisfaction_feedback WHERE user_id=$1`, [userId]);
     return true;
   });
