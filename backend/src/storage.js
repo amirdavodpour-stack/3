@@ -87,8 +87,23 @@ class S3Storage {
     return { key:file.key };
   }
   async presignPut({ key, contentType, expiresIn }) {
-    const command = new PutObjectCommand({ Bucket:this.bucket, Key:key, ContentType:contentType, ServerSideEncryption:s3ServerSideEncryption() });
-    return { key, url:await getSignedUrl(this.client, command, { expiresIn }), contentType, expiresIn, mode:'s3' };
+    // A presigned PUT is a reusable bearer URL until expiry. Signing this
+    // conditional header makes the first successful write final for this key.
+    const command = new PutObjectCommand({
+      Bucket:this.bucket,
+      Key:key,
+      ContentType:contentType,
+      IfNoneMatch:'*',
+      ServerSideEncryption:s3ServerSideEncryption(),
+    });
+    return {
+      key,
+      url:await getSignedUrl(this.client, command, { expiresIn }),
+      contentType,
+      expiresIn,
+      mode:'s3',
+      requiredHeaders:{'If-None-Match':'*'},
+    };
   }
   async head({ key }) {
     const result = await this.send(new HeadObjectCommand({ Bucket:this.bucket, Key:key }), 'HEAD');
