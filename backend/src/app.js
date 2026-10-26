@@ -94,7 +94,7 @@ const analyticsLegacy = createAnalyticsLegacy({ db });
 const { analyticsRoutes, analyticsAdminRoutes } = createAnalyticsRoutes({
   authUser, requireAdmin, readBody, sendJson, HttpError, sanitizeTelemetryProperties,
   recordAnalyticsEvent, recordCrash, logEvent, repo, getProductFunnelSummary,
-  localProductFunnelSummary, legacy: analyticsLegacy,
+  localProductFunnelSummary, legacy: analyticsLegacy, config,
 });
 
 async function notifyApplicationCandidate(applicationId, type, title, body) {
