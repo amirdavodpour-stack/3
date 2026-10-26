@@ -84,3 +84,40 @@ test('data export strips internal payment and telemetry transport fields recursi
   assert.equal(out.crashReports[0].context.token, undefined);
   assert.equal(out.provider.providerRef, undefined);
 });
+
+test('data export includes the user's recommendation profile and satisfaction history', () => {
+  const out = buildDataExport({
+    user: { id: 'u5', email: 'a@b.c', displayName: 'A', role: 'USER', status: 'ACTIVE', createdAt: 'now' },
+    recommendationProfile: {
+      onboardingCompleted: true,
+      resumeText: 'User-authored resume text',
+      skills: ['Flutter', 'SQL'],
+      preferredCities: ['Berlin'],
+    },
+    satisfactionHistory: [{
+      id: 's1',
+      jobId: 'j1',
+      userId: 'u5',
+      role: 'WORKER',
+      overallRating: 5,
+      reportText: 'User-authored satisfaction feedback',
+      status: 'SUBMITTED',
+    }],
+  });
+
+  assert.deepEqual(out.recommendationProfile, {
+    onboardingCompleted: true,
+    resumeText: 'User-authored resume text',
+    skills: ['Flutter', 'SQL'],
+    preferredCities: ['Berlin'],
+  });
+  assert.deepEqual(out.satisfactionHistory, [{
+    id: 's1',
+    jobId: 'j1',
+    userId: 'u5',
+    role: 'WORKER',
+    overallRating: 5,
+    reportText: 'User-authored satisfaction feedback',
+    status: 'SUBMITTED',
+  }]);
+});
