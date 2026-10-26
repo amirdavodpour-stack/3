@@ -45,8 +45,10 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     if (!u.rows[0]) return false;
     const tables = ['refresh_tokens','reset_tokens','notification_devices','notification_preferences','notifications','chat_presence','chat_conversation_preferences','chat_message_reads'];
     for (const t of tables) await client.query(`DELETE FROM ${t} WHERE user_id=$1`, [userId]);
-    await client.query(`UPDATE analytics_events SET user_id=NULL WHERE user_id=$1`, [userId]);
-    await client.query(`UPDATE crash_reports SET user_id=NULL WHERE user_id=$1`, [userId]);
+    // Keep only coarse event metadata for aggregate analytics; remove linkable and arbitrary payload fields.
+    await client.query(`UPDATE analytics_events SET user_id=NULL, anonymous_id=NULL, session_id=NULL, properties='{}'::jsonb, dedupe_key=NULL WHERE user_id=$1`, [userId]);
+    // Crash text/context can contain historical PII even after identifiers are detached.
+    await client.query(`UPDATE crash_reports SET user_id=NULL, anonymous_id=NULL, message='[REDACTED]', stack=NULL, context='{}'::jsonb WHERE user_id=$1`, [userId]);
     await client.query(`DELETE FROM upload_intents WHERE uploaded_by=$1`, [userId]);
     await client.query(`UPDATE evidence SET submitted_by=NULL WHERE submitted_by=$1`, [userId]);
     await client.query(`UPDATE uploads SET uploaded_by=NULL WHERE uploaded_by=$1`, [userId]);
