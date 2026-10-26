@@ -10,16 +10,22 @@ import { db } from './db.js';
 let activeUploadParsers = 0;
 const uploadWaiters = [];
 async function acquireUploadParser() {
-  if (activeUploadParsers < config.maxConcurrentUploads) { activeUploadParsers += 1; return; }
+  if (activeUploadParsers < config.maxConcurrentUploads && uploadWaiters.length === 0) {
+    activeUploadParsers += 1;
+    return;
+  }
+  // A queued waiter inherits the released slot; it must not increment the
+  // counter a second time when it resumes.
   await new Promise((resolve) => uploadWaiters.push(resolve));
-  activeUploadParsers += 1;
 }
 function releaseUploadParser() {
-  activeUploadParsers = Math.max(0, activeUploadParsers - 1);
   const next = uploadWaiters.shift();
-  if (next) next();
+  if (next) {
+    next();
+    return;
+  }
+  activeUploadParsers = Math.max(0, activeUploadParsers - 1);
 }
-
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -116,30 +122,48 @@ export async function readMultipartSingleFile(req) {
   const type = String(req.headers['content-type'] || '');
   const match = type.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
   if (!match) throw new HttpError(400, 'INVALID_MULTIPART', 'Multipart boundary is missing');
-  const boundary = Buffer.from(`--${match[1] || match[2]}`);
+  const boundary = Buffer.from(\`--\${match[1] || match[2]}\`);
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > config.maxUploadBytes + 1024 * 1024) throw new HttpError(413, 'FILE_TOO_LARGE', 'File is too large');
-  const tempName = `${crypto.randomUUID()}.upload`;
-  await fs.promises.mkdir(config.storageDir, { recursive: true });
-  const tempPath = path.join(config.storageDir, `.incoming-${tempName}`);
-  const stream = fs.createWriteStream(tempPath, { flags: 'wx' });
-  let size = 0;
+
+  // Reserve capacity before creating the temporary file or consuming request
+  // bytes. The slot travels with the result and is released by the route only
+  // after storage persistence and cleanup have completed.
+  await acquireUploadParser();
+  let tempPath = null;
+  let stream = null;
+  let ownershipTransferred = false;
+  let slotReleased = false;
+  const release = () => {
+    if (slotReleased) return;
+    slotReleased = true;
+    releaseUploadParser();
+  };
+
   try {
+    const tempName = \`\${crypto.randomUUID()}.upload\`;
+    await fs.promises.mkdir(config.storageDir, { recursive: true });
+    tempPath = path.join(config.storageDir, \`.incoming-\${tempName}\`);
+    stream = fs.createWriteStream(tempPath, { flags: 'wx' });
+    let size = 0;
     for await (const chunk of req) {
       size += chunk.length;
       if (size > config.maxUploadBytes + 1024 * 1024) {
         stream.destroy();
         throw new HttpError(413, 'FILE_TOO_LARGE', 'File is too large');
       }
-      if (!stream.write(chunk)) await new Promise((resolve, reject) => { stream.once('drain', resolve); stream.once('error', reject); });
+      if (!stream.write(chunk)) {
+        await new Promise((resolve, reject) => {
+          stream.once('drain', resolve);
+          stream.once('error', reject);
+        });
+      }
     }
-    await new Promise((resolve, reject) => { stream.end(resolve); stream.once('error', reject); });
-  } catch (error) {
-    try { stream.destroy(); await fs.promises.unlink(tempPath); } catch {}
-    throw error;
-  }
-  await acquireUploadParser();
-  try {
+    await new Promise((resolve, reject) => {
+      stream.once('error', reject);
+      stream.end(resolve);
+    });
+
     const body = await fs.promises.readFile(tempPath);
     const start = body.indexOf(boundary);
     if (start < 0) throw new HttpError(400, 'INVALID_MULTIPART', 'Multipart payload is invalid');
@@ -150,7 +174,7 @@ export async function readMultipartSingleFile(req) {
     const disposition = headersText.match(/content-disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]*)")?/i);
     if (!disposition || disposition[1] !== 'file' || !disposition[2]) throw new HttpError(400, 'FILE_REQUIRED', 'A file field is required');
     const contentType = headersText.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim() || 'application/octet-stream';
-    const nextBoundary = body.indexOf(Buffer.from(`\r\n${boundary.toString('binary')}`), headerEnd + 4);
+    const nextBoundary = body.indexOf(Buffer.from(\`\r\n\${boundary.toString('binary')}\`), headerEnd + 4);
     if (nextBoundary < 0) throw new HttpError(400, 'INVALID_MULTIPART', 'Multipart terminator is missing');
     const content = body.subarray(headerEnd + 4, nextBoundary);
     if (!content.length) throw new HttpError(400, 'EMPTY_FILE', 'Uploaded file is empty');
@@ -161,7 +185,7 @@ export async function readMultipartSingleFile(req) {
     // allowlist inference and route-level MIME/extension consistency checks.
     const safeName = rawSafeName.length <= 180
       ? rawSafeName
-      : `${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}${rawExtension}`;
+      : \`\${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}\${rawExtension}\`;
     const extension = path.extname(safeName).toLowerCase();
     const inferredType = new Map([
       ['.pdf', 'application/pdf'],
@@ -199,17 +223,20 @@ export async function readMultipartSingleFile(req) {
     if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav'].includes(declaredType) || !signatureOk) {
       throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported or invalid file content');
     }
-    const key = `${crypto.randomUUID()}-${safeName}`;
+    const key = \`\${crypto.randomUUID()}-\${safeName}\`;
     // Reuse the already-created temp file for the extracted payload. This is
     // important: the object storage layer must receive the file bytes, not the
-    // surrounding multipart envelope. Keeping one path also guarantees that the
-    // route's finally block removes the exact temporary file after upload.
+    // surrounding multipart envelope.
     await fs.promises.writeFile(tempPath, content);
-    return { key, filename: safeName, contentType: declaredType, size: content.length, path: tempPath };
+    ownershipTransferred = true;
+    return { key, filename: safeName, contentType: declaredType, size: content.length, path: tempPath, release };
   } catch (error) {
-    try { await fs.promises.unlink(tempPath); } catch {}
+    if (stream) stream.destroy();
+    if (tempPath) {
+      try { await fs.promises.unlink(tempPath); } catch {}
+    }
     throw error;
   } finally {
-    releaseUploadParser();
+    if (!ownershipTransferred) release();
   }
 }
