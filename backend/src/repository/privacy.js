@@ -56,6 +56,8 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     await client.query(`DELETE FROM trust_reports WHERE reporter_id=$1`, [userId]);
     await client.query(`DELETE FROM recommendation_profiles WHERE user_id=$1`, [userId]);
     await client.query(`DELETE FROM saved_searches WHERE user_id=$1`, [userId]);
+    // Keep application lifecycle history for marketplace integrity, but erase the applicant's personal resume/skills content.
+    await client.query(`UPDATE job_applications SET resume_text='', skills='' WHERE candidate_id=$1`, [userId]);
     await client.query(`DELETE FROM job_satisfaction_feedback WHERE user_id=$1`, [userId]);
     return true;
   });
