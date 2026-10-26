@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -77,6 +78,7 @@ class RacingChatRepository extends FakeChatRepository
   final Completer<HopeChatThread> stalePoll = Completer<HopeChatThread>();
   final Completer<HopeChatMessage> pendingTextSend = Completer<HopeChatMessage>();
   bool holdTextSend = false;
+  Completer<Uint8List>? pendingAttachmentDownload;
   int getMessagesCalls = 0;
 
   @override
@@ -109,8 +111,9 @@ class RacingChatRepository extends FakeChatRepository
       {'key': 'uploaded/file', 'filename': Uri.file(path).pathSegments.last};
 
   @override
-  Future<Uint8List> downloadAttachment(String downloadPath) async =>
-      Uint8List(0);
+  Future<Uint8List> downloadAttachment(String downloadPath) {
+    return pendingAttachmentDownload?.future ?? Future.value(Uint8List(0));
+  }
 
   @override
   Future<void> markRead(String conversationId) async {}
@@ -136,6 +139,79 @@ class RacingChatRepository extends FakeChatRepository
 }
 
 void main() {
+  testWidgets(
+    'voice playback does not start after chat is disposed during download',
+    (tester) async {
+      final repository = RacingChatRepository();
+      repository.pendingAttachmentDownload = Completer<Uint8List>();
+      repository.threadOverride = HopeChatThread(
+        conversation: const HopeChatConversation(
+          id: 'chat-1',
+          kind: 'JOB',
+          jobId: 'job-1',
+          status: 'OPEN',
+          title: 'Test job',
+          otherUserName: 'Worker',
+        ),
+        messages: [
+          HopeChatMessage(
+            id: 'voice-message',
+            conversationId: 'chat-1',
+            senderId: 'worker-1',
+            senderName: 'Worker',
+            body: 'Voice message',
+            createdAt: DateTime(2026, 10, 26),
+            messageType: 'VOICE',
+            attachments: const [
+              HopeChatAttachment(
+                id: 'attachment-1',
+                filename: 'voice-note.m4a',
+                contentType: 'audio/mp4',
+                size: 4,
+                downloadPath: '/messaging/attachments/attachment-1/content',
+              ),
+            ],
+          ),
+        ],
+      );
+      const channel = MethodChannel('hope.chat/voice');
+      final nativeCalls = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        nativeCalls.add(call.method);
+        return true;
+      });
+      addTearDown(() => TestDefaultBinaryMessengerBinding.instance
+          .defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null));
+
+      await tester.pumpWidget(
+        Provider<AuthController?>.value(
+          value: null,
+          child: MaterialApp(
+            home: ChatPage(repository: repository, jobId: 'job-1'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final playButton = find.byKey(const ValueKey('chat-voice-voice-message'));
+      await tester.ensureVisible(playButton);
+      await tester.tap(playButton);
+      await tester.pump();
+
+      // Navigate away while the authenticated attachment request is unresolved.
+      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pump();
+      repository.pendingAttachmentDownload!.complete(
+        Uint8List.fromList([0, 1, 2, 3]),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(nativeCalls.where((method) => method == 'playFile'), isEmpty);
+    },
+  );
+
   testWidgets(
     'chat inbox initial load failure exposes an actionable retry',
     (tester) async {
