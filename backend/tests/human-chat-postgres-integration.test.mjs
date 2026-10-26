@@ -133,16 +133,19 @@ test('migration 034 downgrade preserves retained read, presence and preference d
     {
       table: 'chat_message_reads',
       insert: 'INSERT INTO chat_message_reads(message_id, user_id) VALUES($1, $2)',
+      cleanup: 'DELETE FROM chat_message_reads WHERE message_id=$1 AND user_id=$2',
       values: [messageId, conversation.owner_id],
     },
     {
       table: 'chat_presence',
       insert: 'INSERT INTO chat_presence(conversation_id, user_id) VALUES($1, $2)',
+      cleanup: 'DELETE FROM chat_presence WHERE conversation_id=$1 AND user_id=$2',
       values: [conversation.id, conversation.owner_id],
     },
     {
       table: 'chat_conversation_preferences',
       insert: 'INSERT INTO chat_conversation_preferences(conversation_id, user_id, is_pinned) VALUES($1, $2, TRUE)',
+      cleanup: 'DELETE FROM chat_conversation_preferences WHERE conversation_id=$1 AND user_id=$2',
       values: [conversation.id, conversation.owner_id],
     },
   ];
@@ -187,6 +190,7 @@ test('migration 034 downgrade preserves retained read, presence and preference d
       `SELECT 1 FROM ${item.table} LIMIT 1`,
     );
     assert.equal(retainedRows.length, 1, `${item.table} records must survive a rejected downgrade`);
+    await pool.query(item.cleanup, item.values);
   }
 });
 
