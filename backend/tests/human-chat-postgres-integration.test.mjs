@@ -145,6 +145,53 @@ test('migration 034 up is idempotent against real PostgreSQL', { skip: !enabled 
   }
 });
 
+test('migration 034 scopes the message type constraint check to chat_messages', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const client = await pool.connect();
+  let targetConstraintDropped = false;
+  try {
+    await client.query(`
+      CREATE TEMP TABLE r05_constraint_name_collision (
+        value TEXT CONSTRAINT chat_messages_message_type_check CHECK (value IS NOT NULL)
+      )
+    `);
+    await client.query(
+      'ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_message_type_check',
+    );
+    targetConstraintDropped = true;
+
+    await migration.up(client);
+
+    const { rows } = await client.query(`
+      SELECT 1 FROM pg_constraint
+      WHERE conrelid = 'chat_messages'::regclass
+        AND conname = 'chat_messages_message_type_check'
+    `);
+    assert.equal(
+      rows.length,
+      1,
+      'a same-named constraint on another relation must not suppress the chat_messages constraint',
+    );
+  } finally {
+    if (targetConstraintDropped) {
+      const { rows } = await client.query(`
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'chat_messages'::regclass
+          AND conname = 'chat_messages_message_type_check'
+      `).catch(() => ({rows: []}));
+      if (!rows.length) {
+        await client.query(`
+          ALTER TABLE chat_messages
+          ADD CONSTRAINT chat_messages_message_type_check
+          CHECK (message_type IN ('TEXT','ATTACHMENT','VOICE'))
+        `).catch(() => {});
+      }
+    }
+    await client.query('DROP TABLE IF EXISTS pg_temp.r05_constraint_name_collision').catch(() => {});
+    client.release();
+  }
+});
+
 test('migration 034 downgrade preserves retained read, presence and preference data', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const conversation = {
