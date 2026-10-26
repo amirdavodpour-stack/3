@@ -12,16 +12,14 @@ case "$PUBLIC_BASE_URL" in https://*) ;; *) echo 'PUBLIC_BASE_URL must use HTTPS
 case "$PAYMENT_PROVIDER" in webhook|internal) ;; *) echo 'PAYMENT_PROVIDER must be webhook or internal in production.' >&2; exit 1;; esac
 
 # The staging project also uses a Railway environment named "production".
-# Never permit the user-top-up exception unless the deployment proves it is
-# the dedicated staging project, and reject partial/mismatched flag settings.
+# Only the effective enabled state (internal provider + both flags) is scoped
+# to that project. Partial flag configuration remains fail-closed in the API,
+# but must not prevent an otherwise safe service from starting.
 case "${INTERNAL_WALLET_USER_TOPUP_ENABLED:-false}:${STAGING_ALLOW_INTERNAL_WALLET_TOPUP:-false}" in
   true:true)
-    [ "$PAYMENT_PROVIDER" = internal ] || { echo 'Staging internal wallet top-up requires PAYMENT_PROVIDER=internal.' >&2; exit 1; }
-    [ "${RAILWAY_PROJECT_ID:-}" = '8c686259-09c6-4609-bbe7-4ea25e769e18' ] || { echo 'Staging internal wallet top-up override is permitted only for the designated Staging Railway project.' >&2; exit 1; }
-    ;;
-  true:false|false:true)
-    echo 'Internal wallet top-up and its staging override must be enabled together, only for the designated Staging Railway project.' >&2
-    exit 1
+    if [ "$PAYMENT_PROVIDER" = internal ]; then
+      [ "${RAILWAY_PROJECT_ID:-}" = '8c686259-09c6-4609-bbe7-4ea25e769e18' ] || { echo 'Staging internal wallet top-up is permitted only for the designated Staging Railway project.' >&2; exit 1; }
+    fi
     ;;
 esac
 if [ "$PAYMENT_PROVIDER" = "internal" ]; then

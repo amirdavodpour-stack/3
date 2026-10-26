@@ -80,6 +80,26 @@ test('production env validator accepts a complete admin identity configuration',
   assert.match(result.stdout, /Production environment contract PASS/);
 });
 
+test('production validator keeps the service bootable when only the user-top-up flag is set; runtime policy disables the feature', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    INTERNAL_WALLET_USER_TOPUP_ENABLED: 'true',
+    STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'false',
+  });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.match(result.stdout, /Production environment contract PASS/);
+});
+
+test('production validator keeps the service bootable when only the staging override is set; runtime policy disables the feature', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    INTERNAL_WALLET_USER_TOPUP_ENABLED: 'false',
+    STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'true',
+  });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.match(result.stdout, /Production environment contract PASS/);
+});
+
 test('production validator rejects the staging top-up override without exact Railway project identity', () => {
   const result = runProductionEnvValidator({
     ADMIN_PANEL_USERNAME: 'hope-admin',
