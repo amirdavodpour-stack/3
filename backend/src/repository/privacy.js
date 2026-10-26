@@ -6,7 +6,7 @@ const userSelect = `id,email,password_hash,password_hash AS "passwordHash",displ
 
 export async function getUserPrivacyBundle(userId) {
   const pool = requirePool();
-  const [u,p,j,a,o,pay,n,prefs,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction] = await Promise.all([
+  const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction] = await Promise.all([
     pool.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
     pool.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
     pool.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
@@ -15,6 +15,7 @@ export async function getUserPrivacyBundle(userId) {
     pool.query(`SELECT * FROM payments WHERE payer_id=$1 OR payee_id=$1 ORDER BY created_at DESC`, [userId]),
     pool.query(`SELECT id,type,title,body,created_at,read_at FROM notifications WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
     pool.query(`SELECT * FROM notification_preferences WHERE user_id=$1`, [userId]),
+    pool.query(`SELECT * FROM saved_searches WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 20`, [userId]),
     pool.query(`SELECT * FROM evidence WHERE submitted_by=$1 ORDER BY created_at DESC`, [userId]),
     pool.query(`SELECT * FROM uploads WHERE uploaded_by=$1 ORDER BY created_at DESC`, [userId]),
     pool.query(`SELECT * FROM analytics_events WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
@@ -27,7 +28,9 @@ export async function getUserPrivacyBundle(userId) {
   return { user:userFromRow(u.rows[0]), provider:p.rows[0] ? {id:p.rows[0].id,userId:p.rows[0].user_id,providerType:p.rows[0].provider_type,capacity:p.rows[0].capacity,verificationStatus:p.rows[0].verification_status,createdAt:p.rows[0].created_at?.toISOString?.()??p.rows[0].created_at,updatedAt:p.rows[0].updated_at?.toISOString?.()??p.rows[0].updated_at} : null,
     jobs:j.rows.map(jobFromRow), applications:a.rows.map(applicationFromRow), offers:o.rows.map(offerFromRow), payments:pay.rows.map(paymentFromRow),
     notifications:n.rows.map(r=>({id:r.id,type:r.type,title:r.title,body:r.body,createdAt:r.created_at?.toISOString?.()??r.created_at,readAt:r.read_at?.toISOString?.()??r.read_at})),
-    preferences:prefs.rows[0]||null, evidence:ev.rows.map(r=>({id:r.id,jobId:r.job_id,submittedBy:r.submitted_by,uri:r.uri,notes:r.notes,type:r.type,createdAt:r.created_at?.toISOString?.()??r.created_at})), uploads:up.rows.map(r=>({id:r.id,storageKey:r.storage_key,uploadedBy:r.uploaded_by,contentType:r.content_type,size:r.size,createdAt:r.created_at?.toISOString?.()??r.created_at})),
+    preferences:prefs.rows[0]||null,
+    savedSearches:savedSearches.rows.map(r=>({id:r.id,name:r.name,query:r.query,kind:r.kind,visibility:r.visibility,city:r.city,category:r.category,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
+    evidence:ev.rows.map(r=>({id:r.id,jobId:r.job_id,submittedBy:r.submitted_by,uri:r.uri,notes:r.notes,type:r.type,createdAt:r.created_at?.toISOString?.()??r.created_at})), uploads:up.rows.map(r=>({id:r.id,storageKey:r.storage_key,uploadedBy:r.uploaded_by,contentType:r.content_type,size:r.size,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     analyticsEvents:analytics.rows.map(r=>({id:r.id,eventName:r.event_name,userId:r.user_id,anonymousId:r.anonymous_id,sessionId:r.session_id,appVersion:r.app_version,platform:r.platform,properties:r.properties||{},dedupeKey:r.dedupe_key,occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     crashReports:crashes.rows.map(r=>({id:r.id,userId:r.user_id,anonymousId:r.anonymous_id,appVersion:r.app_version,platform:r.platform,releaseChannel:r.release_channel,fingerprint:r.fingerprint,message:r.message,stack:r.stack,context:r.context||{},occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     trustReports:trust.rows.map(r=>({id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
@@ -52,6 +55,7 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     await client.query(`UPDATE audit_logs SET actor_id=NULL WHERE actor_id=$1`, [userId]);
     await client.query(`DELETE FROM trust_reports WHERE reporter_id=$1`, [userId]);
     await client.query(`DELETE FROM recommendation_profiles WHERE user_id=$1`, [userId]);
+    await client.query(`DELETE FROM saved_searches WHERE user_id=$1`, [userId]);
     await client.query(`DELETE FROM job_satisfaction_feedback WHERE user_id=$1`, [userId]);
     return true;
   });
