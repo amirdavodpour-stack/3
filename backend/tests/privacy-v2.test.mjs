@@ -121,3 +121,30 @@ test("data export includes the user recommendation profile and satisfaction hist
     status: 'SUBMITTED',
   }]);
 });
+
+
+test("privacy export strips snake_case credential aliases recursively", () => {
+  const out = buildDataExport({
+    user: { id:'u6', email:'a@b.c', displayName:'A', role:'USER', status:'ACTIVE', createdAt:'now' },
+    crashReports: [{
+      id:'c2',
+      message:'boom',
+      context:{
+        refresh_token:'secret-refresh',
+        nested:{ password_hash:'secret-password', safe:true },
+      },
+    }],
+    analyticsEvents:[{
+      id:'a2',
+      eventName:'diagnostic',
+      properties:{ provider_ref:'internal-reference', idempotency_key:'private-key', ok:true },
+    }],
+  });
+
+  assert.equal(out.crashReports[0].context.refresh_token, undefined);
+  assert.equal(out.crashReports[0].context.nested.password_hash, undefined);
+  assert.equal(out.analyticsEvents[0].properties.provider_ref, undefined);
+  assert.equal(out.analyticsEvents[0].properties.idempotency_key, undefined);
+  assert.equal(out.crashReports[0].context.nested.safe, true);
+  assert.equal(out.analyticsEvents[0].properties.ok, true);
+});
