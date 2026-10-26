@@ -291,3 +291,33 @@ test('account deletion strips pseudonymous telemetry identifiers and raw crash p
   assert.match(deletion, /UPDATE analytics_events SET user_id=NULL, anonymous_id=NULL, session_id=NULL, properties='\{\}'::jsonb, dedupe_key=NULL WHERE user_id=\$1/);
   assert.match(deletion, /UPDATE crash_reports SET user_id=NULL, anonymous_id=NULL, message='\[REDACTED\]', stack=NULL, context='\{\}'::jsonb WHERE user_id=\$1/);
 });
+
+
+test('data export redacts compound PII aliases in stored telemetry recursively', () => {
+  const out = buildDataExport({
+    user: { id:'u9', email:'a@b.c', displayName:'A', role:'USER', status:'ACTIVE', createdAt:'now' },
+    analyticsEvents: [{
+      id:'a9',
+      eventName:'screen_view',
+      properties:{ email_address:'private@example.com', phone_number:'+491234567', safe_count:7 },
+    }],
+    crashReports: [{
+      id:'c9',
+      message:'crash',
+      context:{
+        recipientName:'Private Person',
+        homeLocation:'Berlin',
+        coordinates:{latitude:52.52,longitude:13.405},
+        safe:true,
+      },
+    }],
+  });
+
+  assert.equal(out.analyticsEvents[0].properties.email_address, undefined);
+  assert.equal(out.analyticsEvents[0].properties.phone_number, undefined);
+  assert.equal(out.analyticsEvents[0].properties.safe_count, 7);
+  assert.equal(out.crashReports[0].context.recipientName, undefined);
+  assert.equal(out.crashReports[0].context.homeLocation, undefined);
+  assert.equal(out.crashReports[0].context.coordinates, undefined);
+  assert.equal(out.crashReports[0].context.safe, true);
+});
