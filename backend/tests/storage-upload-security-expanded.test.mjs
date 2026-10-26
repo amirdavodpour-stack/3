@@ -171,9 +171,9 @@ test('concurrent multipart body ingestion respects MAX_CONCURRENT_UPLOADS before
   const beginPartialUpload = (filename) => {
     const boundary = '----hope-concurrent-upload';
     const prefix = Buffer.from(
-      `--${boundary}\r\\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\\nContent-Type: application/pdf\r\\n\r\\n%PDF-1.7\\nconcurrency test`,
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.7\nconcurrency test`,
     );
-    const ending = Buffer.from(`\r\\n--${boundary}--\r\\n`);
+    const ending = Buffer.from(`\r\n--${boundary}--\r\n`);
     let ended = false;
     let resolveResponse;
     let rejectResponse;
