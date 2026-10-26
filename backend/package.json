@@ -48,6 +48,7 @@
     "check:config-contract": "node tools/validate-config-contract.mjs",
     "check:toolchain-contract": "node tools/validate-toolchain-contract.mjs",
     "test:postgres:isolated": "NODE_ENV=test node tools/run-postgres-isolated.mjs",
+    "test:chat-postgres:isolated": "NODE_ENV=test node tools/run-chat-postgres-isolated.mjs",
     "test:status-integrity": "node ../tools/validate-test-state.mjs",
     "qualification:inventory": "node ../tools/runtime-qualification-inventory.mjs",
     "test:architecture-layers": "NODE_ENV=test node --test tests/application-layer-contract.test.mjs",
