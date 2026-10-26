@@ -281,13 +281,13 @@ test('chat participants, read receipts, presence and preferences enforce Postgre
 
 test('attachment ownership, voice consumption and private download are enforced by PostgreSQL-backed chat', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
-  const makeUpload = async (userId, contentType, suffix) => {
+  const makeUpload = async (userId, contentType, suffix, size = 24) => {
     const key = `r05/${suffix}/${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const { rows } = await pool.query(`
       INSERT INTO uploads(id,storage_key,uploaded_by,content_type,size,created_at)
-      VALUES(gen_random_uuid(),$1,$2,$3,24,NOW())
+      VALUES(gen_random_uuid(),$1,$2,$3,$4,NOW())
       RETURNING id,storage_key
-    `, [key, userId, contentType]);
+    `, [key, userId, contentType, size]);
     return rows[0];
   };
 
@@ -300,7 +300,10 @@ test('attachment ownership, voice consumption and private download are enforced 
     (error) => error.code === 'CHAT_ATTACHMENT_UPLOAD_NOT_FOUND',
   );
 
-  const fileUpload = await makeUpload(fixture.ownerId, 'application/pdf', 'download-file');
+  const payload = Buffer.from('R05 private attachment bytes', 'utf8');
+  const fileUpload = await makeUpload(
+    fixture.ownerId, 'application/pdf', 'download-file', payload.length,
+  );
   const fileBody = `R05 attachment one-shot ${Date.now()}`;
   const fileResults = await Promise.allSettled([
     postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', fileBody, {
@@ -327,7 +330,6 @@ test('attachment ownership, voice consumption and private download are enforced 
   assert.equal(await getChatAttachmentForUser(attachmentId, fixture.outsiderId, 'USER'), null);
   assert.equal(await getChatAttachmentForUser(attachmentId, fixture.adminId, 'ADMIN'), null);
 
-  const payload = Buffer.from('R05 private attachment bytes', 'utf8');
   let storageReads = 0;
   let viewer = { id: fixture.ownerId, role: 'USER' };
   const route = createHumanChatRoutes({
@@ -377,6 +379,7 @@ test('attachment ownership, voice consumption and private download are enforced 
   assert.equal(response.statusCode, 200);
   assert.equal(Buffer.concat(responseChunks).toString('utf8'), payload.toString('utf8'));
   assert.equal(response.headers['Cache-Control'], 'private, no-store');
+  assert.equal(response.headers['Content-Length'], String(payload.length));
   assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
   assert.match(response.headers['Content-Disposition'], /quarterly%20report.pdf/);
 
