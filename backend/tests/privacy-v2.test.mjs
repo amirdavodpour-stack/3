@@ -261,3 +261,13 @@ test('telemetry sanitizers redact compound field-name aliases in crash context',
   assert.equal(crash.context.nested.email_address, undefined);
   assert.equal(crash.context.nested.safe, true);
 });
+
+
+test('account deletion removes user-only chat state', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  const tables = deletion.match(/const tables = \[([^\]]+)\]/s)?.[1] || '';
+  for (const table of ['chat_presence', 'chat_conversation_preferences', 'chat_message_reads']) {
+    assert.match(tables, new RegExp("'" + table + "'"));
+  }
+});
