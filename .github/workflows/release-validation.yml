@@ -46,6 +46,7 @@ jobs:
       API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
       ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
       REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
+      ADMIN_PANEL_USERNAME: ${{ secrets.ADMIN_PANEL_USERNAME_PRODUCTION }}
       PAYMENT_PROVIDER: internal
       PAYMENT_CURRENCY: TOMAN
       PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
@@ -129,6 +130,7 @@ jobs:
           ALLOWED_CORS_ORIGINS: ${{ env.ALLOWED_CORS_ORIGINS }}
           ACCESS_TOKEN_SECRET: ${{ env.ACCESS_TOKEN_SECRET }}
           REFRESH_TOKEN_SECRET: ${{ env.REFRESH_TOKEN_SECRET }}
+          ADMIN_PANEL_USERNAME: ${{ env.ADMIN_PANEL_USERNAME }}
           PAYMENT_WEBHOOK_SECRET: ${{ env.PAYMENT_WEBHOOK_SECRET }}
         run: bash scripts/validate-production-env.sh
 
@@ -350,3 +352,5 @@ jobs:
             fi
           done
           echo "RELEASE VALIDATION: PASS"
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

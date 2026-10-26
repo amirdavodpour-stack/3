@@ -54,6 +54,10 @@ case "$value" in https://*) ;; *) echo 'RESET_TOKEN_DELIVERY_URL must use HTTPS 
 value="${RESET_TOKEN_DELIVERY_SECRET:-}"
 [ "${#value}" -ge 32 ] || { echo 'RESET_TOKEN_DELIVERY_SECRET must be at least 32 characters in production.' >&2; exit 1; }
 
+value="${ADMIN_PANEL_USERNAME:-}"
+[ "${#value}" -ge 4 ] || { echo 'ADMIN_PANEL_USERNAME must be configured for production admin access.' >&2; exit 1; }
+[ "${#value}" -le 120 ] || { echo 'ADMIN_PANEL_USERNAME must be at most 120 characters in production.' >&2; exit 1; }
+
 for name in ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET METRICS_TOKEN; do
   eval "value=\${$name-}"
   [ "${#value}" -ge 24 ] || { echo "$name is too short for production." >&2; exit 1; }
@@ -62,3 +66,5 @@ done
 [ "${#REFRESH_TOKEN_SECRET}" -ge 32 ] || { echo 'REFRESH_TOKEN_SECRET must be at least 32 characters in production.' >&2; exit 1; }
 
 echo 'Production environment contract PASS.'
+
+[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
