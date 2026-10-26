@@ -5,6 +5,7 @@ export const PRIVACY_VERSION = '1.2';
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
 const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
+const exportSensitiveKeyPattern = /(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|resume|token|password|authorization|cookie|national|iban|card|cvv/i;
 
 function sanitizeExportObject(value, depth = 0) {
   if (value == null || typeof value !== 'object') return value;
@@ -13,7 +14,8 @@ function sanitizeExportObject(value, depth = 0) {
   if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeExportObject(v, depth + 1));
   const out = {};
   for (const [key, val] of Object.entries(value)) {
-    if (exportSensitiveKeys.has(normalizeFieldKey(key))) continue;
+    const normalizedKey = normalizeFieldKey(key);
+    if (exportSensitiveKeys.has(normalizedKey) || exportSensitiveKeyPattern.test(normalizedKey)) continue;
     if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
       out[key] = val.slice(0, 4000);
     } else {
