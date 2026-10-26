@@ -5,10 +5,18 @@ on:
     branches:
       - feat/ui-v2-wave-1-execution-2026-10-07
     paths:
+      - "backend/src/app.js"
+      - "backend/src/config.js"
+      - "backend/src/db.js"
+      - "backend/src/db/migrations.js"
+      - "backend/src/db/runtime.js"
       - "backend/src/db/migrations/03*.js"
       - "backend/src/repository/human_chat.js"
+      - "backend/src/repository/storage.js"
       - "backend/src/routes/human_chat_routes.js"
+      - "backend/src/routes/storage_routes.js"
       - "backend/src/services/human_chat.js"
+      - "backend/openapi/openapi.yaml"
       - "backend/tests/human-chat*.test.mjs"
       - "backend/tests/postgres-*.test.mjs"
       - "backend/tools/run-chat-postgres-isolated.mjs"
