@@ -40,6 +40,8 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       db.collection.notificationPreferences = db.collection.notificationPreferences.filter((x) => x.userId !== userId);
       db.collection.notifications = db.collection.notifications.filter((x) => x.userId !== userId);
       db.collection.savedSearches = db.collection.savedSearches.filter((x) => x.userId !== userId);
+      // Preserve application lifecycle records while removing personal resume content.
+      db.collection.jobApplications.forEach((x) => { if (x.candidateId === userId) { x.resumeText = ''; x.skills = ''; } });
       db.collection.analyticsEvents = db.collection.analyticsEvents.filter((x) => x.userId !== userId);
       db.collection.crashReports = db.collection.crashReports.filter((x) => x.userId !== userId);
       const user = findUser(userId);
@@ -54,7 +56,7 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       for (const job of db.collection.jobs) {
         if (job.providerId === userId && ['DRAFT', 'PUBLISHED'].includes(job.status)) job.providerId = null;
       }
-      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'savedSearches', 'analyticsEvents', 'crashReports', 'users', 'jobs');
+      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'savedSearches', 'jobApplications', 'analyticsEvents', 'crashReports', 'users', 'jobs');
       await db.save();
       return true;
     },
