@@ -4,6 +4,7 @@ const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sanitizeTelemetryProperties, anonymizedEmail, buildDataExport } from '../src/privacy.js';
+import { normalizeCrash } from '../src/analytics.js';
 
 test('privacy sanitizer removes direct identifiers and bounds long strings', () => {
   const value = sanitizeTelemetryProperties({email:'a@b.c',name:'Alice',ok:true,description:'x'.repeat(500)});
@@ -226,4 +227,37 @@ test('legacy privacy export and deletion handle saved searches', () => {
   assert.match(legacy, /savedSearches: db\.collection\.savedSearches\.filter/);
   assert.match(legacy, /db\.collection\.savedSearches = db\.collection\.savedSearches\.filter/);
   assert.match(legacy, /db\.touch\([^)]*savedSearches/);
+});
+
+
+test('telemetry sanitizers redact compound field-name aliases in crash context', () => {
+  const telemetry = sanitizeTelemetryProperties({
+    recipientName: 'Private Person',
+    homeLocation: 'Berlin',
+    lat: 52.52,
+    platform: 'ANDROID',
+    safeCount: 3,
+  });
+  assert.equal(telemetry.recipientName, undefined);
+  assert.equal(telemetry.homeLocation, undefined);
+  assert.equal(telemetry.lat, undefined);
+  assert.equal(telemetry.platform, 'ANDROID');
+  assert.equal(telemetry.safeCount, 3);
+
+  const crash = normalizeCrash({
+    message: 'crash report',
+    fingerprint: 'crash-pii-1234',
+    platform: 'WEB',
+    context: {
+      recipientName: 'Private Person',
+      homeLocation: 'Berlin',
+      coordinates: { latitude: 52.52, longitude: 13.405 },
+      nested: { email_address: 'private@example.com', safe: true },
+    },
+  });
+  assert.equal(crash.context.recipientName, undefined);
+  assert.equal(crash.context.homeLocation, undefined);
+  assert.equal(crash.context.coordinates, undefined);
+  assert.equal(crash.context.nested.email_address, undefined);
+  assert.equal(crash.context.nested.safe, true);
 });
