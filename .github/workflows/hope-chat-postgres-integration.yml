@@ -11,7 +11,7 @@ on:
       - "backend/src/services/human_chat.js"
       - "backend/tests/human-chat*.test.mjs"
       - "backend/tests/postgres-*.test.mjs"
-      - "backend/tools/run-postgres-isolated.mjs"
+      - "backend/tools/run-chat-postgres-isolated.mjs"
       - "backend/package.json"
       - "backend/package-lock.json"
       - ".github/workflows/hope-chat-postgres-integration.yml"
@@ -61,4 +61,4 @@ jobs:
         run: npm ci
       - name: Run isolated real-PostgreSQL integration tests
         working-directory: backend
-        run: npm run test:postgres:isolated
+        run: npm run test:chat-postgres:isolated
