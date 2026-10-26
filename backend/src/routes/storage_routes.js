@@ -45,19 +45,20 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
         validateFilenameForContentType(file.filename, contentType);
         file.contentType = contentType;
         await storage.put(file);
+
+        const data = { key: file.key, filename: file.filename, contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
+        const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType, size: file.size, createdAt: now() };
+        try {
+          if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
+        } catch (error) {
+          try { await storage.delete({ key: file.key }); } catch (cleanupError) { logEvent({ level: 'error', action: 'ORPHAN_UPLOAD_CLEANUP_FAILED', key: file.key, message: cleanupError?.message || String(cleanupError) }); }
+          throw error;
+        }
+        return await sendJson(res, 201, data);
       } finally {
         try { await fs.promises.unlink(file.path); } catch {}
+        file.release?.();
       }
-      const contentType = normalizeUploadContentType(file.contentType, file.filename);
-      const data = { key: file.key, filename: file.filename, contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
-      const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType, size: file.size, createdAt: now() };
-      try {
-        if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
-      } catch (error) {
-        try { await storage.delete({ key: file.key }); } catch (cleanupError) { logEvent({ level: 'error', action: 'ORPHAN_UPLOAD_CLEANUP_FAILED', key: file.key, message: cleanupError?.message || String(cleanupError) }); }
-        throw error;
-      }
-      return sendJson(res, 201, data);
     }
     if (req.method === 'POST' && parts[1] === 'presign') {
       const body = await readBody(req); requireFields(body, ['filename', 'contentType']);
