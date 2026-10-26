@@ -175,3 +175,10 @@ test('telemetry sanitizer normalizes identifier and credential aliases', () => {
   assert.equal(out.refresh_token, undefined);
   assert.equal(out.safe_count, 3);
 });
+
+
+test('account deletion removes recommendation profile data', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion, /DELETE FROM recommendation_profiles WHERE user_id=\\$1/);
+});
