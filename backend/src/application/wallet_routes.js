@@ -110,6 +110,9 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     if (req.method === 'POST' && parts[1] === 'sandbox-credit') {
       const me = await authUser(req);
       await adminGuard(me);
+      if (process.env.DATABASE_URL && !(await walletRepo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) {
+        throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
+      }
       assertAdminPermission(me, ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT);
       if (process.env.NODE_ENV === 'production' && !config.internalWalletAdminCreditEnabled) {
         throw new HttpError(404,'NOT_FOUND','Wallet sandbox credit is disabled');
