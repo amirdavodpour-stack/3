@@ -102,5 +102,3 @@ test('release-validation passes the configured admin username through to product
   const block = releaseValidationWorkflow.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
   assert.match(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*env\.ADMIN_PANEL_USERNAME\s*\}\}/);
 });
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

@@ -61,5 +61,3 @@ The first command verifies repository consistency. The second validates the prod
 ## Internal wallet / temporary payment mode
 
 When `PAYMENT_PROVIDER=internal` and `PAYMENT_CURRENCY=TOMAN`, payment funding and release use the PostgreSQL internal wallet ledger. `GET /api/v1/wallet/me` exposes the authenticated user's internal balance; `GET /api/v1/wallet/transactions` exposes wallet transaction history. `POST /api/v1/wallet/transfer` supports internal currency transfers with an idempotency key. `POST /api/v1/wallet/top-up` is a user-scoped internal-provider staging operation. It requires `INTERNAL_WALLET_USER_TOPUP_ENABLED=true` and is denied when `NODE_ENV=production` unless `STAGING_ALLOW_INTERNAL_WALLET_TOPUP=true`; that exception exists because the staging Railway project itself has an environment named `production`. Do not configure the exception on the real production service, and treat exposure as unverified until effective variable values are confirmed. `POST /api/v1/wallet/sandbox-credit` remains admin-only for controlled test funding.
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

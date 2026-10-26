@@ -286,5 +286,3 @@ jobs:
         env:
           KEYSTORE_PATH: ${{ steps.keystore_prepare.outputs.path }}
         run: rm -f -- "$KEYSTORE_PATH"
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

@@ -24,5 +24,3 @@ export RESET_TOKEN_DELIVERY_SECRET='ci-reset-delivery-secret-0123456789012345678
 export ADMIN_PANEL_USERNAME='hope-admin'
 
 exec sh scripts/validate-production-env.sh
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

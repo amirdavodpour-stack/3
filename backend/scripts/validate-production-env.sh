@@ -66,5 +66,3 @@ done
 [ "${#REFRESH_TOKEN_SECRET}" -ge 32 ] || { echo 'REFRESH_TOKEN_SECRET must be at least 32 characters in production.' >&2; exit 1; }
 
 echo 'Production environment contract PASS.'
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]
