@@ -2,14 +2,16 @@ import crypto from 'node:crypto';
 
 export const PRIVACY_VERSION = '1.2';
 
-const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban']);
+const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
 
 function sanitizeExportObject(value, depth = 0) {
   if (depth > 4 || value == null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeExportObject(v, depth + 1));
   const out = {};
   for (const [key, val] of Object.entries(value)) {
-    if (exportSensitiveKeys.has(String(key))) continue;
+    if (exportSensitiveKeys.has(normalizeFieldKey(key))) continue;
     if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
       out[key] = val.slice(0, 4000);
     } else {
