@@ -244,7 +244,7 @@ class MainActivity : FlutterActivity() {
                     try { player.release() } catch (_: Throwable) {}
                     if (chatVoicePlayer === player) {
                         chatVoicePlayer = null
-                        chatVoiceMethodChannel?.invokeMethod("playbackCompleted", null)
+                        chatVoiceMethodChannel?.invokeMethod("playbackCompleted", path)
                     }
                 }
                 prepare()
