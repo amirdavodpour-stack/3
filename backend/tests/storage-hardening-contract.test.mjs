@@ -84,6 +84,12 @@ test('S3 presigned uploads are single-write and expose the required conditional 
   }
 });
 
+test('OpenAPI documents the single-write presigned PUT requirement', () => {
+  assert.match(read('openapi/openapi.yaml'), /requiredHeaders/);
+  assert.match(read('openapi/openapi.yaml'), /If-None-Match: \\*/);
+  assert.match(read('openapi/openapi.yaml'), /single-write/);
+});
+
 test('storage repository exposes safe expired-intent cleanup primitives', () => {
   assert.match(storageRepository, /listExpiredUploadIntents/);
   assert.match(storageRepository, /deleteUploadIntents/);
