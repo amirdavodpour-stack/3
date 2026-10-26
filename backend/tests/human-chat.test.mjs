@@ -29,6 +29,8 @@ test('chat attachment policy accepts supported files and audio voice notes only'
   assert.equal(canAttachToChat({messageType:'TEXT',contentTypes:[],text:'hello'}),true);
   assert.equal(canAttachToChat({messageType:'ATTACHMENT',contentTypes:['application/pdf'],text:''}),true);
   assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['audio/mp4'],text:''}),true);
+  assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['Audio/MPEG'],text:''}),true,
+    'MIME type matching must remain case-insensitive for legacy upload rows');
   assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['application/pdf'],text:''}),false);
   assert.equal(canAttachToChat({messageType:'VOICE',contentTypes:['audio/mp4','audio/mp4'],text:''}),false);
   assert.equal(canAttachToChat({messageType:'ATTACHMENT',contentTypes:[],text:''}),false);
