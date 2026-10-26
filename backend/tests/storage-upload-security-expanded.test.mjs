@@ -2,9 +2,11 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import http from 'node:http';
 import { makeTempEnv, startApiServer, register, closeApi } from './support/hope-test-harness.mjs';
 
 const tmp = makeTempEnv('hope-storage-delta-');
+process.env.MAX_CONCURRENT_UPLOADS = '1';
 const api = await startApiServer();
 
 function auth(token) { return {Authorization: `Bearer ${token}`}; }
@@ -145,6 +147,99 @@ test('audio upload rejects bytes that do not match the declared audio container'
   assert.equal(response.status, 415);
   assert.equal(body.error.code, 'UNSUPPORTED_FILE');
   assert.equal(api.db.collection.uploads.some((x) => x.uploadedBy === user.user.id), false);
+});
+
+
+test('concurrent multipart body ingestion respects MAX_CONCURRENT_UPLOADS before spooling to disk', async () => {
+  const user = await register(api.json, 'storage-concurrency@example.com');
+  let receivedUploads = 0;
+  const observeRequest = (req) => {
+    if (req.url?.endsWith('/storage/upload')) receivedUploads += 1;
+  };
+  api.server.on('request', observeRequest);
+
+  const incomingCount = () => fs.readdirSync(process.env.STORAGE_DIR)
+    .filter((name) => name.startsWith('.incoming-')).length;
+  const waitUntil = async (predicate, timeoutMs = 2500) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (predicate()) return true;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return predicate();
+  };
+  const beginPartialUpload = (filename) => {
+    const boundary = '----hope-concurrent-upload';
+    const prefix = Buffer.from(
+      `--${boundary}\\r\\nContent-Disposition: form-data; name="file"; filename="${filename}"\\r\\nContent-Type: application/pdf\\r\\n\\r\\n%PDF-1.7\\nconcurrency test`,
+    );
+    const ending = Buffer.from(`\\r\\n--${boundary}--\\r\\n`);
+    let ended = false;
+    let resolveResponse;
+    let rejectResponse;
+    const response = new Promise((resolve, reject) => {
+      resolveResponse = resolve;
+      rejectResponse = reject;
+    });
+    const request = http.request(`${api.base}/storage/upload`, {
+      method: 'POST',
+      headers: {
+        ...auth(user.accessToken),
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+        'content-length': prefix.length + ending.length,
+      },
+    });
+    request.on('error', rejectResponse);
+    request.on('response', (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolveResponse({
+        status: res.statusCode,
+        body: Buffer.concat(chunks).toString('utf8'),
+      }));
+    });
+    request.write(prefix);
+    return {
+      request,
+      response,
+      finish() {
+        if (ended) return;
+        ended = true;
+        request.end(ending);
+      },
+    };
+  };
+
+  let first;
+  let second;
+  try {
+    first = beginPartialUpload('first.pdf');
+    assert.equal(await waitUntil(() => receivedUploads >= 1 && incomingCount() === 1), true,
+      'first incomplete request should have one incoming file');
+    second = beginPartialUpload('second.pdf');
+    assert.equal(await waitUntil(() => receivedUploads >= 2), true,
+      'server should have received the second incomplete request');
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    assert.equal(
+      incomingCount(),
+      1,
+      'only one request may spool a multipart body when MAX_CONCURRENT_UPLOADS=1',
+    );
+
+    first.finish();
+    const firstResult = await first.response;
+    assert.equal(firstResult.status, 201, firstResult.body);
+    second.finish();
+    const secondResult = await second.response;
+    assert.equal(secondResult.status, 201, secondResult.body);
+  } finally {
+    first?.finish();
+    second?.finish();
+    await first?.response.catch(() => {});
+    await second?.response.catch(() => {});
+    api.server.off('request', observeRequest);
+  }
 });
 
 after(async () => closeApi({...api, tmp}));
