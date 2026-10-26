@@ -90,6 +90,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _loadingInbox = true;
   bool _typing = false;
   bool _recordingVoice = false;
+  bool _startingVoiceRecording = false;
   String? _pendingVoicePath;
   String? _playingVoiceMessageId;
   StreamSubscription<void>? _voicePlaybackSubscription;
@@ -127,6 +128,9 @@ class _ChatPageState extends State<ChatPage> {
     final capabilities = _capabilities;
     if (thread != null && capabilities != null) {
       unawaited(capabilities.updatePresence(thread.conversation.id, online: false, typing: false).catchError((Object _) {}));
+    }
+    if (_startingVoiceRecording) {
+      unawaited(HopeChatVoiceBridge.cancelPendingRecording().catchError((Object _) {}));
     }
     unawaited(HopeChatVoiceBridge.stopPlayback().catchError((Object _) {}));
     if (_recordingVoice) unawaited(_discardActiveRecording());
@@ -287,7 +291,7 @@ class _ChatPageState extends State<ChatPage> {
         allowMultiple: true, type: FileType.custom,
         allowedExtensions: const ['pdf','png','jpg','jpeg','webp','txt','m4a','mp3','wav'],
       );
-      if (picked == null) return;
+      if (!mounted || picked == null) return;
       if (picked.files.length > 5) {
         setState(() => _error = _t('در هر پیام حداکثر ۵ فایل مجاز است.', 'You can attach up to five files per message.'));
         return;
@@ -300,8 +304,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _toggleVoiceRecording() async {
-    if (_busy || _capabilities == null) return;
+    if (_busy || _startingVoiceRecording || _capabilities == null) return;
     if (!_recordingVoice) {
+      setState(() { _startingVoiceRecording = true; _error = null; });
       try {
         final path = await HopeChatVoiceBridge.startRecording();
         if (!mounted) {
@@ -309,9 +314,17 @@ class _ChatPageState extends State<ChatPage> {
           try { await _fileStore.deleteFile(path); } catch (_) {}
           return;
         }
-        setState(() { _pendingVoicePath = path; _recordingVoice = true; _error = null; });
+        setState(() {
+          _startingVoiceRecording = false;
+          _pendingVoicePath = path;
+          _recordingVoice = true;
+          _error = null;
+        });
       } catch (e) {
-        if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('ضبط صدا ممکن نشد. مجوز میکروفون را بررسی کنید.', 'Could not record audio. Check microphone permission.')));
+        if (mounted) setState(() {
+          _startingVoiceRecording = false;
+          _error = apiErrorMessage(e, fallback: _t('ضبط صدا ممکن نشد. مجوز میکروفون را بررسی کنید.', 'Could not record audio. Check microphone permission.'));
+        });
       }
       return;
     }
@@ -377,6 +390,7 @@ class _ChatPageState extends State<ChatPage> {
     if (capabilities == null) return;
     try {
       final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
+      if (!mounted) return;
       await FilePicker.platform.saveFile(fileName: attachment.filename, bytes: bytes);
     } catch (e) {
       if (mounted) setState(() => _error = apiErrorMessage(e, fallback: _t('دریافت فایل ناموفق بود.', 'Could not download attachment.')));
@@ -394,12 +408,17 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final attachment = message.attachments.first;
       final bytes = await capabilities.downloadAttachment(attachment.downloadPath);
+      if (!mounted) return;
       final extension = attachment.filename.contains('.') ? attachment.filename.split('.').last : 'm4a';
       final temporary = await _fileStore.createTemporaryMediaFile(bytes, extension);
+      if (!mounted) {
+        await _deleteVoiceTempDirectory(temporary.directoryPath);
+        return;
+      }
       _voiceTempDirs.add(temporary.directoryPath);
       // Set the active ID before starting native playback so an extremely short
       // clip cannot finish and emit playbackCompleted before the state is set.
-      if (mounted) setState(() { _playingVoiceMessageId = message.id; _error = null; });
+      setState(() { _playingVoiceMessageId = message.id; _error = null; });
       await HopeChatVoiceBridge.playFile(temporary.path);
     } catch (e) {
       if (mounted) setState(() {
@@ -1346,7 +1365,7 @@ class _ChatPageState extends State<ChatPage> {
                                   IconButton(
                                     key: const ValueKey('chat-voice-record-button'),
                                     tooltip: _recordingVoice ? _t('پایان ضبط', 'Finish recording') : _t('ضبط پیام صوتی', 'Record voice message'),
-                                    onPressed: _busy ? null : _toggleVoiceRecording,
+                                    onPressed: (_busy || _startingVoiceRecording) ? null : _toggleVoiceRecording,
                                     icon: HopeIcon(_recordingVoice ? HopeV2Icons.pause : HopeV2Icons.activity, color: _recordingVoice ? colors.error : colors.secondary, size:20),
                                     constraints: const BoxConstraints(minWidth:48,minHeight:48),
                                   ),
