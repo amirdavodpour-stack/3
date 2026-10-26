@@ -148,3 +148,30 @@ test("privacy export strips snake_case credential aliases recursively", () => {
   assert.equal(out.crashReports[0].context.nested.safe, true);
   assert.equal(out.analyticsEvents[0].properties.ok, true);
 });
+
+
+test('privacy export does not return deep objects unsanitized', () => {
+  const out = buildDataExport({
+    user: { id:'u7', email:'a@b.c', displayName:'A', role:'USER', status:'ACTIVE', createdAt:'now' },
+    crashReports: [{
+      id:'c3',
+      context:{ level1:{ level2:{ level3:{ level4:{ refresh_token:'secret-too-deep' } } } } },
+    }],
+  });
+
+  assert.equal(out.crashReports[0].context.level1.level2.level3, null);
+});
+
+test('telemetry sanitizer normalizes identifier and credential aliases', () => {
+  const out = sanitizeTelemetryProperties({
+    email_address:'private@example.com',
+    phone_number:'+49 151 00000000',
+    refresh_token:'secret-refresh',
+    safe_count:3,
+  });
+
+  assert.equal(out.email_address, undefined);
+  assert.equal(out.phone_number, undefined);
+  assert.equal(out.refresh_token, undefined);
+  assert.equal(out.safe_count, 3);
+});
