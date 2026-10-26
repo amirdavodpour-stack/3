@@ -10,9 +10,38 @@ import 'package:provider/provider.dart';
 
 import 'package:hope_mobile/core/auth/auth_controller.dart';
 
+import 'package:hope_mobile/core/chat/chat_local_file_store.dart';
 import 'package:hope_mobile/core/chat/chat_repository.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/features/chat/chat_page.dart';
+
+class FakeChatLocalFileStore implements ChatLocalFileStore {
+  int createdTemporaryMediaFiles = 0;
+  final deletedFiles = <String>[];
+  final deletedDirectories = <String>[];
+
+  @override
+  Future<void> deleteFile(String path) async => deletedFiles.add(path);
+
+  @override
+  Future<bool> fileExists(String path) async => true;
+
+  @override
+  Future<ChatTemporaryMediaFile> createTemporaryMediaFile(
+    Uint8List bytes,
+    String extension,
+  ) async {
+    createdTemporaryMediaFiles++;
+    final directoryPath = '/fake/hope-voice-$createdTemporaryMediaFiles';
+    return ChatTemporaryMediaFile(
+      path: '$directoryPath/voice.$extension',
+      directoryPath: directoryPath,
+    );
+  }
+
+  @override
+  Future<void> deleteDirectory(String path) async => deletedDirectories.add(path);
+}
 
 class FakeChatRepository implements ChatRepository {
   bool failList = false;
@@ -143,6 +172,7 @@ void main() {
     'voice playback does not start after chat is disposed during download',
     (tester) async {
       final repository = RacingChatRepository();
+      final fileStore = FakeChatLocalFileStore();
       repository.pendingAttachmentDownload = Completer<Uint8List>();
       repository.threadOverride = HopeChatThread(
         conversation: const HopeChatConversation(
@@ -189,7 +219,11 @@ void main() {
         Provider<AuthController?>.value(
           value: null,
           child: MaterialApp(
-            home: ChatPage(repository: repository, jobId: 'job-1'),
+            home: ChatPage(
+              repository: repository,
+              fileStore: fileStore,
+              jobId: 'job-1',
+            ),
           ),
         ),
       );
@@ -208,6 +242,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
+      expect(fileStore.createdTemporaryMediaFiles, 0,
+          reason: 'leaving the conversation before download completion must not create a playback temp file');
       expect(nativeCalls.where((method) => method == 'playFile'), isEmpty);
     },
   );
