@@ -122,7 +122,7 @@ export async function readMultipartSingleFile(req) {
   const type = String(req.headers['content-type'] || '');
   const match = type.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
   if (!match) throw new HttpError(400, 'INVALID_MULTIPART', 'Multipart boundary is missing');
-  const boundary = Buffer.from(\`--\${match[1] || match[2]}\`);
+  const boundary = Buffer.from(`--${match[1] || match[2]}`);
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > config.maxUploadBytes + 1024 * 1024) throw new HttpError(413, 'FILE_TOO_LARGE', 'File is too large');
 
@@ -141,9 +141,9 @@ export async function readMultipartSingleFile(req) {
   };
 
   try {
-    const tempName = \`\${crypto.randomUUID()}.upload\`;
+    const tempName = `${crypto.randomUUID()}.upload`;
     await fs.promises.mkdir(config.storageDir, { recursive: true });
-    tempPath = path.join(config.storageDir, \`.incoming-\${tempName}\`);
+    tempPath = path.join(config.storageDir, `.incoming-${tempName}`);
     stream = fs.createWriteStream(tempPath, { flags: 'wx' });
     let size = 0;
     for await (const chunk of req) {
@@ -174,7 +174,7 @@ export async function readMultipartSingleFile(req) {
     const disposition = headersText.match(/content-disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]*)")?/i);
     if (!disposition || disposition[1] !== 'file' || !disposition[2]) throw new HttpError(400, 'FILE_REQUIRED', 'A file field is required');
     const contentType = headersText.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim() || 'application/octet-stream';
-    const nextBoundary = body.indexOf(Buffer.from(\`\r\n\${boundary.toString('binary')}\`), headerEnd + 4);
+    const nextBoundary = body.indexOf(Buffer.from(`\r\n${boundary.toString('binary')}`), headerEnd + 4);
     if (nextBoundary < 0) throw new HttpError(400, 'INVALID_MULTIPART', 'Multipart terminator is missing');
     const content = body.subarray(headerEnd + 4, nextBoundary);
     if (!content.length) throw new HttpError(400, 'EMPTY_FILE', 'Uploaded file is empty');
@@ -185,7 +185,7 @@ export async function readMultipartSingleFile(req) {
     // allowlist inference and route-level MIME/extension consistency checks.
     const safeName = rawSafeName.length <= 180
       ? rawSafeName
-      : \`\${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}\${rawExtension}\`;
+      : `${path.basename(rawSafeName, rawExtension).slice(0, 180 - rawExtension.length)}${rawExtension}`;
     const extension = path.extname(safeName).toLowerCase();
     const inferredType = new Map([
       ['.pdf', 'application/pdf'],
@@ -223,7 +223,7 @@ export async function readMultipartSingleFile(req) {
     if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav'].includes(declaredType) || !signatureOk) {
       throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported or invalid file content');
     }
-    const key = \`\${crypto.randomUUID()}-\${safeName}\`;
+    const key = `${crypto.randomUUID()}-${safeName}`;
     // Reuse the already-created temp file for the extracted payload. This is
     // important: the object storage layer must receive the file bytes, not the
     // surrounding multipart envelope.
