@@ -37,7 +37,12 @@ async function loadSqlSnapshot(client) {
   for (const collection of collections) {
     const table = tableMap[collection];
     const columns = tableColumns[table] || [];
-    const orderBy = columns.includes('created_at') ? 'created_at NULLS FIRST, id' : 'id';
+    // recommendation_profiles is keyed by user_id rather than id; ordering
+    // its test snapshot by a nonexistent id column breaks PostgreSQL bootstrap.
+    const identityColumn = table === 'recommendation_profiles' ? 'user_id' : 'id';
+    const orderBy = columns.includes('created_at')
+      ? `created_at NULLS FIRST, ${identityColumn}`
+      : identityColumn;
     const { rows } = await client.query(`SELECT * FROM ${table} ORDER BY ${orderBy}`);
     next[collection] = rows.map((row) => fromDbRow(collection, row));
   }
