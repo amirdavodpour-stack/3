@@ -29,12 +29,14 @@ const sensitiveKeys = new Set([
   'displayName','fullName','address','lat','lng','location','resume','resumeText',
   'token','accessToken','refreshToken','password','passwordHash','authorization',
 ].map(normalizeFieldKey));
+const sensitiveKeyPattern = /password|passwd|token|secret|authorization|cookie|email|phone|mobile|name|address|location|coordinate|latitude|longitude|resume|document|national|iban|card|cvv/i;
 
 export function sanitizeTelemetryProperties(input = {}) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
   const out = {};
   for (const [key, value] of Object.entries(source)) {
-    if (sensitiveKeys.has(normalizeFieldKey(key))) continue;
+    const normalizedKey = normalizeFieldKey(key);
+    if (sensitiveKeys.has(normalizedKey) || sensitiveKeyPattern.test(normalizedKey) || ['lat', 'lng', 'lon'].includes(normalizedKey)) continue;
     if (typeof value === 'string' && value.length > 200) out[key] = value.slice(0, 200);
     else if (typeof value === 'number' || typeof value === 'boolean' || value == null || typeof value === 'string') out[key] = value;
   }
