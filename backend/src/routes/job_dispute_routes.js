@@ -3,7 +3,7 @@ import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_p
 import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { DISPUTE_DECISIONS, analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
-export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
+export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
   const participantRole = (me, job) => job?.ownerId === me.id ? 'EMPLOYER' : job?.providerId === me.id ? 'WORKER' : null;
 
   async function analyzeCase(dispute) {
@@ -53,7 +53,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
   return async function route(req,res,parts) {
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
-      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') return sendJson(res,200,await repo.listAdminDisputes());
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'GET') {
         const dispute = await repo.getAdminDispute(parts[2]); if (!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found'); return sendJson(res,200,dispute);
