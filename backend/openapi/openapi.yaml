@@ -643,7 +643,14 @@ paths:
         '413': {description: File exceeds the configured upload size limit}
         '415': {description: Unsupported type, mismatched extension, or invalid file signature}
   /storage/presign:
-    post: {security: [{bearerAuth: []}], responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}}
+    post:
+      security: [{bearerAuth: []}]
+      description: >-
+        In S3 mode, the response includes `requiredHeaders` for the presigned
+        PUT. Send `If-None-Match: *` with that request. The condition makes the
+        URL single-write: subsequent PUTs to the same key fail instead of
+        replacing the object that was validated and attached to a message.
+      responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}
   /storage/complete:
     post: {security: [{bearerAuth: []}], responses: {'201': {description: Completed upload}, '200': {description: Idempotent existing upload}, '403': {description: Invalid or unauthorized upload intent}, '410': {description: Expired intent}, '415': {description: Content type mismatch}}}
 
