@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isPrimaryAdminEmail, shouldBootstrapPrimaryAdmin } from '../src/application/admin_panel_access.js';
+import { createAuthRoutes } from '../src/routes/auth_routes.js';
+import { HttpError } from '../src/api/http_error.js';
+import { requireFields, stringField } from '../src/policies/validation.js';
 
 test('the designated primary admin email is recognized case-insensitively', () => {
   assert.equal(isPrimaryAdminEmail('amir.davodpour@gmail.com'), true);
@@ -13,10 +16,6 @@ test('only the designated email bootstraps as ADMIN', () => {
   assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: false }), false);
   assert.equal(shouldBootstrapPrimaryAdmin('other@example.com'), false);
 });
-
-import { createAuthRoutes } from '../src/routes/auth_routes.js';
-import { HttpError } from '../src/api/http_error.js';
-import { requireFields, stringField } from '../src/policies/validation.js';
 
 test('password registration cannot claim the primary-admin email role without a verified identity', async () => {
   const storedUsers = [];
@@ -59,7 +58,16 @@ test('password registration cannot claim the primary-admin email role without a 
     verifyGoogleIdToken: async () => {},
   });
 
-  const response = await routes({ method: 'POST' }, {}, ['auth', 'register']);
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://unit-test.invalid/hope';
+  let response;
+  try {
+    response = await routes({ method: 'POST' }, {}, ['auth', 'register']);
+  } finally {
+    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalDatabaseUrl;
+  }
+
   assert.equal(response.status, 201);
   assert.equal(response.data.user.role, 'USER');
   assert.equal(storedUsers[0].role, 'USER');
