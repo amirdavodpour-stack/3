@@ -29,10 +29,10 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  test('native playback completion is forwarded to Dart listeners', () async {
-    final completed = Completer<void>();
-    final subscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
-      if (!completed.isCompleted) completed.complete();
+  test('native playback completion forwards its media path to Dart listeners', () async {
+    final completed = Completer<String>();
+    final subscription = HopeChatVoiceBridge.playbackCompleted.listen((path) {
+      if (!completed.isCompleted) completed.complete(path);
     });
     addTearDown(subscription.cancel);
 
@@ -40,11 +40,16 @@ void main() {
     await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .handlePlatformMessage(
       'hope.chat/voice',
-      codec.encodeMethodCall(const MethodCall('playbackCompleted')),
+      codec.encodeMethodCall(
+        const MethodCall('playbackCompleted', '/cache/voice.m4a'),
+      ),
       (_) {},
     );
 
-    await completed.future.timeout(const Duration(seconds: 1));
+    expect(
+      await completed.future.timeout(const Duration(seconds: 1)),
+      '/cache/voice.m4a',
+    );
   });
 
   test('voice bridge dispatches native recording and playback controls', () async {
