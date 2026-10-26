@@ -33,8 +33,18 @@ export async function getAdminUser(id) {
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function setUserStatus(id,status) {
-  const { rows } = await requirePool().query(`UPDATE users SET status=$2, session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [id,status]);
-  return rows[0] ? userFromRow(rows[0]) : null;
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `UPDATE users SET status=$2, session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`,
+      [id,status],
+    );
+    if (!rows[0]) return null;
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`,
+      [id],
+    );
+    return userFromRow(rows[0]);
+  });
 }
 export async function revokeAdminById(id, actorId) {
   return withSqlTransaction(async (client) => {
