@@ -89,10 +89,16 @@ class PremiumPaymentSummary extends StatelessWidget {
     final semanticLabel = <String>[
       _label(context, 'وضعیت پرداخت: $status', 'Payment status: $status'),
       '${_label(context, 'مبلغ پایه', 'Base amount')} ${_money(context, baseAmount)}',
+      if (fees?.employerFee != null)
+        '${_label(context, 'کارمزد کارفرما', 'Employer fee')} ${_money(context, fees!.employerFee)}',
+      if (fees?.workerFee != null)
+        '${_label(context, 'کارمزد کارجو', 'Worker fee')} ${_money(context, fees!.workerFee)}',
       if (employerCharge != null)
         '${_label(context, 'مبلغ پرداختی کارفرما', 'Employer charge')} ${_money(context, employerCharge)}',
       if (workerPayout != null)
         '${_label(context, 'دریافتی کارجو', 'Worker payout')} ${_money(context, workerPayout)}',
+      if (fees?.platformFee != null)
+        '${_label(context, 'کارمزد پلتفرم', 'Platform fee')} ${_money(context, fees!.platformFee)}',
     ].join(semanticSeparator);
     return Semantics(
       container: true,
