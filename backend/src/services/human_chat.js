@@ -27,5 +27,5 @@ export function canAttachToChat({messageType,contentTypes,text=''}){
   if(!type||!Array.isArray(contentTypes)||contentTypes.length>5)return false;
   if(type==='TEXT')return contentTypes.length===0&&String(text).trim().length>0;
   if(type==='ATTACHMENT')return contentTypes.length>0&&contentTypes.every(isSupportedChatAttachment);
-  return type==='VOICE'&&contentTypes.length===1&&String(contentTypes[0]).startsWith('audio/')&&contentTypes.every(isSupportedChatAttachment);
+  return type==='VOICE'&&contentTypes.length===1&&String(contentTypes[0]).trim().toLowerCase().startsWith('audio/')&&contentTypes.every(isSupportedChatAttachment);
 }
