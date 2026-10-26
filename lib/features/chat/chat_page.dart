@@ -102,6 +102,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _pollingLive = false;
   final List<String> _voiceTempDirs = [];
   String? _activeVoiceTempDirectory;
+  String? _activeVoiceTempPath;
   int _voicePlaybackRequestId = 0;
 
   bool get _isInbox => widget.conversationId == null && widget.jobId == null && !widget.adminRoom;
@@ -113,9 +114,13 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     _repository = widget.repository ?? context.read<ChatRepository>();
     _fileStore = widget.fileStore ?? const IoChatLocalFileStore();
-    _voicePlaybackSubscription = HopeChatVoiceBridge.playbackCompleted.listen((_) {
+    _voicePlaybackSubscription = HopeChatVoiceBridge.playbackCompleted.listen((completedPath) {
+      // Native completion can be queued before another file starts playing.
+      // Ignore an old event rather than deleting/resetting the currently active file.
+      if (completedPath != _activeVoiceTempPath) return;
       final directoryPath = _activeVoiceTempDirectory;
       _activeVoiceTempDirectory = null;
+      _activeVoiceTempPath = null;
       if (directoryPath != null) {
         unawaited(_deleteVoiceTempDirectory(directoryPath));
       }
@@ -130,6 +135,7 @@ class _ChatPageState extends State<ChatPage> {
     // Invalidate downloads that have not produced a playable file yet.
     _voicePlaybackRequestId++;
     _activeVoiceTempDirectory = null;
+    _activeVoiceTempPath = null;
     _liveTimer?.cancel();
     _typingTimer?.cancel();
     final voicePlaybackSubscription = _voicePlaybackSubscription;
@@ -160,6 +166,7 @@ class _ChatPageState extends State<ChatPage> {
     _voiceTempDirs.remove(directoryPath);
     if (_activeVoiceTempDirectory == directoryPath) {
       _activeVoiceTempDirectory = null;
+      _activeVoiceTempPath = null;
     }
     try {
       await _fileStore.deleteDirectory(directoryPath);
@@ -422,6 +429,7 @@ class _ChatPageState extends State<ChatPage> {
       final requestId = ++_voicePlaybackRequestId;
       final directoryPath = _activeVoiceTempDirectory;
       _activeVoiceTempDirectory = null;
+      _activeVoiceTempPath = null;
       try {
         await HopeChatVoiceBridge.stopPlayback();
       } catch (_) {
@@ -440,6 +448,7 @@ class _ChatPageState extends State<ChatPage> {
     final requestId = ++_voicePlaybackRequestId;
     final previousDirectory = _activeVoiceTempDirectory;
     _activeVoiceTempDirectory = null;
+    _activeVoiceTempPath = null;
     if (previousDirectory != null || _playingVoiceMessageId != null) {
       try {
         await HopeChatVoiceBridge.stopPlayback();
@@ -470,6 +479,7 @@ class _ChatPageState extends State<ChatPage> {
 
       _voiceTempDirs.add(temporary.directoryPath);
       _activeVoiceTempDirectory = temporary.directoryPath;
+      _activeVoiceTempPath = temporary.path;
       // Set the active ID before starting native playback so an extremely short
       // clip cannot finish and emit playbackCompleted before the state is set.
       setState(() {
