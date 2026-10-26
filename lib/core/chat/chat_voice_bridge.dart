@@ -6,12 +6,12 @@ import 'package:flutter/services.dart';
 class HopeChatVoiceBridge {
   HopeChatVoiceBridge._();
   static const MethodChannel _channel = MethodChannel('hope.chat/voice');
-  static final StreamController<void> _playbackCompletedController =
-      StreamController<void>.broadcast();
+  static final StreamController<String> _playbackCompletedController =
+      StreamController<String>.broadcast();
   static bool _nativeEventHandlerInstalled = false;
 
   /// Emits when Android's MediaPlayer reaches the end of the current voice note.
-  static Stream<void> get playbackCompleted {
+  static Stream<String> get playbackCompleted {
     _installNativeEventHandler();
     return _playbackCompletedController.stream;
   }
@@ -21,7 +21,10 @@ class HopeChatVoiceBridge {
     _nativeEventHandlerInstalled = true;
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'playbackCompleted') {
-        _playbackCompletedController.add(null);
+        final path = call.arguments;
+        if (path is String && path.isNotEmpty) {
+          _playbackCompletedController.add(path);
+        }
       }
     });
   }
