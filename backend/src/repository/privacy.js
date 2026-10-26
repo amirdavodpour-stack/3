@@ -43,7 +43,7 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
   return withSqlTransaction(async(client)=>{
     const u = await client.query(`SELECT id,role FROM users WHERE id=$1 FOR UPDATE`, [userId]);
     if (!u.rows[0]) return false;
-    const tables = ['refresh_tokens','reset_tokens','notification_devices','notification_preferences','notifications'];
+    const tables = ['refresh_tokens','reset_tokens','notification_devices','notification_preferences','notifications','chat_presence','chat_conversation_preferences','chat_message_reads'];
     for (const t of tables) await client.query(`DELETE FROM ${t} WHERE user_id=$1`, [userId]);
     await client.query(`UPDATE analytics_events SET user_id=NULL WHERE user_id=$1`, [userId]);
     await client.query(`UPDATE crash_reports SET user_id=NULL WHERE user_id=$1`, [userId]);
