@@ -10,6 +10,20 @@ done
 
 case "$PUBLIC_BASE_URL" in https://*) ;; *) echo 'PUBLIC_BASE_URL must use HTTPS.' >&2; exit 1;; esac
 case "$PAYMENT_PROVIDER" in webhook|internal) ;; *) echo 'PAYMENT_PROVIDER must be webhook or internal in production.' >&2; exit 1;; esac
+
+# The staging project also uses a Railway environment named "production".
+# Never permit the user-top-up exception unless the deployment proves it is
+# the dedicated staging project, and reject partial/mismatched flag settings.
+case "${INTERNAL_WALLET_USER_TOPUP_ENABLED:-false}:${STAGING_ALLOW_INTERNAL_WALLET_TOPUP:-false}" in
+  true:true)
+    [ "$PAYMENT_PROVIDER" = internal ] || { echo 'Staging internal wallet top-up requires PAYMENT_PROVIDER=internal.' >&2; exit 1; }
+    [ "${RAILWAY_PROJECT_ID:-}" = '8c686259-09c6-4609-bbe7-4ea25e769e18' ] || { echo 'Staging internal wallet top-up override is permitted only for the designated Staging Railway project.' >&2; exit 1; }
+    ;;
+  true:false|false:true)
+    echo 'Internal wallet top-up and its staging override must be enabled together, only for the designated Staging Railway project.' >&2
+    exit 1
+    ;;
+esac
 if [ "$PAYMENT_PROVIDER" = "internal" ]; then
   [ "${PAYMENT_CURRENCY:-TOMAN}" = "TOMAN" ] || { echo 'PAYMENT_CURRENCY=TOMAN is required when PAYMENT_PROVIDER=internal.' >&2; exit 1; }
 fi

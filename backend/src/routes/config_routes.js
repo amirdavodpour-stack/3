@@ -1,14 +1,15 @@
+import { isInternalWalletUserTopUpEnabled } from '../wallet_topup_policy.js';
+
 export function createConfigRoutes({ sendJson, config }) {
   return async function configRoutes(req, res, parts) {
     if (req.method !== 'GET' || parts.length !== 1 || parts[0] !== 'capabilities') {
       return false;
     }
 
-    const internalTopUp =
-      config.paymentProvider === 'internal' &&
-      config.internalWalletUserTopUpEnabled &&
-      (process.env.NODE_ENV !== 'production' ||
-        process.env.STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true');
+    const internalTopUp = isInternalWalletUserTopUpEnabled({
+      paymentProvider: config.paymentProvider,
+      enabled: config.internalWalletUserTopUpEnabled,
+    });
 
     return sendJson(res, 200, {
       capabilities: {

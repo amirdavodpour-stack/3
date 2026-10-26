@@ -80,6 +80,38 @@ test('production env validator accepts a complete admin identity configuration',
   assert.match(result.stdout, /Production environment contract PASS/);
 });
 
+test('production validator rejects the staging top-up override without exact Railway project identity', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    INTERNAL_WALLET_USER_TOPUP_ENABLED: 'true',
+    STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'true',
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout + '\n' + result.stderr, /designated Staging Railway project/);
+});
+
+test('production validator rejects staging top-up flags on the actual Production Railway project', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    INTERNAL_WALLET_USER_TOPUP_ENABLED: 'true',
+    STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'true',
+    RAILWAY_PROJECT_ID: 'b12b7c1e-4dcc-470e-b87a-c63035c6e342',
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout + '\n' + result.stderr, /designated Staging Railway project/);
+});
+
+test('production validator permits paired staging top-up flags only for the designated Staging Railway project', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    INTERNAL_WALLET_USER_TOPUP_ENABLED: 'true',
+    STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'true',
+    RAILWAY_PROJECT_ID: '8c686259-09c6-4609-bbe7-4ea25e769e18',
+  });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.match(result.stdout, /Production environment contract PASS/);
+});
+
 test('production-release workflow provides all runtime-required validator inputs', () => {
   const block = workflow.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
   for (const name of [
