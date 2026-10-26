@@ -283,3 +283,11 @@ test('account deletion erases applicant resume content while retaining applicati
   assert.match(legacyDeletion, /x\.resumeText = ''; x\.skills = ''/);
   assert.match(legacyDeletion, /'jobApplications'/);
 });
+
+
+test('account deletion strips pseudonymous telemetry identifiers and raw crash payloads', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion, /UPDATE analytics_events SET user_id=NULL, anonymous_id=NULL, session_id=NULL, properties='\{\}'::jsonb, dedupe_key=NULL WHERE user_id=\$1/);
+  assert.match(deletion, /UPDATE crash_reports SET user_id=NULL, anonymous_id=NULL, message='\[REDACTED\]', stack=NULL, context='\{\}'::jsonb WHERE user_id=\$1/);
+});
