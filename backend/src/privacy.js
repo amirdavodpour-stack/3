@@ -7,7 +7,9 @@ const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLo
 const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
 
 function sanitizeExportObject(value, depth = 0) {
-  if (depth > 4 || value == null || typeof value !== 'object') return value;
+  if (value == null || typeof value !== 'object') return value;
+  // Never return an un-sanitized object merely because its nesting exceeded the safety bound.
+  if (depth > 4) return null;
   if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeExportObject(v, depth + 1));
   const out = {};
   for (const [key, val] of Object.entries(value)) {
@@ -22,13 +24,17 @@ function sanitizeExportObject(value, depth = 0) {
 }
 
 
-const sensitiveKeys = new Set(['email','phone','mobile','name','displayName','fullName','address','lat','lng','location','resume','resumeText','token','accessToken','refreshToken','password','passwordHash','authorization']);
+const sensitiveKeys = new Set([
+  'email','emailAddress','phone','phoneNumber','mobile','mobileNumber','name','userName','firstName','lastName',
+  'displayName','fullName','address','lat','lng','location','resume','resumeText',
+  'token','accessToken','refreshToken','password','passwordHash','authorization',
+].map(normalizeFieldKey));
 
 export function sanitizeTelemetryProperties(input = {}) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
   const out = {};
   for (const [key, value] of Object.entries(source)) {
-    if (sensitiveKeys.has(String(key))) continue;
+    if (sensitiveKeys.has(normalizeFieldKey(key))) continue;
     if (typeof value === 'string' && value.length > 200) out[key] = value.slice(0, 200);
     else if (typeof value === 'number' || typeof value === 'boolean' || value == null || typeof value === 'string') out[key] = value;
   }
