@@ -691,6 +691,14 @@ void main() {
       final matrix = find.byKey(
         const ValueKey('candidate-comparison-matrix'),
       );
+      // At a 360x640 viewport the overview can push this ListView child below
+      // the fold; scroll until the lazy ListView delegate builds the matrix.
+      await tester.scrollUntilVisible(
+        matrix,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       expect(matrix, findsOneWidget);
 
       for (final label in ['Experience', 'Location']) {
