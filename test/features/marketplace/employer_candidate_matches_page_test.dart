@@ -693,6 +693,23 @@ void main() {
       );
       expect(matrix, findsOneWidget);
 
+      for (final label in ['Experience', 'Location']) {
+        final labelFinder = find.descendant(
+          of: matrix,
+          matching: find.text(label),
+        );
+        expect(labelFinder, findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(labelFinder);
+        final lineBoxes = paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: label.length),
+        );
+        expect(
+          lineBoxes,
+          hasLength(1),
+          reason: '$label must not split inside the word at 1.5x text scale.',
+        );
+      }
+
       for (final wording in [longName, longSkills]) {
         final valueFinder = find.descendant(
           of: matrix,

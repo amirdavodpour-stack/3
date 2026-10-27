@@ -215,7 +215,10 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
     const keys = ['skills', 'experience', 'location', 'salary'];
     final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final widths = <int, TableColumnWidth>{
-      0: const FixedColumnWidth(86),
+      // At enlarged text sizes the long metric labels must stay whole words.
+      // The horizontal viewport already supports scrolling when this wider
+      // label column needs more room on narrow screens.
+      0: FixedColumnWidth(enlargedText ? 128 : 86),
     };
     for (var index = 0; index < candidates.length; index++) {
       widths[index + 1] = const FixedColumnWidth(110);
