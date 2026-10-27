@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -92,4 +93,15 @@ test('application registry centralizes cross-feature use cases without exposing 
   assert.match(notifications, /ApplicationRegistry/);
   assert.doesNotMatch(notifications, /NotificationRepository/);
   assert.doesNotMatch(notifications, /ApiClient/);
+});
+
+
+test('runtime Home source-integrity gate follows widget extraction into its part file', () => {
+  const result = spawnSync('sh', ['test/runtime/home_source_integrity_test.sh'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  const output = `${result.stdout || ''}\n${result.stderr || ''}`;
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, output);
 });
