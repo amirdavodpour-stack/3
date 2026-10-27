@@ -4,9 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 const root=path.resolve(path.dirname(new URL(import.meta.url).pathname),'..');
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const checkAll=fs.readFileSync(path.join(root,'tools/check-all-collect.mjs'),'utf8');
 test('backend quality gates include mandatory e2e and coverage tooling',()=>{
- assert.match(pkg.scripts['check:all'],/test:e2e/);
+ assert.match(pkg.scripts['check:all'],/check-all-collect\.mjs/);
+ assert.match(checkAll,/npm run test:e2e/);
  assert.match(pkg.scripts['test:coverage-gate'],/test_backend_coverage\.mjs/);
+});
+test('check-all summary is terminated by a real newline so its JSON remains parseable',()=>{
+ const expectedWrite = "JSON.stringify(summary, null, 2) + '" + String.fromCharCode(92) + "n'";
+ assert.ok(checkAll.includes(expectedWrite));
 });
 test('integration suites can be made fail-closed in CI',()=>{
  for(const file of ['postgres-bootstrap-integration.test.mjs','postgres-repository-e2e.test.mjs','s3-integration.test.mjs']){

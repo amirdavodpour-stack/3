@@ -42,10 +42,13 @@ test('production release workflow is manual and uses the hardened release script
 });
 
 test('CI contains backend and mobile quality gates before artifact release', () => {
-  assert.match(workflow, /npm run check:all/);
+  assert.match(workflow, /npm run check/);
   assert.match(workflow, /flutter analyze/);
   assert.match(workflow, /flutter test/);
-  assert.match(workflow, /API_BASE_URL secret is required/);
+  assert.match(workflow, /secret is required for this event/);
+  assert.match(releaseWorkflow, /npm run check:all/);
+  assert.match(releaseWorkflow, /flutter analyze/);
+  assert.match(releaseWorkflow, /flutter test/);
 });
 
 test('configuration rejects invalid numeric operational limits', () => {
@@ -65,4 +68,13 @@ test('pilot release uses debug signing while production requires explicit releas
   assert.match(gradle, /"pilot"[\s\S]*signingConfig = signingConfigs\.getByName\("debug"\)/);
   assert.match(gradle, /"production"[\s\S]*signingConfig = signingConfigs\.getByName\("release"\)/);
   assert.match(gradle, /Production (?:builds require|release requires) ANDROID_RELEASE_STORE_FILE/);
+});
+
+test('production backend quality gates use a non-production Admin Panel credential', () => {
+  const start = releaseWorkflow.indexOf('- name: Backend quality gates');
+  const end = releaseWorkflow.indexOf('- name: Production npm audit', start);
+  assert.ok(start >= 0 && end > start, 'expected isolated backend quality-gate step');
+  const block = releaseWorkflow.slice(start, end);
+  assert.match(block, /ADMIN_PANEL_USERNAME:\s*hope-admin/);
+  assert.doesNotMatch(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*secrets\.ADMIN_PANEL_USERNAME_PRODUCTION\s*\}\}/);
 });

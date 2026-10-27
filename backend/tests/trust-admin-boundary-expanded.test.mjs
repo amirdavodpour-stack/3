@@ -1,6 +1,6 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeTempEnv, startApiServer, register, closeApi } from './support/hope-test-harness.mjs';
+import { makeTempEnv, startApiServer, register, unlockAdminPanel, closeApi } from './support/hope-test-harness.mjs';
 
 const tmp = makeTempEnv('hope-trust-admin-delta-');
 const api = await startApiServer();
@@ -22,6 +22,7 @@ async function makeAdmin() {
   row.role = 'ADMIN'; row.sessionVersion += 1; await api.db.save();
   const login = await api.json('/auth/login', {method:'POST', body:JSON.stringify({email:'trust-admin@example.com', password:'pass123456789'})});
   assert.equal(login.status, 200);
+  await unlockAdminPanel(api.json, login.body.data);
   return login.body.data;
 }
 

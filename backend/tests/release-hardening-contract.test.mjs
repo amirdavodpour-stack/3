@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 const root = path.resolve(new URL('..', import.meta.url).pathname, '..');
 
 test('Flutter lockfile never commits a session-local package registry', () => {
@@ -224,7 +225,11 @@ test('Android Gradle launcher is executable and does not depend on a missing wra
   assert.ok(props.includes('https\\://services.gradle.org/distributions/'));
   assert.match(wrapper, /GRADLE_DISTRIBUTION_SHA256|\.sha256/);
   assert.doesNotMatch(wrapper, /CLASSPATH=.*gradle-wrapper\.jar/);
-  assert.equal(fs.statSync(path.join(root, 'android/gradlew')).mode & 0o111, 0o111);
+  // Android/Termux may expose only owner execute bits locally; Git's index is authoritative for the tracked executable mode.
+  assert.ok((fs.statSync(path.join(root, 'android/gradlew')).mode & 0o100) !== 0);
+  const indexEntry = execFileSync('git', ['ls-files', '--stage', '--', 'android/gradlew'], {cwd: root, encoding: 'utf8'});
+  assert.equal(indexEntry.split(/\s+/)[0], '100755');
+  assert.ok(indexEntry.includes('\tandroid/gradlew'));
 });
 
 test('release manifest records content-addressed backend image identity when supplied', () => {

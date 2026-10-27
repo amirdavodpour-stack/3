@@ -67,7 +67,7 @@ test('release/refund/payout paths retain durable outbox/audit correlation roots'
 
 
 test('multi-wallet financial mutations use deterministic lock ordering to prevent lock-order deadlocks', () => {
-  assert.match(ledger, /function lockWallets\(client, ids\)[\s\S]*?\[\.\.\.new Set\(ids\)\]\.sort\(\)/);
+  assert.match(ledger, /async function lockWallets\(client, ids\)[\s\S]*?const requestedIds = \[\.\.\.new Set\(ids\)\][\s\S]*?const lockIds = \[\.\.\.requestedIds\]\.sort\(\)/);
   assert.match(ledger, /lockWallets\(client, \[source\.id, destination\.id\]\)/);
   assert.match(ledger, /lockWallets\(client, \[payer\.id, worker\.id\]\)/);
   const directWalletLocks = ledger.match(/SELECT \* FROM wallet_accounts[\s\S]*?ORDER BY id FOR UPDATE/g) || [];

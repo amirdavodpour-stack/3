@@ -58,6 +58,8 @@ test('feature logic is extracted from oversized Flutter pages', () => {
   const transaction = read('lib/features/transactions/transaction_page.dart');
   const controller = read('lib/features/transactions/transaction_controller.dart');
   const home = read('lib/features/home/home_page.dart');
+  const homeWidgets = read('lib/features/home/home_widgets.part.dart');
+  const savedSearchActions = read('lib/features/jobs/jobs_saved_searches.part.dart');
   assert.match(jobLogic, /normalizePersian/);
   assert.match(jobLogic, /filterJobs/);
   assert.doesNotMatch(jobs, /static String _normalizePersian/);
@@ -66,6 +68,11 @@ test('feature logic is extracted from oversized Flutter pages', () => {
   assert.match(controller, /class TransactionController/);
   assert.doesNotMatch(transaction, /switch \(operation\)/);
   assert.match(home, /(?:part 'home_widgets\.part\.dart'|import 'home_widgets\.part\.dart';)/);
+  assert.match(savedSearchActions, /extension _JobsSavedSearchActions on _JobsPageState/);
+  assert.match(savedSearchActions, /Future<void> _saveCurrentSearch/);
+  assert.match(savedSearchActions, /Future<void> _openSavedSearches/);
+  assert.match(homeWidgets, /extension _HomePageScaffold on _HomePageState/);
+  assert.match(homeWidgets, /Widget _buildHomeScaffold\(BuildContext context\)/);
   assert.ok(jobs.split('\n').length < 400);
   assert.ok(create.split('\n').length < 450);
   assert.ok(transaction.split('\n').length < 300);

@@ -29,6 +29,7 @@
     "test:product": "NODE_ENV=test node --test tests/e2e-product-requirements.test.mjs tests/version-contract.test.mjs tests/mobile-contract.test.mjs",
     "pretest:offline": "node tools/guard-legacy-test-env.mjs test:offline",
     "test:offline": "NODE_ENV=test node tools/run-test-files-isolated.mjs",
+    "test:runner-probe": "NODE_ENV=test node --test tools/fixtures/run-test-script-isolated-probe.test.mjs",
     "test:notifications": "NODE_ENV=test node --test tests/notification-system.test.mjs tests/notification-contract.test.mjs",
     "test:wave10": "NODE_ENV=test node --test tests/wave10-release-security.test.mjs tests/privacy-v2.test.mjs tests/recommendation-quality.test.mjs",
     "test:staging-contract": "NODE_ENV=test node --test tests/staging-contract.test.mjs tests/staging-product-smoke-contract.test.mjs",

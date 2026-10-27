@@ -42,6 +42,7 @@ async function ensureWalletForUser(userId, client) {
 }
 
 export async function ensureWalletForUserPublic(userId) {
+  requirePool();
   return withSqlTransaction((client) => ensureWalletForUser(userId, client));
 }
 
@@ -260,6 +261,7 @@ export async function postInternalPaymentRefundWithClient(client, {
 
 export async function creditWallet({ userId, amount: rawAmount, idempotencyKey, referenceType = 'WALLET_TOP_UP', referenceId = null, metadata = {}, actorId = userId }) {
   const value = amount(rawAmount); const key = String(idempotencyKey || '').trim(); if (!key) throw new Error('IDEMPOTENCY_KEY_REQUIRED');
+  requirePool();
   return withSqlTransaction(async (client) => {
     const idem = await beginIdempotency(client, { principalId: actorId, operation: 'TOP_UP', key, requestHash: `${userId}:${value}:${referenceType}:${referenceId}` });
     if (idem.existing) return JSON.parse(idem.existing.response_body);
@@ -282,6 +284,7 @@ export async function creditWallet({ userId, amount: rawAmount, idempotencyKey, 
 export async function transferAvailable({ sourceUserId, destinationUserId, amount: rawAmount, idempotencyKey, referenceType = 'WALLET_TRANSFER', referenceId = null, metadata = {} }) {
   const value = amount(rawAmount); const key = String(idempotencyKey || '').trim(); if (!key) throw new Error('IDEMPOTENCY_KEY_REQUIRED');
   if (sourceUserId === destinationUserId) throw Object.assign(new Error('SELF_TRANSFER_NOT_ALLOWED'), { code: 'SELF_TRANSFER_NOT_ALLOWED' });
+  requirePool();
   return withSqlTransaction(async (client) => {
     const idem = await beginIdempotency(client, { principalId: sourceUserId, operation: 'TRANSFER', key, requestHash: `${destinationUserId}:${value}:${referenceType}:${referenceId}` });
     if (idem.existing) return JSON.parse(idem.existing.response_body);

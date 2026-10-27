@@ -215,7 +215,7 @@ test('satisfaction UI surfaces the automatic dispute state without exposing free
 });
 
 test('admin entry always goes through identity verification', () => {
-  const home = read('lib/features/home/home_page.dart');
+  const home = `${read('lib/features/home/home_page.dart')}\n${read('lib/features/home/home_widgets.part.dart')}`;
   const access = read('lib/features/admin/admin_access_page.dart');
   const repository = read('lib/core/admin/admin_repository.dart');
   assert.ok(home.includes('HopeRoutes.adminAccess()'));

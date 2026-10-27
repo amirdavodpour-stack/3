@@ -16,7 +16,7 @@ function parseArgs(argv) {
 function filesFromScript(name) {
   const script = String(packageJson.scripts?.[name] || '');
   if (!script) throw new Error(`Unknown npm script: ${name}`);
-  const files = script.split(/\\s+/).filter((item) => item.endsWith('.test.mjs'));
+  const files = script.split(/\s+/).filter((item) => /^(?:tests|tools)\/.+\.mjs$/.test(item));
   if (!files.length) throw new Error(`npm script ${name} contains no .test.mjs files`);
   return [...new Set(files)];
 }

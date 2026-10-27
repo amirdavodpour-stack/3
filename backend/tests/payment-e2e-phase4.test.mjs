@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hope-finance-'));
-process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
+process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.PAYMENT_PROVIDER='simulator'; process.env.PAYMENT_CURRENCY='TOMAN'; process.env.ADMIN_PANEL_USERNAME='hope-admin'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
 const { createServer }=await import('../src/app.js');
 const { db }=await import('../src/db.js');
 const server=createServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -79,7 +79,13 @@ test('job funding uses first-month salary and thirty-percent employer commission
 });
 
 test('admin financial summary totals fees, charges and payouts', async()=>{
-  const admin=await reg('finance-admin@example.com'); db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN'; const summary=await json('/admin/finance/summary',{headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(summary.status,200); assert.ok(summary.body.data.payments>=1); assert.ok(summary.body.data.platformFees>=0); assert.ok(summary.body.data.ledgerEntries>=1);
+  const admin=await reg('finance-admin@example.com');
+  db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN';
+  await db.save();
+  const unlocked=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin'})});
+  assert.equal(unlocked.status,200);
+  const summary=await json('/admin/finance/summary',{headers:{Authorization:`Bearer ${admin.accessToken}`}});
+  assert.equal(summary.status,200); assert.ok(summary.body.data.payments>=1); assert.ok(summary.body.data.platformFees>=0); assert.ok(summary.body.data.ledgerEntries>=1);
 });
 
 test('webhook requires signature and replays are harmless', async()=>{
