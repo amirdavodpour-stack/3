@@ -218,7 +218,7 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
       // At enlarged text sizes the long metric labels must stay whole words.
       // The horizontal viewport already supports scrolling when this wider
       // label column needs more room on narrow screens.
-      0: FixedColumnWidth(enlargedText ? 128 : 86),
+      0: FixedColumnWidth(enlargedText ? 160 : 86),
     };
     for (var index = 0; index < candidates.length; index++) {
       widths[index + 1] = const FixedColumnWidth(110);

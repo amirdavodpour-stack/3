@@ -631,7 +631,7 @@ void main() {
           'Senior financial systems analyst responsible for marketplace settlement operations';
       const longSkills =
           'Flutter, Dart, accessibility audits, financial workflow reconciliation and responsive interface engineering';
-      tester.view.physicalSize = const Size(390, 844);
+      tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
