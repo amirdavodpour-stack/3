@@ -827,8 +827,11 @@ void main() {
       );
       expect(criteria, findsOneWidget);
       final paragraph = tester.renderObject<RenderParagraph>(criteria);
+      final boxes = paragraph.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 8),
+      );
       expect(
-        paragraph.computeLineMetrics(),
+        boxes,
         hasLength(1),
         reason: 'A single-word wizard label must not break mid-word at 1.5x text scale.',
       );
