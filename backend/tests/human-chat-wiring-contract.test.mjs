@@ -43,7 +43,10 @@ test('chat capabilities route read receipts, private presence, preferences and g
   assert.match(migration,/chat_message_reads/);
   assert.match(migration,/chat_presence/);
   assert.match(migration,/chat_conversation_preferences/);
-  assert.match(app,/createHumanChatRoutes\(\{\s*authUser,\s*readBody,\s*sendJson,\s*HttpError,\s*repo,\s*storage\s*\}\)/);
+  assert.match(app,/createHumanChatRoutes\(\{\s*authUser,\s*readBody,\s*sendJson,\s*HttpError,\s*repo,\s*storage,\s*config\s*\}\)/);
+  assert.match(routes,/requireAdmin\(me\)/);
+  assert.match(routes,/assertAdminPermission\(admin,ADMIN_PERMISSIONS\.VIEW_ADMIN_CENTER\)/);
+  assert.match(routes,/isAdminPanelVerified\(admin\.id/);
 });
 test('chat attachments belong to the sender and only conversation participants can download them',()=>{
   const repository=read('backend/src/repository/human_chat.js'),routes=read('backend/src/routes/human_chat_routes.js');
