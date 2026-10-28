@@ -2947,21 +2947,32 @@ class HopeCreationProgress extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            en ? labelsEn[step] : labelsFa[step],
-                            maxLines: 2,
-                            softWrap: true,
-                            overflow: TextOverflow.visible,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: step == safeIndex
-                                      ? HopeV2SemanticColors.textPrimary(context)
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                                  fontWeight: step == safeIndex
-                                      ? FontWeight.w900
-                                      : FontWeight.w700,
-                                  fontSize: 12,
-                                ),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FittedBox(
+                              // The five labels share a narrow rail on compact
+                              // screens. Keep each label intact on one line;
+                              // only scale down when a locale/font scale needs
+                              // slightly more room than its segment provides.
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: Text(
+                                en ? labelsEn[step] : labelsFa[step],
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.visible,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: step == safeIndex
+                                          ? HopeV2SemanticColors.textPrimary(context)
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      fontWeight: step == safeIndex
+                                          ? FontWeight.w900
+                                          : FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
