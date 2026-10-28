@@ -19,12 +19,14 @@ const modules = enabled
       import('../src/repository/human_chat.js'),
       import('../src/repository/privacy.js'),
       import('../src/repository/storage.js'),
+      import('../src/wallet_ledger.js'),
     ])
   : [];
 const dbModule = modules[0];
 const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
+const { transferAvailable, creditWallet, getWalletByUserId } = modules[5] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -775,6 +777,116 @@ test('account deletion serializes read receipts, presence and preferences before
   assert.equal(persisted[0].presence, 0);
   assert.equal(persisted[0].preferences, 0);
   assert.equal(persisted[0].reads, 0);
+});
+
+
+
+async function createTransferTestUser(pool, prefix) {
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows } = await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES(gen_random_uuid(),$1,'test','Wallet transfer test','USER','ACTIVE',0,NOW())
+     RETURNING id`,
+    [`${prefix}-${suffix}@example.test`],
+  );
+  return rows[0].id;
+}
+
+test('wallet transfer rejects a deleted destination before creating its wallet', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const sourceId = await createTransferTestUser(pool, 'transfer-source');
+  const destinationId = await createTransferTestUser(pool, 'transfer-deleted-destination');
+  await creditWallet({
+    userId: sourceId, amount: '1000', idempotencyKey: `wallet-seed-destination-${sourceId}`,
+  });
+  await pool.query(`UPDATE users SET status='DELETED' WHERE id=$1`, [destinationId]);
+
+  await assert.rejects(
+    transferAvailable({
+      sourceUserId: sourceId, destinationUserId: destinationId,
+      amount: '100', idempotencyKey: `transfer-to-deleted-${destinationId}`,
+    }),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+  assert.equal(await getWalletByUserId(destinationId), null, 'a deleted destination must not get a new wallet as a side effect');
+  assert.equal(String((await getWalletByUserId(sourceId)).available_balance), '1000', 'source funds must remain unchanged');
+});
+
+test('wallet transfer rejects a deleted source and preserves its remaining balance', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const sourceId = await createTransferTestUser(pool, 'transfer-deleted-source');
+  const destinationId = await createTransferTestUser(pool, 'transfer-destination');
+  await creditWallet({
+    userId: sourceId, amount: '2500', idempotencyKey: `wallet-seed-deleted-source-${sourceId}`,
+  });
+  await pool.query(`UPDATE users SET status='DELETED' WHERE id=$1`, [sourceId]);
+
+  await assert.rejects(
+    transferAvailable({
+      sourceUserId: sourceId, destinationUserId: destinationId,
+      amount: '200', idempotencyKey: `transfer-from-deleted-${sourceId}`,
+    }),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+  assert.equal(String((await getWalletByUserId(sourceId)).available_balance), '2500', 'deletion must not forfeit or move the retained balance');
+  assert.equal(await getWalletByUserId(destinationId), null, 'the rejected transfer must not create a destination wallet');
+});
+
+test('wallet transfer serializes with account deletion and rejects after source becomes inactive', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const sourceId = await createTransferTestUser(pool, 'transfer-race-source');
+  const destinationId = await createTransferTestUser(pool, 'transfer-race-destination');
+  await creditWallet({
+    userId: sourceId, amount: '3200', idempotencyKey: `wallet-seed-race-source-${sourceId}`,
+  });
+  await creditWallet({
+    userId: destinationId, amount: '300', idempotencyKey: `wallet-seed-race-destination-${destinationId}`,
+  });
+
+  const holder = await pool.connect();
+  let holderOpen = false;
+  let outcome = null;
+  let blockedOnAccountLock = false;
+  try {
+    await holder.query('BEGIN');
+    holderOpen = true;
+    await holder.query('SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE', [sourceId]);
+
+    const writer = transferAvailable({
+      sourceUserId: sourceId, destinationUserId: destinationId,
+      amount: '400', idempotencyKey: `transfer-race-${sourceId}`,
+    }).then(
+      (value) => { outcome = { ok: true, value }; },
+      (error) => { outcome = { ok: false, error }; },
+    );
+
+    const deadline = Date.now() + 6000;
+    while (Date.now() < deadline) {
+      const { rows } = await pool.query(`
+        SELECT pid FROM pg_stat_activity
+        WHERE datname=current_database() AND pid<>pg_backend_pid()
+          AND wait_event_type='Lock'
+          AND query ILIKE '%lockActiveTransferUsers%'
+      `);
+      if (rows.length) { blockedOnAccountLock = true; break; }
+      if (outcome) break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    await holder.query(`UPDATE users SET status='DELETED' WHERE id=$1`, [sourceId]);
+    await holder.query('COMMIT');
+    holderOpen = false;
+    await writer;
+  } finally {
+    if (holderOpen) await holder.query('ROLLBACK').catch(() => {});
+    holder.release();
+  }
+
+  assert.equal(blockedOnAccountLock, true, 'wallet transfer must wait on the same account row lock as deletion');
+  assert.equal(outcome?.ok, false, 'the transfer must fail after the account deletion transaction wins');
+  assert.equal(outcome?.error?.code, 'ACCOUNT_INACTIVE');
+  assert.equal(String((await getWalletByUserId(sourceId)).available_balance), '3200');
+  assert.equal(String((await getWalletByUserId(destinationId)).available_balance), '300');
 });
 
 after(async () => {
