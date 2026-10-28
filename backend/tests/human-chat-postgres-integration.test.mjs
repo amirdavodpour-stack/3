@@ -1122,6 +1122,60 @@ test('duplicate state callback after the transition is already reflected is igno
   assert.equal(cases.length, 0);
 });
 
+test('direct payment-release webhook closes job chat in the same settlement transaction', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const { paymentId, providerRef } = await createWebhookMismatchPayment('RELEASE_PENDING', 'release-closes-chat');
+  const { rows: payments } = await pool.query(
+    'SELECT job_id,payer_id,payee_id FROM payments WHERE id=$1',
+    [paymentId],
+  );
+  const payment = payments[0];
+  assert.ok(payment?.job_id);
+  await pool.query("UPDATE jobs SET status='COMPLETED' WHERE id=$1", [payment.job_id]);
+  const { rows: conversations } = await pool.query(
+    "INSERT INTO chat_conversations(id,kind,job_id,status,title) VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 webhook settlement chat') RETURNING id",
+    [payment.job_id],
+  );
+  await creditWallet({
+    userId: payment.payer_id,
+    amount: '1000',
+    idempotencyKey: 'seed-release-chat-close-' + paymentId,
+  });
+  await runWalletMutationTransaction((client) => postInternalPaymentHoldWithClient(client, {
+    paymentId,
+    payerId: payment.payer_id,
+    employerCharge: '100',
+    providerPayout: '100',
+    platformFee: '0',
+    idempotencyKey: 'seed-release-hold-' + paymentId,
+  }));
+
+  const previousProvider = appConfig.paymentProvider;
+  appConfig.paymentProvider = 'internal';
+  try {
+    const eventId = 'R05-webhook-release-close-' + paymentId;
+    const releaseRef = providerRef + '-release';
+    const result = await applyPaymentWebhookAtomic({
+      eventId,
+      eventType: 'PAYMENT_RELEASED',
+      paymentId,
+      providerRef: releaseRef,
+      payload: { eventId, eventType: 'PAYMENT_RELEASED', paymentId, providerRef: releaseRef },
+    });
+    assert.equal(result.processed, true);
+    assert.equal(result.ignored, undefined);
+    const { rows: settledJobs } = await pool.query('SELECT status FROM jobs WHERE id=$1', [payment.job_id]);
+    assert.equal(settledJobs[0].status, 'SETTLED');
+    const { rows: settledPayments } = await pool.query('SELECT status FROM payments WHERE id=$1', [paymentId]);
+    assert.equal(settledPayments[0].status, 'RELEASED');
+    const { rows: chats } = await pool.query('SELECT status FROM chat_conversations WHERE id=$1', [conversations[0].id]);
+    assert.equal(chats[0].status, 'CLOSED',
+      'direct webhook settlement must preserve the same close-chat invariant as the outbox path');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
