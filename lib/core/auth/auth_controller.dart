@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'auth_repository.dart';
 import 'google_sign_in_service.dart';
+import '../network/api_client.dart';
 import '../network/api_error_presenter.dart';
 import '../storage/secure_store.dart';
 import '../telemetry/telemetry_service.dart';
@@ -72,10 +73,11 @@ class AuthController extends ChangeNotifier {
 
   Future<void> linkGoogleAccount(GoogleSignInService google) async {
     await _auth(() async {
-      final linkRepository = repository;
-      if (linkRepository is! GoogleAccountLinkRepository) {
+      if (repository is! GoogleAccountLinkRepository) {
         throw ApiException('GOOGLE_LINK_UNAVAILABLE', 'Google account linking is unavailable.');
       }
+      final GoogleAccountLinkRepository linkRepository =
+          repository as GoogleAccountLinkRepository;
       final linkedUserId = user?['id'];
       final idToken = await google.authenticate();
       await linkRepository.linkGoogleAccount(idToken);
