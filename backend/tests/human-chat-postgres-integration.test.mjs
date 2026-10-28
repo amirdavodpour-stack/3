@@ -29,7 +29,7 @@ const dbModule = modules[0];
 const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
-const { transferAvailable, creditWallet, getWalletByUserId, postInternalPaymentHoldWithClient } = modules[5] || {};
+const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserPublic, postInternalPaymentHoldWithClient } = modules[5] || {};
 const { requestPayoutAtomic } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
@@ -910,6 +910,19 @@ async function runWalletMutationTransaction(callback) {
     client.release();
   }
 }
+
+test('public wallet creation rejects deleted accounts without creating an orphan wallet', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'public-wallet-deleted-user');
+  await pool.query("UPDATE users SET status='DELETED' WHERE id=$1", [userId]);
+
+  await assert.rejects(
+    ensureWalletForUserPublic(userId),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+  assert.equal(await getWalletByUserId(userId), null,
+    'wallet creation must not bypass the account-deletion guard');
+});
 
 test('wallet credit rejects deleted targets before creating or crediting a wallet', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
