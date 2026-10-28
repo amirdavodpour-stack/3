@@ -12,6 +12,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import '../../core/network/test_fixtures.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
@@ -170,6 +171,8 @@ Future<void> _pump(
 }
 
 void main() {
+  setUp(() => installFakeSecureStorageForTests());
+
   testWidgets('profile can explicitly link a verified Google account from account settings', (tester) async {
     final repository = _AuthRepo();
     await _pump(
