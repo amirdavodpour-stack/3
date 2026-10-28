@@ -70,6 +70,25 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<void> linkGoogleAccount(GoogleSignInService google) async {
+    await _auth(() async {
+      final linkRepository = repository;
+      if (linkRepository is! GoogleAccountLinkRepository) {
+        throw ApiException('GOOGLE_LINK_UNAVAILABLE', 'Google account linking is unavailable.');
+      }
+      final linkedUserId = user?['id'];
+      final idToken = await google.authenticate();
+      await linkRepository.linkGoogleAccount(idToken);
+      if (linkedUserId != null && user?['id'] == linkedUserId) {
+        final updatedUser = <String, dynamic>{...user!, 'googleLinked': true};
+        await store.saveUser(updatedUser);
+        user = updatedUser;
+        notifyListeners();
+      }
+      await telemetry?.track('google_account_linked');
+    });
+  }
+
   Future<void> register(
       String email, String password, String displayName) async {
     await _auth(() async {

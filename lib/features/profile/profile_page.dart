@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
+import '../../core/config/backend_capabilities.dart';
 import '../../core/profile/profile_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
@@ -30,6 +34,19 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final ProfileController _controller;
+  bool _capabilitiesLookupAttempted = false;
+  bool _googleLinkBusy = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canLinkGoogleAccount {
+    if (context.read<AuthController>().user?['googleLinked'] == true) return false;
+    if (_backendCapabilities?.googleSignIn != true) return false;
+    try {
+      return context.read<GoogleSignInService?>()?.isConfigured ?? false;
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -44,6 +61,15 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_capabilitiesLookupAttempted) {
+      _capabilitiesLookupAttempted = true;
+      try {
+        final repository = context.read<BackendCapabilitiesRepository>();
+        unawaited(_loadBackendCapabilities(repository));
+      } on ProviderNotFoundException {
+        _backendCapabilities = null;
+      }
+    }
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id == _loadedUserId) return;
     _loadedUserId = id;
@@ -85,6 +111,57 @@ class _ProfilePageState extends State<ProfilePage> {
     };
     if (route != null) {
       Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
+
+  Future<void> _linkGoogleAccount() async {
+    if (_googleLinkBusy) return;
+    GoogleSignInService? google;
+    try {
+      google = context.read<GoogleSignInService?>();
+    } on ProviderNotFoundException {
+      google = null;
+    }
+    if (google == null || !google.isConfigured || _backendCapabilities?.googleSignIn != true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t(context, 'اتصال گوگل در دسترس نیست.', 'Google account linking is unavailable.'))),
+        );
+      }
+      return;
+    }
+    setState(() => _googleLinkBusy = true);
+    try {
+      await context.read<AuthController>().linkGoogleAccount(google);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t(context, 'حساب گوگل با موفقیت متصل شد.', 'Google account linked successfully.'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiErrorMessage(
+            error,
+            fallback: _t(context, 'اتصال حساب گوگل ناموفق بود.', 'Could not link the Google account.'),
+          )),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _googleLinkBusy = false);
     }
   }
 
@@ -383,6 +460,27 @@ class _ProfilePageState extends State<ProfilePage> {
 padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
+                if (_canLinkGoogleAccount) ...[
+                  ListTile(
+                    key: const ValueKey('profile-link-google-account'),
+                    leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
+                    title: Text(_t(context, 'اتصال حساب گوگل', 'Link Google account')),
+                    subtitle: Text(_t(
+                      context,
+                      'حساب گوگل تأییدشده با همان ایمیل را متصل کنید.',
+                      'Link a verified Google account with the same email address.',
+                    )),
+                    trailing: _googleLinkBusy
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                    onTap: _googleLinkBusy ? null : _linkGoogleAccount,
+                  ),
+                  const Divider(height: 1, indent: 72),
+                ],
                 ListTile(
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),

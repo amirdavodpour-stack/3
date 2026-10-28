@@ -5,6 +5,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
+import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
@@ -21,7 +23,16 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _AuthRepo implements AuthRepository {
+class _AuthRepo implements AuthRepository, GoogleAccountLinkRepository {
+  String? linkedGoogleToken;
+  Object? googleLinkFailure;
+
+  @override
+  Future<void> linkGoogleAccount(String idToken) async {
+    if (googleLinkFailure != null) throw googleLinkFailure!;
+    linkedGoogleToken = idToken;
+  }
+
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
       throw UnimplementedError();
@@ -34,6 +45,20 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
+}
+
+class _FakeGoogleSignInService extends GoogleSignInService {
+  _FakeGoogleSignInService() : super(serverClientId: 'test-server-client');
+
+  @override
+  Future<String> authenticate() async => 'verified-google-id-token';
+}
+
+class _CapabilitiesRepo implements BackendCapabilitiesRepository {
+  _CapabilitiesRepo(this.enabled);
+  final bool enabled;
+  @override
+  Future<BackendCapabilities> load() async => BackendCapabilities(googleSignIn: enabled);
 }
 
 class _ProfileRepo implements ProfileRepository {
@@ -91,6 +116,9 @@ Future<void> _pump(
   bool settle = true,
   ThemeData? theme,
   double textScale = 1.0,
+  bool googleCapabilityEnabled = false,
+  GoogleSignInService? googleSignIn,
+  _AuthRepo? authRepository,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -99,7 +127,7 @@ Future<void> _pump(
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
-  final auth = AuthController(_AuthRepo(), SecureStore());
+  final auth = AuthController(authRepository ?? _AuthRepo(), SecureStore());
   if (authenticated) {
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'کاربر'});
   } else {
@@ -126,6 +154,8 @@ Future<void> _pump(
             ChangeNotifierProvider(create: (_) => ThemeController(settings)),
             ChangeNotifierProvider.value(value: auth),
             Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
+            Provider<BackendCapabilitiesRepository>.value(value: _CapabilitiesRepo(googleCapabilityEnabled)),
+            if (googleSignIn != null) Provider<GoogleSignInService>.value(value: googleSignIn),
           ],
           child: const ProfilePage(),
         ),
@@ -140,6 +170,49 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('profile can explicitly link a verified Google account from account settings', (tester) async {
+    final repository = _AuthRepo();
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: true,
+      googleSignIn: _FakeGoogleSignInService(),
+      authRepository: repository,
+    );
+
+    final linkAction = find.byKey(const ValueKey('profile-link-google-account'));
+    expect(linkAction, findsOneWidget);
+    await tester.tap(linkAction);
+    await tester.pumpAndSettle();
+
+    expect(repository.linkedGoogleToken, 'verified-google-id-token');
+    expect(find.text('حساب گوگل با موفقیت متصل شد.'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile hides Google account linking when backend capability is disabled', (tester) async {
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: false,
+      googleSignIn: _FakeGoogleSignInService(),
+    );
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsNothing);
+  });
+
+  testWidgets('authenticated profile exposes the explicit Google account-link action only when Google is enabled', (tester) async {
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: true,
+      googleSignIn: _FakeGoogleSignInService(),
+    );
+
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
     'profile professional loading uses the canonical async state',
     (tester) async {
