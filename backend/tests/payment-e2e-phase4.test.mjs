@@ -27,6 +27,29 @@ test('mission funding exposes exact fee breakdown and creates a balanced local l
   const debit=ledger.body.data.ledger.reduce((s,e)=>s+Number(e.debit||0),0);const credit=ledger.body.data.ledger.reduce((s,e)=>s+Number(e.credit||0),0);assert.equal(debit,credit);assert.equal(ledger.body.data.ledger.length,3);
 });
 
+
+test('unlinked primary administrator cannot read another job financials', async()=>{
+  const owner=await reg('financial-boundary-owner@example.com');
+  const provider=await reg('financial-boundary-provider@example.com');
+  const job=await createMission(owner);
+  const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'financial boundary'})});
+  assert.equal(offer.status,201);
+  const accepted=await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
+  assert.equal(accepted.status,200);
+  const funded=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'financial-boundary-fund'},body:'{}'});
+  assert.equal(funded.status,201);
+
+  const unlinked=await reg('amir.davodpour@gmail.com');
+  const row=db.collection.users.find(u=>u.id===unlinked.user.id);
+  row.role='ADMIN';
+  row.googleSubject=null;
+  await db.save();
+
+  const read=await json(`/payments/financials/${job.id}`,{headers:{Authorization:`Bearer ${unlinked.accessToken}`}});
+  assert.equal(read.status,403);
+  assert.equal(read.body.error.code,'PRIMARY_ADMIN_IDENTITY_REQUIRED');
+});
+
 test('fund is idempotent and cannot be refunded twice', async()=>{
   const owner=await reg('refund-owner@example.com'); const provider=await reg('refund-provider@example.com'); const job=await createMission(owner);
   const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
