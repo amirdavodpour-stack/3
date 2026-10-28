@@ -17,10 +17,14 @@ const modules = enabled
       import('../src/db.js'),
       import('../src/db/migrations/034_chat_capabilities.js'),
       import('../src/repository/human_chat.js'),
+      import('../src/repository/privacy.js'),
+      import('../src/repository/storage.js'),
     ])
   : [];
 const dbModule = modules[0];
 const migration = modules[1]?.migration;
+const { deleteUserPrivacyBundle } = modules[3] || {};
+const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -530,6 +534,106 @@ test('send waits for an in-flight close and rejects when CLOSED commits first', 
     [conversation.conversation_id, body],
   );
   assert.equal(persisted.length, 0, 'message must not persist after CLOSED wins the row-lock race');
+});
+
+test('account deletion preserves a concurrent chat attachment, retains cleanup tombstones and blocks further uploads', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const storageKey = `r05-race-${suffix}.pdf`;
+  const { rows: uploads } = await pool.query(
+    `INSERT INTO uploads(id,storage_key,uploaded_by,content_type,size,created_at)
+     VALUES(gen_random_uuid(),$1,$2,'application/pdf',128,NOW()) RETURNING id`,
+    [storageKey, fixture.workerId],
+  );
+  const uploadId = uploads[0].id;
+  const pendingKey = `r05-pending-race-${suffix}.pdf`;
+  await pool.query(
+    `INSERT INTO upload_intents(id,storage_key,uploaded_by,content_type,expires_at,created_at)
+     VALUES(gen_random_uuid(),$1,$2,'application/pdf',NOW()+INTERVAL '5 minutes',NOW())`,
+    [pendingKey, fixture.workerId],
+  );
+  const holder = await pool.connect();
+  let transactionOpen = false;
+  let deletionPromise;
+  try {
+    await holder.query('BEGIN');
+    transactionOpen = true;
+    await holder.query('SELECT id FROM uploads WHERE id=$1 FOR UPDATE', [uploadId]);
+    deletionPromise = deleteUserPrivacyBundle(fixture.workerId, {
+      email: `deleted+${fixture.workerId}@invalid.local`,
+      passwordHash: 'integration-only-deleted-account',
+    });
+    const deadline = Date.now() + 6000;
+    let waiting = false;
+    while (Date.now() < deadline) {
+      const { rows } = await pool.query(`
+        SELECT pid FROM pg_stat_activity
+        WHERE datname=current_database() AND pid<>pg_backend_pid()
+          AND wait_event_type='Lock'
+          AND query ILIKE '%FROM uploads WHERE uploaded_by=$1 ORDER BY id FOR UPDATE%'
+      `);
+      if (rows.length) { waiting = true; break; }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    assert.equal(waiting, true, 'account deletion must wait on the owned upload row lock');
+    const { rows: messages } = await holder.query(
+      `INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
+       VALUES(gen_random_uuid(),$1,$2,'Race attachment','ATTACHMENT') RETURNING id`,
+      [fixture.conversationId, fixture.workerId],
+    );
+    await holder.query(
+      `INSERT INTO chat_message_attachments(id,message_id,upload_id,storage_key,filename,content_type,size)
+       VALUES(gen_random_uuid(),$1,$2,$3,'race.pdf','application/pdf',128)`,
+      [messages[0].id, uploadId, storageKey],
+    );
+    await holder.query('COMMIT');
+    transactionOpen = false;
+  } finally {
+    if (transactionOpen) await holder.query('ROLLBACK').catch(() => {});
+    holder.release();
+  }
+  const deletion = await deletionPromise;
+  assert.equal(deletion.deleted, true);
+  assert.ok(deletion.pendingUploadIntentKeys.includes(pendingKey),
+    'pending presigned keys must be returned for immediate best-effort deletion');
+  const { rows: retainedIntent } = await pool.query(
+    `SELECT id,uploaded_by FROM upload_intents WHERE storage_key=$1`, [pendingKey],
+  );
+  assert.equal(retainedIntent.length, 1, 'pending intent remains as a durable expiry/grace cleanup tombstone');
+  assert.equal(retainedIntent[0].uploaded_by, fixture.workerId);
+  assert.ok(!deletion.deletableUploadKeys.includes(storageKey),
+    'the committed chat reference must exclude the blob from post-commit storage deletion');
+  const { rows: associations } = await pool.query(
+    `SELECT a.storage_key,u.uploaded_by
+       FROM chat_message_attachments a JOIN uploads u ON u.id=a.upload_id
+      WHERE a.upload_id=$1`,
+    [uploadId],
+  );
+  assert.equal(associations.length, 1);
+  assert.equal(associations[0].storage_key, storageKey);
+  assert.equal(associations[0].uploaded_by, null);
+
+  const inactiveAccount = (error) => error?.code === 'ACCOUNT_INACTIVE';
+  await assert.rejects(() => createUploadIntent({
+    id: '11111111-1111-4111-8111-111111111111',
+    storageKey: `r05-after-delete-intent-${suffix}.pdf`,
+    uploadedBy: fixture.workerId,
+    contentType: 'application/pdf',
+    expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    createdAt: new Date().toISOString(),
+  }), inactiveAccount, 'deleted users cannot reserve new presigned uploads');
+  await assert.rejects(() => insertUpload({
+    id: '22222222-2222-4222-8222-222222222222',
+    storageKey: `r05-after-delete-upload-${suffix}.pdf`,
+    uploadedBy: fixture.workerId,
+    contentType: 'application/pdf',
+    size: 128,
+    createdAt: new Date().toISOString(),
+  }), inactiveAccount, 'deleted users cannot register new uploads');
+  await assert.rejects(() => completeUploadAtomic({
+    intentId: retainedIntent[0].id, key: pendingKey, userId: fixture.workerId,
+    contentType: 'application/pdf', size: 128, createdAt: new Date().toISOString(),
+  }), inactiveAccount, 'deleted users cannot complete a retained presigned intent');
 });
 
 after(async () => {

@@ -11,19 +11,23 @@ export function createAccountRoutes({ authUser, readBody, sendJson, HttpError, h
     if (req.method === 'POST' && parts[0] === 'delete') {
       const body = await readBody(req);
       if (String(body?.confirmation || '').toUpperCase() !== 'DELETE') throw new HttpError(400,'CONFIRMATION_REQUIRED','Type DELETE to confirm account deletion');
-      const deletableUploadKeys = process.env.DATABASE_URL
-        ? await privacyRepo.listDeletableUserUploadKeys(me.id)
+      const isPostgres = Boolean(process.env.DATABASE_URL);
+      const legacyDeletableUploadKeys = isPostgres
+        ? null
         : await legacyAccount.listDeletableUserUploadKeys(me.id);
       const replacement = { email: anonymizedEmail(me.id), passwordHash: await hashPassword(deletionCredential()) };
-      const deleted = process.env.DATABASE_URL
+      const deleted = isPostgres
         ? await privacyRepo.deleteUserPrivacyBundle(me.id, replacement)
         : await legacyAccount.deleteUserPrivacyBundle(me.id, replacement);
       if (!deleted) throw new HttpError(404,'USER_NOT_FOUND','User not found');
-      // The database transaction deliberately preserves evidence-referenced
-      // objects. Remove only unreferenced personal uploads after the account
-      // record is anonymized; cleanup is idempotent for both local and S3
-      // storage and must not turn a completed deletion into a 500.
-      for (const key of deletableUploadKeys) {
+      const storageCleanupKeys = isPostgres
+        ? [...new Set([...(deleted.deletableUploadKeys || []), ...(deleted.pendingUploadIntentKeys || [])])]
+        : legacyDeletableUploadKeys;
+      // The database transaction preserves referenced evidence/chat objects.
+      // Pending presigned keys are attempted now but their intent rows remain as
+      // bounded tombstones so the cleanup worker can retry after URL expiry + grace.
+      // Cleanup is idempotent and failures must not reverse account deletion.
+      for (const key of storageCleanupKeys) {
         try { await storage.delete({ key }); }
         catch (error) { logEvent?.({ level: 'error', action: 'ACCOUNT_UPLOAD_CLEANUP_FAILED', key, userId: me.id, message: error?.message || String(error) }); }
       }

@@ -52,6 +52,7 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
           if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
         } catch (error) {
           try { await storage.delete({ key: file.key }); } catch (cleanupError) { logEvent({ level: 'error', action: 'ORPHAN_UPLOAD_CLEANUP_FAILED', key: file.key, message: cleanupError?.message || String(cleanupError) }); }
+          if (error?.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
           throw error;
         }
         return await sendJson(res, 201, data);
@@ -75,6 +76,7 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
         return sendJson(res, 200, { ...result, intentId: intent.id, uploadedBy: user.id });
       } catch (error) {
         if (error?.message === 'DIRECT_UPLOAD_UNSUPPORTED') throw new HttpError(409, 'DIRECT_UPLOAD_UNSUPPORTED', 'Direct upload requires S3-compatible storage');
+        if (error?.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
         throw error;
       }
     }
@@ -103,7 +105,11 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
         await storage.validateObject({ key, contentType });
         let completed;
         try { completed = await repo.completeUploadAtomic({ intentId: intent.id, key, userId: user.id, contentType, size: head.size, createdAt: now() }); }
-        catch (e) { if (e.code === 'INVALID_UPLOAD_INTENT') throw new HttpError(403, 'INVALID_UPLOAD_INTENT', 'Upload intent is invalid or expired'); throw e; }
+        catch (e) {
+          if (e.code === 'INVALID_UPLOAD_INTENT') throw new HttpError(403, 'INVALID_UPLOAD_INTENT', 'Upload intent is invalid or expired');
+          if (e.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
+          throw e;
+        }
         const created = completed.upload;
         return sendJson(res, completed.existing ? 200 : 201, { id: created.id, key, filename, contentType, size: created.size, uploadedBy: created.uploadedBy, createdAt: created.createdAt });
       }

@@ -47,7 +47,7 @@ test('chat capabilities route read receipts, private presence, preferences and g
 });
 test('chat attachments belong to the sender and only conversation participants can download them',()=>{
   const repository=read('backend/src/repository/human_chat.js'),routes=read('backend/src/routes/human_chat_routes.js');
-  assert.match(repository,/uploaded_by=\$2 FOR UPDATE/);
+  assert.match(repository,/uploaded_by=\$2 ORDER BY id FOR UPDATE/);
   assert.match(repository,/canAccessConversation/);
   assert.match(routes,/Cache-Control':'private, no-store'/);
   assert.match(routes,/X-Content-Type-Options':'nosniff'/);

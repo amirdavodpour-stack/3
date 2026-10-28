@@ -126,7 +126,7 @@ export async function postChatMessage(conversationId,userId,role,body,options={}
 
     let uploads=[];
     if(keys.length){
-      const {rows}=await client.query('SELECT id,storage_key,uploaded_by,content_type,size FROM uploads WHERE storage_key=ANY($1::text[]) AND uploaded_by=$2 FOR UPDATE',[keys,userId]);
+      const {rows}=await client.query('SELECT id,storage_key,uploaded_by,content_type,size FROM uploads WHERE storage_key=ANY($1::text[]) AND uploaded_by=$2 ORDER BY id FOR UPDATE',[keys,userId]);
       if(rows.length!==keys.length){const e=new Error('CHAT_ATTACHMENT_UPLOAD_NOT_FOUND');e.code='CHAT_ATTACHMENT_UPLOAD_NOT_FOUND';throw e;}
       if(rows.some(u=>!CHAT_MIME.has(String(u.content_type).toLowerCase()))){const e=new Error('CHAT_ATTACHMENT_TYPE_UNSUPPORTED');e.code='CHAT_ATTACHMENT_TYPE_UNSUPPORTED';throw e;}
       if(messageType==='VOICE'&&!String(rows[0].content_type).toLowerCase().startsWith('audio/')){const e=new Error('CHAT_VOICE_ATTACHMENT_INVALID');e.code='CHAT_VOICE_ATTACHMENT_INVALID';throw e;}

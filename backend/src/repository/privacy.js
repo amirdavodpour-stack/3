@@ -41,15 +41,49 @@ export async function getUserPrivacyBundle(userId) {
 
 export async function deleteUserPrivacyBundle(userId, replacement) {
   return withSqlTransaction(async(client)=>{
-    const u = await client.query(`SELECT id,role FROM users WHERE id=$1 FOR UPDATE`, [userId]);
-    if (!u.rows[0]) return false;
+    // NO KEY UPDATE still serializes account deletion but remains compatible with
+    // FK KEY SHARE locks taken when an in-flight chat/evidence write references the user.
+    // A stronger FOR UPDATE here can deadlock with the upload lock below.
+    const u = await client.query(`SELECT id,role FROM users WHERE id=$1 FOR NO KEY UPDATE`, [userId]);
+    if (!u.rows[0]) return null;
+
+    // Serialize deletion cleanup with every association path that locks the upload
+    // before adding an evidence/chat reference. Candidate keys are computed while
+    // these row locks are held, not in a stale pre-delete query in the route.
+    const { rows: ownedUploads } = await client.query(
+      `SELECT id,storage_key FROM uploads WHERE uploaded_by=$1 ORDER BY id FOR UPDATE`,
+      [userId],
+    );
+    const { rows: deletableUploads } = ownedUploads.length
+      ? await client.query(
+          `SELECT u.storage_key
+             FROM uploads u
+            WHERE u.id=ANY($1::uuid[])
+              AND NOT EXISTS (SELECT 1 FROM evidence e WHERE e.uri=('storage://' || u.storage_key))
+              AND NOT EXISTS (SELECT 1 FROM chat_message_attachments a WHERE a.upload_id=u.id)
+            ORDER BY u.id`,
+          [ownedUploads.map((upload) => upload.id)],
+        )
+      : { rows: [] };
+    const deletableUploadKeys = deletableUploads.map((upload) => upload.storage_key);
+
+    // Keep pending presigned intents as bounded cleanup tombstones. A signed PUT URL
+    // cannot be revoked when the account is deleted; the route attempts immediate
+    // deletion, and the existing worker retries after expiry + grace. Removing the
+    // intent here would lose the durable key if the client uploads after that attempt.
+    const { rows: pendingIntents } = await client.query(
+      `SELECT id,storage_key FROM upload_intents WHERE uploaded_by=$1 ORDER BY id FOR UPDATE`,
+      [userId],
+    );
+    const pendingUploadIntentKeys = pendingIntents.map((intent) => intent.storage_key);
+
     const tables = ['refresh_tokens','reset_tokens','notification_devices','notification_preferences','notifications','chat_presence','chat_conversation_preferences','chat_message_reads'];
     for (const t of tables) await client.query(`DELETE FROM ${t} WHERE user_id=$1`, [userId]);
     // Keep only coarse event metadata for aggregate analytics; remove linkable and arbitrary payload fields.
     await client.query(`UPDATE analytics_events SET user_id=NULL, anonymous_id=NULL, session_id=NULL, properties='{}'::jsonb, dedupe_key=NULL WHERE user_id=$1`, [userId]);
     // Crash text/context can contain historical PII even after identifiers are detached.
     await client.query(`UPDATE crash_reports SET user_id=NULL, anonymous_id=NULL, message='[REDACTED]', stack=NULL, context='{}'::jsonb WHERE user_id=$1`, [userId]);
-    await client.query(`DELETE FROM upload_intents WHERE uploaded_by=$1`, [userId]);
+    // Pending upload intents are intentionally retained for the expiry/grace cleanup worker.
     await client.query(`UPDATE evidence SET submitted_by=NULL WHERE submitted_by=$1`, [userId]);
     await client.query(`UPDATE uploads SET uploaded_by=NULL WHERE uploaded_by=$1`, [userId]);
     await client.query(`UPDATE jobs SET provider_id=NULL WHERE provider_id=$1 AND status IN ('DRAFT','PUBLISHED')`, [userId]);
@@ -61,6 +95,6 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     // Keep application lifecycle history for marketplace integrity, but erase the applicant's personal resume/skills content.
     await client.query(`UPDATE job_applications SET resume_text='', skills='' WHERE candidate_id=$1`, [userId]);
     await client.query(`DELETE FROM job_satisfaction_feedback WHERE user_id=$1`, [userId]);
-    return true;
+    return { deleted: true, deletableUploadKeys, pendingUploadIntentKeys };
   });
 }
