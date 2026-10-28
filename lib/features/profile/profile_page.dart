@@ -411,11 +411,21 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               ),
             ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const ValueKey('profile-about-hope-semantic-target'),
-            onPressed: () => Navigator.push(context, HopeRoutes.about()),
-            icon: const HopeIcon(HopeV2Icons.insights, size: 19),
-            label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
+          ConstrainedBox(
+            // Keep the full visual and semantic target at least 48dp even when
+            // inherited compact-density styles interact with enlarged text.
+            constraints: const BoxConstraints(minHeight: 48),
+            child: OutlinedButton.icon(
+              key: const ValueKey('profile-about-hope-semantic-target'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                tapTargetSize: MaterialTapTargetSize.padded,
+                visualDensity: VisualDensity.standard,
+              ),
+              onPressed: () => Navigator.push(context, HopeRoutes.about()),
+              icon: const HopeIcon(HopeV2Icons.insights, size: 19),
+              label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
+            ),
           ),
           const SizedBox(height: 8),
           ListTile(
