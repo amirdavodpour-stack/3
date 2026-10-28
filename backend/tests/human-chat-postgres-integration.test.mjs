@@ -1131,6 +1131,7 @@ test('direct payment-release webhook closes job chat in the same settlement tran
   );
   const payment = payments[0];
   assert.ok(payment?.job_id);
+  await pool.query("UPDATE jobs SET status='DELIVERED' WHERE id=$1", [payment.job_id]);
   await pool.query("UPDATE jobs SET status='COMPLETED' WHERE id=$1", [payment.job_id]);
   const { rows: conversations } = await pool.query(
     "INSERT INTO chat_conversations(id,kind,job_id,status,title) VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 webhook settlement chat') RETURNING id",
