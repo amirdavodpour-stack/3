@@ -1071,7 +1071,7 @@ test('mismatched payment-held callback is ignored and opens reconciliation when 
   );
   assert.equal(cases.length, 1);
   assert.equal(cases[0].severity, 'CRITICAL');
-  assert.equal(cases[0].expected.allowedStatus, 'HOLD_PENDING');
+  assert.equal(cases[0].expected.allowedPaymentStatus, 'HOLD_PENDING');
   assert.equal(cases[0].observed.paymentStatus, 'HOLD_FAILED');
   const { rows: journalRows } = await pool.query(
     `SELECT id FROM financial_operations WHERE idempotency_key=$1`,
