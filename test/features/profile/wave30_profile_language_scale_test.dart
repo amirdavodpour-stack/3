@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -162,10 +163,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(aboutTarget, findsOneWidget);
-      final aboutTargetSemantics = tester.getSemantics(aboutTarget);
+      final aboutTargetNode = tester.getSemantics(aboutTarget);
+      final aboutTargetSemantics = aboutTargetNode.getSemanticsData();
       expect(aboutTargetSemantics.hasAction(SemanticsAction.tap), isTrue);
       expect(
-        aboutTargetSemantics.rect.height,
+        aboutTargetNode.rect.height,
         greaterThanOrEqualTo(48),
         reason: 'About HOPE must keep a 48dp semantic tap target at 1.5x text scale.',
       );
