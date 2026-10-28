@@ -9,6 +9,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -77,7 +78,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData.light(),
+          theme: AppTheme.dark(),
           locale: const Locale('en'),
           supportedLocales: const [Locale('fa'), Locale('en')],
           localizationsDelegates: const [
@@ -147,6 +148,26 @@ void main() {
       expect(
         selectorRect.bottom,
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
+      );
+      final semanticsHandle = tester.ensureSemantics();
+      addTearDown(semanticsHandle.dispose);
+      final aboutTarget = find.byKey(
+        const ValueKey('profile-about-hope-semantic-target'),
+      );
+      await tester.scrollUntilVisible(
+        aboutTarget,
+        120,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 20,
+      );
+      await tester.pumpAndSettle();
+      expect(aboutTarget, findsOneWidget);
+      final aboutTargetSemantics = tester.getSemantics(aboutTarget);
+      expect(aboutTargetSemantics.hasAction(SemanticsAction.tap), isTrue);
+      expect(
+        aboutTargetSemantics.rect.height,
+        greaterThanOrEqualTo(48),
+        reason: 'About HOPE must keep a 48dp semantic tap target at 1.5x text scale.',
       );
       expect(tester.takeException(), isNull);
     },
