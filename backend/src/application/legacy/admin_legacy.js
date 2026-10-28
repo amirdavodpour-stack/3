@@ -44,7 +44,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
     getAdminUser(id) { return db.collection.users.find((x) => x.id === id) || null; },
     grantAdminByEmail(email, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);
-      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actor.googleSubject || '').trim()) {
         const error = new Error('PRIMARY_ADMIN_ONLY');
         error.code = 'PRIMARY_ADMIN_ONLY';
         throw error;
@@ -67,7 +67,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
     },
     revokeAdminById(id, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);
-      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actor.googleSubject || '').trim()) {
         const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
       }
       const target = db.collection.users.find((x) => x.id === id);

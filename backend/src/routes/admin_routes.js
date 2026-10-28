@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminPermissions, isPrimaryAdmin, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminPermissions, isPrimaryAdmin, isPrimaryAdminEmail, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
 import { DISPUTE_DECISIONS } from '../services/dispute_resolution.js';
 
 const legacyVerifiedAdmins = new Map();
@@ -141,7 +141,7 @@ export function createAdminRoutes({ authUser, requireAdmin, readBody, sendJson, 
       const target=process.env.DATABASE_URL ? await adminUseCases.getAdminUser(id) : legacyAdmin.getAdminUser(id);
       if(!target) throw new HttpError(404,'USER_NOT_FOUND','User not found');
       if(target.role==='ADMIN'){
-        if(isPrimaryAdmin(target)) throw new HttpError(403,'PRIMARY_ADMIN_PROTECTED','The primary administrator cannot be changed by the user-status control');
+        if(isPrimaryAdminEmail(target.email)) throw new HttpError(403,'PRIMARY_ADMIN_PROTECTED','The primary administrator account cannot be changed by the user-status control');
         assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
       }
       if(id===me.id && status==='SUSPENDED') throw new HttpError(400,'SELF_SUSPEND_FORBIDDEN','An admin cannot suspend their own account');

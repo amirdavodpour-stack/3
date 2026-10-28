@@ -2,7 +2,7 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { jobFromRow, applicationFromRow, userFromRow } from './mappers.js';
 
-const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt"`;
+const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
 
 export async function getAdminSummary() {
   const p = requirePool();
@@ -48,8 +48,8 @@ export async function setUserStatus(id,status) {
 }
 export async function revokeAdminById(id, actorId) {
   return withSqlTransaction(async (client) => {
-    const { rows: actors } = await client.query(`SELECT id,email,role FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
-    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+    const { rows: actors } = await client.query(`SELECT id,email,role,google_subject FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
+    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actors[0].google_subject || '').trim()) {
       const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
     }
     const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE id=$1 FOR UPDATE`, [id]);
@@ -106,8 +106,8 @@ export async function deleteJob(id) {
 
 export async function grantAdminByEmail(email, actorId) {
   return withSqlTransaction(async (client) => {
-    const { rows: actors } = await client.query(`SELECT id,email,role FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
-    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') {
+    const { rows: actors } = await client.query(`SELECT id,email,role,google_subject FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
+    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actors[0].google_subject || '').trim()) {
       const error = new Error('PRIMARY_ADMIN_ONLY');
       error.code = 'PRIMARY_ADMIN_ONLY';
       throw error;

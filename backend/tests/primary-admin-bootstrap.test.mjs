@@ -12,8 +12,9 @@ test('the designated primary admin email is recognized case-insensitively', () =
 });
 
 test('only the designated email bootstraps as ADMIN', () => {
-  assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: true }), true);
-  assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: false }), false);
+  assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: true, googleSubject: 'verified-subject' }), true);
+  assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: true }), false);
+  assert.equal(shouldBootstrapPrimaryAdmin({ email: 'amir.davodpour@gmail.com', verifiedIdentity: false, googleSubject: 'verified-subject' }), false);
   assert.equal(shouldBootstrapPrimaryAdmin('other@example.com'), false);
 });
 

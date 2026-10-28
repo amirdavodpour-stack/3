@@ -136,7 +136,7 @@ export function createAuthRoutes({
         email: identity.email,
         passwordHash: await hashPassword(randomToken(48)),
         displayName: identity.displayName,
-        role: shouldBootstrapPrimaryAdmin({ email: identity.email, verifiedIdentity: true }) ? 'ADMIN' : 'USER',
+        role: shouldBootstrapPrimaryAdmin({ email: identity.email, verifiedIdentity: true, googleSubject: identity.subject }) ? 'ADMIN' : 'USER',
         status: 'ACTIVE',
         sessionVersion: 0,
         createdAt: now(),

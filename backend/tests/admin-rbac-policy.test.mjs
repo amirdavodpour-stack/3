@@ -6,7 +6,7 @@ import {
   getAdminPermissions,
 } from '../src/application/admin_panel_access.js';
 
-const owner = { id: 'owner-1', role: 'ADMIN', email: 'amir.davodpour@gmail.com' };
+const owner = { id: 'owner-1', role: 'ADMIN', email: 'amir.davodpour@gmail.com', googleSubject: 'verified-google-subject' };
 const admin = { id: 'admin-1', role: 'ADMIN', email: 'ops@example.com' };
 const user = { id: 'user-1', role: 'USER', email: 'user@example.com' };
 

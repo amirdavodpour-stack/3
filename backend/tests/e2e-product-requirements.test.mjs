@@ -145,7 +145,9 @@ test('job applications are deadline-aware and employer candidate view is identit
   assert.ok(!('candidateId' in applied.body.data));
 
   const admin = await register('product-admin@example.com', 'Admin User');
-  db.collection.users.find((u) => u.id === admin.user.id).role = 'ADMIN';
+  const primaryAdminRow = db.collection.users.find((u) => u.id === admin.user.id);
+  primaryAdminRow.role = 'ADMIN';
+  primaryAdminRow.googleSubject = 'verified-google-subject';
   await db.save();
   await unlockAdminPanel(admin);
   const apps = await json('/admin/applications', {headers:{Authorization:`Bearer ${admin.accessToken}`}});
@@ -171,7 +173,9 @@ test('admin delete removes only non-transactional opportunities and mirrors rela
   const owner = await register('delete-owner@example.com');
   const candidate = await register('delete-candidate@example.com');
   const admin = await register('amir.davodpour@gmail.com', 'Primary Admin');
-  db.collection.users.find((u) => u.id === admin.user.id).role = 'ADMIN';
+  const primaryAdminRow = db.collection.users.find((u) => u.id === admin.user.id);
+  primaryAdminRow.role = 'ADMIN';
+  primaryAdminRow.googleSubject = 'verified-google-subject';
   await db.save();
   await unlockAdminPanel(admin);
 
