@@ -1131,6 +1131,7 @@ test('direct payment-release webhook closes job chat in the same settlement tran
   );
   const payment = payments[0];
   assert.ok(payment?.job_id);
+  await pool.query('UPDATE payments SET provider_payout=99,platform_fee=1,employer_charge=100 WHERE id=$1', [paymentId]);
   await pool.query("UPDATE jobs SET status='DELIVERED' WHERE id=$1", [payment.job_id]);
   await pool.query("UPDATE jobs SET status='COMPLETED' WHERE id=$1", [payment.job_id]);
   const { rows: conversations } = await pool.query(
@@ -1146,8 +1147,8 @@ test('direct payment-release webhook closes job chat in the same settlement tran
     paymentId,
     payerId: payment.payer_id,
     employerCharge: '100',
-    providerPayout: '100',
-    platformFee: '0',
+    providerPayout: '99',
+    platformFee: '1',
     idempotencyKey: 'seed-release-hold-' + paymentId,
   }));
 
