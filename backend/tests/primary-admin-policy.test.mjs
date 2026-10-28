@@ -8,6 +8,8 @@ import {
   isPrimaryAdmin,
 } from '../src/application/admin_panel_access.js';
 import { requireAdmin } from '../src/policies/validation.js';
+import { createPaymentRoutes } from '../src/routes/payment_routes.js';
+import { HttpError } from '../src/api/http_error.js';
 
 const owner = { id: 'owner-1', role: 'ADMIN', email: 'amir.davodpour@gmail.com', googleSubject: 'verified-google-subject' };
 const unlinkedOwner = { id: 'owner-unlinked', role: 'ADMIN', email: 'amir.davodpour@gmail.com' };
@@ -82,8 +84,6 @@ test('permission guard rejects a standard admin at protected owner-only boundari
   assert.throws(() => assertAdminPermission(user, ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER), /ADMIN_PERMISSION_DENIED/);
 });
 
-import { createPaymentRoutes } from '../src/routes/payment_routes.js';
-import { HttpError } from '../src/api/http_error.js';
 
 const foreignJob = { id: 'foreign-job', ownerId: 'another-owner', providerId: 'another-worker', title: 'Private financial record' };
 const foreignPayment = { id: 'foreign-payment', status: 'HELD', amount: '900', providerRef: 'private-provider-ref' };
@@ -145,7 +145,7 @@ test('verified operational admin with finance permission can read foreign financ
     const route = makeForeignFinancialsRoute(admin, { postgres: true, panelVerified: true });
     const response = await route({ method: 'GET', url: '/api/v1/payments/financials/foreign-job', headers: {} }, {}, ['payments', 'financials', 'foreign-job']);
     assert.equal(response.status, 200);
-    assert.equal(response.data.paymentId, foreignPayment.id);
+    assert.equal(response.data.payment.paymentId, foreignPayment.id);
     assert.deepEqual(response.data.ledger, [{ id: 'private-ledger-entry' }]);
   });
 });

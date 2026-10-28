@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import { validateIdempotencyPair, paymentAmountForJob, mapPaymentMutationError } from '../application/payment_policy.js';
 import { verifyPaymentWebhookSignature, normalizePaymentWebhookBody, applyLocalPaymentWebhook } from '../application/payment_webhook.js';
+import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_panel_access.js';
+import { requireAdmin } from '../policies/validation.js';
 export function createPaymentRoutes({
   authUser, readBody, readRawBody, sendJson, HttpError, config, db, repo, getJob,
   enforceJobState, readIdempotencyKey, requireFields, enumField, paymentView, relatedJob, withTransaction, createAudit,
@@ -34,7 +36,13 @@ export function createPaymentRoutes({
   }
   if (req.method === 'GET' && parts[1] === 'financials' && parts[2]) {
     const me = await authUser(req); const job = await getJob(parts[2]); if (!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
-    if (!relatedJob(me.id, job) && me.role !== 'ADMIN') throw new HttpError(403,'FORBIDDEN','You are not a participant in this job');
+    if (!relatedJob(me.id, job)) {
+      const admin = requireAdmin(me);
+      assertAdminPermission(admin, ADMIN_PERMISSIONS.VIEW_FINANCE);
+      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(admin.id, config?.adminPanelVerificationMinutes ?? 15))) {
+        throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
+      }
+    }
     const payment = process.env.DATABASE_URL ? await paymentUseCases.findByJob(job.id) : paymentLegacy.findByJob(job.id);
     const ledger = payment && process.env.DATABASE_URL ? await repo.listLedgerEntriesForPayment(payment.id) : (payment ? paymentLegacy.listLedgerEntries(payment.id) : []);
     return sendJson(res,200,{payment:payment?await paymentView(payment,job):await paymentView(null,job),ledger});
