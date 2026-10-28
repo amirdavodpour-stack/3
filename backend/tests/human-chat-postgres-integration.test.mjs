@@ -730,7 +730,12 @@ test('account deletion serializes read receipts, presence and preferences before
         SELECT COUNT(*)::int AS count FROM pg_stat_activity
         WHERE datname=current_database() AND pid<>pg_backend_pid()
           AND wait_event_type='Lock'
-          AND query ILIKE '%lockActiveChatAccount%'
+          AND (
+            query ILIKE '%lockActiveChatAccount%'
+            OR query ILIKE '%INSERT INTO chat_message_reads%'
+            OR query ILIKE '%INSERT INTO chat_presence%'
+            OR query ILIKE '%INSERT INTO chat_conversation_preferences%'
+          )
       `);
       const blockedOnAccount = Number(rows[0]?.count || 0);
       const settledCount = outcomes.filter(Boolean).length;
