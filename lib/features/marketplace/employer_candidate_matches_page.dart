@@ -213,12 +213,35 @@ class EmployerCandidateMatchesPage extends StatelessWidget {
   Widget _comparisonMatrix(BuildContext context) {
     final candidates = data.candidates.take(3).toList(growable: false);
     const keys = ['skills', 'experience', 'location', 'salary'];
-    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
+    final textScaler = MediaQuery.textScalerOf(context);
+    final enlargedText = textScaler.scale(1) > 1.2;
+    var metricLabelColumnWidth = 86.0;
+    if (enlargedText) {
+      final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w900,
+      );
+      for (final key in keys) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: _componentLabel(context, key),
+            style: labelStyle,
+          ),
+          textDirection: Directionality.of(context),
+          textScaler: textScaler,
+          locale: Localizations.localeOf(context),
+          maxLines: 1,
+        )..layout();
+        // The cell includes 18dp of horizontal padding plus a small rounding
+        // reserve so a localized metric label never breaks inside a word.
+        final requiredWidth = painter.width + 24;
+        if (requiredWidth > metricLabelColumnWidth) {
+          metricLabelColumnWidth = requiredWidth;
+        }
+        painter.dispose();
+      }
+    }
     final widths = <int, TableColumnWidth>{
-      // At enlarged text sizes the long metric labels must stay whole words.
-      // The horizontal viewport already supports scrolling when this wider
-      // label column needs more room on narrow screens.
-      0: FixedColumnWidth(enlargedText ? 160 : 86),
+      0: FixedColumnWidth(metricLabelColumnWidth),
     };
     for (var index = 0; index < candidates.length; index++) {
       widths[index + 1] = const FixedColumnWidth(110);
