@@ -64,7 +64,10 @@ export async function lockActiveWalletUsers(client, userIds) {
 
 export async function ensureWalletForUserPublic(userId) {
   requirePool();
-  return withSqlTransaction((client) => ensureWalletForUser(userId, client));
+  return withSqlTransaction(async (client) => {
+    await lockActiveWalletUsers(client, [userId]);
+    return ensureWalletForUser(userId, client);
+  });
 }
 
 export async function getWalletByUserId(userId) {
