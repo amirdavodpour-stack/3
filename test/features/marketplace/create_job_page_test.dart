@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show debugDumpRenderTree;
+import 'package:flutter/rendering.dart'
+    show debugDumpRenderTree, RenderParagraph;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
@@ -799,6 +800,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Step 1 of 5'), findsOneWidget);
       expect(find.text('Mission'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave 45 English creation progress keeps step labels on one line at 1.5x',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await _open(tester);
+
+      final progress = find.byKey(
+        const ValueKey('create-opportunity-progress'),
+      );
+      final criteria = find.descendant(
+        of: progress,
+        matching: find.text('Criteria'),
+      );
+      expect(criteria, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(criteria);
+      expect(
+        paragraph.computeLineMetrics(),
+        hasLength(1),
+        reason: 'A single-word wizard label must not break mid-word at 1.5x text scale.',
+      );
       expect(tester.takeException(), isNull);
     },
   );
