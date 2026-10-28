@@ -2893,92 +2893,102 @@ class HopeCreationProgress extends StatelessWidget {
                     ),
               ),
             ),
-            Row(
-              children: [
-                for (var step = 0; step < labelsFa.length; step++)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.only(
-                        end: step == labelsFa.length - 1 ? 0 : 5,
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: step <= safeIndex
-                                  ? Theme.of(context).colorScheme.primary
-                                  : HopeV2Surfaces.border(context)
-                                      .withValues(alpha: .6),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Container(
-                            width: stepIndicatorSize,
-                            height: stepIndicatorSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: step == safeIndex
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: .16)
-                                  : Theme.of(context).colorScheme.surface,
-                              border: Border.all(
-                                color: step <= safeIndex
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: .32)
-                                    : HopeV2Surfaces.border(context),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final minimumRailWidth = textScale >= 2.0
+                    ? 420.0
+                    : textScale >= 1.5
+                        ? 320.0
+                        : constraints.maxWidth;
+                final railWidth = constraints.maxWidth > minimumRailWidth
+                    ? constraints.maxWidth
+                    : minimumRailWidth;
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: railWidth,
+                    child: Row(
+                      children: [
+                        for (var step = 0; step < labelsFa.length; step++)
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                end: step == labelsFa.length - 1 || textScale >= 1.5
+                                    ? 0
+                                    : 5,
                               ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              en ? (step + 1).toString() : persianDigits[step],
-                              style: TextStyle(
-                                color: step <= safeIndex
-                                    ? HopeV2SemanticColors.textPrimary(context)
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FittedBox(
-                              // The five labels share a narrow rail on compact
-                              // screens. Keep each label intact on one line;
-                              // only scale down when a locale/font scale needs
-                              // slightly more room than its segment provides.
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.center,
-                              child: Text(
-                                en ? labelsEn[step] : labelsFa[step],
-                                maxLines: 1,
-                                softWrap: false,
-                                overflow: TextOverflow.visible,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: step == safeIndex
-                                          ? HopeV2SemanticColors.textPrimary(context)
-                                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                                      fontWeight: step == safeIndex
-                                          ? FontWeight.w900
-                                          : FontWeight.w700,
-                                      fontSize: 12,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    height: 3,
+                                    decoration: BoxDecoration(
+                                      color: step <= safeIndex
+                                          ? Theme.of(context).colorScheme.primary
+                                          : HopeV2Surfaces.border(context)
+                                              .withValues(alpha: .6),
+                                      borderRadius: BorderRadius.circular(99),
                                     ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Container(
+                                    width: stepIndicatorSize,
+                                    height: stepIndicatorSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: step == safeIndex
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(alpha: .16)
+                                          : Theme.of(context).colorScheme.surface,
+                                      border: Border.all(
+                                        color: step <= safeIndex
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: .32)
+                                            : HopeV2Surfaces.border(context),
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      en ? (step + 1).toString() : persianDigits[step],
+                                      style: TextStyle(
+                                        color: step <= safeIndex
+                                            ? HopeV2SemanticColors.textPrimary(context)
+                                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    en ? labelsEn[step] : labelsFa[step],
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.visible,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: step == safeIndex
+                                              ? HopeV2SemanticColors.textPrimary(context)
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                          fontWeight: step == safeIndex
+                                              ? FontWeight.w900
+                                              : FontWeight.w700,
+                                          fontSize: 12,
+                                          letterSpacing: 0,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
-              ],
+                );
+              },
             ),
           ],
         ),
