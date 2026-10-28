@@ -636,6 +636,141 @@ test('account deletion preserves a concurrent chat attachment, retains cleanup t
   }), inactiveAccount, 'deleted users cannot complete a retained presigned intent');
 });
 
+
+test('account deletion serializes read receipts, presence and preferences before they can recreate user metadata', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: users } = await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 deletion race user','USER','ACTIVE',0,NOW())
+     RETURNING id`,
+    [`r05-delete-chat-race-${suffix}@example.test`],
+  );
+  const userId = users[0].id;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT gen_random_uuid(),$1,$2,'R05 delete metadata race','Integration-only fixture',
+       c.id,'FIXED','FIXED',100,100,1,'R05 integration fixture','IN_PROGRESS',
+       'R05 test','MISSION','PUBLIC',NOW(),NOW()
+     FROM categories c WHERE c.is_active=TRUE
+     ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+     RETURNING id`,
+    [fixture.ownerId, userId],
+  );
+  assert.ok(jobs[0], 'race fixture requires an active category');
+  const { rows: conversations } = await pool.query(
+    `INSERT INTO chat_conversations(id,kind,job_id,status,title)
+     VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 delete metadata race')
+     RETURNING id`,
+    [jobs[0].id],
+  );
+  const conversationId = conversations[0].id;
+  await pool.query(
+    `INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
+     VALUES(gen_random_uuid(),$1,$2,'Seed message for deletion race','TEXT')`,
+    [conversationId, fixture.ownerId],
+  );
+  const { rows: auditRows } = await pool.query(
+    `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+     VALUES(gen_random_uuid(),'R05_CHAT_DELETE_RACE',$1,'test',$2,'{}'::jsonb,NOW())
+     RETURNING id`,
+    [userId, jobs[0].id],
+  );
+
+  const holder = await pool.connect();
+  let holderOpen = false;
+  let deletionPromise;
+  try {
+    await holder.query('BEGIN');
+    holderOpen = true;
+    await holder.query('SELECT id FROM audit_logs WHERE id=$1 FOR UPDATE', [auditRows[0].id]);
+
+    deletionPromise = deleteUserPrivacyBundle(userId, {
+      email: `deleted+${userId}@invalid.local`,
+      passwordHash: 'integration-only-deleted-account',
+    });
+
+    const deletionDeadline = Date.now() + 6000;
+    let deletionBlockedAfterMetadataCleanup = false;
+    while (Date.now() < deletionDeadline) {
+      const { rows } = await pool.query(`
+        SELECT pid FROM pg_stat_activity
+        WHERE datname=current_database() AND pid<>pg_backend_pid()
+          AND wait_event_type='Lock'
+          AND query ILIKE '%UPDATE audit_logs SET actor_id=NULL WHERE actor_id=$1%'
+      `);
+      if (rows.length) { deletionBlockedAfterMetadataCleanup = true; break; }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    assert.equal(
+      deletionBlockedAfterMetadataCleanup,
+      true,
+      'deletion must reach the post-chat-cleanup audit update before the metadata writers race',
+    );
+
+    const outcomes = [null, null, null];
+    const writers = [
+      markChatConversationRead(conversationId, userId, 'USER'),
+      updateChatPresence(conversationId, userId, 'USER', { online: true, typing: true }),
+      updateChatConversationPreferences(conversationId, userId, 'USER', { isPinned: true, isImportant: true }),
+    ];
+    const settledWriters = writers.map((writer, index) => writer.then(
+      (value) => { outcomes[index] = { ok: true, value }; },
+      (error) => { outcomes[index] = { ok: false, error }; },
+    ));
+
+    const writerDeadline = Date.now() + 6000;
+    let allWritersSettledOrSerialized = false;
+    while (Date.now() < writerDeadline) {
+      const { rows } = await pool.query(`
+        SELECT COUNT(*)::int AS count FROM pg_stat_activity
+        WHERE datname=current_database() AND pid<>pg_backend_pid()
+          AND wait_event_type='Lock'
+          AND query ILIKE '%lockActiveChatAccount%'
+      `);
+      const blockedOnAccount = Number(rows[0]?.count || 0);
+      const settledCount = outcomes.filter(Boolean).length;
+      if (settledCount + blockedOnAccount >= writers.length) {
+        allWritersSettledOrSerialized = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    assert.equal(
+      allWritersSettledOrSerialized,
+      true,
+      'each writer must either finish before deletion wins (regression) or wait on the account serialization lock',
+    );
+  } finally {
+    if (holderOpen) await holder.query('COMMIT').catch(() => {});
+    holder.release();
+  }
+
+  const deletion = await deletionPromise;
+  assert.equal(deletion.deleted, true);
+  await Promise.all(settledWriters);
+  for (const outcome of outcomes) {
+    assert.ok(outcome, 'every chat metadata writer must settle');
+    assert.equal(outcome.ok, false, 'writers queued behind deletion must not recreate metadata');
+    assert.equal(outcome.error?.code, 'ACCOUNT_INACTIVE');
+  }
+
+  const { rows: persisted } = await pool.query(
+    `SELECT
+       (SELECT COUNT(*)::int FROM chat_presence WHERE user_id=$1) AS presence,
+       (SELECT COUNT(*)::int FROM chat_conversation_preferences WHERE user_id=$1) AS preferences,
+       (SELECT COUNT(*)::int FROM chat_message_reads WHERE user_id=$1) AS reads`,
+    [userId],
+  );
+  assert.equal(persisted[0].presence, 0);
+  assert.equal(persisted[0].preferences, 0);
+  assert.equal(persisted[0].reads, 0);
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
