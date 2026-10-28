@@ -21,6 +21,17 @@ const messageFromRow = (r) => ({
 });
 const CHAT_MIME=new Set(['application/pdf','image/png','image/jpeg','image/webp','text/plain','audio/mp4','audio/mpeg','audio/wav']);
 const safeFilename=(value)=>String(value||'attachment').replace(/[\u0000-\u001f\u007f]/g,'').split(/[\\/]/).pop().trim().slice(0,255)||'attachment';
+async function lockActiveChatAccount(client,userId){
+  // Match account deletion's row-lock mode and lock order. The SQL comment is
+  // also an observable serialization marker for the PostgreSQL race contract.
+  const {rows}=await client.query(
+    'SELECT status FROM users WHERE id=$1 /* lockActiveChatAccount */ FOR NO KEY UPDATE',
+    [userId],
+  );
+  if(!rows[0]||rows[0].status!=='ACTIVE'){
+    const error=new Error('ACCOUNT_INACTIVE');error.code='ACCOUNT_INACTIVE';throw error;
+  }
+}
 
 export async function ensureJobChat(jobId) {
   return withSqlTransaction(async(client)=>{
@@ -149,21 +160,27 @@ export async function postChatMessage(conversationId,userId,role,body,options={}
   });
 }
 export async function markChatConversationRead(conversationId,userId,role){
-  const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
-  const {rows}=await requirePool().query(`INSERT INTO chat_message_reads(message_id,user_id,read_at)
-    SELECT m.id,$2,NOW() FROM chat_messages m WHERE m.conversation_id=$1 AND m.sender_id IS DISTINCT FROM $2
-    ON CONFLICT(message_id,user_id) DO NOTHING RETURNING read_at`,[conversationId,userId]);
-  const latest=rows.reduce((v,r)=>!v||new Date(r.read_at).getTime()>new Date(v).getTime()?r.read_at:v,null);
-  return {conversationId,readCount:rows.length,readAt:latest?.toISOString?.()??latest??new Date().toISOString()};
+  return withSqlTransaction(async(client)=>{
+    await lockActiveChatAccount(client,userId);
+    const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
+    const {rows}=await client.query(`INSERT INTO chat_message_reads(message_id,user_id,read_at)
+      SELECT m.id,$2,NOW() FROM chat_messages m WHERE m.conversation_id=$1 AND m.sender_id IS DISTINCT FROM $2
+      ON CONFLICT(message_id,user_id) DO NOTHING RETURNING read_at`,[conversationId,userId]);
+    const latest=rows.reduce((v,r)=>!v||new Date(r.read_at).getTime()>new Date(v).getTime()?r.read_at:v,null);
+    return {conversationId,readCount:rows.length,readAt:latest?.toISOString?.()??latest??new Date().toISOString()};
+  });
 }
 export async function updateChatPresence(conversationId,userId,role,{online=true,typing=false}={}){
-  const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
-  if(!online){await requirePool().query('DELETE FROM chat_presence WHERE conversation_id=$1 AND user_id=$2',[conversationId,userId]);return {conversationId,userId,online:false,typing:false};}
-  const {rows}=await requirePool().query(`INSERT INTO chat_presence(conversation_id,user_id,last_seen_at,typing_until)
-    VALUES($1,$2,NOW(),CASE WHEN $3 THEN NOW()+INTERVAL '8 seconds' ELSE NULL END)
-    ON CONFLICT(conversation_id,user_id) DO UPDATE SET last_seen_at=EXCLUDED.last_seen_at,typing_until=EXCLUDED.typing_until
-    RETURNING last_seen_at,typing_until`,[conversationId,userId,Boolean(typing)]);
-  return {conversationId,userId,online:true,typing:Boolean(rows[0]?.typing_until&&new Date(rows[0].typing_until).getTime()>Date.now()),lastSeenAt:rows[0]?.last_seen_at?.toISOString?.()??rows[0]?.last_seen_at??null};
+  return withSqlTransaction(async(client)=>{
+    await lockActiveChatAccount(client,userId);
+    const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
+    if(!online){await client.query('DELETE FROM chat_presence WHERE conversation_id=$1 AND user_id=$2',[conversationId,userId]);return {conversationId,userId,online:false,typing:false};}
+    const {rows}=await client.query(`INSERT INTO chat_presence(conversation_id,user_id,last_seen_at,typing_until)
+      VALUES($1,$2,NOW(),CASE WHEN $3 THEN NOW()+INTERVAL '8 seconds' ELSE NULL END)
+      ON CONFLICT(conversation_id,user_id) DO UPDATE SET last_seen_at=EXCLUDED.last_seen_at,typing_until=EXCLUDED.typing_until
+      RETURNING last_seen_at,typing_until`,[conversationId,userId,Boolean(typing)]);
+    return {conversationId,userId,online:true,typing:Boolean(rows[0]?.typing_until&&new Date(rows[0].typing_until).getTime()>Date.now()),lastSeenAt:rows[0]?.last_seen_at?.toISOString?.()??rows[0]?.last_seen_at??null};
+  });
 }
 export async function listChatPresence(conversationId,userId,role){
   const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
@@ -173,14 +190,17 @@ export async function listChatPresence(conversationId,userId,role){
   return rows.map(r=>({userId:r.user_id,userName:r.display_name||'',online:true,typing:Boolean(r.typing_until&&new Date(r.typing_until).getTime()>Date.now()),lastSeenAt:r.last_seen_at?.toISOString?.()??r.last_seen_at??null}));
 }
 export async function updateChatConversationPreferences(conversationId,userId,role,value={}){
-  const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
-  const pinned=typeof value.isPinned==='boolean'?value.isPinned:null,important=typeof value.isImportant==='boolean'?value.isImportant:null,archived=typeof value.isArchived==='boolean'?value.isArchived:null;
-  const {rows}=await requirePool().query(`INSERT INTO chat_conversation_preferences(conversation_id,user_id,is_pinned,is_important,is_archived)
-    VALUES($1,$2,COALESCE($3,FALSE),COALESCE($4,FALSE),COALESCE($5,FALSE))
-    ON CONFLICT(conversation_id,user_id) DO UPDATE SET is_pinned=COALESCE($3,chat_conversation_preferences.is_pinned),
-      is_important=COALESCE($4,chat_conversation_preferences.is_important),is_archived=COALESCE($5,chat_conversation_preferences.is_archived),updated_at=NOW()
-    RETURNING is_pinned,is_important,is_archived,updated_at`,[conversationId,userId,pinned,important,archived]);
-  const p=rows[0];return {conversationId,isPinned:p.is_pinned,isImportant:p.is_important,isArchived:p.is_archived,updatedAt:p.updated_at?.toISOString?.()??p.updated_at??null};
+  return withSqlTransaction(async(client)=>{
+    await lockActiveChatAccount(client,userId);
+    const conversation=await getChatConversationForUser(conversationId,userId,role);if(!conversation)return null;
+    const pinned=typeof value.isPinned==='boolean'?value.isPinned:null,important=typeof value.isImportant==='boolean'?value.isImportant:null,archived=typeof value.isArchived==='boolean'?value.isArchived:null;
+    const {rows}=await client.query(`INSERT INTO chat_conversation_preferences(conversation_id,user_id,is_pinned,is_important,is_archived)
+      VALUES($1,$2,COALESCE($3,FALSE),COALESCE($4,FALSE),COALESCE($5,FALSE))
+      ON CONFLICT(conversation_id,user_id) DO UPDATE SET is_pinned=COALESCE($3,chat_conversation_preferences.is_pinned),
+        is_important=COALESCE($4,chat_conversation_preferences.is_important),is_archived=COALESCE($5,chat_conversation_preferences.is_archived),updated_at=NOW()
+      RETURNING is_pinned,is_important,is_archived,updated_at`,[conversationId,userId,pinned,important,archived]);
+    const p=rows[0];return {conversationId,isPinned:p.is_pinned,isImportant:p.is_important,isArchived:p.is_archived,updatedAt:p.updated_at?.toISOString?.()??p.updated_at??null};
+  });
 }
 export async function getChatAttachmentForUser(attachmentId,userId,role){
   const {rows}=await requirePool().query(`SELECT a.id AS attachment_id,a.storage_key,a.filename,a.content_type,a.size,
