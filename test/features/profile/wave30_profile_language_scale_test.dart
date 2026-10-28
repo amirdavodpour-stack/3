@@ -151,27 +151,31 @@ void main() {
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
       );
       final semanticsHandle = tester.ensureSemantics();
-      addTearDown(semanticsHandle.dispose);
-      final aboutTarget = find.byKey(
-        const ValueKey('profile-about-hope-semantic-target'),
-      );
-      await tester.scrollUntilVisible(
-        aboutTarget,
-        120,
-        scrollable: find.byType(Scrollable).first,
-        maxScrolls: 20,
-      );
-      await tester.pumpAndSettle();
-      expect(aboutTarget, findsOneWidget);
-      final aboutTargetNode = tester.getSemantics(aboutTarget);
-      final aboutTargetSemantics = aboutTargetNode.getSemanticsData();
-      expect(aboutTargetSemantics.hasAction(SemanticsAction.tap), isTrue);
-      expect(
-        aboutTargetNode.rect.height,
-        greaterThanOrEqualTo(48),
-        reason: 'About HOPE must keep a 48dp semantic tap target at 1.5x text scale.',
-      );
-      expect(tester.takeException(), isNull);
+      try {
+        final aboutTarget = find.byKey(
+          const ValueKey('profile-about-hope-semantic-target'),
+        );
+        await tester.scrollUntilVisible(
+          aboutTarget,
+          120,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 20,
+        );
+        await tester.pumpAndSettle();
+        expect(aboutTarget, findsOneWidget);
+        final aboutTargetNode = tester.getSemantics(aboutTarget);
+        final aboutTargetSemantics = aboutTargetNode.getSemanticsData();
+        expect(aboutTargetSemantics.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          aboutTargetNode.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'About HOPE must keep a 48dp semantic tap target at 1.5x text scale.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        // Flutter verifies semantics-handle disposal before test tearDown callbacks.
+        semanticsHandle.dispose();
+      }
     },
   );
 }
