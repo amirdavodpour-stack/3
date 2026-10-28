@@ -41,6 +41,27 @@ async function ensureWalletForUser(userId, client) {
   return rows[0];
 }
 
+async function lockActiveTransferUsers(client, userIds) {
+  // Account deletion takes this same row lock before account cleanup. Lock both
+  // users in deterministic order before creating/locking either wallet so a
+  // transfer cannot race the deletion state transition or deadlock an opposite
+  // direction transfer.
+  const ids = [...new Set(userIds.map((id) => String(id)))].sort();
+  const { rows } = await client.query(`
+    SELECT id,status FROM users
+    WHERE id=ANY($1::uuid[])
+    ORDER BY id /* lockActiveTransferUsers */ FOR NO KEY UPDATE
+  `, [ids]);
+  const statusById = new Map(rows.map((row) => [String(row.id), row.status]));
+  for (const id of ids) {
+    if (statusById.get(id) !== 'ACTIVE') {
+      const error = new Error('ACCOUNT_INACTIVE');
+      error.code = 'ACCOUNT_INACTIVE';
+      throw error;
+    }
+  }
+}
+
 export async function ensureWalletForUserPublic(userId) {
   requirePool();
   return withSqlTransaction((client) => ensureWalletForUser(userId, client));
@@ -288,6 +309,7 @@ export async function transferAvailable({ sourceUserId, destinationUserId, amoun
   return withSqlTransaction(async (client) => {
     const idem = await beginIdempotency(client, { principalId: sourceUserId, operation: 'TRANSFER', key, requestHash: `${destinationUserId}:${value}:${referenceType}:${referenceId}` });
     if (idem.existing) return JSON.parse(idem.existing.response_body);
+    await lockActiveTransferUsers(client, [sourceUserId, destinationUserId]);
     const source = await ensureWalletForUser(sourceUserId, client); const destination = await ensureWalletForUser(destinationUserId, client);
     assertActive(source); assertActive(destination);
     const [lockedSource, lockedDestination] = await lockWallets(client, [source.id, destination.id]);
