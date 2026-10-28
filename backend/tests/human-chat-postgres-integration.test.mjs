@@ -22,6 +22,7 @@ const modules = enabled
       import('../src/wallet_ledger.js'),
       import('../src/repository/payouts.js'),
       import('../src/config.js'),
+      import('../src/repository/payment_webhooks.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -31,6 +32,7 @@ const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] ||
 const { transferAvailable, creditWallet, getWalletByUserId, postInternalPaymentHoldWithClient } = modules[5] || {};
 const { requestPayoutAtomic } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
+const { applyPaymentWebhookAtomic } = modules[8] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -1006,6 +1008,105 @@ test('payout reservation rejects a deleted account and does not move its availab
   assert.equal(String(wallet.locked_balance), '0');
   const { rows: payouts } = await pool.query('SELECT id FROM payouts WHERE user_id=$1', [userId]);
   assert.equal(payouts.length, 0);
+});
+
+
+async function createWebhookMismatchPayment(status, label) {
+  const pool = dbModule.getPool();
+  const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT gen_random_uuid(),$1,$2,$3,'Webhook state mismatch integration fixture',
+       c.id,'FIXED','FIXED',100,100,1,'R05 webhook fixture','IN_PROGRESS',
+       'R05 test','MISSION','PUBLIC',NOW(),NOW()
+     FROM categories c WHERE c.is_active=TRUE
+     ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+     RETURNING id`,
+    [fixture.ownerId, fixture.workerId, `R05 webhook ${suffix}`],
+  );
+  assert.ok(jobs[0], 'webhook fixture requires an active category');
+  const paymentId = crypto.randomUUID();
+  const providerRef = `provider-ref-${suffix}`;
+  await pool.query(
+    `INSERT INTO payments(
+       id,job_id,payer_id,payee_id,amount,status,provider_ref,currency,
+       base_amount,employer_charge,provider_payout,platform_fee,created_at,updated_at
+     ) VALUES($1,$2,$3,$4,100,$5,$6,'TOMAN',100,100,100,0,NOW(),NOW())`,
+    [paymentId,jobs[0].id,fixture.ownerId,fixture.workerId,status,providerRef],
+  );
+  return { paymentId, providerRef };
+}
+
+test('mismatched payment-held callback is ignored and opens reconciliation when payment hold had failed', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const { paymentId, providerRef } = await createWebhookMismatchPayment('HOLD_FAILED', 'hold-failed');
+  const eventId = `R05-webhook-state-conflict-${paymentId}`;
+  const result = await applyPaymentWebhookAtomic({
+    eventId,
+    eventType: 'PAYMENT_HELD',
+    paymentId,
+    providerRef,
+    payload: { eventId, eventType: 'PAYMENT_HELD', paymentId, providerRef },
+  });
+
+  assert.equal(result.processed, true, 'a signed mismatch is acknowledged so the provider does not retry it forever');
+  assert.equal(result.ignored, true);
+  assert.equal(result.reason, 'PAYMENT_STATE_MISMATCH');
+  const { rows: paymentRows } = await pool.query('SELECT status FROM payments WHERE id=$1', [paymentId]);
+  assert.equal(paymentRows[0].status, 'HOLD_FAILED', 'the mismatched event must not silently move the payment to HELD');
+  const { rows: providerRows } = await pool.query(
+    'SELECT status FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
+    [appConfig.paymentProvider, eventId],
+  );
+  assert.equal(providerRows[0].status, 'IGNORED');
+  const { rows: cases } = await pool.query(
+    `SELECT case_type,severity,expected,observed FROM reconciliation_cases
+      WHERE case_type='PAYMENT_WEBHOOK_STATE_MISMATCH' AND resource_type='payment' AND resource_id=$1
+        AND status IN ('OPEN','INVESTIGATING')`,
+    [paymentId],
+  );
+  assert.equal(cases.length, 1);
+  assert.equal(cases[0].severity, 'CRITICAL');
+  assert.equal(cases[0].expected.allowedStatus, 'HOLD_PENDING');
+  assert.equal(cases[0].observed.paymentStatus, 'HOLD_FAILED');
+  const { rows: journalRows } = await pool.query(
+    `SELECT id FROM financial_operations WHERE idempotency_key=$1`,
+    [`internal:webhook:hold:${eventId}`],
+  );
+  assert.equal(journalRows.length, 0, 'no wallet hold may be posted from a state-mismatched event');
+});
+
+test('duplicate state callback after the transition is already reflected is ignored without a new reconciliation case', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const { paymentId, providerRef } = await createWebhookMismatchPayment('HELD', 'already-held');
+  const eventId = `R05-webhook-stale-held-${paymentId}`;
+  const result = await applyPaymentWebhookAtomic({
+    eventId,
+    eventType: 'PAYMENT_HELD',
+    paymentId,
+    providerRef,
+    payload: { eventId, eventType: 'PAYMENT_HELD', paymentId, providerRef },
+  });
+
+  assert.equal(result.processed, true);
+  assert.equal(result.ignored, true);
+  assert.equal(result.reason, 'ALREADY_APPLIED');
+  const { rows: providerRows } = await pool.query(
+    'SELECT status FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
+    [appConfig.paymentProvider, eventId],
+  );
+  assert.equal(providerRows[0].status, 'IGNORED');
+  const { rows: cases } = await pool.query(
+    `SELECT id FROM reconciliation_cases
+      WHERE case_type='PAYMENT_WEBHOOK_STATE_MISMATCH' AND resource_type='payment' AND resource_id=$1
+        AND status IN ('OPEN','INVESTIGATING')`,
+    [paymentId],
+  );
+  assert.equal(cases.length, 0);
 });
 
 after(async () => {
