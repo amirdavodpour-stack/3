@@ -80,7 +80,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'کاربر نمونه'},
+        user: {'id': 'runtime-user', 'displayName': _evidenceDisplayName},
       );
 
   @override
@@ -92,7 +92,7 @@ class _EvidenceAuthRepository implements AuthRepository {
       const AuthSession(
         accessToken: 'runtime-access',
         refreshToken: 'runtime-refresh',
-        user: {'id': 'runtime-user', 'displayName': 'کاربر نمونه'},
+        user: {'id': 'runtime-user', 'displayName': _evidenceDisplayName},
       );
 
   @override
@@ -555,7 +555,7 @@ class _EvidenceChatRepository implements ChatRepository {
             id: 'message-runtime-2',
             conversationId: conversationId,
             senderId: 'runtime-user',
-            senderName: 'کاربر نمونه',
+            senderName: _evidenceDisplayName,
             body: 'دریافت شد؛ نسخه نهایی را بررسی می‌کنم.',
             createdAt: DateTime.utc(2026, 9, 21, 6, 4),
           ),
@@ -571,7 +571,7 @@ class _EvidenceChatRepository implements ChatRepository {
         id: 'message-runtime-3',
         conversationId: conversationId,
         senderId: 'runtime-user',
-        senderName: 'کاربر نمونه',
+        senderName: _evidenceDisplayName,
         body: message,
         createdAt: DateTime.utc(2026, 9, 21, 6, 5),
       );
@@ -725,7 +725,7 @@ Future<({AuthController auth, HopeSettingsController settings, ApplicationRegist
   final auth = AuthController(_EvidenceAuthRepository(), SecureStore());
   await auth.applyRefreshedUser({
     'id': 'runtime-user',
-    'displayName': 'کاربر نمونه',
+    'displayName': _evidenceDisplayName,
   });
   print('HOPE_RUNTIME_PREPARE:google-start');
   await _runtimeGoogleSignIn.initialize();
@@ -821,6 +821,8 @@ const _responsiveOnly =
     bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false);
 const _captureLocale =
     String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '');
+// Runtime evidence should use a realistic identity in the selected capture locale.
+const _evidenceDisplayName = _captureLocale == 'en' ? 'Jordan Lee' : 'رها سادات';
 const _captureTheme =
     String.fromEnvironment('HOPE_CAPTURE_THEME', defaultValue: 'dark');
 const bool _captureLightTheme = _captureTheme == 'light';
