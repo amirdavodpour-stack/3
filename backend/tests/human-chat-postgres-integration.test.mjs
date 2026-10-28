@@ -20,13 +20,17 @@ const modules = enabled
       import('../src/repository/privacy.js'),
       import('../src/repository/storage.js'),
       import('../src/wallet_ledger.js'),
+      import('../src/repository/payouts.js'),
+      import('../src/config.js'),
     ])
   : [];
 const dbModule = modules[0];
 const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
-const { transferAvailable, creditWallet, getWalletByUserId } = modules[5] || {};
+const { transferAvailable, creditWallet, getWalletByUserId, postInternalPaymentHoldWithClient } = modules[5] || {};
+const { requestPayoutAtomic } = modules[6] || {};
+const { config: appConfig } = modules[7] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -887,6 +891,121 @@ test('wallet transfer serializes with account deletion and rejects after source 
   assert.equal(outcome?.error?.code, 'ACCOUNT_INACTIVE');
   assert.equal(String((await getWalletByUserId(sourceId)).available_balance), '3200');
   assert.equal(String((await getWalletByUserId(destinationId)).available_balance), '300');
+});
+
+
+async function runWalletMutationTransaction(callback) {
+  const client = await dbModule.getPool().connect();
+  try {
+    await client.query('BEGIN');
+    const value = await callback(client);
+    await client.query('COMMIT');
+    return value;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+test('wallet credit rejects deleted targets before creating or crediting a wallet', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const emptyUserId = await createTransferTestUser(pool, 'credit-deleted-empty');
+  await pool.query("UPDATE users SET status='DELETED' WHERE id=$1", [emptyUserId]);
+
+  await assert.rejects(
+    creditWallet({
+      userId: emptyUserId,
+      amount: '500',
+      idempotencyKey: `credit-deleted-empty-${emptyUserId}`,
+    }),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+  assert.equal(await getWalletByUserId(emptyUserId), null);
+
+  const fundedUserId = await createTransferTestUser(pool, 'credit-deleted-funded');
+  await creditWallet({
+    userId: fundedUserId,
+    amount: '1400',
+    idempotencyKey: `credit-seed-deleted-funded-${fundedUserId}`,
+  });
+  await pool.query("UPDATE users SET status='DELETED' WHERE id=$1", [fundedUserId]);
+
+  await assert.rejects(
+    creditWallet({
+      userId: fundedUserId,
+      amount: '500',
+      idempotencyKey: `credit-after-delete-${fundedUserId}`,
+    }),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+  assert.equal(String((await getWalletByUserId(fundedUserId)).available_balance), '1400');
+});
+
+test('internal payment hold rejects a deleted payer before reserving funds', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const payerId = await createTransferTestUser(pool, 'hold-deleted-payer');
+  await creditWallet({
+    userId: payerId,
+    amount: '2600',
+    idempotencyKey: `hold-seed-deleted-payer-${payerId}`,
+  });
+  await pool.query("UPDATE users SET status='DELETED' WHERE id=$1", [payerId]);
+  const paymentId = crypto.randomUUID();
+
+  await assert.rejects(
+    runWalletMutationTransaction((client) => postInternalPaymentHoldWithClient(client, {
+      paymentId,
+      payerId,
+      employerCharge: '1100',
+      providerPayout: '1000',
+      platformFee: '100',
+      idempotencyKey: `hold-deleted-payer-${paymentId}`,
+    })),
+    (error) => error?.code === 'ACCOUNT_INACTIVE',
+  );
+
+  const wallet = await getWalletByUserId(payerId);
+  assert.equal(String(wallet.available_balance), '2600');
+  assert.equal(String(wallet.locked_balance), '0');
+  const { rows: holds } = await pool.query(
+    "SELECT id FROM wallet_holds WHERE reference_id=$1 AND hold_type='JOB_PAYMENT'",
+    [paymentId],
+  );
+  assert.equal(holds.length, 0);
+});
+
+test('payout reservation rejects a deleted account and does not move its available balance', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'payout-deleted-user');
+  await creditWallet({
+    userId,
+    amount: '1900',
+    idempotencyKey: `payout-seed-deleted-user-${userId}`,
+  });
+  await pool.query("UPDATE users SET status='DELETED' WHERE id=$1", [userId]);
+
+  const previousProvider = appConfig.paymentProvider;
+  appConfig.paymentProvider = 'internal';
+  try {
+    await assert.rejects(
+      requestPayoutAtomic({
+        userId,
+        amount: '600',
+        idempotencyKey: `payout-after-delete-${userId}`,
+      }),
+      (error) => error?.code === 'ACCOUNT_INACTIVE',
+    );
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+  }
+
+  const wallet = await getWalletByUserId(userId);
+  assert.equal(String(wallet.available_balance), '1900');
+  assert.equal(String(wallet.locked_balance), '0');
+  const { rows: payouts } = await pool.query('SELECT id FROM payouts WHERE user_id=$1', [userId]);
+  assert.equal(payouts.length, 0);
 });
 
 after(async () => {
