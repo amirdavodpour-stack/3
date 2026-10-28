@@ -1,9 +1,17 @@
 import { normalizeChatMessageType } from '../services/human_chat.js';
+import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_panel_access.js';
+import { requireAdmin } from '../policies/validation.js';
 const ROUTE_MESSAGE='Messaging route not found';
-export function createHumanChatRoutes({authUser,sendJson,readBody,HttpError,repo,storage}){
+export function createHumanChatRoutes({authUser,sendJson,readBody,HttpError,repo,storage,config}){
   return async function route(req,res,parts){
     const me=await authUser(req);
     if(parts[0]!=='messaging')throw new HttpError(404,'NOT_FOUND',ROUTE_MESSAGE);
+    if(String(me?.role || '').toUpperCase()==='ADMIN'){
+      const admin=requireAdmin(me);
+      assertAdminPermission(admin,ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
+      if(process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(admin.id,config?.adminPanelVerificationMinutes ?? 15)))
+        throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+    }
     if(parts.length===2&&parts[1]==='conversations'&&req.method==='GET')
       return sendJson(res,200,{items:await repo.listChatConversations(me.id,me.role)});
     if(parts.length===4&&parts[1]==='attachments'&&parts[3]==='content'&&req.method==='GET'){

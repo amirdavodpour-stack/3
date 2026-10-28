@@ -147,7 +147,7 @@ const accountRoutes = createAccountRoutes({
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
-const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo, storage });
+const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo, storage, config });
 const configRoutes = createConfigRoutes({ sendJson, config });
 const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, config, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
