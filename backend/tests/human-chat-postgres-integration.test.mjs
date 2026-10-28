@@ -870,7 +870,7 @@ test('wallet transfer serializes with account deletion and rejects after source 
         SELECT pid FROM pg_stat_activity
         WHERE datname=current_database() AND pid<>pg_backend_pid()
           AND wait_event_type='Lock'
-          AND query ILIKE '%lockActiveTransferUsers%'
+          AND query ILIKE '%lockActiveWalletUsers%'
       `);
       if (rows.length) { blockedOnAccountLock = true; break; }
       if (outcome) break;

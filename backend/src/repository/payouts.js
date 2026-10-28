@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
+import { lockActiveWalletUsers } from '../wallet_ledger.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
@@ -29,6 +30,8 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
       if (BigInt(String(p.amount)) !== value) throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { code:'IDEMPOTENCY_CONFLICT' });
       return p;
     }
+
+    await lockActiveWalletUsers(client, [userId]);
 
     const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE user_id=$1 AND currency='TOMAN' FOR UPDATE`, [userId]);
     const wallet = walletRows[0];

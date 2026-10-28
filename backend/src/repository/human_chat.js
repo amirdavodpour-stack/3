@@ -29,7 +29,7 @@ async function lockActiveChatAccount(client,userId){
     [userId],
   );
   if(!rows[0]||rows[0].status!=='ACTIVE'){
-    const error=new Error('ACCOUNT_INACTIVE');error.code='ACCOUNT_INACTIVE';throw error;
+    const error=new Error('ACCOUNT_INACTIVE');error.code='ACCOUNT_INACTIVE';error.status=409;throw error;
   }
 }
 
