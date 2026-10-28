@@ -684,6 +684,8 @@ test('account deletion serializes read receipts, presence and preferences before
   const holder = await pool.connect();
   let holderOpen = false;
   let deletionPromise;
+  const outcomes = [null, null, null];
+  let settledWriters = [];
   try {
     await holder.query('BEGIN');
     holderOpen = true;
@@ -712,13 +714,12 @@ test('account deletion serializes read receipts, presence and preferences before
       'deletion must reach the post-chat-cleanup audit update before the metadata writers race',
     );
 
-    const outcomes = [null, null, null];
     const writers = [
       markChatConversationRead(conversationId, userId, 'USER'),
       updateChatPresence(conversationId, userId, 'USER', { online: true, typing: true }),
       updateChatConversationPreferences(conversationId, userId, 'USER', { isPinned: true, isImportant: true }),
     ];
-    const settledWriters = writers.map((writer, index) => writer.then(
+    settledWriters = writers.map((writer, index) => writer.then(
       (value) => { outcomes[index] = { ok: true, value }; },
       (error) => { outcomes[index] = { ok: false, error }; },
     ));
