@@ -8,6 +8,22 @@ import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.j
 
 const RELEASE_STATES = new Set(['RELEASE_PENDING', 'RELEASE_FAILED']);
 
+function alreadyAppliedWebhookState(eventType, paymentStatus) {
+  if (eventType === 'PAYMENT_HELD') {
+    return ['HELD','RELEASE_PENDING','RELEASE_FAILED','RELEASED','REFUND_PENDING','REFUNDED'].includes(paymentStatus);
+  }
+  if (eventType === 'PAYMENT_RELEASED') return paymentStatus === 'RELEASED';
+  if (eventType === 'PAYMENT_REFUNDED') return paymentStatus === 'REFUNDED';
+  return false;
+}
+
+function expectedStatusForWebhook(eventType) {
+  if (eventType === 'PAYMENT_HELD') return 'HOLD_PENDING';
+  if (eventType === 'PAYMENT_RELEASED') return 'RELEASE_PENDING|RELEASE_FAILED';
+  if (eventType === 'PAYMENT_REFUNDED') return 'REFUND_PENDING';
+  return 'KNOWN_PAYMENT_TRANSITION';
+}
+
 function conflict(code, message) {
   const e = new Error(code);
   e.code = code;
@@ -60,6 +76,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
     }
 
     const b={baseAmount:normalizeFinancialAmount(p.currency,p.base_amount||p.amount),employerFee:normalizeFinancialAmount(p.currency,p.employer_fee||0),workerFee:normalizeFinancialAmount(p.currency,p.worker_fee||0),platformFee:normalizeFinancialAmount(p.currency,p.platform_fee||0),employerCharge:normalizeFinancialAmount(p.currency,p.employer_charge||p.amount),providerPayout:normalizeFinancialAmount(p.currency,p.provider_payout||p.amount),currency:p.currency||config.paymentCurrency};
+    let transitionApplied = false;
     if(eventType==='PAYMENT_HELD' && p.status==='HOLD_PENDING') {
       if (config.paymentProvider === 'internal') {
         if (b.currency !== 'TOMAN') throw conflict('INTERNAL_CURRENCY_MISMATCH','Internal payment webhook requires TOMAN');
@@ -69,6 +86,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
         });
       }
       await client.query(`UPDATE payments SET status='HELD',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[paymentId,providerRef||null]);
+      transitionApplied = true;
     } else if(eventType==='PAYMENT_RELEASED' && RELEASE_STATES.has(p.status)) {
       if (p.job_id) {
         const { rows: jobRows } = await client.query(`SELECT status FROM jobs WHERE id=$1 FOR UPDATE`, [p.job_id]);
@@ -99,6 +117,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
          ON CONFLICT(payment_id) DO UPDATE SET status='RELEASED',provider_ref=EXCLUDED.provider_ref,updated_at=NOW()`,
         [crypto.randomUUID(),paymentId,providerRef || p.provider_ref, b.providerPayout,b.currency]
       );
+      transitionApplied = true;
     } else if(eventType==='PAYMENT_REFUNDED' && p.status==='REFUND_PENDING') {
       const {rows:rr}=await client.query(`SELECT * FROM refunds WHERE payment_id=$1 AND status='PENDING' ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,[paymentId]);
       const refund=rr[0];
@@ -122,6 +141,43 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[refund.id,providerRef||null]);
       await client.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);
       await client.query(`UPDATE jobs SET status=CASE WHEN provider_id IS NULL THEN 'PUBLISHED' ELSE 'ASSIGNED' END,updated_at=NOW() WHERE id=$1`,[p.job_id]);
+      transitionApplied = true;
+    }
+    if (!transitionApplied) {
+      // A unique, signed event that cannot be applied is never reported as
+      // PROCESSED. If the same transition is already reflected by a later state,
+      // acknowledge it as stale; otherwise preserve the mismatch for manual reconciliation.
+      const alreadyApplied = alreadyAppliedWebhookState(eventType, p.status);
+      if (!alreadyApplied) {
+        const expected = {
+          eventType,
+          allowedPaymentStatus: expectedStatusForWebhook(eventType),
+          currentPaymentStatus: p.status,
+        };
+        const observed = {
+          eventId,
+          eventType,
+          providerRef: providerRef || null,
+          provider: providerName,
+          paymentStatus: p.status,
+        };
+        await client.query(`
+          INSERT INTO reconciliation_cases(
+            id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+          ) VALUES(gen_random_uuid(),'PAYMENT_WEBHOOK_STATE_MISMATCH','payment',$1,'CRITICAL',$2::jsonb,$3::jsonb,'OPEN',NOW(),NOW())
+          ON CONFLICT (case_type,resource_type,resource_id) WHERE status IN ('OPEN','INVESTIGATING')
+          DO UPDATE SET severity=EXCLUDED.severity,expected=EXCLUDED.expected,observed=EXCLUDED.observed,updated_at=NOW()
+        `, [paymentId, JSON.stringify(expected), JSON.stringify(observed)]);
+      }
+      await client.query(`UPDATE provider_events SET status='IGNORED',processed_at=NOW() WHERE provider=$1 AND provider_event_id=$2`,[providerName,eventId]);
+      return {
+        processed:true,
+        duplicate:false,
+        ignored:true,
+        reason:alreadyApplied ? 'ALREADY_APPLIED' : 'PAYMENT_STATE_MISMATCH',
+        reconciliationRequired:!alreadyApplied,
+        paymentId,
+      };
     }
     await client.query(`UPDATE provider_events SET status='PROCESSED',processed_at=NOW() WHERE provider=$1 AND provider_event_id=$2`,[providerName,eventId]);
     return {processed:true,duplicate:false,paymentId};
