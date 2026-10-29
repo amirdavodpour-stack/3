@@ -291,11 +291,7 @@ test('release validation has no production side effects and keeps production sec
   
   // Do not expose production credentials to npm install, audit, image build,
   // SBOM generation, or artifact upload. Production secrets are step-scoped.
-  const envStart = job.indexOf('    env:');
-  const stepsStart = job.indexOf('    steps:');
-  assert.ok(envStart >= 0 && stepsStart > envStart, 'job-level env block not found');
-  const jobEnv = job.slice(envStart, stepsStart);
-  assert.doesNotMatch(jobEnv, /secrets\./, 'job-level env must not contain secret references');
+  assert.doesNotMatch(job, /^    env:\s*$/m, 'production artifact job must not define job-level environment variables');
 
   const validateStart = job.indexOf('- name: Validate production environment contract');
   const validateEnd = job.indexOf('\n      - name:', validateStart);
