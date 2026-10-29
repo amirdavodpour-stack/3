@@ -154,3 +154,53 @@ test('release-validation passes the configured admin username through to product
   const block = releaseValidationWorkflow.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
   assert.match(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*env\.ADMIN_PANEL_USERNAME\s*\}\}/);
 });
+
+test('production env validator rejects identical access and refresh token secrets', () => {
+  const identicalSecret = 'ci-identical-access-refresh-secret-0123456789';
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    ACCESS_TOKEN_SECRET: identicalSecret,
+    REFRESH_TOKEN_SECRET: identicalSecret,
+  });
+  assert.notEqual(result.status, 0, 'identical token secrets must fail production validation');
+  assert.match(result.stdout + '\n' + result.stderr, /ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must be different/);
+});
+
+for (const variableName of ['ACCESS_TOKEN_SECRET', 'REFRESH_TOKEN_SECRET']) {
+  test(`production env validator rejects placeholder-prefixed ${variableName}`, () => {
+    const result = runProductionEnvValidator({
+      ADMIN_PANEL_USERNAME: 'hope-admin',
+      [variableName]: 'change-this-placeholder-secret-0123456789',
+    });
+    assert.notEqual(result.status, 0, `${variableName} must reject the runtime-forbidden placeholder prefix`);
+    assert.match(result.stdout + '\n' + result.stderr, /must not use placeholder secrets/);
+  });
+}
+
+for (const origin of [
+  'not-an-origin',
+  'https://example.invalid/path',
+  'https://example.invalid?query=1',
+  'https://user:pass@example.invalid',
+  'ftp://example.invalid',
+  'http://example.invalid',
+  'https://example.invalid,',
+]) {
+  test(`production env validator rejects invalid CORS origin: ${origin}`, () => {
+    const result = runProductionEnvValidator({
+      ADMIN_PANEL_USERNAME: 'hope-admin',
+      ALLOWED_CORS_ORIGINS: origin,
+    });
+    assert.notEqual(result.status, 0, `invalid production CORS origin must be rejected: ${origin}`);
+    assert.match(result.stdout + '\n' + result.stderr, /ALLOWED_CORS_ORIGINS/);
+  });
+}
+
+test('production env validator allows the runtime-supported local HTTP origin', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    ALLOWED_CORS_ORIGINS: 'http://localhost:3000',
+  });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.match(result.stdout, /Production environment contract PASS/);
+});
