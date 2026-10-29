@@ -188,6 +188,17 @@ test('manual staging diagnostics never fall back to production URLs or productio
   assert.match(emulator, /Production host is forbidden for Android emulator staging certification/);
 });
 
+test('Main CI staging performance is staging-only and skips untrusted fork pull requests', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  assert.match(workflow, /if:\s*\$\{\{\s*github\.event_name == 'pull_request'\s*&&\s*github\.base_ref == 'Main'\s*&&\s*github\.event\.pull_request\.head\.repo\.full_name == github\.repository\s*\}\}/);
+  const step = workflow.match(/name: Staging performance smoke[\s\S]*?run: node \.\.\/tools\/perf-smoke\.mjs/)?.[0] || '';
+  assert.ok(step, 'staging performance smoke step must exist');
+  assert.match(step, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(step, /v2hope-production-7e9e\.up\.railway\.app/);
+  assert.match(step, /PERF_BASE_URL is required; production fallback is disabled/);
+  assert.match(step, /Production host is forbidden for main workflow staging performance smoke/);
+});
+
 test('CI Android toolchain is explicit and release builds enforce the lockfile', () => {
   const setup = fs.readFileSync(path.join(root, 'tools/ci-android-toolchain.sh'), 'utf8');
   assert.match(setup, /platforms;android-36/);
