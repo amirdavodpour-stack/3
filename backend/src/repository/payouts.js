@@ -10,6 +10,27 @@ const MAX_AMOUNT = 9_000_000_000_000_000n;
 const INTERNAL_CURRENCY = 'TOMAN';
 const PAYOUT_PROVIDER = 'internal';
 
+async function appendPayoutReversalEntry(client, {
+  walletId, payoutId, amount, operationId, balanceAfter, failureCode,
+}) {
+  await client.query(
+    `INSERT INTO wallet_entries(
+       id,wallet_id,entry_type,direction,amount,currency,
+       reference_type,reference_id,financial_operation_id,metadata,balance_after
+     )
+     VALUES($1,$2,'PAYOUT','CREDIT',$3,'TOMAN','PAYOUT',$4,$5,$6::jsonb,$7)`,
+    [
+      crypto.randomUUID(),
+      walletId,
+      amount,
+      payoutId,
+      operationId,
+      JSON.stringify({ state:'REVERSED', failureCode }),
+      balanceAfter,
+    ],
+  );
+}
+
 function parseAmount(value) {
   const raw = String(value ?? '').trim();
   if (!/^\d+$/.test(raw)) throw Object.assign(new Error('INVALID_AMOUNT'), { code:'INVALID_AMOUNT' });
@@ -113,7 +134,20 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
       await client.query(`UPDATE journals SET status='POSTED',posted_at=NOW() WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     } else {
       if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
-      await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
+      const { rows: restoredWallets } = await client.query(
+        `UPDATE wallet_accounts
+            SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW()
+          WHERE id=$1 RETURNING available_balance`,
+        [wallet.id,payout.amount],
+      );
+      await appendPayoutReversalEntry(client, {
+        walletId: wallet.id,
+        payoutId,
+        amount: payout.amount,
+        operationId: hold.financial_operation_id,
+        balanceAfter: restoredWallets[0].available_balance,
+        failureCode: 'UNKNOWN_RESOLVED_FAILED',
+      });
       await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
       await client.query(`UPDATE payouts SET status='FAILED',failure_code='UNKNOWN_RESOLVED_FAILED',failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId, reason ? String(reason).slice(0,1000) : 'Unknown payout resolved as failed']);
       await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
@@ -171,7 +205,20 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
     const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [payout.wallet_id]);
     const wallet = walletRows[0];
     if (!hold || !wallet) return {completed:false,reason:'PAYOUT_RESERVATION_NOT_FOUND'};
-    await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
+    const { rows: restoredWallets } = await client.query(
+      `UPDATE wallet_accounts
+          SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW()
+        WHERE id=$1 RETURNING available_balance`,
+      [wallet.id,payout.amount],
+    );
+    await appendPayoutReversalEntry(client, {
+      walletId: wallet.id,
+      payoutId,
+      amount: payout.amount,
+      operationId: hold.financial_operation_id,
+      balanceAfter: restoredWallets[0].available_balance,
+      failureCode,
+    });
     await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
     await client.query(`UPDATE payouts SET status='FAILED',failure_code=$3,failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000),String(failureCode || 'PROVIDER_ERROR')]);
     await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
