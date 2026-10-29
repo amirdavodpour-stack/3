@@ -150,10 +150,13 @@ test('production-release workflow provides all runtime-required validator inputs
 });
 
 
-test('release-validation passes the configured admin username through to production validation', () => {
-  assert.match(releaseValidationWorkflow, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*secrets\.ADMIN_PANEL_USERNAME_PRODUCTION\s*\}\}/);
-  const block = releaseValidationWorkflow.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
-  assert.match(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*env\.ADMIN_PANEL_USERNAME\s*\}\}/);
+test('release-validation scopes the configured admin username to the production validator step', () => {
+  const job = releaseValidationWorkflow.match(/  production_artifact:[\s\S]*?(?=  release_gate:)/)?.[0] || '';
+  assert.ok(job, 'production artifact job must exist');
+  assert.doesNotMatch(job, /^    env:\s*$/m, 'production credentials must not be configured at job scope');
+  const block = job.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
+  assert.match(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*secrets\.ADMIN_PANEL_USERNAME_PRODUCTION\s*\}\}/);
+  assert.doesNotMatch(job, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*env\.ADMIN_PANEL_USERNAME\s*\}\}/);
 });
 
 test('production env validator rejects identical access and refresh token secrets', () => {
