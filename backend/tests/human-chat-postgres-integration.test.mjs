@@ -25,6 +25,7 @@ const modules = enabled
       import('../src/repository/payment_webhooks.js'),
       import('../src/repository/payment_funding.js'),
       import('../src/repository/outbox.js'),
+      import('../src/outbox_handlers.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -37,6 +38,7 @@ const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
 const { completePaymentCreateHoldOutbox, failOutboxEvent } = modules[10] || {};
+const { processOutboxEvent } = modules[11] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -1645,6 +1647,106 @@ test('production disables synthetic internal cash-out before reserving wallet fu
     else process.env.RAILWAY_PROJECT_ID = previousProjectId;
     if (previousStageFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
     else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousStageFlag;
+  }
+});
+
+test('production outbox refuses an already-reserved synthetic internal payout and restores wallet funds', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'stale-internal-payout');
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+  let payoutId = null;
+  let outboxEventId = null;
+  let operationId = null;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    await creditWallet({
+      userId,
+      amount: '1700',
+      idempotencyKey: `stale-payout-wallet-seed-${userId}`,
+    });
+
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount: '500',
+      idempotencyKey: `stale-production-payout-${userId}`,
+    });
+    payoutId = payout.id;
+
+    const { rows: holds } = await pool.query(
+      "SELECT financial_operation_id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'",
+      [payoutId],
+    );
+    operationId = holds[0]?.financial_operation_id || null;
+
+    const { rows: events } = await pool.query(
+      `UPDATE outbox_events
+          SET status='PROCESSING',attempts=1,locked_at=NOW(),lease_token=gen_random_uuid()
+        WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1
+        RETURNING *`,
+      [payoutId],
+    );
+    assert.equal(events.length, 1, 'fixture must create one durable payout event');
+    outboxEventId = events[0].id;
+    assert.equal(String(events[0].payload.amount), '500',
+      'outbox payload must preserve the exact integer amount as a JSON string');
+
+    process.env.NODE_ENV = 'production';
+    process.env.RAILWAY_PROJECT_ID = 'b12b7c1e-4dcc-470e-b87a-c63035c6e342';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+    const result = await processOutboxEvent(events[0]);
+    assert.equal(result?.disabled, true, 'production must fail closed before invoking the synthetic payout adapter');
+
+    const wallet = await getWalletByUserId(userId);
+    assert.equal(String(wallet.available_balance), '1700');
+    assert.equal(String(wallet.locked_balance), '0');
+
+    const { rows: payoutRows } = await pool.query(
+      'SELECT status,provider_ref,failure_code,failure_message FROM payouts WHERE id=$1',
+      [payoutId],
+    );
+    assert.equal(payoutRows[0]?.status, 'FAILED');
+    assert.equal(payoutRows[0]?.provider_ref, null, 'no synthetic provider reference may be issued in production');
+    assert.equal(payoutRows[0]?.failure_code, 'PAYOUT_PROVIDER_NOT_ENABLED');
+
+    const { rows: outboxRows } = await pool.query(
+      'SELECT status,last_error FROM outbox_events WHERE id=$1',
+      [outboxEventId],
+    );
+    assert.equal(outboxRows[0]?.status, 'FAILED');
+    assert.match(outboxRows[0]?.last_error || '', /PAYOUT_PROVIDER_NOT_ENABLED/);
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
+
+    if (payoutId) {
+      const { rows: holds } = await pool.query(
+        "SELECT financial_operation_id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'",
+        [payoutId],
+      );
+      operationId ||= holds[0]?.financial_operation_id || null;
+      await pool.query("DELETE FROM ledger_entries WHERE reference_type='PAYOUT' AND reference_id=$1", [payoutId]);
+      await pool.query("DELETE FROM wallet_entries WHERE reference_type='PAYOUT' AND reference_id=$1", [payoutId]);
+      await pool.query("DELETE FROM wallet_holds WHERE hold_type='PAYOUT_RESERVATION' AND reference_id=$1", [payoutId]);
+      await pool.query("DELETE FROM outbox_events WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1", [payoutId]);
+      await pool.query('DELETE FROM payouts WHERE id=$1', [payoutId]);
+      if (operationId) {
+        await pool.query('DELETE FROM journals WHERE operation_id=$1', [operationId]);
+        await pool.query('DELETE FROM financial_operations WHERE id=$1', [operationId]);
+      }
+    }
+    await pool.query('DELETE FROM users WHERE id=$1', [userId]);
   }
 });
 
