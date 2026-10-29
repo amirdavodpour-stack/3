@@ -203,3 +203,33 @@ test('production env validator allows the runtime-supported local HTTP origin', 
   assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
   assert.match(result.stdout, /Production environment contract PASS/);
 });
+
+
+test('production validator rejects synthetic internal cash-out override without exact Railway project identity', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+  });
+  assert.notEqual(result.status, 0, 'the internal payout override must not be accepted without the dedicated staging project id');
+  assert.match(result.stdout + '\n' + result.stderr, /Staging internal wallet payout is permitted only for the designated Staging Railway project/);
+});
+
+test('production validator rejects synthetic internal cash-out override on the actual production project', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+    RAILWAY_PROJECT_ID: 'b12b7c1e-4dcc-470e-b87a-c63035c6e342',
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout + '\n' + result.stderr, /Staging internal wallet payout is permitted only for the designated Staging Railway project/);
+});
+
+test('production validator allows the synthetic internal cash-out override only in the designated staging project', () => {
+  const result = runProductionEnvValidator({
+    ADMIN_PANEL_USERNAME: 'hope-admin',
+    STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+    RAILWAY_PROJECT_ID: '8c686259-09c6-4609-bbe7-4ea25e769e18',
+  });
+  assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
+  assert.match(result.stdout, /Production environment contract PASS/);
+});
