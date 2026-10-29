@@ -1,4 +1,5 @@
 import test, { after } from 'node:test';
+import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { Readable, Writable } from 'node:stream';
@@ -1189,12 +1190,12 @@ test('direct payment-release webhook closes job chat in the same settlement tran
 
 test('migration 035 canonicalizes a balanced legacy ledger group before enforcing the journal foreign key', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
-  const client = await pool.connect();
   const schema = `r035_${crypto.randomBytes(6).toString('hex')}`;
   const quotedSchema = `"${schema}"`;
   const journalId = crypto.randomUUID();
   const referenceId = crypto.randomUUID();
   const { migration: migration035 } = await import('../src/db/migrations/035_external_ledger_journals_and_currency_precision.js');
+  const client = await pool.connect();
   let schemaCreated = false;
   let transactionOpen = false;
   try {
