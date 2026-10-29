@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { findPaymentByIdempotency } from './payment_queries.js';
+import { lockActiveWalletUsers } from '../wallet_ledger.js';
 
 function financialNumber(currency, value) {
   return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
@@ -12,6 +13,9 @@ function financialNumber(currency, value) {
 
 export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,id,idempotencyKey,createdAt,breakdown}) {
   return withSqlTransaction(async (client) => {
+    // Account deletion takes the same user-row lock before checking obligations.
+    // Lock both participants before creating a payment row/outbox obligation.
+    await lockActiveWalletUsers(client, [payerId, payeeId]);
     if (idempotencyKey) {
       await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 918273645))`, [`payment:${payerId}:${idempotencyKey}`]);
     }

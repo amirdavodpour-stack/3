@@ -2,6 +2,79 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { userFromRow, jobFromRow, offerFromRow, paymentFromRow, applicationFromRow } from './mappers.js';
 
+
+function accountFinancialObligationsPendingError() {
+  const error = new Error('ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING');
+  error.code = 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING';
+  error.status = 409;
+  return error;
+}
+
+async function assertNoFinancialObligations(client, userId) {
+  const { rows: wallets } = await client.query(`
+    SELECT id,available_balance,locked_balance
+      FROM wallet_accounts
+     WHERE user_id=$1
+     ORDER BY id
+     FOR UPDATE
+  `, [userId]);
+
+  if (wallets.some((wallet) =>
+    BigInt(String(wallet.available_balance ?? '0')) > 0n ||
+    BigInt(String(wallet.locked_balance ?? '0')) > 0n
+  )) {
+    throw accountFinancialObligationsPendingError();
+  }
+
+  const { rows: activeHolds } = await client.query(`
+    SELECT h.id
+      FROM wallet_holds h
+      JOIN wallet_accounts w ON w.id=h.wallet_id
+     WHERE w.user_id=$1 AND h.status='ACTIVE'
+     LIMIT 1
+  `, [userId]);
+  if (activeHolds.length) throw accountFinancialObligationsPendingError();
+
+  // These are deliberately read without FOR UPDATE: release/refund callbacks lock
+  // payment rows before wallets. Wallet rows above are locked, so an in-flight
+  // settlement either remains nonterminal (and blocks deletion) or commits its
+  // wallet changes before the locked balance snapshot is accepted.
+  const { rows: payments } = await client.query(`
+    SELECT id
+      FROM payments
+     WHERE (payer_id=$1 OR payee_id=$1)
+       AND status NOT IN ('RELEASED','REFUNDED','HOLD_FAILED')
+     LIMIT 1
+  `, [userId]);
+  if (payments.length) throw accountFinancialObligationsPendingError();
+
+  const { rows: refunds } = await client.query(`
+    SELECT r.id
+      FROM refunds r
+      JOIN payments p ON p.id=r.payment_id
+     WHERE (p.payer_id=$1 OR p.payee_id=$1)
+       AND r.status NOT IN ('REFUNDED','FAILED')
+     LIMIT 1
+  `, [userId]);
+  if (refunds.length) throw accountFinancialObligationsPendingError();
+
+  const { rows: payouts } = await client.query(`
+    SELECT id
+      FROM payouts
+     WHERE user_id=$1 AND status NOT IN ('SUCCEEDED','FAILED')
+     LIMIT 1
+  `, [userId]);
+  if (payouts.length) throw accountFinancialObligationsPendingError();
+
+  const { rows: operations } = await client.query(`
+    SELECT id
+      FROM financial_operations
+     WHERE actor_id=$1 AND status NOT IN ('SUCCEEDED','FAILED','CANCELLED')
+     LIMIT 1
+  `, [userId]);
+  if (operations.length) throw accountFinancialObligationsPendingError();
+}
+
 const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt"`;
 
 export async function getUserPrivacyBundle(userId) {
@@ -46,6 +119,10 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     // A stronger FOR UPDATE here can deadlock with the upload lock below.
     const u = await client.query(`SELECT id,role FROM users WHERE id=$1 FOR NO KEY UPDATE`, [userId]);
     if (!u.rows[0]) return null;
+
+    // Do not anonymize an account while money, holds, or financial operations remain unresolved.
+    // Wallet operations that create/change account funds lock the same user row before the wallet.
+    await assertNoFinancialObligations(client, userId);
 
     // Serialize deletion cleanup with every association path that locks the upload
     // before adding an evidence/chat reference. Candidate keys are computed while

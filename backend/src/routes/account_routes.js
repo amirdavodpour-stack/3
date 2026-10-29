@@ -16,9 +16,21 @@ export function createAccountRoutes({ authUser, readBody, sendJson, HttpError, h
         ? null
         : await legacyAccount.listDeletableUserUploadKeys(me.id);
       const replacement = { email: anonymizedEmail(me.id), passwordHash: await hashPassword(deletionCredential()) };
-      const deleted = isPostgres
-        ? await privacyRepo.deleteUserPrivacyBundle(me.id, replacement)
-        : await legacyAccount.deleteUserPrivacyBundle(me.id, replacement);
+      let deleted;
+      try {
+        deleted = isPostgres
+          ? await privacyRepo.deleteUserPrivacyBundle(me.id, replacement)
+          : await legacyAccount.deleteUserPrivacyBundle(me.id, replacement);
+      } catch (error) {
+        if (error?.code === 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING') {
+          throw new HttpError(
+            409,
+            'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING',
+            'Resolve your wallet balance and any pending payments or payouts before deleting your account',
+          );
+        }
+        throw error;
+      }
       if (!deleted) throw new HttpError(404,'USER_NOT_FOUND','User not found');
       const storageCleanupKeys = isPostgres
         ? [...new Set([...(deleted.deletableUploadKeys || []), ...(deleted.pendingUploadIntentKeys || [])])]
