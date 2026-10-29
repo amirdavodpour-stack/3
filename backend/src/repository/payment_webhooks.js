@@ -131,12 +131,14 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
           actorId:p.payer_id, idempotencyKey:`internal:webhook:refund:${refund.id}`,
         });
       } else {
+        // All rows in a refund must share one journal identifier; the deferred
+        // balance trigger validates debit/credit totals per journal at COMMIT.
+        const journalId = crypto.randomUUID();
         for(const e of refundJournal(b)){
-          const jid=crypto.randomUUID();
           await client.query(
             `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
              VALUES($1,$2,'PAYMENT_WEBHOOK',$3,$4,$5,$6,$7,NOW())`,
-            [crypto.randomUUID(),jid,paymentId,e.account,e.debit,e.credit,b.currency]
+            [crypto.randomUUID(),journalId,paymentId,e.account,e.debit,e.credit,b.currency]
           );
         }
       }
