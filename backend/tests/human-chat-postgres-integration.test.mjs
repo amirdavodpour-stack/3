@@ -1467,6 +1467,66 @@ test('terminal external hold failure leaves no funding journal and restores the 
   }
 });
 
+
+test('plain text chat send rejects after account deletion has committed', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `deleted-text-send-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: users } = await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 deleted text sender','USER','ACTIVE',0,NOW())
+     RETURNING id`,
+    [`r05-${suffix}@example.test`],
+  );
+  const userId = users[0].id;
+  let jobId;
+  let conversationId;
+  try {
+    const { rows: jobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT gen_random_uuid(),$1,$2,$3,'Account deletion text-send regression fixture',
+         c.id,'FIXED','FIXED',100,100,1,'R05 deletion text-send fixture','IN_PROGRESS',
+         'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+      [userId, fixture.workerId, `R05 deleted text sender ${suffix}`],
+    );
+    assert.ok(jobs[0], 'text-send fixture requires an active category');
+    jobId = jobs[0].id;
+    const { rows: conversations } = await pool.query(
+      `INSERT INTO chat_conversations(id,kind,job_id,status,title)
+       VALUES(gen_random_uuid(),'JOB',$1,'OPEN','R05 deleted text sender') RETURNING id`,
+      [jobId],
+    );
+    conversationId = conversations[0].id;
+
+    const deletion = await deleteUserPrivacyBundle(userId, {
+      email: `deleted+${userId}@invalid.local`,
+      passwordHash: 'integration-only-deleted-account',
+    });
+    assert.equal(deletion.deleted, true);
+
+    await assert.rejects(
+      postChatMessage(conversationId, userId, 'USER', 'Must not persist after deletion'),
+      (error) => error?.code === 'ACCOUNT_INACTIVE',
+    );
+    const { rows: messages } = await pool.query(
+      'SELECT id FROM chat_messages WHERE conversation_id=$1 AND sender_id=$2',
+      [conversationId,userId],
+    );
+    assert.equal(messages.length, 0,
+      'a deleted account must not submit plain-text chat messages after deletion commits');
+  } finally {
+    if (conversationId) await pool.query('DELETE FROM chat_conversations WHERE id=$1', [conversationId]);
+    if (jobId) await pool.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+    await pool.query('DELETE FROM users WHERE id=$1', [userId]);
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
