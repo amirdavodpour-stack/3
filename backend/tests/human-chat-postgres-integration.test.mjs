@@ -1187,7 +1187,7 @@ test('direct payment-release webhook closes job chat in the same settlement tran
 });
 
 
-test('PostgreSQL rejects ledger entries whose currency differs from the parent journal', { skip: !enabled }, async () => {
+test('PostgreSQL enforces parent-ledger currency consistency and journal currency immutability', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const client = await pool.connect();
   const operationId = crypto.randomUUID();
@@ -1204,6 +1204,13 @@ test('PostgreSQL rejects ledger entries whose currency differs from the parent j
        VALUES($1,$2,'CURRENCY_GUARD_TEST','USD','CREATED',NOW())`,
       [journalId,operationId],
     );
+    await client.query(
+      `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
+       VALUES(gen_random_uuid(),$1,'CURRENCY_GUARD_TEST',$2,'TEST_DEBIT',1,0,'USD',NOW()),
+             (gen_random_uuid(),$1,'CURRENCY_GUARD_TEST',$2,'TEST_CREDIT',0,1,'USD',NOW())`,
+      [journalId,operationId],
+    );
+    await client.query('SAVEPOINT mismatch_entry');
     await assert.rejects(
       client.query(
         `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
@@ -1212,6 +1219,13 @@ test('PostgreSQL rejects ledger entries whose currency differs from the parent j
       ),
       (error) => error?.code === '23514' && /currency must match/i.test(error.message),
     );
+    await client.query('ROLLBACK TO SAVEPOINT mismatch_entry');
+    await client.query('SAVEPOINT mutate_journal_currency');
+    await assert.rejects(
+      client.query(`UPDATE journals SET currency='EUR' WHERE id=$1`, [journalId]),
+      (error) => error?.code === '23514' && /currency is immutable/i.test(error.message),
+    );
+    await client.query('ROLLBACK TO SAVEPOINT mutate_journal_currency');
     await client.query('ROLLBACK');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});

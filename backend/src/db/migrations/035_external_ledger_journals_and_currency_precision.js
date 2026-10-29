@@ -90,7 +90,7 @@ export const migration = {
 
     await client.query(`
       CREATE OR REPLACE FUNCTION hope_validate_ledger_entry_currency() RETURNS trigger
-      LANGUAGE plpgsql AS $
+      LANGUAGE plpgsql AS $body$
       DECLARE parent_currency TEXT;
       BEGIN
         SELECT currency INTO parent_currency FROM journals WHERE id=NEW.journal_id;
@@ -102,29 +102,25 @@ export const migration = {
         END IF;
         RETURN NEW;
       END;
-      $;
+      $body$;
       DROP TRIGGER IF EXISTS ledger_entries_currency_matches_journal_trigger ON ledger_entries;
       CREATE TRIGGER ledger_entries_currency_matches_journal_trigger
         BEFORE INSERT OR UPDATE OF journal_id,currency ON ledger_entries
         FOR EACH ROW EXECUTE FUNCTION hope_validate_ledger_entry_currency();
 
-      CREATE OR REPLACE FUNCTION hope_reject_journal_currency_mismatch() RETURNS trigger
-      LANGUAGE plpgsql AS $
+      CREATE OR REPLACE FUNCTION hope_reject_journal_currency_mutation() RETURNS trigger
+      LANGUAGE plpgsql AS $body$
       BEGIN
-        IF NEW.currency IS DISTINCT FROM OLD.currency
-           AND EXISTS (
-             SELECT 1 FROM ledger_entries
-              WHERE journal_id=OLD.id AND currency IS DISTINCT FROM NEW.currency
-           ) THEN
-          RAISE EXCEPTION 'journal currency cannot change while ledger entries use the existing currency' USING ERRCODE='23514';
+        IF NEW.currency IS DISTINCT FROM OLD.currency THEN
+          RAISE EXCEPTION 'journal currency is immutable' USING ERRCODE='23514';
         END IF;
         RETURN NEW;
       END;
-      $;
-      DROP TRIGGER IF EXISTS journals_currency_matches_entries_trigger ON journals;
-      CREATE TRIGGER journals_currency_matches_entries_trigger
+      $body$;
+      DROP TRIGGER IF EXISTS journals_currency_immutable_trigger ON journals;
+      CREATE TRIGGER journals_currency_immutable_trigger
         BEFORE UPDATE OF currency ON journals
-        FOR EACH ROW EXECUTE FUNCTION hope_reject_journal_currency_mismatch();
+        FOR EACH ROW EXECUTE FUNCTION hope_reject_journal_currency_mutation();
 
       CREATE UNIQUE INDEX IF NOT EXISTS financial_operations_provider_idempotency_uq
         ON financial_operations(operation_type,idempotency_key)

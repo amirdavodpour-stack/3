@@ -32,7 +32,8 @@ test('external ledger preserves exact currency precision and canonical journal l
   assert.ok(externalLedgerMigration.includes('ledger_entries_journal_id_fk'));
   assert.ok(externalLedgerMigration.includes('hope_validate_ledger_entry_currency'));
   assert.ok(externalLedgerMigration.includes('ledger_entries_currency_matches_journal_trigger'));
-  assert.ok(externalLedgerMigration.includes('hope_reject_journal_currency_mismatch'));
+  assert.ok(externalLedgerMigration.includes('hope_reject_journal_currency_mutation'));
+  assert.ok(externalLedgerMigration.includes('journals_currency_immutable_trigger'));
   assert.ok(externalLedgerMigration.includes('Cannot enforce ledger currency matching'));
   assert.ok(externalLedgerMigration.includes('DROP TRIGGER IF EXISTS ledger_journal_balance_deferred'));
   assert.ok(externalLedgerMigration.includes('CREATE CONSTRAINT TRIGGER ledger_journal_balance_deferred'));
