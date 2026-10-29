@@ -1513,6 +1513,11 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
 async function createExternalFundingFixture(label) {
   const pool = dbModule.getPool();
   const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  // Earlier deletion tests intentionally mark fixture.workerId DELETED. Funding
+  // must never reuse that global participant; isolate new funding scenarios with
+  // distinct active users so the production account guard is tested, not bypassed.
+  const payerId = await createTransferTestUser(pool, `external-funding-payer-${label}`);
+  const payeeId = await createTransferTestUser(pool, `external-funding-payee-${label}`);
   const { rows: jobs } = await pool.query(
     `INSERT INTO jobs(
        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
@@ -1525,7 +1530,7 @@ async function createExternalFundingFixture(label) {
      FROM categories c WHERE c.is_active=TRUE
      ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
      RETURNING id`,
-    [fixture.ownerId, fixture.workerId, `R05 external funding ${suffix}`],
+    [payerId, payeeId, `R05 external funding ${suffix}`],
   );
   assert.ok(jobs[0], 'external funding fixture requires an active category');
   const paymentId = crypto.randomUUID();
@@ -1542,8 +1547,8 @@ async function createExternalFundingFixture(label) {
   };
   const result = await fundJobAtomic({
     jobId: jobs[0].id,
-    payerId: fixture.ownerId,
-    payeeId: fixture.workerId,
+    payerId,
+    payeeId,
     amount: 100,
     id: paymentId,
     idempotencyKey: `R05-external-fund-${suffix}`,
