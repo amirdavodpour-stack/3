@@ -23,6 +23,8 @@ const modules = enabled
       import('../src/repository/payouts.js'),
       import('../src/config.js'),
       import('../src/repository/payment_webhooks.js'),
+      import('../src/repository/payment_funding.js'),
+      import('../src/repository/outbox.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -33,6 +35,8 @@ const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserP
 const { requestPayoutAtomic } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
+const { fundJobAtomic } = modules[9] || {};
+const { completePaymentCreateHoldOutbox, failOutboxEvent } = modules[10] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -1277,6 +1281,188 @@ test('external payment-refund webhook posts one balanced legacy journal in real 
       throw error;
     } finally {
       client.release();
+    }
+  }
+});
+
+
+async function createExternalFundingFixture(label) {
+  const pool = dbModule.getPool();
+  const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT gen_random_uuid(),$1,$2,$3,'External funding journal integration fixture',
+       c.id,'FIXED','FIXED',100,130,1,'R05 external funding fixture','ASSIGNED',
+       'R05 test','MISSION','PUBLIC',NOW(),NOW()
+     FROM categories c WHERE c.is_active=TRUE
+     ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+     RETURNING id`,
+    [fixture.ownerId, fixture.workerId, `R05 external funding ${suffix}`],
+  );
+  assert.ok(jobs[0], 'external funding fixture requires an active category');
+  const paymentId = crypto.randomUUID();
+  const createdAt = new Date();
+  const breakdown = {
+    policyVersion: 'R05-test',
+    currency: 'USD',
+    baseAmount: 100,
+    employerFee: 30,
+    workerFee: 0,
+    platformFee: 30,
+    employerCharge: 130,
+    providerPayout: 100,
+  };
+  const result = await fundJobAtomic({
+    jobId: jobs[0].id,
+    payerId: fixture.ownerId,
+    payeeId: fixture.workerId,
+    amount: 100,
+    id: paymentId,
+    idempotencyKey: `R05-external-fund-${suffix}`,
+    createdAt,
+    breakdown,
+  });
+  assert.equal(result.created, true);
+  assert.ok(result.outboxEvent?.id, 'external funding fixture must enqueue a hold request');
+  return { jobId: jobs[0].id, paymentId, eventId: result.outboxEvent.id, breakdown };
+}
+
+test('external funding ledger is posted only after the provider confirms its hold', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const previousProvider = appConfig.paymentProvider;
+  let fixtureRows;
+  let eventId;
+  appConfig.paymentProvider = 'webhook';
+  try {
+    fixtureRows = await createExternalFundingFixture('external-funding-success');
+    eventId = fixtureRows.eventId;
+
+    const before = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+      [fixtureRows.paymentId],
+    );
+    assert.equal(before.rows[0].count, 0,
+      'external funding must not be journal-posted before provider hold confirmation');
+
+    const confirmed = await completePaymentCreateHoldOutbox({
+      eventId: fixtureRows.eventId,
+      jobId: fixtureRows.jobId,
+      paymentId: fixtureRows.paymentId,
+      providerRef: `confirmed-hold-${fixtureRows.paymentId}`,
+      actorId: fixture.ownerId,
+    });
+    assert.equal(confirmed.completed, true);
+
+    const { rows: payments } = await pool.query(
+      'SELECT status FROM payments WHERE id=$1', [fixtureRows.paymentId],
+    );
+    assert.equal(payments[0].status, 'HELD');
+
+    const { rows: journals } = await pool.query(
+      `SELECT journal_id,COUNT(*)::int AS entries,
+              SUM(debit)::numeric AS debits,SUM(credit)::numeric AS credits
+         FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1
+        GROUP BY journal_id`,
+      [fixtureRows.paymentId],
+    );
+    assert.equal(journals.length, 1, 'confirmed hold must create one funding journal group');
+    assert.equal(journals[0].entries, 3);
+    assert.equal(Number(journals[0].debits), Number(journals[0].credits));
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (fixtureRows) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+          [fixtureRows.paymentId],
+        );
+        await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
+        await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
+        await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
+        await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
+  }
+});
+
+test('terminal external hold failure leaves no funding journal and restores the original assigned job state', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const previousProvider = appConfig.paymentProvider;
+  let fixtureRows;
+  appConfig.paymentProvider = 'webhook';
+  try {
+    fixtureRows = await createExternalFundingFixture('external-funding-failure');
+    const before = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+      [fixtureRows.paymentId],
+    );
+    // This assertion is evaluated after driving the terminal failure below, so
+    // the same test records both pre-hold and post-failure ledger state.
+    await pool.query('UPDATE outbox_events SET attempts=8 WHERE id=$1', [fixtureRows.eventId]);
+    const failed = await failOutboxEvent({
+      eventId: fixtureRows.eventId,
+      error: 'R05 integration provider hold failure',
+      maxAttempts: 8,
+    });
+    assert.equal(failed.terminal, true);
+
+    const { rows: payments } = await pool.query(
+      'SELECT status,funding_previous_job_status FROM payments WHERE id=$1',
+      [fixtureRows.paymentId],
+    );
+    const { rows: jobs } = await pool.query(
+      'SELECT status FROM jobs WHERE id=$1', [fixtureRows.jobId],
+    );
+    const { rows: entries } = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+      [fixtureRows.paymentId],
+    );
+
+    assert.equal(before.rows[0].count, 0,
+      'failed external hold must not have posted a funding journal before confirmation');
+    assert.equal(payments[0].status, 'HOLD_FAILED');
+    assert.equal(payments[0].funding_previous_job_status, 'ASSIGNED');
+    assert.equal(jobs[0].status, 'ASSIGNED',
+      'terminal hold failure must restore the job state recorded before funding');
+    assert.equal(entries[0].count, 0,
+      'terminal provider hold failure must leave no funding ledger rows');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (fixtureRows) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+          [fixtureRows.paymentId],
+        );
+        await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
+        await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
+        await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
+        await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
     }
   }
 });
