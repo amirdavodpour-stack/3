@@ -58,3 +58,55 @@ test('wallet route and capability surface use the shared policy instead of dupli
   assert.doesNotMatch(wallet, /STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true'/);
   assert.doesNotMatch(capabilities, /STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true'/);
 });
+
+
+import {
+  isInternalWalletAdminCreditEnabled,
+  PRODUCTION_RAILWAY_PROJECT_ID,
+  STAGING_RAILWAY_PROJECT_ID,
+} from '../src/wallet_admin_credit_policy.js';
+
+function adminCreditPolicy(overrides = {}) {
+  return isInternalWalletAdminCreditEnabled({
+    enabled: true,
+    env: { NODE_ENV: 'test' },
+    ...overrides,
+  });
+}
+
+test('admin sandbox credit is denied on the real production Railway project even if NODE_ENV is misconfigured', () => {
+  for (const nodeEnv of ['production', 'test', 'development', undefined]) {
+    const env = { RAILWAY_PROJECT_ID: PRODUCTION_RAILWAY_PROJECT_ID };
+    if (nodeEnv !== undefined) env.NODE_ENV = nodeEnv;
+    assert.equal(adminCreditPolicy({ enabled: true, env }), false);
+  }
+});
+
+test('production-named staging enables admin sandbox credit only with the explicit flag and staging project identity', () => {
+  assert.equal(adminCreditPolicy({
+    enabled: true,
+    env: { NODE_ENV: 'production', RAILWAY_PROJECT_ID: STAGING_RAILWAY_PROJECT_ID },
+  }), true);
+  assert.equal(adminCreditPolicy({
+    enabled: false,
+    env: { NODE_ENV: 'production', RAILWAY_PROJECT_ID: STAGING_RAILWAY_PROJECT_ID },
+  }), false);
+  assert.equal(adminCreditPolicy({
+    enabled: true,
+    env: { NODE_ENV: 'production', STAGING_RAILWAY_PROJECT_ID },
+  }), false);
+});
+
+test('non-production retains the existing admin sandbox-credit behavior unless running in the real production project', () => {
+  assert.equal(adminCreditPolicy({ enabled: false, env: { NODE_ENV: 'test' } }), true);
+  assert.equal(adminCreditPolicy({
+    enabled: true,
+    env: { NODE_ENV: 'test', RAILWAY_PROJECT_ID: PRODUCTION_RAILWAY_PROJECT_ID },
+  }), false);
+});
+
+test('admin sandbox-credit route delegates to the shared fail-closed project policy', async () => {
+  const route = await import('../src/application/wallet_routes.js');
+  const source = route.createWalletRoutes.toString();
+  assert.match(source, /isInternalWalletAdminCreditEnabled/);
+});
