@@ -1187,7 +1187,7 @@ test('direct payment-release webhook closes job chat in the same settlement tran
 });
 
 
-test('external payment-refund webhook posts one balanced legacy journal in real PostgreSQL', { skip: !enabled }, async () => {
+test('external payment-refund webhook preserves fractional USD in one canonical immutable journal', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const suffix = `external-refund-journal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const eventId = `r05-${suffix}`;
@@ -1221,12 +1221,12 @@ test('external payment-refund webhook posts one balanced legacy journal in real 
          base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,
          fee_policy_version,currency,created_at,updated_at
        )
-       VALUES($1,$2,$3,$4,100,'REFUND_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','USD',NOW(),NOW())`,
+       VALUES($1,$2,$3,$4,100.25,'REFUND_PENDING',$5,$6,100.25,30.08,0,30.08,130.33,100.25,'R05-test','USD',NOW(),NOW())`,
       [paymentId,jobId,fixture.ownerId,fixture.workerId,providerRef,`idempotency-${suffix}`],
     );
     await pool.query(
       `INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at)
-       VALUES(gen_random_uuid(),$1,130,'PENDING',NULL,$2,NOW(),NOW())`,
+       VALUES(gen_random_uuid(),$1,130.33,'PENDING',NULL,$2,NOW(),NOW())`,
       [paymentId, `refund-idempotency-${suffix}`],
     );
 
@@ -1262,6 +1262,22 @@ test('external payment-refund webhook posts one balanced legacy journal in real 
     assert.equal(journals.length, 1, 'all refund entries must share one journal identifier');
     assert.equal(journals[0].entries, 3);
     assert.equal(Number(journals[0].debits), Number(journals[0].credits));
+    const { rows: canonical } = await pool.query(
+      `SELECT j.id,j.status,j.currency,fo.operation_type,fo.status AS operation_status
+         FROM journals j JOIN financial_operations fo ON fo.id=j.operation_id
+        WHERE j.id=$1`,
+      [journals[0].journal_id],
+    );
+    assert.equal(canonical.length, 1, 'every external ledger group must have a canonical journal and operation');
+    assert.equal(canonical[0].status, 'POSTED');
+    assert.equal(canonical[0].currency, 'USD');
+    assert.equal(canonical[0].operation_type, 'REFUND');
+    assert.equal(canonical[0].operation_status, 'SUCCEEDED');
+    await assert.rejects(
+      pool.query('UPDATE ledger_entries SET account=account WHERE journal_id=$1', [journals[0].journal_id]),
+      (error) => error?.code === '55000',
+      'ledger entries in a posted canonical journal must be immutable',
+    );
   } finally {
     appConfig.paymentProvider = previousProvider;
     const client = await pool.connect();
