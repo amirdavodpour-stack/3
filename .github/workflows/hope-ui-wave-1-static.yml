@@ -159,6 +159,7 @@ jobs:
             test/core/quality/hope_accessibility_gate_test.dart \
             test/core/ui/wave31_display_consistency_test.dart \
             test/core/config/backend_capabilities_repository_test.dart \
+            test/core/network/api_error_presenter_test.dart \
             test/core/auth/google_account_link_test.dart \
             test/features/wallet/backend_capability_wallet_actions_test.dart \
             test/features/wallet/wallet_page_test.dart
