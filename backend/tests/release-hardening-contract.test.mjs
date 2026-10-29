@@ -169,6 +169,20 @@ test('staging certification requires a real external staging base URL and does n
 });
 
 
+test('manual staging diagnostics never fall back to production URLs or production metrics credentials', () => {
+  const perf = fs.readFileSync(path.join(root, '.github/workflows/staging-perf-diagnostic.yml'), 'utf8');
+  const emulator = fs.readFileSync(path.join(root, '.github/workflows/android-emulator-certification.yml'), 'utf8');
+
+  assert.match(perf, /STAGING_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(perf, /v2hope-production-7e9e\.up\.railway\.app/);
+  assert.doesNotMatch(perf, /STAGING_METRICS_TOKEN:\s*\$\{\{\s*secrets\.STAGING_METRICS_TOKEN\s*\|\|\s*secrets\.METRICS_TOKEN\s*\}\}/);
+  assert.match(perf, /STAGING_BASE_URL must be an HTTPS URL/);
+
+  assert.match(emulator, /API_BASE_URL_STAGING:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(emulator, /v2hope-production-7e9e\.up\.railway\.app/);
+  assert.match(emulator, /API_BASE_URL_STAGING is required/);
+});
+
 test('CI Android toolchain is explicit and release builds enforce the lockfile', () => {
   const setup = fs.readFileSync(path.join(root, 'tools/ci-android-toolchain.sh'), 'utf8');
   assert.match(setup, /platforms;android-36/);
