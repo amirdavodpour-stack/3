@@ -1178,6 +1178,109 @@ test('direct payment-release webhook closes job chat in the same settlement tran
   }
 });
 
+
+test('external payment-refund webhook posts one balanced legacy journal in real PostgreSQL', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `external-refund-journal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const eventId = `r05-${suffix}`;
+  const paymentId = crypto.randomUUID();
+  const providerRef = `hold-ref-${suffix}`;
+  const refundRef = `refund-ref-${suffix}`;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId;
+
+  try {
+    const { rows: jobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT gen_random_uuid(),$1,$2,$3,'External refund journal integration fixture',
+         c.id,'FIXED','FIXED',100,130,1,'R05 external refund fixture','IN_PROGRESS',
+         'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+      [fixture.ownerId, fixture.workerId, `R05 external refund ${suffix}`],
+    );
+    assert.ok(jobs[0], 'external refund fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      `INSERT INTO payments(
+         id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,
+         base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,
+         fee_policy_version,currency,created_at,updated_at
+       )
+       VALUES($1,$2,$3,$4,100,'REFUND_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','USD',NOW(),NOW())`,
+      [paymentId,jobId,fixture.ownerId,fixture.workerId,providerRef,`idempotency-${suffix}`],
+    );
+    await pool.query(
+      `INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at)
+       VALUES(gen_random_uuid(),$1,130,'PENDING',NULL,$2,NOW(),NOW())`,
+      [paymentId, `refund-idempotency-${suffix}`],
+    );
+
+    appConfig.paymentProvider = 'webhook';
+    const result = await applyPaymentWebhookAtomic({
+      eventId,
+      eventType: 'PAYMENT_REFUNDED',
+      paymentId,
+      providerRef: refundRef,
+      payload: { eventId, eventType: 'PAYMENT_REFUNDED', paymentId, providerRef: refundRef },
+    });
+
+    assert.equal(result.processed, true);
+    const { rows: paymentRows } = await pool.query(
+      'SELECT status FROM payments WHERE id=$1', [paymentId],
+    );
+    assert.equal(paymentRows[0].status, 'REFUNDED');
+    const { rows: refundRows } = await pool.query(
+      'SELECT status,provider_ref FROM refunds WHERE payment_id=$1', [paymentId],
+    );
+    assert.equal(refundRows.length, 1);
+    assert.equal(refundRows[0].status, 'REFUNDED');
+    assert.equal(refundRows[0].provider_ref, refundRef);
+
+    const { rows: journals } = await pool.query(
+      `SELECT journal_id,COUNT(*)::int AS entries,
+              SUM(debit)::numeric AS debits,SUM(credit)::numeric AS credits
+         FROM ledger_entries
+        WHERE reference_type='PAYMENT_WEBHOOK' AND reference_id=$1
+        GROUP BY journal_id`,
+      [paymentId],
+    );
+    assert.equal(journals.length, 1, 'all refund entries must share one journal identifier');
+    assert.equal(journals[0].entries, 3);
+    assert.equal(Number(journals[0].debits), Number(journals[0].credits));
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `DELETE FROM ledger_entries
+          WHERE reference_type='PAYMENT_WEBHOOK' AND reference_id=$1`,
+        [paymentId],
+      );
+      await client.query('DELETE FROM payment_webhook_events WHERE event_id=$1', [eventId]);
+      await client.query(
+        'DELETE FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
+        ['webhook',eventId],
+      );
+      await client.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+      if (jobId) await client.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
