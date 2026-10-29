@@ -77,7 +77,55 @@ export const migration = {
       `, [group.journal_id,operationRows[0].id,group.currency,group.created_at,group.posted_at]);
     }
 
+    const { rows: currencyMismatches } = await client.query(`
+      SELECT le.id,le.currency AS entry_currency,j.currency AS journal_currency
+        FROM ledger_entries le JOIN journals j ON j.id=le.journal_id
+       WHERE le.currency IS DISTINCT FROM j.currency
+       ORDER BY le.id LIMIT 10
+    `);
+    if (currencyMismatches.length) {
+      const details = currencyMismatches.map((row) => `${row.id}[${row.entry_currency} != ${row.journal_currency}]`).join('; ');
+      throw new Error(`Cannot enforce ledger currency matching; reconcile existing rows before migration 035: ${details}`);
+    }
+
     await client.query(`
+      CREATE OR REPLACE FUNCTION hope_validate_ledger_entry_currency() RETURNS trigger
+      LANGUAGE plpgsql AS $
+      DECLARE parent_currency TEXT;
+      BEGIN
+        SELECT currency INTO parent_currency FROM journals WHERE id=NEW.journal_id;
+        IF NOT FOUND THEN
+          RAISE EXCEPTION 'ledger entry requires an existing parent journal' USING ERRCODE='23503';
+        END IF;
+        IF NEW.currency IS DISTINCT FROM parent_currency THEN
+          RAISE EXCEPTION 'ledger entry currency must match parent journal currency' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+      END;
+      $;
+      DROP TRIGGER IF EXISTS ledger_entries_currency_matches_journal_trigger ON ledger_entries;
+      CREATE TRIGGER ledger_entries_currency_matches_journal_trigger
+        BEFORE INSERT OR UPDATE OF journal_id,currency ON ledger_entries
+        FOR EACH ROW EXECUTE FUNCTION hope_validate_ledger_entry_currency();
+
+      CREATE OR REPLACE FUNCTION hope_reject_journal_currency_mismatch() RETURNS trigger
+      LANGUAGE plpgsql AS $
+      BEGIN
+        IF NEW.currency IS DISTINCT FROM OLD.currency
+           AND EXISTS (
+             SELECT 1 FROM ledger_entries
+              WHERE journal_id=OLD.id AND currency IS DISTINCT FROM NEW.currency
+           ) THEN
+          RAISE EXCEPTION 'journal currency cannot change while ledger entries use the existing currency' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+      END;
+      $;
+      DROP TRIGGER IF EXISTS journals_currency_matches_entries_trigger ON journals;
+      CREATE TRIGGER journals_currency_matches_entries_trigger
+        BEFORE UPDATE OF currency ON journals
+        FOR EACH ROW EXECUTE FUNCTION hope_reject_journal_currency_mismatch();
+
       CREATE UNIQUE INDEX IF NOT EXISTS financial_operations_provider_idempotency_uq
         ON financial_operations(operation_type,idempotency_key)
         WHERE actor_type='PROVIDER' AND idempotency_key IS NOT NULL;

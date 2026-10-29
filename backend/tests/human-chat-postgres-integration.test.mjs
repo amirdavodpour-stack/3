@@ -1187,6 +1187,40 @@ test('direct payment-release webhook closes job chat in the same settlement tran
 });
 
 
+test('PostgreSQL rejects ledger entries whose currency differs from the parent journal', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const client = await pool.connect();
+  const operationId = crypto.randomUUID();
+  const journalId = crypto.randomUUID();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO financial_operations(id,operation_type,actor_type,actor_id,status,created_at)
+       VALUES($1,'ADJUSTMENT','SYSTEM',NULL,'PROCESSING',NOW())`,
+      [operationId],
+    );
+    await client.query(
+      `INSERT INTO journals(id,operation_id,journal_type,currency,status,created_at)
+       VALUES($1,$2,'CURRENCY_GUARD_TEST','USD','CREATED',NOW())`,
+      [journalId,operationId],
+    );
+    await assert.rejects(
+      client.query(
+        `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
+         VALUES(gen_random_uuid(),$1,'CURRENCY_GUARD_TEST',$2,'TEST_ACCOUNT',1,0,'EUR',NOW())`,
+        [journalId,operationId],
+      ),
+      (error) => error?.code === '23514' && /currency must match/i.test(error.message),
+    );
+    await client.query('ROLLBACK');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
 test('external payment-refund webhook preserves fractional USD in one canonical immutable journal', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const suffix = `external-refund-journal-${Date.now()}-${Math.random().toString(16).slice(2)}`;
