@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING }}
       CI_DEVICE_INTEGRATION: 'true'
       HOPE_ENV: staging
     steps:
@@ -60,7 +60,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); console.log(u.hostname)")"
+          : "${API_BASE_URL_STAGING:?API_BASE_URL_STAGING is required; configure STAGING_BASE_URL or API_BASE_URL_STAGING}"
+          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); if(u.hostname.toLowerCase()==='v2hope-production-7e9e.up.railway.app') throw new Error('Production host is forbidden for Android emulator staging certification'); console.log(u.hostname)")"
           ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
           test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
           echo "Resolved $host to $ips"

@@ -176,11 +176,16 @@ test('manual staging diagnostics never fall back to production URLs or productio
   assert.match(perf, /STAGING_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
   assert.doesNotMatch(perf, /v2hope-production-7e9e\.up\.railway\.app/);
   assert.doesNotMatch(perf, /STAGING_METRICS_TOKEN:\s*\$\{\{\s*secrets\.STAGING_METRICS_TOKEN\s*\|\|\s*secrets\.METRICS_TOKEN\s*\}\}/);
+  assert.match(perf, /STAGING_METRICS_TOKEN:\s*\$\{\{\s*secrets\.STAGING_METRICS_TOKEN\s*\}\}/);
+  assert.match(perf, /Production host is forbidden for staging performance diagnostics/);
+  const perfJobEnv = perf.match(/  diagnostic:[\s\S]*?(?=    steps:)/)?.[0] || '';
+  assert.doesNotMatch(perfJobEnv, /STAGING_METRICS_TOKEN:/, 'metrics token must not be a job-level secret');
   assert.match(perf, /STAGING_BASE_URL must be an HTTPS URL/);
 
   assert.match(emulator, /API_BASE_URL_STAGING:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
   assert.doesNotMatch(emulator, /v2hope-production-7e9e\.up\.railway\.app/);
   assert.match(emulator, /API_BASE_URL_STAGING is required/);
+  assert.match(emulator, /Production host is forbidden for Android emulator staging certification/);
 });
 
 test('CI Android toolchain is explicit and release builds enforce the lockfile', () => {
