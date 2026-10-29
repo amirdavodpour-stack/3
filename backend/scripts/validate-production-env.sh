@@ -15,6 +15,13 @@ case "$PAYMENT_PROVIDER" in webhook|internal) ;; *) echo 'PAYMENT_PROVIDER must 
 # Only the effective enabled state (internal provider + both flags) is scoped
 # to that project. Partial flag configuration remains fail-closed in the API,
 # but must not prevent an otherwise safe service from starting.
+# Synthetic internal payout is a staging-only test adapter, never real cash-out.
+# The staging Railway environment is named "production", so scope the override
+# to its explicit project ID as well as PAYMENT_PROVIDER=internal.
+if [ "${STAGING_ALLOW_INTERNAL_WALLET_PAYOUT:-false}" = "true" ] && [ "$PAYMENT_PROVIDER" = "internal" ]; then
+  [ "${RAILWAY_PROJECT_ID:-}" = '8c686259-09c6-4609-bbe7-4ea25e769e18' ] || { echo 'Staging internal wallet payout is permitted only for the designated Staging Railway project.' >&2; exit 1; }
+fi
+
 case "${INTERNAL_WALLET_USER_TOPUP_ENABLED:-false}:${STAGING_ALLOW_INTERNAL_WALLET_TOPUP:-false}" in
   true:true)
     if [ "$PAYMENT_PROVIDER" = internal ]; then
