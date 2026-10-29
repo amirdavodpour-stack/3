@@ -34,7 +34,7 @@ const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
 const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserPublic, postInternalPaymentHoldWithClient } = modules[5] || {};
-const { requestPayoutAtomic } = modules[6] || {};
+const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
@@ -1756,6 +1756,82 @@ test('production outbox refuses an already-reserved synthetic internal payout an
     // Preserve the payout and wallet-ledger fixture. wallet_entries are
     // deliberately immutable, and this isolated PostgreSQL database is discarded
     // after the job; deleting accounting history in teardown violates the ledger contract.
+  }
+});
+
+test('manual failed resolution of an unknown payout appends a compensating wallet credit', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'unknown-payout-manual-failure');
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    await creditWallet({
+      userId,
+      amount: '1700',
+      idempotencyKey: `manual-unknown-payout-wallet-seed-${userId}`,
+    });
+
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount: '500',
+      idempotencyKey: `manual-unknown-payout-${userId}`,
+    });
+    const { rows: events } = await pool.query(
+      "SELECT id FROM outbox_events WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1",
+      [payout.id],
+    );
+    assert.equal(events.length, 1);
+
+    const marked = await markPayoutUnknown({ eventId: events[0].id, payoutId: payout.id });
+    assert.equal(marked?.marked, true);
+
+    const resolved = await resolvePayoutUnknown({
+      payoutId: payout.id,
+      decision: 'FAILED',
+      reason: 'integration fixture: provider status confirmed no disbursement',
+    });
+    assert.equal(resolved?.status, 'FAILED');
+
+    const wallet = await getWalletByUserId(userId);
+    assert.equal(String(wallet.available_balance), '1700');
+    assert.equal(String(wallet.locked_balance), '0');
+
+    const { rows: entries } = await pool.query(
+      `SELECT entry_type,direction,amount,metadata
+         FROM wallet_entries
+        WHERE reference_type='PAYOUT' AND reference_id=$1
+        ORDER BY created_at,id`,
+      [payout.id],
+    );
+    assert.equal(entries.length, 2,
+      'manual failed resolution must preserve the reservation debit and append exactly one credit');
+    assert.ok(entries.some((entry) => entry.direction === 'DEBIT' && String(entry.amount) === '500'));
+    const reversal = entries.find((entry) => entry.direction === 'CREDIT');
+    assert.ok(reversal, 'manual resolution must append, never mutate, wallet history');
+    assert.equal(String(reversal.amount), '500');
+    assert.equal(reversal.metadata?.state, 'REVERSED');
+    assert.equal(reversal.metadata?.failureCode, 'UNKNOWN_RESOLVED_FAILED');
+
+    const { rows: holds } = await pool.query(
+      "SELECT status FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'",
+      [payout.id],
+    );
+    assert.equal(holds[0]?.status, 'CANCELLED');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
+    // This PostgreSQL database is disposable; preserve immutable wallet entries.
   }
 });
 
