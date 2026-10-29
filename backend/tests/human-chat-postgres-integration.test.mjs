@@ -26,6 +26,7 @@ const modules = enabled
       import('../src/repository/payment_funding.js'),
       import('../src/repository/outbox.js'),
       import('../src/outbox_handlers.js'),
+      import('../src/payment_provider.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -39,6 +40,7 @@ const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
 const { completePaymentCreateHoldOutbox, failOutboxEvent } = modules[10] || {};
 const { processOutboxEvent } = modules[11] || {};
+const { createPaymentProvider } = modules[12] || {};
 const {
   closeJobChatForJob,
   postChatMessage,
@@ -1699,6 +1701,16 @@ test('production outbox refuses an already-reserved synthetic internal payout an
     process.env.NODE_ENV = 'production';
     process.env.RAILWAY_PROJECT_ID = 'b12b7c1e-4dcc-470e-b87a-c63035c6e342';
     delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+    const internalProvider = createPaymentProvider('internal');
+    await assert.rejects(
+      internalProvider.createPayout({ payoutId, amount:'500', currency:'TOMAN', idempotencyKey:`direct-prod-payout-${userId}` }),
+      (error) => error?.code === 'PAYOUT_PROVIDER_NOT_ENABLED',
+    );
+    await assert.rejects(
+      internalProvider.getPayoutStatus({ payoutId, amount:'500', currency:'TOMAN', idempotencyKey:`direct-prod-payout-status-${userId}` }),
+      (error) => error?.code === 'PAYOUT_PROVIDER_NOT_ENABLED',
+    );
 
     const result = await processOutboxEvent(events[0]);
     assert.equal(result?.disabled, true, 'production must fail closed before invoking the synthetic payout adapter');

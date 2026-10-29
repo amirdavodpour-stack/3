@@ -3,7 +3,8 @@ import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentRelea
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
 import { logEvent, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
-import { completePayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
+import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
+import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
@@ -34,6 +35,19 @@ export async function processOutboxEvent(event) {
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
     } else if (event.event_type === 'PAYOUT_EXECUTE') {
+      if (!isInternalWalletPayoutEnabled({ paymentProvider: config.paymentProvider })) {
+        const disabled = await failPayoutOutbox({
+          eventId:event.id,
+          payoutId:payload.payoutId,
+          error:'PAYOUT_PROVIDER_NOT_ENABLED',
+          failureCode:'PAYOUT_PROVIDER_NOT_ENABLED',
+          leaseToken:event.lease_token,
+        });
+        if (!disabled?.completed) throw new Error(`OUTBOX_PAYOUT_DISABLED_COMMIT_FAILED:${disabled?.reason || 'UNKNOWN'}`);
+        recordOutboxFailed();
+        logEvent({ level:'warn', action:'OUTBOX_PAYOUT_DISABLED', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
+        return { processed:false, disabled:true };
+      }
       const result = await paymentProvider.createPayout({ payoutId: payload.payoutId, amount: payload.amount, currency: payload.currency, idempotencyKey: payload.idempotencyKey });
       if (result.status === 'UNKNOWN') {
         const unknown = await markPayoutUnknown({ eventId:event.id, payoutId:payload.payoutId, reason:'PROVIDER_UNKNOWN', leaseToken:event.lease_token });

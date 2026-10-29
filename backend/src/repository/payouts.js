@@ -3,7 +3,7 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
-import { STAGING_RAILWAY_PROJECT_ID } from '../wallet_topup_policy.js';
+import { isInternalWalletPayoutEnabled } from '../wallet_payout_policy.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
@@ -22,12 +22,9 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
   const value = parseAmount(amount);
   const key = String(idempotencyKey || '').trim();
   if (!key) throw Object.assign(new Error('IDEMPOTENCY_KEY_REQUIRED'), { code:'IDEMPOTENCY_KEY_REQUIRED' });
-  const internalPayoutAllowed = config.paymentProvider === 'internal' && (
-    process.env.NODE_ENV !== 'production' ||
-    (process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT === 'true' &&
-      process.env.RAILWAY_PROJECT_ID === STAGING_RAILWAY_PROJECT_ID)
-  );
-  if (!internalPayoutAllowed) throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+  if (!isInternalWalletPayoutEnabled({ paymentProvider: config.paymentProvider })) {
+    throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+  }
 
   return withSqlTransaction(async (client) => {
     const existing = await client.query(`SELECT * FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
@@ -63,7 +60,7 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
     await client.query(`INSERT INTO wallet_entries(wallet_id,entry_type,direction,amount,currency,reference_type,reference_id,financial_operation_id,metadata,balance_after) VALUES($1,'PAYOUT','DEBIT',$2,'TOMAN',$3,$4,$5,$6::jsonb,$7)`, [wallet.id,value,referenceType,referenceId || payoutId,operationId,JSON.stringify({state:'RESERVED'}),(BigInt(String(wallet.available_balance))-value).toString()]);
     await client.query(`INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,idempotency_key,created_at,updated_at) VALUES($1,$2,$3,$4,'TOMAN','RESERVED',$5,$6,NOW(),NOW())`, [payoutId,wallet.id,userId,value,PAYOUT_PROVIDER,key]);
     await client.query(`INSERT INTO journals(operation_id,journal_type,currency,status,posted_at) VALUES($1,'PAYOUT','TOMAN','CREATED',NULL)`, [operationId]);
-    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value,currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
+    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value.toString(),currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
     const { rows } = await client.query(`SELECT * FROM payouts WHERE id=$1`, [payoutId]);
     return rows[0];
   });
@@ -157,7 +154,7 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
   });
 }
 
-export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken }) {
+export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
     const { rows: ev } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!ev[0]) return {completed:false,reason:'OUTBOX_NOT_FOUND'};
     if (leaseToken && String(ev[0].lease_token)!==String(leaseToken)) return {completed:false,reason:'STALE_LEASE'};
@@ -176,15 +173,15 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
     if (!hold || !wallet) return {completed:false,reason:'PAYOUT_RESERVATION_NOT_FOUND'};
     await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
     await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
-    await client.query(`UPDATE payouts SET status='FAILED',failure_code='PROVIDER_ERROR',failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000)]);
+    await client.query(`UPDATE payouts SET status='FAILED',failure_code=$3,failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000),String(failureCode || 'PROVIDER_ERROR')]);
     await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
     await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=NOW(),locked_at=NULL,last_error=$2 WHERE id=$1`,[eventId,String(error).slice(0,2000)]);
   return {completed:true,alreadyFailed:false};
 }
 
-export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken }) {
-  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken }));
+export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
+  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode }));
 }
 
 export async function getPayoutForUser(userId,payoutId) {
