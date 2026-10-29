@@ -1527,6 +1527,52 @@ test('plain text chat send rejects after account deletion has committed', { skip
   }
 });
 
+
+test('production disables synthetic internal cash-out before reserving wallet funds', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'production-internal-payout-block');
+  const seedKey = `seed-production-payout-block-${userId}`;
+  await creditWallet({ userId, amount: '1700', idempotencyKey: seedKey });
+
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousStageFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'production';
+    process.env.RAILWAY_PROJECT_ID = 'b12b7c1e-4dcc-470e-b87a-c63035c6e342';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+    await assert.rejects(
+      requestPayoutAtomic({
+        userId,
+        amount: '500',
+        idempotencyKey: `production-payout-block-${userId}`,
+      }),
+      (error) => error?.code === 'PAYOUT_PROVIDER_NOT_ENABLED',
+    );
+
+    const wallet = await getWalletByUserId(userId);
+    assert.equal(String(wallet.available_balance), '1700');
+    assert.equal(String(wallet.locked_balance), '0');
+    const { rows: payouts } = await pool.query(
+      'SELECT id FROM payouts WHERE user_id=$1',
+      [userId],
+    );
+    assert.equal(payouts.length, 0, 'no payout reservation or provider-success path may be created in real production');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousStageFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousStageFlag;
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
