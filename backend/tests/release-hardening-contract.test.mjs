@@ -276,16 +276,39 @@ test('release validation consumes the actual reusable staging certification outp
 });
 
 
-test('production reset bootstrap targets the same configured URL used by runtime delivery', () => {
+test('release validation has no production side effects and keeps production secrets out of the job environment', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
-  assert.match(
-    workflow,
-    /RESET_WEBHOOK_URL:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_URL_PRODUCTION\s*\|\|\s*'https:\/\/oumueyftltvakimtbemj\.supabase\.co\/functions\/v1\/hope-password-reset'\s*\}\}/,
-  );
-  const block = workflow.match(/name: Provision password reset webhook receiver[\s\S]*?\n      - name: Setup Node\.js 24/)?.[0] || '';
-  assert.match(block, /RESET_WEBHOOK_URL/);
-  assert.match(block, /RESET_TOKEN_DELIVERY_SECRET_PRODUCTION/);
-  assert.match(block, /curl -fsS --retry 2/);
+  const start = workflow.indexOf('  production_artifact:');
+  const end = workflow.indexOf('  release_gate:', start);
+  assert.ok(start >= 0 && end > start, 'production artifact job not found');
+  const job = workflow.slice(start, end);
+
+  // Artifact validation may sign/package and upload an artifact, but it must
+  // never mutate production state or provision the live reset receiver.
+  assert.doesNotMatch(job, /Provision password reset webhook receiver/);
+  assert.doesNotMatch(job, /\/_bootstrap/);
+  assert.doesNotMatch(job, /curl[^\n]*(?:-X\s+POST|--data(?:-raw)?\s)/i);
+  
+  // Do not expose production credentials to npm install, audit, image build,
+  // SBOM generation, or artifact upload. Production secrets are step-scoped.
+  const envStart = job.indexOf('    env:');
+  const stepsStart = job.indexOf('    steps:');
+  assert.ok(envStart >= 0 && stepsStart > envStart, 'job-level env block not found');
+  const jobEnv = job.slice(envStart, stepsStart);
+  assert.doesNotMatch(jobEnv, /secrets\./, 'job-level env must not contain secret references');
+
+  const validateStart = job.indexOf('- name: Validate production environment contract');
+  const validateEnd = job.indexOf('\n      - name:', validateStart);
+  assert.ok(validateStart >= 0 && validateEnd > validateStart, 'production env validation step not found');
+  const validateStep = job.slice(validateStart, validateEnd);
+  assert.match(validateStep, /DATABASE_URL:\s*\$\{\{\s*secrets\.DATABASE_URL_PRODUCTION\s*\}\}/);
+  assert.match(validateStep, /RESET_TOKEN_DELIVERY_SECRET:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION\s*\}\}/);
+
+  const buildStart = job.indexOf('- name: Build signed production APK');
+  const buildEnd = job.indexOf('\n      - name:', buildStart);
+  assert.ok(buildStart >= 0 && buildEnd > buildStart, 'signed APK build step not found');
+  const buildStep = job.slice(buildStart, buildEnd);
+  assert.match(buildStep, /API_BASE_URL:\s*\$\{\{\s*secrets\.API_BASE_URL_PRODUCTION\s*\}\}/);
 });
 
 
