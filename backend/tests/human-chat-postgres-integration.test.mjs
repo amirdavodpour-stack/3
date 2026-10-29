@@ -1399,6 +1399,81 @@ test('external funding ledger is posted only after the provider confirms its hol
   }
 });
 
+test('external PAYMENT_HELD callback before outbox completion posts exactly one funding journal', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const previousProvider = appConfig.paymentProvider;
+  let fixtureRows;
+  let webhookEventId;
+  appConfig.paymentProvider = 'webhook';
+  try {
+    fixtureRows = await createExternalFundingFixture('external-funding-webhook-first');
+    webhookEventId = `R05-external-held-webhook-first-${fixtureRows.paymentId}`;
+    const providerRef = `confirmed-hold-${fixtureRows.paymentId}`;
+    const callback = await applyPaymentWebhookAtomic({
+      eventId: webhookEventId,
+      eventType: 'PAYMENT_HELD',
+      paymentId: fixtureRows.paymentId,
+      providerRef,
+      payload: { eventId: webhookEventId, eventType: 'PAYMENT_HELD', paymentId: fixtureRows.paymentId, providerRef },
+    });
+    assert.equal(callback.processed, true);
+
+    const afterCallback = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+      [fixtureRows.paymentId],
+    );
+    assert.equal(afterCallback.rows[0].count, 3,
+      'a callback-first hold must post the balanced funding journal before the outbox can mark itself done');
+
+    const outboxResult = await completePaymentCreateHoldOutbox({
+      eventId: fixtureRows.eventId,
+      jobId: fixtureRows.jobId,
+      paymentId: fixtureRows.paymentId,
+      providerRef,
+      actorId: fixture.ownerId,
+    });
+    assert.equal(outboxResult.completed, true);
+
+    const { rows: journalGroups } = await pool.query(
+      `SELECT journal_id,COUNT(*)::int AS entries,
+              SUM(debit)::numeric AS debits,SUM(credit)::numeric AS credits
+         FROM ledger_entries
+        WHERE reference_type='PAYMENT_FUND' AND reference_id=$1
+        GROUP BY journal_id`,
+      [fixtureRows.paymentId],
+    );
+    assert.equal(journalGroups.length, 1, 'callback/outbox ordering must never duplicate the funding journal');
+    assert.equal(journalGroups[0].entries, 3);
+    assert.equal(Number(journalGroups[0].debits), Number(journalGroups[0].credits));
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (fixtureRows) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        if (webhookEventId) {
+          await client.query('DELETE FROM provider_events WHERE provider_event_id=$1', [webhookEventId]);
+        }
+        await client.query(
+          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+          [fixtureRows.paymentId],
+        );
+        await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
+        await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
+        await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
+        await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+    }
+  }
+});
+
 test('terminal external hold failure leaves no funding journal and restores the original assigned job state', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const previousProvider = appConfig.paymentProvider;
