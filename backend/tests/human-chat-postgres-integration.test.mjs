@@ -1746,7 +1746,9 @@ test('production outbox refuses an already-reserved synthetic internal payout an
         await pool.query('DELETE FROM financial_operations WHERE id=$1', [operationId]);
       }
     }
-    await pool.query('DELETE FROM users WHERE id=$1', [userId]);
+    // The isolated CI database is discarded after this job. The seed credit
+    // created its own financial operation referencing this user, so do not delete
+    // the user here before cleaning that independent operation.
   }
 });
 
