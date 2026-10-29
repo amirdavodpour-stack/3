@@ -2,7 +2,7 @@ import { closeJobChatForJob } from './human_chat.js';
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
-import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
+import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal } from '../financial.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
@@ -36,6 +36,24 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
         paymentId, payerId: payment.payer_id, employerCharge, providerPayout, platformFee, currency,
         idempotencyKey: `internal:hold:${paymentId}`,
       });
+    } else {
+      // Recognize the external cash/escrow funding only after the provider has
+      // confirmed the hold. Every line must share one journal ID so PostgreSQL's
+      // deferred ledger balance trigger validates the balanced group at COMMIT.
+      const currency = payment.currency || config.paymentCurrency;
+      const breakdown = {
+        employerCharge: normalizeFinancialAmount(currency, payment.employer_charge || payment.amount),
+        providerPayout: normalizeFinancialAmount(currency, payment.provider_payout || payment.amount),
+        platformFee: normalizeFinancialAmount(currency, payment.platform_fee || 0),
+      };
+      const journalId = crypto.randomUUID();
+      for (const entry of fundingJournal(breakdown)) {
+        await client.query(
+          `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
+           VALUES($1,$2,'PAYMENT_FUND',$3,$4,$5,$6,$7,NOW())`,
+          [crypto.randomUUID(),journalId,paymentId,entry.account,entry.debit,entry.credit,currency],
+        );
+      }
     }
     await client.query(`UPDATE payments SET status='HELD',provider_ref=$2,updated_at=NOW() WHERE id=$1`, [paymentId, providerRef]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_HOLD_CONFIRMED',$2,'payment',$3,$4::jsonb,NOW())`, [crypto.randomUUID(), actorId, paymentId, JSON.stringify({ jobId, outboxEventId:eventId, providerRef })]);
