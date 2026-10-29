@@ -1187,6 +1187,154 @@ test('direct payment-release webhook closes job chat in the same settlement tran
 });
 
 
+test('migration 035 canonicalizes a balanced legacy ledger group before enforcing the journal foreign key', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const client = await pool.connect();
+  const schema = `r035_${crypto.randomBytes(6).toString('hex')}`;
+  const quotedSchema = `"${schema}"`;
+  const journalId = crypto.randomUUID();
+  const referenceId = crypto.randomUUID();
+  const { migration: migration035 } = await import('../src/db/migrations/035_external_ledger_journals_and_currency_precision.js');
+  let schemaCreated = false;
+  let transactionOpen = false;
+  try {
+    await client.query(`CREATE SCHEMA ${quotedSchema}`);
+    schemaCreated = true;
+    await client.query('BEGIN');
+    transactionOpen = true;
+    await client.query(`SET LOCAL search_path TO ${quotedSchema}, public`);
+    await client.query(`
+      CREATE TABLE financial_operations (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        operation_type TEXT NOT NULL CHECK (operation_type IN ('TOP_UP','TRANSFER','HOLD','RELEASE','REFUND','PAYOUT','ADJUSTMENT')),
+        actor_type TEXT NOT NULL CHECK (actor_type IN ('USER','ADMIN','SYSTEM','PROVIDER')),
+        actor_id UUID NULL,
+        status TEXT NOT NULL CHECK (status IN ('PENDING','PROCESSING','SUCCEEDED','FAILED','UNKNOWN','CANCELLED')),
+        idempotency_key TEXT NULL,
+        request_hash TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        completed_at TIMESTAMPTZ NULL,
+        CHECK ((status IN ('SUCCEEDED','FAILED','CANCELLED') AND completed_at IS NOT NULL) OR
+               (status IN ('PENDING','PROCESSING','UNKNOWN') AND completed_at IS NULL))
+      );
+      CREATE TABLE journals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        operation_id UUID NOT NULL REFERENCES financial_operations(id) ON DELETE RESTRICT,
+        journal_type TEXT NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'TOMAN' CONSTRAINT journals_currency_check CHECK (currency='TOMAN'),
+        status TEXT NOT NULL DEFAULT 'CREATED' CHECK (status IN ('CREATED','POSTED','FAILED')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        posted_at TIMESTAMPTZ NULL,
+        UNIQUE(operation_id,journal_type)
+      );
+      CREATE TABLE ledger_entries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        journal_id UUID NOT NULL,
+        reference_type TEXT NOT NULL,
+        reference_id UUID NULL,
+        account TEXT NOT NULL,
+        debit BIGINT NOT NULL DEFAULT 0 CHECK (debit >= 0),
+        credit BIGINT NOT NULL DEFAULT 0 CHECK (credit >= 0),
+        currency TEXT NOT NULL DEFAULT 'USD',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK ((debit=0 AND credit>0) OR (credit=0 AND debit>0)),
+        CONSTRAINT ledger_entries_amount_max_chk CHECK (debit <= 9000000000000000 AND credit <= 9000000000000000)
+      );
+      CREATE OR REPLACE FUNCTION hope_assert_ledger_journal_balanced() RETURNS trigger
+      LANGUAGE plpgsql AS $fn$
+      DECLARE debit_total NUMERIC; credit_total NUMERIC; journal_uuid UUID;
+      BEGIN
+        journal_uuid := COALESCE(NEW.journal_id,OLD.journal_id);
+        SELECT COALESCE(SUM(debit),0),COALESCE(SUM(credit),0)
+          INTO debit_total,credit_total FROM ledger_entries WHERE journal_id=journal_uuid;
+        IF debit_total <> credit_total THEN
+          RAISE EXCEPTION 'legacy journal % is unbalanced', journal_uuid USING ERRCODE='23514';
+        END IF;
+        RETURN COALESCE(NEW,OLD);
+      END;
+      $fn$;
+      CREATE CONSTRAINT TRIGGER ledger_journal_balance_deferred
+        AFTER INSERT OR UPDATE OF debit,credit,journal_id OR DELETE ON ledger_entries
+        DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION hope_assert_ledger_journal_balanced();
+      CREATE OR REPLACE FUNCTION hope_validate_posted_journal_balance() RETURNS trigger
+      LANGUAGE plpgsql AS $fn$
+      DECLARE debit_total NUMERIC; credit_total NUMERIC; entry_count BIGINT;
+      BEGIN
+        IF NEW.status='POSTED' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'POSTED') THEN
+          SELECT COUNT(*),COALESCE(SUM(debit),0),COALESCE(SUM(credit),0)
+            INTO entry_count,debit_total,credit_total FROM ledger_entries WHERE journal_id=NEW.id;
+          IF entry_count=0 OR debit_total<>credit_total OR debit_total<=0 THEN
+            RAISE EXCEPTION 'posted journal must be balanced and non-empty' USING ERRCODE='55000';
+          END IF;
+        END IF;
+        RETURN NEW;
+      END;
+      $fn$;
+      CREATE CONSTRAINT TRIGGER journals_posted_balance_trigger
+        AFTER INSERT OR UPDATE OF status ON journals
+        DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION hope_validate_posted_journal_balance();
+    `);
+    await client.query(
+      `INSERT INTO ledger_entries(journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
+       VALUES($1,'LEGACY_TEST',$2,'PLATFORM_CASH',130,0,'USD',NOW()),
+             ($1,'LEGACY_TEST',$2,'ESCROW_LIABILITY',0,100,'USD',NOW()),
+             ($1,'LEGACY_TEST',$2,'PLATFORM_FEE_REVENUE',0,30,'USD',NOW())`,
+      [journalId,referenceId],
+    );
+    const { rows: preMigration } = await client.query('SELECT id FROM journals WHERE id=$1', [journalId]);
+    assert.equal(preMigration.length, 0, 'fixture must model a legacy orphan journal group');
+    await client.query('COMMIT');
+    transactionOpen = false;
+
+    await client.query('BEGIN');
+    transactionOpen = true;
+    await client.query(`SET LOCAL search_path TO ${quotedSchema}, public`);
+    await migration035.up(client);
+    await client.query('COMMIT');
+    transactionOpen = false;
+
+    const { rows: canonical } = await client.query(
+      `SELECT j.id,j.currency,j.status,j.journal_type,
+              fo.operation_type,fo.actor_type,fo.status AS operation_status,fo.idempotency_key,
+              COUNT(le.id)::int AS entry_count,SUM(le.debit)::numeric AS debits,SUM(le.credit)::numeric AS credits,
+              MIN(le.currency) AS entry_currency
+         FROM ${quotedSchema}.journals j
+         JOIN ${quotedSchema}.financial_operations fo ON fo.id=j.operation_id
+         JOIN ${quotedSchema}.ledger_entries le ON le.journal_id=j.id
+        WHERE j.id=$1
+        GROUP BY j.id,fo.id`,
+      [journalId],
+    );
+    assert.equal(canonical.length, 1);
+    assert.equal(canonical[0].currency, 'USD');
+    assert.equal(canonical[0].entry_currency, 'USD');
+    assert.equal(canonical[0].status, 'POSTED');
+    assert.equal(canonical[0].journal_type, 'LEGACY_IMPORT');
+    assert.equal(canonical[0].operation_type, 'ADJUSTMENT');
+    assert.equal(canonical[0].actor_type, 'SYSTEM');
+    assert.equal(canonical[0].operation_status, 'SUCCEEDED');
+    assert.equal(canonical[0].idempotency_key, `migration-035:legacy-ledger:${journalId}`);
+    assert.equal(canonical[0].entry_count, 3);
+    assert.equal(Number(canonical[0].debits), 130);
+    assert.equal(Number(canonical[0].credits), 130);
+    const { rows: foreignKeys } = await client.query(
+      `SELECT convalidated FROM pg_constraint
+        WHERE conname='ledger_entries_journal_id_fk'
+          AND connamespace=(SELECT oid FROM pg_namespace WHERE nspname=$1)`,
+      [schema],
+    );
+    assert.equal(foreignKeys.length, 1);
+    assert.equal(foreignKeys[0].convalidated, true);
+  } catch (error) {
+    if (transactionOpen) await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    if (transactionOpen) await client.query('ROLLBACK').catch(() => {});
+    if (schemaCreated) await client.query(`DROP SCHEMA IF EXISTS ${quotedSchema} CASCADE`).catch(() => {});
+    client.release();
+  }
+});
+
 test('PostgreSQL enforces parent-ledger currency consistency and journal currency immutability', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const client = await pool.connect();
