@@ -2,6 +2,7 @@ import { creditWallet, transferAvailable, INTERNAL_CURRENCY } from '../wallet_le
 import { ADMIN_PERMISSIONS, assertAdminPermission } from './admin_panel_access.js';
 import { requestPayoutAtomic, listPayoutsForUser } from '../repository/payouts.js';
 import { isInternalWalletUserTopUpEnabled } from '../wallet_topup_policy.js';
+import { isInternalWalletAdminCreditEnabled } from '../wallet_admin_credit_policy.js';
 
 export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, HttpError, config, walletRepo }) {
   return async function walletRoutes(req, res, parts) {
@@ -116,7 +117,7 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
         throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
       }
       assertAdminPermission(me, ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT);
-      if (process.env.NODE_ENV === 'production' && !config.internalWalletAdminCreditEnabled) {
+      if (!isInternalWalletAdminCreditEnabled({ enabled: config.internalWalletAdminCreditEnabled })) {
         throw new HttpError(404,'NOT_FOUND','Wallet sandbox credit is disabled');
       }
       const body = await readBody(req);
