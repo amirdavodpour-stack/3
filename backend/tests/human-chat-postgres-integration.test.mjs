@@ -1720,6 +1720,24 @@ test('production outbox refuses an already-reserved synthetic internal payout an
     assert.equal(payoutRows[0]?.provider_ref, null, 'no synthetic provider reference may be issued in production');
     assert.equal(payoutRows[0]?.failure_code, 'PAYOUT_PROVIDER_NOT_ENABLED');
 
+    const { rows: walletLedgerRows } = await pool.query(
+      `SELECT entry_type,direction,amount,metadata
+         FROM wallet_entries
+        WHERE reference_type='PAYOUT' AND reference_id=$1
+        ORDER BY created_at,id`,
+      [payoutId],
+    );
+    assert.equal(walletLedgerRows.length, 2,
+      'a failed payout must retain the original reservation debit and append one compensating credit');
+    assert.ok(walletLedgerRows.some((entry) =>
+      entry.entry_type === 'PAYOUT' && entry.direction === 'DEBIT' && String(entry.amount) === '500',
+    ));
+    const reversal = walletLedgerRows.find((entry) => entry.direction === 'CREDIT');
+    assert.ok(reversal, 'failed payout must append a credit reversal; wallet entries are immutable');
+    assert.equal(String(reversal.amount), '500');
+    assert.equal(reversal.metadata?.state, 'REVERSED');
+    assert.equal(reversal.metadata?.failureCode, 'PAYOUT_PROVIDER_NOT_ENABLED');
+
     const { rows: outboxRows } = await pool.query(
       'SELECT status,last_error FROM outbox_events WHERE id=$1',
       [outboxEventId],
