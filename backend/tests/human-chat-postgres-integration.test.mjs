@@ -2112,17 +2112,17 @@ test('account deletion refuses a nonterminal payment even when no wallet balance
     ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
     ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,created_at,updated_at',
     ')',
-    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\\'FIXED\\',\\'FIXED\\',100,100,1,$5,\\'IN_PROGRESS\\',',
-    ' \\'R05 test\\',\\'MISSION\\',\\'PUBLIC\\',NOW(),NOW()',
+    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\'FIXED\',\'FIXED\',100,100,1,$5,\'IN_PROGRESS\',',
+    ' \'R05 test\',\'MISSION\',\'PUBLIC\',NOW(),NOW()',
     'FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
-  ].join('\\n');
+  ].join('\n');
   const { rows: jobs } = await pool.query(jobInsert, [
     userId, fixture.workerId, suffix, 'Account deletion pending payment fixture', 'R05 account deletion pending payment',
   ]);
   assert.ok(jobs[0], 'pending-payment fixture requires an active category');
   const paymentId = crypto.randomUUID();
   await pool.query(
-    'INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,currency,base_amount,employer_charge,provider_payout,platform_fee,created_at,updated_at) VALUES($1,$2,$3,$4,100,\\'HOLD_PENDING\\',$5,\\'TOMAN\\',100,100,100,0,NOW(),NOW())',
+    'INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,currency,base_amount,employer_charge,provider_payout,platform_fee,created_at,updated_at) VALUES($1,$2,$3,$4,100,\'HOLD_PENDING\',$5,\'TOMAN\',100,100,100,0,NOW(),NOW())',
     [paymentId, jobs[0].id, userId, fixture.workerId, 'pending-' + suffix],
   );
 
@@ -2142,7 +2142,7 @@ test('account deletion refuses an unresolved payout even if wallet balances are 
   const userId = await createTransferTestUser(pool, 'delete-unknown-payout');
   const wallet = await ensureWalletForUserPublic(userId);
   await pool.query(
-    'INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,provider_ref,idempotency_key,created_at,updated_at,completed_at) VALUES($1,$2,$3,100,\\'TOMAN\\',\\'UNKNOWN\\',\\'internal\\',NULL,$4,NOW(),NOW(),NULL)',
+    'INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,provider_ref,idempotency_key,created_at,updated_at,completed_at) VALUES($1,$2,$3,100,\'TOMAN\',\'UNKNOWN\',\'internal\',NULL,$4,NOW(),NOW(),NULL)',
     [crypto.randomUUID(), wallet.id, userId, 'delete-unknown-payout-' + userId],
   );
 
@@ -2162,7 +2162,7 @@ test('account deletion refuses an active wallet hold even if the balance row is 
   const userId = await createTransferTestUser(pool, 'delete-active-hold');
   const wallet = await ensureWalletForUserPublic(userId);
   await pool.query(
-    'INSERT INTO wallet_holds(wallet_id,hold_type,reference_type,reference_id,amount,status) VALUES($1,\\'OTHER\\',\\'ACCOUNT_DELETE_TEST\\',$2,100,\\'ACTIVE\\')',
+    'INSERT INTO wallet_holds(wallet_id,hold_type,reference_type,reference_id,amount,status) VALUES($1,\'OTHER\',\'ACCOUNT_DELETE_TEST\',$2,100,\'ACTIVE\')',
     [wallet.id, crypto.randomUUID()],
   );
 
@@ -2186,10 +2186,10 @@ test('job funding waits for the account lock and cannot create a payment after d
     ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
     ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,created_at,updated_at',
     ')',
-    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\\'FIXED\\',\\'FIXED\\',100,100,1,$5,\\'PUBLISHED\\',',
-    ' \\'R05 test\\',\\'MISSION\\',\\'PUBLIC\\',NOW(),NOW()',
+    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\'FIXED\',\'FIXED\',100,100,1,$5,\'PUBLISHED\',',
+    ' \'R05 test\',\'MISSION\',\'PUBLIC\',NOW(),NOW()',
     'FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
-  ].join('\\n');
+  ].join('\n');
   const { rows: jobs } = await pool.query(jobInsert, [
     userId, fixture.workerId, suffix, 'Funding deletion race fixture', 'R05 funding deletion race',
   ]);
@@ -2204,7 +2204,7 @@ test('job funding waits for the account lock and cannot create a payment after d
     await holder.query('BEGIN');
     holderOpen = true;
     await holder.query('SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE', [userId]);
-    await holder.query('UPDATE users SET status=\\'DELETED\\' WHERE id=$1', [userId]);
+    await holder.query('UPDATE users SET status=\'DELETED\' WHERE id=$1', [userId]);
 
     writer = fundJobAtomic({
       jobId: jobs[0].id,
