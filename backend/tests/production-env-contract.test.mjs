@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isInternalWalletPayoutEnabled } from '../src/wallet_payout_policy.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'production-release.yml'), 'utf8');
@@ -232,4 +233,34 @@ test('production validator allows the synthetic internal cash-out override only 
   });
   assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
   assert.match(result.stdout, /Production environment contract PASS/);
+});
+
+
+test('internal payout policy fails closed on the real production project even if NODE_ENV is misconfigured', () => {
+  assert.equal(isInternalWalletPayoutEnabled({
+    paymentProvider: 'internal',
+    env: {
+      NODE_ENV: 'test',
+      RAILWAY_PROJECT_ID: 'b12b7c1e-4dcc-470e-b87a-c63035c6e342',
+      STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+    },
+  }), false);
+
+  assert.equal(isInternalWalletPayoutEnabled({
+    paymentProvider: 'internal',
+    env: {
+      NODE_ENV: 'production',
+      RAILWAY_PROJECT_ID: '8c686259-09c6-4609-bbe7-4ea25e769e18',
+      STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+    },
+  }), true);
+
+  assert.equal(isInternalWalletPayoutEnabled({
+    paymentProvider: 'internal',
+    env: {
+      NODE_ENV: 'production',
+      RAILWAY_PROJECT_ID: '8c686259-09c6-4609-bbe7-4ea25e769e18',
+      STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'false',
+    },
+  }), false);
 });
