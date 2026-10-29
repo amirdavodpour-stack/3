@@ -114,6 +114,9 @@ export async function postChatMessage(conversationId,userId,role,body,options={}
   if(messageType==='ATTACHMENT'&&files.length===0){const e=new Error('CHAT_ATTACHMENT_REQUIRED');e.code='CHAT_ATTACHMENT_REQUIRED';throw e;}
   if(messageType==='TEXT'&&files.length){const e=new Error('CHAT_ATTACHMENTS_INVALID');e.code='CHAT_ATTACHMENTS_INVALID';throw e;}
   return withSqlTransaction(async(client)=>{
+    // Match account deletion's lock order before locking the conversation.
+    // If deletion committed first, reject the send instead of recreating user activity.
+    await lockActiveChatAccount(client,userId);
     // Serialize sends against closeJobChatForJob. The outer precheck improves
     // fast rejection, but only this locked read is authoritative: a concurrent
     // close may commit after that precheck and before this transaction starts.
