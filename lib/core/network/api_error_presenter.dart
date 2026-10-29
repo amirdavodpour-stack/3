@@ -10,6 +10,8 @@ String apiErrorMessage(Object error, {String fallback = 'عملیات ناموف
         return 'نیاز به ورود مجدد دارید.';
       case 'FORBIDDEN':
         return 'دسترسی به این بخش مجاز نیست.';
+      case 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING':
+        return 'برای حذف حساب، ابتدا موجودی کیف پول را تعیین تکلیف کنید و پرداخت‌ها یا برداشت‌های در انتظار را به سرانجام برسانید.';
       case 'JOB_NOT_HIRABLE':
         return 'این موقعیت دیگر قابل استخدام نیست.';
       case 'CANDIDATE_ALREADY_HIRED':
