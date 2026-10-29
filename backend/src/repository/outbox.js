@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
-import { postExternalFundingJournalWithClient } from './external_payment_ledger.js';
+import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
@@ -146,10 +146,16 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
         idempotencyKey:`internal:release:${paymentId}`,
       });
     } else {
-      for (const [idx,journal] of [releaseJournal(breakdown),payoutJournal(breakdown)].entries()) {
-        const journalId=crypto.randomUUID(); const reference=idx===0?'PAYMENT_RELEASE':'PAYMENT_PAYOUT';
-        for (const entry of journal) await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())`, [crypto.randomUUID(),journalId,reference,paymentId,entry.account,entry.debit,entry.credit,breakdown.currency]);
-      }
+      await postExternalLedgerJournalWithClient(client, {
+        operationType:'RELEASE', journalType:'EXTERNAL_RELEASE', referenceType:'PAYMENT_RELEASE',
+        referenceId:paymentId, currency:breakdown.currency, entries:releaseJournal(breakdown),
+        idempotencyKey:`external:RELEASE:${paymentId}`,
+      });
+      await postExternalLedgerJournalWithClient(client, {
+        operationType:'PAYOUT', journalType:'EXTERNAL_PAYOUT', referenceType:'PAYMENT_PAYOUT',
+        referenceId:paymentId, currency:breakdown.currency, entries:payoutJournal(breakdown),
+        idempotencyKey:`external:PAYOUT:${paymentId}`,
+      });
     }
     const settlementProviderRef = providerReleaseRef || payment.provider_ref;
     if (!settlementProviderRef) {

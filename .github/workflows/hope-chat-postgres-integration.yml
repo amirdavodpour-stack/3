@@ -34,7 +34,7 @@ concurrency:
 
 jobs:
   postgres-chat:
-    name: PostgreSQL migration 034 and human-chat regression gate
+    name: PostgreSQL migration 035 and human-chat regression gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:

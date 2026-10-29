@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
-import { postExternalFundingJournalWithClient } from './external_payment_ledger.js';
+import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.js';
@@ -111,14 +111,16 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
           actorId:p.payee_id, idempotencyKey:`internal:webhook:release:${eventId}`,
         });
       } else {
-        for(const journal of [releaseJournal(b),payoutJournal(b)]){
-          const jid=crypto.randomUUID();
-          for(const e of journal) await client.query(
-            `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
-             VALUES($1,$2,'PAYMENT_WEBHOOK',$3,$4,$5,$6,$7,NOW())`,
-            [crypto.randomUUID(),jid,paymentId,e.account,e.debit,e.credit,b.currency]
-          );
-        }
+        await postExternalLedgerJournalWithClient(client, {
+          operationType:'RELEASE', journalType:'EXTERNAL_RELEASE', referenceType:'PAYMENT_RELEASE',
+          referenceId:paymentId, currency:b.currency, entries:releaseJournal(b),
+          idempotencyKey:`external:RELEASE:${paymentId}`,
+        });
+        await postExternalLedgerJournalWithClient(client, {
+          operationType:'PAYOUT', journalType:'EXTERNAL_PAYOUT', referenceType:'PAYMENT_PAYOUT',
+          referenceId:paymentId, currency:b.currency, entries:payoutJournal(b),
+          idempotencyKey:`external:PAYOUT:${paymentId}`,
+        });
       }
       await client.query(`UPDATE payments SET status='RELEASED',updated_at=NOW() WHERE id=$1`,[paymentId]);
       await client.query(`UPDATE jobs SET status='SETTLED',updated_at=NOW() WHERE id=$1 AND status='COMPLETED'`,[p.job_id]);
@@ -141,16 +143,11 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
           actorId:p.payer_id, idempotencyKey:`internal:webhook:refund:${refund.id}`,
         });
       } else {
-        // All rows in a refund must share one journal identifier; the deferred
-        // balance trigger validates debit/credit totals per journal at COMMIT.
-        const journalId = crypto.randomUUID();
-        for(const e of refundJournal(b)){
-          await client.query(
-            `INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at)
-             VALUES($1,$2,'PAYMENT_WEBHOOK',$3,$4,$5,$6,$7,NOW())`,
-            [crypto.randomUUID(),journalId,paymentId,e.account,e.debit,e.credit,b.currency]
-          );
-        }
+        await postExternalLedgerJournalWithClient(client, {
+          operationType:'REFUND', journalType:'EXTERNAL_REFUND', referenceType:'PAYMENT_REFUND',
+          referenceId:paymentId, currency:b.currency, entries:refundJournal(b),
+          idempotencyKey:`external:REFUND:${paymentId}`,
+        });
       }
       await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[refund.id,providerRef||null]);
       await client.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);

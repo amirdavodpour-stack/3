@@ -1255,7 +1255,7 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
       `SELECT journal_id,COUNT(*)::int AS entries,
               SUM(debit)::numeric AS debits,SUM(credit)::numeric AS credits
          FROM ledger_entries
-        WHERE reference_type='PAYMENT_WEBHOOK' AND reference_id=$1
+        WHERE reference_type='PAYMENT_REFUND' AND reference_id=$1
         GROUP BY journal_id`,
       [paymentId],
     );
@@ -1283,18 +1283,25 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query(
-        `DELETE FROM ledger_entries
-          WHERE reference_type='PAYMENT_WEBHOOK' AND reference_id=$1`,
+      const { rows: canonicalRows } = await client.query(
+        `SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id
+          WHERE le.reference_type='PAYMENT_REFUND' AND le.reference_id=$1 AND j.status='POSTED' LIMIT 1`,
         [paymentId],
       );
-      await client.query('DELETE FROM payment_webhook_events WHERE event_id=$1', [eventId]);
-      await client.query(
-        'DELETE FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
-        ['webhook',eventId],
-      );
-      await client.query('DELETE FROM payments WHERE id=$1', [paymentId]);
-      if (jobId) await client.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+      if (!canonicalRows.length) {
+        await client.query(
+          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_REFUND' AND reference_id=$1`,
+          [paymentId],
+        );
+        await client.query('DELETE FROM payment_webhook_events WHERE event_id=$1', [eventId]);
+        await client.query(
+          'DELETE FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
+          ['webhook',eventId],
+        );
+        await client.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+        if (jobId) await client.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+      }
+      // Keep successfully posted accounting rows immutable in the disposable database.
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK').catch(() => {});
@@ -1394,20 +1401,35 @@ test('external funding ledger is posted only after the provider confirms its hol
     assert.equal(journals.length, 1, 'confirmed hold must create one funding journal group');
     assert.equal(journals[0].entries, 3);
     assert.equal(Number(journals[0].debits), Number(journals[0].credits));
+    const { rows: canonicalRows } = await pool.query(
+      `SELECT j.id,j.status,j.currency,fo.operation_type,fo.status AS operation_status
+         FROM journals j JOIN financial_operations fo ON fo.id=j.operation_id WHERE j.id=$1`,
+      [journals[0].journal_id],
+    );
+    assert.equal(canonicalRows.length, 1);
+    assert.equal(canonicalRows[0].status, 'POSTED');
+    assert.equal(canonicalRows[0].currency, 'USD');
+    assert.equal(canonicalRows[0].operation_type, 'HOLD');
+    assert.equal(canonicalRows[0].operation_status, 'SUCCEEDED');
   } finally {
     appConfig.paymentProvider = previousProvider;
     if (fixtureRows) {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        await client.query(
-          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+        const { rows: canonicalRows } = await client.query(
+          `SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id
+            WHERE le.reference_type='PAYMENT_FUND' AND le.reference_id=$1 AND j.status='POSTED' LIMIT 1`,
           [fixtureRows.paymentId],
         );
-        await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
-        await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
-        await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
-        await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        if (!canonicalRows.length) {
+          await client.query(`DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`, [fixtureRows.paymentId]);
+          await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
+          await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
+          await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
+          await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        }
+        // Keep successfully posted accounting rows immutable in the disposable database.
         await client.query('COMMIT');
       } catch (error) {
         await client.query('ROLLBACK').catch(() => {});
@@ -1466,23 +1488,36 @@ test('external PAYMENT_HELD callback before outbox completion posts exactly one 
     assert.equal(journalGroups.length, 1, 'callback/outbox ordering must never duplicate the funding journal');
     assert.equal(journalGroups[0].entries, 3);
     assert.equal(Number(journalGroups[0].debits), Number(journalGroups[0].credits));
+    const { rows: canonicalRows } = await pool.query(
+      `SELECT j.id,j.status,j.currency,fo.operation_type,fo.status AS operation_status
+         FROM journals j JOIN financial_operations fo ON fo.id=j.operation_id WHERE j.id=$1`,
+      [journalGroups[0].journal_id],
+    );
+    assert.equal(canonicalRows.length, 1);
+    assert.equal(canonicalRows[0].status, 'POSTED');
+    assert.equal(canonicalRows[0].currency, 'USD');
+    assert.equal(canonicalRows[0].operation_type, 'HOLD');
+    assert.equal(canonicalRows[0].operation_status, 'SUCCEEDED');
   } finally {
     appConfig.paymentProvider = previousProvider;
     if (fixtureRows) {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        if (webhookEventId) {
-          await client.query('DELETE FROM provider_events WHERE provider_event_id=$1', [webhookEventId]);
-        }
-        await client.query(
-          `DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`,
+        const { rows: canonicalRows } = await client.query(
+          `SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id
+            WHERE le.reference_type='PAYMENT_FUND' AND le.reference_id=$1 AND j.status='POSTED' LIMIT 1`,
           [fixtureRows.paymentId],
         );
-        await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
-        await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
-        await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
-        await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        if (!canonicalRows.length) {
+          if (webhookEventId) await client.query('DELETE FROM provider_events WHERE provider_event_id=$1', [webhookEventId]);
+          await client.query(`DELETE FROM ledger_entries WHERE reference_type='PAYMENT_FUND' AND reference_id=$1`, [fixtureRows.paymentId]);
+          await client.query('DELETE FROM outbox_events WHERE id=$1', [fixtureRows.eventId]);
+          await client.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',fixtureRows.paymentId]);
+          await client.query('DELETE FROM payments WHERE id=$1', [fixtureRows.paymentId]);
+          await client.query('DELETE FROM jobs WHERE id=$1', [fixtureRows.jobId]);
+        }
+        // Keep successfully posted accounting rows immutable in the disposable database.
         await client.query('COMMIT');
       } catch (error) {
         await client.query('ROLLBACK').catch(() => {});

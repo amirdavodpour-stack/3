@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
+import { postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 
 export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {
   const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];
@@ -103,7 +104,11 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
         currency:breakdown.currency, idempotencyKey:`internal:refund:${paymentId}`,
       });
     } else {
-      const journalId=crypto.randomUUID(); for(const entry of refundJournal(breakdown)) await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,$2,'PAYMENT_REFUND',$3,$4,$5,$6,$7,NOW())`,[crypto.randomUUID(),journalId,paymentId,entry.account,entry.debit,entry.credit,breakdown.currency]);
+      await postExternalLedgerJournalWithClient(client, {
+        operationType:'REFUND', journalType:'EXTERNAL_REFUND', referenceType:'PAYMENT_REFUND',
+        referenceId:paymentId, currency:breakdown.currency, entries:refundJournal(breakdown),
+        idempotencyKey:`external:REFUND:${paymentId}`,
+      });
     }
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_REFUND',$2,'payment',$3,$4::jsonb,NOW())`,[crypto.randomUUID(),actorId,paymentId,JSON.stringify({jobId,refundId,eventId,providerRef})]);
     await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);
