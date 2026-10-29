@@ -150,7 +150,7 @@ jobs:
 
   staging-performance:
     name: Staging performance smoke
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'Main' }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'Main' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -164,13 +164,17 @@ jobs:
       - name: Staging performance smoke
         working-directory: backend
         env:
-          PERF_BASE_URL: https://v2hope-production-7e9e.up.railway.app
+          PERF_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING }}
           PERF_REQUESTS: '500'
           PERF_CONCURRENCY: '50'
           PERF_P95_BUDGET_MS: '500'
           PERF_P99_BUDGET_MS: '1000'
           PERF_MAX_5XX_RATE: '0.01'
-        run: node ../tools/perf-smoke.mjs
+        run: |
+          set -euo pipefail
+          : "${PERF_BASE_URL:?PERF_BASE_URL is required; production fallback is disabled}"
+          node -e "const u=new URL(process.env.PERF_BASE_URL); if(u.protocol!=='https:') throw new Error('PERF_BASE_URL must use HTTPS'); if(u.hostname.toLowerCase()==='v2hope-production-7e9e.up.railway.app') throw new Error('Production host is forbidden for main workflow staging performance smoke');"
+          node ../tools/perf-smoke.mjs
 
       - name: Upload performance evidence
         if: ${{ always() }}

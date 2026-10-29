@@ -194,7 +194,7 @@ test('Main CI staging performance is staging-only and skips untrusted fork pull 
   const step = workflow.match(/name: Staging performance smoke[\s\S]*?run: node \.\.\/tools\/perf-smoke\.mjs/)?.[0] || '';
   assert.ok(step, 'staging performance smoke step must exist');
   assert.match(step, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
-  assert.doesNotMatch(step, /v2hope-production-7e9e\.up\.railway\.app/);
+  assert.doesNotMatch(step, /PERF_BASE_URL:\s*https:\/\/v2hope-production-7e9e\.up\.railway\.app/);
   assert.match(step, /PERF_BASE_URL is required; production fallback is disabled/);
   assert.match(step, /Production host is forbidden for main workflow staging performance smoke/);
 });
