@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
-import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
+import { normalizeFinancialAmount, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
+import { postExternalFundingJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
 import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.js';
@@ -84,6 +85,15 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
         await postInternalPaymentHoldWithClient(client, {
           paymentId, payerId:p.payer_id, employerCharge:b.employerCharge, providerPayout:b.providerPayout,
           platformFee:b.platformFee, actorId:p.payer_id, idempotencyKey:`internal:webhook:hold:${eventId}`,
+        });
+      } else {
+        // The signed callback can win the race against outbox completion. Post
+        // the funding group in this transaction so the outbox's HELD replay
+        // path cannot mark the event done while silently omitting the journal.
+        await postExternalFundingJournalWithClient(client, {
+          paymentId,
+          currency: b.currency,
+          breakdown: b,
         });
       }
       await client.query(`UPDATE payments SET status='HELD',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[paymentId,providerRef||null]);
