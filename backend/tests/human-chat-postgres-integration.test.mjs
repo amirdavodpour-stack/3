@@ -1661,7 +1661,6 @@ test('production outbox refuses an already-reserved synthetic internal payout an
   const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
   let payoutId = null;
   let outboxEventId = null;
-  let operationId = null;
 
   try {
     appConfig.paymentProvider = 'internal';
@@ -1679,12 +1678,6 @@ test('production outbox refuses an already-reserved synthetic internal payout an
       idempotencyKey: `stale-production-payout-${userId}`,
     });
     payoutId = payout.id;
-
-    const { rows: holds } = await pool.query(
-      "SELECT financial_operation_id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'",
-      [payoutId],
-    );
-    operationId = holds[0]?.financial_operation_id || null;
 
     const { rows: events } = await pool.query(
       `UPDATE outbox_events
@@ -1742,25 +1735,9 @@ test('production outbox refuses an already-reserved synthetic internal payout an
     if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
     else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
 
-    if (payoutId) {
-      const { rows: holds } = await pool.query(
-        "SELECT financial_operation_id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'",
-        [payoutId],
-      );
-      operationId ||= holds[0]?.financial_operation_id || null;
-      await pool.query("DELETE FROM ledger_entries WHERE reference_type='PAYOUT' AND reference_id=$1", [payoutId]);
-      await pool.query("DELETE FROM wallet_entries WHERE reference_type='PAYOUT' AND reference_id=$1", [payoutId]);
-      await pool.query("DELETE FROM wallet_holds WHERE hold_type='PAYOUT_RESERVATION' AND reference_id=$1", [payoutId]);
-      await pool.query("DELETE FROM outbox_events WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1", [payoutId]);
-      await pool.query('DELETE FROM payouts WHERE id=$1', [payoutId]);
-      if (operationId) {
-        await pool.query('DELETE FROM journals WHERE operation_id=$1', [operationId]);
-        await pool.query('DELETE FROM financial_operations WHERE id=$1', [operationId]);
-      }
-    }
-    // The isolated CI database is discarded after this job. The seed credit
-    // created its own financial operation referencing this user, so do not delete
-    // the user here before cleaning that independent operation.
+    // Preserve the payout and wallet-ledger fixture. wallet_entries are
+    // deliberately immutable, and this isolated PostgreSQL database is discarded
+    // after the job; deleting accounting history in teardown violates the ledger contract.
   }
 });
 
