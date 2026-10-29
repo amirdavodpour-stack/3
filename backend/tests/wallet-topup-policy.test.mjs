@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isInternalWalletUserTopUpEnabled, STAGING_RAILWAY_PROJECT_ID } from '../src/wallet_topup_policy.js';
+import { PRODUCTION_RAILWAY_PROJECT_ID } from '../src/railway_project_ids.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -37,6 +38,17 @@ test('production staging override fails closed on the real production Railway pr
   } }), false);
 });
 
+test('top-up remains disabled on the real production project even when NODE_ENV is misconfigured', () => {
+  for (const nodeEnv of ['production', 'test', 'development', undefined]) {
+    const env = {
+      RAILWAY_PROJECT_ID: PRODUCTION_RAILWAY_PROJECT_ID,
+      STAGING_ALLOW_INTERNAL_WALLET_TOPUP: 'true',
+    };
+    if (nodeEnv !== undefined) env.NODE_ENV = nodeEnv;
+    assert.equal(policy({ env }), false);
+  }
+});
+
 test('production staging override is accepted only for the designated staging Railway project', () => {
   assert.equal(policy({ env: {
     NODE_ENV: 'production',
@@ -60,11 +72,7 @@ test('wallet route and capability surface use the shared policy instead of dupli
 });
 
 
-import {
-  isInternalWalletAdminCreditEnabled,
-  PRODUCTION_RAILWAY_PROJECT_ID,
-  STAGING_RAILWAY_PROJECT_ID,
-} from '../src/wallet_admin_credit_policy.js';
+import { isInternalWalletAdminCreditEnabled } from '../src/wallet_admin_credit_policy.js';
 
 function adminCreditPolicy(overrides = {}) {
   return isInternalWalletAdminCreditEnabled({

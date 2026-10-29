@@ -1,5 +1,4 @@
-import { STAGING_RAILWAY_PROJECT_ID } from './wallet_topup_policy.js';
-import { PRODUCTION_RAILWAY_PROJECT_ID } from './wallet_payout_policy.js';
+import { PRODUCTION_RAILWAY_PROJECT_ID, STAGING_RAILWAY_PROJECT_ID } from './railway_project_ids.js';
 
 export function isInternalWalletAdminCreditEnabled({ enabled, env = process.env } = {}) {
   // The real production project must never allow synthetic admin-issued credit,
