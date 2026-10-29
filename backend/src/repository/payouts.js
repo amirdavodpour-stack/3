@@ -3,6 +3,7 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
+import { STAGING_RAILWAY_PROJECT_ID } from '../wallet_topup_policy.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
@@ -21,7 +22,12 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
   const value = parseAmount(amount);
   const key = String(idempotencyKey || '').trim();
   if (!key) throw Object.assign(new Error('IDEMPOTENCY_KEY_REQUIRED'), { code:'IDEMPOTENCY_KEY_REQUIRED' });
-  if (config.paymentProvider !== 'internal') throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+  const internalPayoutAllowed = config.paymentProvider === 'internal' && (
+    process.env.NODE_ENV !== 'production' ||
+    (process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT === 'true' &&
+      process.env.RAILWAY_PROJECT_ID === STAGING_RAILWAY_PROJECT_ID)
+  );
+  if (!internalPayoutAllowed) throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
 
   return withSqlTransaction(async (client) => {
     const existing = await client.query(`SELECT * FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
