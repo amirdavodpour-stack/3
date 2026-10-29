@@ -2083,6 +2083,168 @@ test('manual failed resolution of an unknown payout appends a compensating walle
   }
 });
 
+
+test('account deletion refuses a non-zero internal wallet balance and preserves account state', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'delete-funded-wallet');
+  await creditWallet({ userId, amount: '900', idempotencyKey: 'delete-funded-wallet-seed-' + userId });
+
+  await assert.rejects(
+    deleteUserPrivacyBundle(userId, {
+      email: 'deleted+' + userId + '@invalid.local',
+      passwordHash: 'integration-only-deleted-account',
+    }),
+    (error) => error?.code === 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING',
+  );
+
+  const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1', [userId]);
+  assert.equal(users[0]?.status, 'ACTIVE', 'rejected deletion must not anonymize or disable the account');
+  assert.equal(String((await getWalletByUserId(userId)).available_balance), '900',
+    'rejected deletion must preserve user-owned funds');
+});
+
+test('account deletion refuses a nonterminal payment even when no wallet balance exists', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'delete-pending-payment');
+  const suffix = 'delete-pending-payment-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  const jobInsert = [
+    'INSERT INTO jobs(',
+    ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
+    ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,created_at,updated_at',
+    ')',
+    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\\'FIXED\\',\\'FIXED\\',100,100,1,$5,\\'IN_PROGRESS\\',',
+    ' \\'R05 test\\',\\'MISSION\\',\\'PUBLIC\\',NOW(),NOW()',
+    'FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+  ].join('\\n');
+  const { rows: jobs } = await pool.query(jobInsert, [
+    userId, fixture.workerId, suffix, 'Account deletion pending payment fixture', 'R05 account deletion pending payment',
+  ]);
+  assert.ok(jobs[0], 'pending-payment fixture requires an active category');
+  const paymentId = crypto.randomUUID();
+  await pool.query(
+    'INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,currency,base_amount,employer_charge,provider_payout,platform_fee,created_at,updated_at) VALUES($1,$2,$3,$4,100,\\'HOLD_PENDING\\',$5,\\'TOMAN\\',100,100,100,0,NOW(),NOW())',
+    [paymentId, jobs[0].id, userId, fixture.workerId, 'pending-' + suffix],
+  );
+
+  await assert.rejects(
+    deleteUserPrivacyBundle(userId, {
+      email: 'deleted+' + userId + '@invalid.local',
+      passwordHash: 'integration-only-deleted-account',
+    }),
+    (error) => error?.code === 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING',
+  );
+  const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1', [userId]);
+  assert.equal(users[0]?.status, 'ACTIVE');
+});
+
+test('account deletion refuses an unresolved payout even if wallet balances are zero', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'delete-unknown-payout');
+  const wallet = await ensureWalletForUserPublic(userId);
+  await pool.query(
+    'INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,provider_ref,idempotency_key,created_at,updated_at,completed_at) VALUES($1,$2,$3,100,\\'TOMAN\\',\\'UNKNOWN\\',\\'internal\\',NULL,$4,NOW(),NOW(),NULL)',
+    [crypto.randomUUID(), wallet.id, userId, 'delete-unknown-payout-' + userId],
+  );
+
+  await assert.rejects(
+    deleteUserPrivacyBundle(userId, {
+      email: 'deleted+' + userId + '@invalid.local',
+      passwordHash: 'integration-only-deleted-account',
+    }),
+    (error) => error?.code === 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING',
+  );
+  const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1', [userId]);
+  assert.equal(users[0]?.status, 'ACTIVE');
+});
+
+test('account deletion refuses an active wallet hold even if the balance row is zero', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'delete-active-hold');
+  const wallet = await ensureWalletForUserPublic(userId);
+  await pool.query(
+    'INSERT INTO wallet_holds(wallet_id,hold_type,reference_type,reference_id,amount,status) VALUES($1,\\'OTHER\\',\\'ACCOUNT_DELETE_TEST\\',$2,100,\\'ACTIVE\\')',
+    [wallet.id, crypto.randomUUID()],
+  );
+
+  await assert.rejects(
+    deleteUserPrivacyBundle(userId, {
+      email: 'deleted+' + userId + '@invalid.local',
+      passwordHash: 'integration-only-deleted-account',
+    }),
+    (error) => error?.code === 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING',
+  );
+  const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1', [userId]);
+  assert.equal(users[0]?.status, 'ACTIVE');
+});
+
+test('job funding waits for the account lock and cannot create a payment after deletion wins', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'funding-delete-race');
+  const suffix = 'funding-delete-race-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  const jobInsert = [
+    'INSERT INTO jobs(',
+    ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
+    ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,created_at,updated_at',
+    ')',
+    'SELECT gen_random_uuid(),$1,$2,$3,$4,c.id,\\'FIXED\\',\\'FIXED\\',100,100,1,$5,\\'PUBLISHED\\',',
+    ' \\'R05 test\\',\\'MISSION\\',\\'PUBLIC\\',NOW(),NOW()',
+    'FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+  ].join('\\n');
+  const { rows: jobs } = await pool.query(jobInsert, [
+    userId, fixture.workerId, suffix, 'Funding deletion race fixture', 'R05 funding deletion race',
+  ]);
+  assert.ok(jobs[0], 'funding/deletion race fixture requires an active category');
+
+  const holder = await pool.connect();
+  let holderOpen = false;
+  let outcome = null;
+  let blockedOnAccountLock = false;
+  let writer = null;
+  try {
+    await holder.query('BEGIN');
+    holderOpen = true;
+    await holder.query('SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE', [userId]);
+    await holder.query('UPDATE users SET status=\\'DELETED\\' WHERE id=$1', [userId]);
+
+    writer = fundJobAtomic({
+      jobId: jobs[0].id,
+      payerId: userId,
+      payeeId: fixture.workerId,
+      amount: 100,
+      id: crypto.randomUUID(),
+      idempotencyKey: 'funding-delete-race-' + userId,
+      createdAt: new Date(),
+    }).then(
+      (value) => { outcome = { ok: true, value }; },
+      (error) => { outcome = { ok: false, error }; },
+    );
+
+    const deadline = Date.now() + 6000;
+    while (Date.now() < deadline) {
+      const { rows } = await pool.query(
+        "SELECT pid FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query ILIKE '%lockActiveWalletUsers%'",
+      );
+      if (rows.length) { blockedOnAccountLock = true; break; }
+      if (outcome) break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    await holder.query('COMMIT');
+    holderOpen = false;
+    await writer;
+  } finally {
+    if (holderOpen) await holder.query('ROLLBACK').catch(() => {});
+    holder.release();
+  }
+
+  assert.equal(blockedOnAccountLock, true, 'funding must take the same account lock as deletion before locking the job');
+  assert.equal(outcome?.ok, false, 'funding must fail if deletion marks the payer inactive first');
+  assert.equal(outcome?.error?.code, 'ACCOUNT_INACTIVE');
+  const { rows: payments } = await pool.query('SELECT id FROM payments WHERE job_id=$1', [jobs[0].id]);
+  assert.equal(payments.length, 0, 'no new payment obligation may be created after deletion wins');
+});
+
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
