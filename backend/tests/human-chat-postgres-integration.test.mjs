@@ -1196,13 +1196,13 @@ test('external payment-refund webhook posts one balanced legacy journal in real 
          budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
          created_at,updated_at
        )
-       SELECT gen_random_uuid(),$1,$2,$3,'External refund journal integration fixture',
-         c.id,'FIXED','FIXED',100,130,1,'R05 external refund fixture','IN_PROGRESS',
+       SELECT gen_random_uuid(),$1,NULL,$2,'External refund journal integration fixture',
+         c.id,'FIXED','FIXED',100,130,1,'R05 external refund fixture','FUNDED',
          'R05 test','MISSION','PUBLIC',NOW(),NOW()
        FROM categories c WHERE c.is_active=TRUE
        ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
        RETURNING id`,
-      [fixture.ownerId, fixture.workerId, `R05 external refund ${suffix}`],
+      [fixture.ownerId, `R05 external refund ${suffix}`],
     );
     assert.ok(jobs[0], 'external refund fixture requires an active category');
     jobId = jobs[0].id;
