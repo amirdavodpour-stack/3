@@ -29,6 +29,46 @@ case "$STORAGE_BACKEND" in s3) ;; *) echo 'STORAGE_BACKEND must be s3 in product
 [ "${RESET_TOKEN_DELIVERY_MODE:-}" = "webhook" ] || { echo 'RESET_TOKEN_DELIVERY_MODE=webhook is required in production.' >&2; exit 1; }
 case "$ALLOWED_CORS_ORIGINS" in *'*'*) echo 'Wildcard CORS is forbidden in production.' >&2; exit 1;; esac
 
+# Match the production runtime's URL parsing and origin restrictions.
+# Node is already required by the backend runtime and its CI environment.
+node --input-type=module <<'NODE'
+const fail = (message) => {
+  console.error(message);
+  process.exit(1);
+};
+
+const origins = String(process.env.ALLOWED_CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (!origins.length) {
+  fail('ALLOWED_CORS_ORIGINS must contain at least one valid origin.');
+}
+
+for (const origin of origins) {
+  let parsed;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    fail('ALLOWED_CORS_ORIGINS must contain valid origins.');
+  }
+
+  if (!['https:', 'http:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash) {
+    fail('ALLOWED_CORS_ORIGINS must contain origin URLs without credentials, paths, queries, or fragments.');
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') {
+    fail('Non-local production CORS origins must use HTTPS.');
+  }
+}
+NODE
+
 if [ -n "${S3_ENDPOINT:-}" ]; then
   case "$S3_ENDPOINT" in https://*) ;; *) echo 'S3_ENDPOINT must use HTTPS when set in production.' >&2; exit 1;; esac
 fi
@@ -76,5 +116,17 @@ for name in ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET METRICS_TOKEN; do
 done
 [ "${#ACCESS_TOKEN_SECRET}" -ge 32 ] || { echo 'ACCESS_TOKEN_SECRET must be at least 32 characters in production.' >&2; exit 1; }
 [ "${#REFRESH_TOKEN_SECRET}" -ge 32 ] || { echo 'REFRESH_TOKEN_SECRET must be at least 32 characters in production.' >&2; exit 1; }
+
+# Keep the shell validator aligned with the production runtime's auth-secret guards.
+case "$ACCESS_TOKEN_SECRET" in
+  change-this*) echo 'ACCESS_TOKEN_SECRET must not use placeholder secrets.' >&2; exit 1;;
+esac
+case "$REFRESH_TOKEN_SECRET" in
+  change-this*) echo 'REFRESH_TOKEN_SECRET must not use placeholder secrets.' >&2; exit 1;;
+esac
+[ "$ACCESS_TOKEN_SECRET" != "$REFRESH_TOKEN_SECRET" ] || {
+  echo 'ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must be different in production.' >&2
+  exit 1
+}
 
 echo 'Production environment contract PASS.'
