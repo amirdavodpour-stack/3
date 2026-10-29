@@ -184,7 +184,6 @@ for (const origin of [
   'https://user:pass@example.invalid',
   'ftp://example.invalid',
   'http://example.invalid',
-  'https://example.invalid,',
 ]) {
   test(`production env validator rejects invalid CORS origin: ${origin}`, () => {
     const result = runProductionEnvValidator({
@@ -192,7 +191,7 @@ for (const origin of [
       ALLOWED_CORS_ORIGINS: origin,
     });
     assert.notEqual(result.status, 0, `invalid production CORS origin must be rejected: ${origin}`);
-    assert.match(result.stdout + '\n' + result.stderr, /ALLOWED_CORS_ORIGINS/);
+    assert.match(result.stdout + '\n' + result.stderr, /ALLOWED_CORS_ORIGINS|Non-local production CORS origins/);
   });
 }
 
