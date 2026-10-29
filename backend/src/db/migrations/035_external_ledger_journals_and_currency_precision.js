@@ -3,9 +3,13 @@ export const migration = {
   name: 'external_ledger_journals_and_currency_precision',
   async up(client) {
     await client.query(`
+      DROP TRIGGER IF EXISTS ledger_journal_balance_deferred ON ledger_entries;
       ALTER TABLE ledger_entries
         ALTER COLUMN debit TYPE NUMERIC(18,2) USING debit::NUMERIC(18,2),
         ALTER COLUMN credit TYPE NUMERIC(18,2) USING credit::NUMERIC(18,2);
+      CREATE CONSTRAINT TRIGGER ledger_journal_balance_deferred
+        AFTER INSERT OR UPDATE OF debit,credit,journal_id OR DELETE ON ledger_entries
+        DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION hope_assert_ledger_journal_balanced();
 
       ALTER TABLE ledger_entries
         ADD CONSTRAINT ledger_entries_toman_integer_chk
