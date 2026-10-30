@@ -110,7 +110,7 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
 export async function holdPaymentForDispute({ jobId, paymentId }) {
   return withSqlTransaction(async (client) => {
     const { rows: jobs } = await client.query(
-      \`SELECT id FROM jobs WHERE id=$1 FOR UPDATE\`,
+      `SELECT id FROM jobs WHERE id=$1 FOR UPDATE`,
       [jobId],
     );
     if (!jobs[0]) return { held:false, reason:'JOB_NOT_FOUND' };
@@ -119,21 +119,21 @@ export async function holdPaymentForDispute({ jobId, paymentId }) {
     // Lock every live release event so a worker cannot lease a queued event after
     // the dispute has successfully placed escrow on hold.
     const { rows: eventMetadata } = await client.query(
-      \`SELECT id FROM outbox_events
+      `SELECT id FROM outbox_events
         WHERE event_type='PAYMENT_RELEASE'
           AND aggregate_type='payment'
           AND aggregate_id=$1
           AND status IN ('PENDING','PROCESSING','FAILED')
-        ORDER BY id\`,
+        ORDER BY id`,
       [paymentId],
     );
     const eventIds = eventMetadata.map((row) => row.id);
     const { rows: events } = eventIds.length
       ? await client.query(
-          \`SELECT id,status FROM outbox_events
+          `SELECT id,status FROM outbox_events
             WHERE id=ANY($1::uuid[])
             ORDER BY id
-            FOR UPDATE\`,
+            FOR UPDATE`,
           [eventIds],
         )
       : { rows: [] };
@@ -143,7 +143,7 @@ export async function holdPaymentForDispute({ jobId, paymentId }) {
     }
 
     const { rows: payments } = await client.query(
-      \`SELECT id,status FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE\`,
+      `SELECT id,status FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,
       [paymentId,jobId],
     );
     const payment = payments[0];
@@ -155,13 +155,13 @@ export async function holdPaymentForDispute({ jobId, paymentId }) {
     for (const event of events) {
       if (event.status === 'PENDING' || event.status === 'FAILED') {
         await client.query(
-          \`UPDATE outbox_events
+          `UPDATE outbox_events
               SET status='DONE',
                   processed_at=COALESCE(processed_at,NOW()),
                   locked_at=NULL,
                   lease_token=NULL,
                   last_error='CANCELLED_BY_ADMIN_DISPUTE_HOLD'
-            WHERE id=$1\`,
+            WHERE id=$1`,
           [event.id],
         );
       }
@@ -169,7 +169,7 @@ export async function holdPaymentForDispute({ jobId, paymentId }) {
 
     if (payment.status !== 'HELD') {
       await client.query(
-        \`UPDATE payments SET status='HELD',updated_at=NOW() WHERE id=$1\`,
+        `UPDATE payments SET status='HELD',updated_at=NOW() WHERE id=$1`,
         [paymentId],
       );
     }
