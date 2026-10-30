@@ -25,6 +25,7 @@ test('refund idempotency reopens a terminally failed refund instead of returning
   assert.match(source, /processed_at=CASE WHEN outbox_events\.status='FAILED' THEN NULL ELSE outbox_events\.processed_at END/);
   assert.match(source, /refundId:refundRow\.id/);
   assert.match(routes, /REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY/);
+  assert.match(routes, /An existing refund operation must be retried using the same idempotency key/);
 });
 
 test('terminal refund failure restores the payment to HELD so the semantic retry is valid', () => {
