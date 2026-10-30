@@ -352,6 +352,14 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
 
   Widget _payoutCard(Map<String, dynamic> row) {
     final id = '${row['id'] ?? row['payoutId'] ?? ''}';
+    final rawCases = row['reconciliationCases'];
+    final reconciliationCases = rawCases is List
+        ? rawCases
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
@@ -369,13 +377,22 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             row.entries
                 .where(
                   (e) =>
-                      !{'id', 'payoutId', 'status', 'currency'}.contains(e.key) &&
+                      !{'id', 'payoutId', 'status', 'currency', 'reconciliationCases'}.contains(e.key) &&
                       (e.value is String || e.value is num),
                 )
                 .take(6)
                 .map((e) => '${e.key}: ${e.value}')
                 .join(' • '),
           ),
+          if (reconciliationCases.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              _t('پرونده‌های تطبیق', 'Reconciliation cases'),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...reconciliationCases.map(_reconciliationCaseCard),
+          ],
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
@@ -392,6 +409,92 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       ),
     );
   }
+
+  Widget _reconciliationCaseCard(Map<String, dynamic> item) {
+    final caseId = '${item['id'] ?? ''}';
+    final caseType = '${item['caseType'] ?? _t('پرونده تطبیق', 'Reconciliation case')}';
+    final severity = '${item['severity'] ?? '—'}'.trim().toUpperCase();
+    final status = '${item['status'] ?? '—'}'.trim().toUpperCase();
+    final expected = item['expected'] is Map
+        ? Map<String, dynamic>.from(item['expected'] as Map)
+        : const <String, dynamic>{};
+    final observed = item['observed'] is Map
+        ? Map<String, dynamic>.from(item['observed'] as Map)
+        : const <String, dynamic>{};
+    final theme = Theme.of(context);
+    final severityColor = switch (severity) {
+      'CRITICAL' || 'HIGH' => theme.colorScheme.error,
+      'MEDIUM' => theme.colorScheme.tertiary,
+      _ => theme.colorScheme.outline,
+    };
+
+    String evidenceText(Map<String, dynamic> evidence) {
+      if (evidence.isEmpty) return _t('اطلاعات ثبت نشده', 'No evidence recorded');
+      return evidence.entries
+          .take(5)
+          .map((entry) => '${entry.key}: ${entry.value}')
+          .join(' • ');
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        border: Border.all(color: severityColor.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  caseType.replaceAll('_', ' '),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              StatusPill(
+                _reconciliationSeverityLabel(severity),
+                color: severityColor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('${_t('وضعیت پرونده', 'Case status')}: ${_reconciliationStatusLabel(status)}'),
+          const SizedBox(height: 4),
+          Text('${_t('مورد انتظار', 'Expected')}: ${evidenceText(expected)}'),
+          const SizedBox(height: 4),
+          Text('${_t('مشاهده‌شده', 'Observed')}: ${evidenceText(observed)}'),
+          if (caseId.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${_t('شناسه پرونده', 'Case ID')}: $caseId',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _reconciliationSeverityLabel(String value) => switch (value) {
+        'CRITICAL' => _t('بحرانی', 'Critical'),
+        'HIGH' => _t('زیاد', 'High'),
+        'MEDIUM' => _t('متوسط', 'Medium'),
+        'LOW' => _t('کم', 'Low'),
+        _ => value.isEmpty ? '—' : value,
+      };
+
+  String _reconciliationStatusLabel(String value) => switch (value) {
+        'OPEN' => _t('باز', 'Open'),
+        'INVESTIGATING' => _t('در حال بررسی', 'Investigating'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('مختومه', 'Dismissed'),
+        _ => value.isEmpty ? '—' : value,
+      };
 
   Future<void> _resolvePayout(String id, String decision) async {
     if (_operationBusy || !mounted) return;
