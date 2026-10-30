@@ -70,17 +70,45 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
       const prior = await client.query(`SELECT * FROM refunds WHERE payment_id=$1 AND idempotency_key=$2 FOR UPDATE`, [paymentId, idempotencyKey]);
       refundRow = prior.rows[0] || null;
       if (refundRow?.status === 'REFUNDED') return { refund: refundRow, payment };
-      if (refundRow?.status === 'PENDING') return { refund: refundRow, payment:{...payment,status:'REFUND_PENDING'} };
-      // A terminal provider failure must be retryable with the same semantic
-      // operation key. Reopen the existing refund row instead of creating a
-      // second financial operation for the same request.
-      if (refundRow?.status === 'FAILED') {
-        const { rows: reopened } = await client.query(
-          `UPDATE refunds SET status='PENDING',provider_ref=NULL,updated_at=$2 WHERE id=$1 RETURNING *`,
-          [refundRow.id, createdAt],
-        );
-        refundRow = reopened[0];
+    }
+
+    // One immutable PAYMENT_REFUND event exists per payment. A different
+    // failed operation key cannot safely create another refund row because
+    // the existing event payload must continue to identify the original row.
+    // Check failed rows before returning a matching PENDING row so an older
+    // stranded operation cannot be silently acknowledged as a new retry.
+    const { rows: failedRefunds } = await client.query(
+      `SELECT * FROM refunds
+        WHERE payment_id=$1 AND status='FAILED'
+        ORDER BY created_at DESC,id DESC
+        FOR UPDATE`,
+      [paymentId],
+    );
+    if (failedRefunds.length) {
+      const suppliedKey = String(idempotencyKey || '');
+      const matchingFailed = failedRefunds.filter(
+        (candidate) => String(candidate.idempotency_key || '') === suppliedKey,
+      );
+      if (failedRefunds.length !== 1 || matchingFailed.length !== 1 ||
+          (refundRow && refundRow.id !== matchingFailed[0].id)) {
+        const error = new Error('REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY');
+        error.code = 'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY';
+        error.status = 409;
+        throw error;
       }
+      refundRow = matchingFailed[0];
+    }
+
+    if (refundRow?.status === 'PENDING') {
+      return { refund: refundRow, payment:{...payment,status:'REFUND_PENDING'} };
+    }
+    // Reopen the same semantic refund; never create a second refund operation.
+    if (refundRow?.status === 'FAILED') {
+      const { rows: reopened } = await client.query(
+        `UPDATE refunds SET status='PENDING',provider_ref=NULL,updated_at=$2 WHERE id=$1 RETURNING *`,
+        [refundRow.id, createdAt],
+      );
+      refundRow = reopened[0];
     }
     if (!refundRow) {
       const {rows:rr}=await client.query(`INSERT INTO refunds(id,payment_id,amount,currency,status,provider_ref,idempotency_key,created_at,updated_at) VALUES($1,$2,$3,$4,'PENDING',NULL,$5,$6,$6) RETURNING *`,[id,paymentId,refundAmount,payment.currency || config.paymentCurrency,idempotencyKey||null,createdAt]);
@@ -88,7 +116,23 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     }
     await client.query(`UPDATE payments SET status='REFUND_PENDING',updated_at=$2 WHERE id=$1`,[paymentId,createdAt]);
     const dedupe=`PAYMENT_REFUND:${paymentId}`;
-    const {rows:ev}=await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYMENT_REFUND','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW()) ON CONFLICT(dedupe_key) DO UPDATE SET status=CASE WHEN outbox_events.status='DONE' THEN outbox_events.status ELSE 'PENDING' END,available_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.available_at ELSE NOW() END RETURNING *`,[paymentId,dedupe,JSON.stringify({jobId,ownerId,paymentId,refundId:id,providerRef:payment.provider_ref,idempotencyKey:idempotencyKey||`refund:${id}`})]);
+    const {rows:ev}=await client.query(
+      `INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
+       VALUES(gen_random_uuid(),'PAYMENT_REFUND','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
+       ON CONFLICT(dedupe_key) DO UPDATE SET
+         status=CASE WHEN outbox_events.status='FAILED' THEN 'PENDING' ELSE outbox_events.status END,
+         attempts=CASE WHEN outbox_events.status='FAILED' THEN 0 ELSE outbox_events.attempts END,
+         available_at=CASE WHEN outbox_events.status='FAILED' THEN NOW() ELSE outbox_events.available_at END,
+         locked_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.locked_at END,
+         lease_token=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.lease_token END,
+         last_error=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error END,
+         processed_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.processed_at END
+       RETURNING *`,
+      [paymentId,dedupe,JSON.stringify({
+        jobId,ownerId,paymentId,refundId:refundRow.id,providerRef:payment.provider_ref,
+        idempotencyKey:idempotencyKey||`refund:${refundRow.id}`,
+      })],
+    );
     return {refund:refundRow,payment:{...payment,status:'REFUND_PENDING'},outboxEvent:{id:ev[0].id}};
   });
 }

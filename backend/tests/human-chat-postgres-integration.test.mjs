@@ -4598,6 +4598,45 @@ test('failed refund cannot be retried with a different idempotency key against a
 });
 
 
+test('pending refund with a different key cannot hide an earlier failed refund operation', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const seeded = await seedFailedRefundRetryFixture('pending-different-key');
+  const pendingRefundId = crypto.randomUUID();
+  const pendingKey = seeded.idempotencyKey + '-pending';
+  try {
+    await pool.query(
+      `INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at)
+       VALUES($1,$2,100,'PENDING',NULL,$3,NOW(),NOW())`,
+      [pendingRefundId,seeded.paymentId,pendingKey],
+    );
+
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    await assert.rejects(
+      createRefundAtomic({
+        jobId:seeded.jobId,
+        paymentId:seeded.paymentId,
+        ownerId:fixture.ownerId,
+        amount:100,
+        id:crypto.randomUUID(),
+        idempotencyKey:pendingKey,
+        createdAt:new Date(),
+      }),
+      (error) => error?.code === 'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY',
+    );
+
+    const { rows: refunds } = await pool.query(
+      'SELECT id,status FROM refunds WHERE payment_id=$1 ORDER BY created_at,id',
+      [seeded.paymentId],
+    );
+    assert.equal(refunds.length,2);
+    assert.equal(refunds.find((row) => row.id === seeded.refundId)?.status,'FAILED');
+    assert.equal(refunds.find((row) => row.id === pendingRefundId)?.status,'PENDING');
+  } finally {
+    await cleanupFailedRefundRetryFixture(seeded);
+  }
+});
+
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
