@@ -4723,6 +4723,204 @@ test('pending refund cannot be duplicated by a different or missing idempotency 
 
 
 
+
+async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
+  const pool = dbModule.getPool();
+  const suffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+  const payerId = await createTransferTestUser(pool, `delete-webhook-payer-${suffix}`);
+  const workerId = await createTransferTestUser(pool, `delete-webhook-worker-${suffix}`);
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const holdRef = `delete-webhook-hold-${suffix}`;
+  const eventId = `delete-webhook-${eventType.toLowerCase()}-${suffix}`;
+  const isRelease = eventType === 'PAYMENT_RELEASED';
+  const paymentStatus = isRelease ? 'RELEASE_PENDING' : 'REFUND_PENDING';
+  const jobTitle = `Account deletion vs ${eventType} race ${suffix}`;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT $1,$2,$3,$4,'Deterministic account-deletion/payment-webhook race fixture',
+       c.id,'FIXED','FIXED',100,130,1,'Race fixture', 'IN_PROGRESS',
+       'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+    [jobId,payerId,workerId,jobTitle],
+  );
+  assert.ok(jobs[0], 'account-deletion/webhook race requires an active category');
+  if (isRelease) {
+    await pool.query("UPDATE jobs SET status='DELIVERED' WHERE id=$1", [jobId]);
+    await pool.query("UPDATE jobs SET status='COMPLETED' WHERE id=$1", [jobId]);
+  }
+
+  await pool.query(
+    `INSERT INTO payments(
+       id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,
+       base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,
+       fee_policy_version,currency,created_at,updated_at
+     )
+     VALUES($1,$2,$3,$4,100,$5,$6,$7,100,0,0,1,100,99,'R05-race','TOMAN',NOW(),NOW())`,
+    [paymentId,jobId,payerId,workerId,paymentStatus,holdRef,`delete-webhook-payment-${suffix}`],
+  );
+
+  await creditWallet({
+    userId:payerId,
+    amount:'1000',
+    idempotencyKey:`delete-webhook-wallet-seed-${suffix}`,
+  });
+  await runWalletMutationTransaction((client) => postInternalPaymentHoldWithClient(client, {
+    paymentId,
+    payerId,
+    employerCharge:'100',
+    providerPayout:'99',
+    platformFee:'1',
+    idempotencyKey:`delete-webhook-hold-operation-${suffix}`,
+  }));
+
+  if (!isRelease) {
+    await pool.query(
+      `INSERT INTO refunds(
+         id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at
+       )
+       VALUES($1,$2,100,'PENDING',NULL,$3,NOW(),NOW())`,
+      [crypto.randomUUID(),paymentId,`delete-webhook-refund-${suffix}`],
+    );
+  }
+
+  const wallet = await getWalletByUserId(payerId);
+  assert.ok(wallet, 'race fixture must have a payer wallet');
+  const holder = await pool.connect();
+  let holderOpen = false;
+  let deleteBlockedOnWallet = false;
+  let webhookBlockedOnWallet = false;
+  let deleteOutcome = null;
+  let webhookOutcome = null;
+  let webhookPromise = null;
+
+  try {
+    await holder.query('BEGIN');
+    holderOpen = true;
+    await holder.query('SELECT id FROM wallet_accounts WHERE id=$1 FOR UPDATE', [wallet.id]);
+
+    const deletePromise = deleteUserPrivacyBundle(payerId, {
+      email:`deleted+${payerId}@invalid.local`,
+      passwordHash:'integration-only-deleted-account',
+    }).then(
+      (value) => { deleteOutcome = {ok:true,value}; return deleteOutcome; },
+      (error) => { deleteOutcome = {ok:false,error}; return deleteOutcome; },
+    );
+
+    const deletionDeadline = Date.now() + 7000;
+    while (Date.now() < deletionDeadline) {
+      const { rows: waiters } = await pool.query(
+        `SELECT pid,query FROM pg_stat_activity
+          WHERE datname=current_database() AND pid<>pg_backend_pid()
+            AND wait_event_type='Lock'
+            AND query ILIKE '%FROM wallet_accounts%'
+            AND query ILIKE '%WHERE user_id=$1%'`,
+      );
+      if (waiters.length) { deleteBlockedOnWallet = true; break; }
+      if (deleteOutcome) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+
+    const previousProvider = appConfig.paymentProvider;
+    appConfig.paymentProvider = 'internal';
+    try {
+      const webhookRef = `${holdRef}-${isRelease ? 'release' : 'refund'}`;
+      webhookPromise = applyPaymentWebhookAtomic({
+        eventId,
+        eventType,
+        paymentId,
+        providerRef:webhookRef,
+        payload:{eventId,eventType,paymentId,providerRef:webhookRef},
+      }).then(
+        (value) => { webhookOutcome = {ok:true,value}; return webhookOutcome; },
+        (error) => { webhookOutcome = {ok:false,error}; return webhookOutcome; },
+      );
+
+      const callbackDeadline = Date.now() + 7000;
+      while (Date.now() < callbackDeadline) {
+        const { rows: waiters } = await pool.query(
+          `SELECT pid,query FROM pg_stat_activity
+            WHERE datname=current_database() AND pid<>pg_backend_pid()
+              AND wait_event_type='Lock'
+              AND query ILIKE '%FROM wallet_accounts%'
+              AND query ILIKE '%id = ANY%'`,
+        );
+        if (waiters.length) { webhookBlockedOnWallet = true; break; }
+        if (webhookOutcome) break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    } finally {
+      appConfig.paymentProvider = previousProvider;
+    }
+
+    await holder.query('COMMIT');
+    holderOpen = false;
+    await Promise.all([deletePromise, webhookPromise]);
+  } finally {
+    if (holderOpen) await holder.query('ROLLBACK').catch(() => {});
+    holder.release();
+  }
+
+  assert.equal(deleteBlockedOnWallet,true,
+    'account deletion must acquire and wait for the wallet lock before evaluating outstanding obligations');
+  assert.equal(webhookBlockedOnWallet,true,
+    'the internal webhook must reach the wallet lock while holding its payment aggregate');
+  assert.equal(deleteOutcome?.ok,false,
+    'deletion must abort rather than erase the account while its payment callback is pending');
+  assert.equal(deleteOutcome?.error?.code,'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING');
+  assert.equal(webhookOutcome?.ok,true,
+    'the provider callback must proceed after the deletion transaction rolls back');
+  assert.equal(webhookOutcome?.value?.processed,true);
+
+  const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1',[payerId]);
+  assert.equal(users[0]?.status,'ACTIVE','rejected deletion must leave the payer account active');
+  const { rows: payments } = await pool.query(
+    'SELECT status FROM payments WHERE id=$1',[paymentId],
+  );
+  assert.equal(payments[0]?.status,isRelease ? 'RELEASED' : 'REFUNDED');
+  const { rows: holds } = await pool.query(
+    `SELECT status FROM wallet_holds
+      WHERE reference_id=$1 AND hold_type='JOB_PAYMENT'
+      ORDER BY created_at DESC,id DESC LIMIT 1`,
+    [paymentId],
+  );
+  assert.equal(holds[0]?.status,isRelease ? 'RELEASED' : 'CANCELLED');
+  const finalPayerWallet = await getWalletByUserId(payerId);
+  assert.equal(String(finalPayerWallet.available_balance),'900',
+    'the payer's post-hold available balance remains unchanged by release/refund callback locking');
+  assert.equal(String(finalPayerWallet.locked_balance),'0',
+    'the callback must resolve the locked escrow amount after deletion aborts');
+  if (isRelease) {
+    const { rows: jobsAfter } = await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+    assert.equal(jobsAfter[0]?.status,'SETTLED');
+    const workerWallet = await getWalletByUserId(workerId);
+    assert.equal(String(workerWallet?.available_balance),'99');
+  } else {
+    const { rows: refunds } = await pool.query(
+      'SELECT status FROM refunds WHERE payment_id=$1',[paymentId],
+    );
+    assert.equal(refunds[0]?.status,'REFUNDED');
+    assert.equal(String(finalPayerWallet.available_balance),'1000',
+      'refund returns the full employer charge after the hold');
+  }
+}
+
+test('account deletion and internal release webhook serialize on wallet locks without deadlock', { skip: !enabled, timeout: 30000 }, async () => {
+  await runAccountDeletionAgainstInternalPaymentWebhook({eventType:'PAYMENT_RELEASED'});
+});
+
+test('account deletion and internal refund webhook serialize on wallet locks without deadlock', { skip: !enabled, timeout: 30000 }, async () => {
+  await runAccountDeletionAgainstInternalPaymentWebhook({eventType:'PAYMENT_REFUNDED'});
+});
+
+
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
