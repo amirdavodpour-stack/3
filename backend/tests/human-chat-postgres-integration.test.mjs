@@ -4892,8 +4892,8 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
   );
   assert.equal(holds[0]?.status,isRelease ? 'RELEASED' : 'CANCELLED');
   const finalPayerWallet = await getWalletByUserId(payerId);
-  assert.equal(String(finalPayerWallet.available_balance),'900',
-    'the payer's post-hold available balance remains unchanged by release/refund callback locking');
+  assert.equal(String(finalPayerWallet.available_balance),isRelease ? '900' : '1000',
+    'release preserves the held payer balance; refund returns the full employer charge');
   assert.equal(String(finalPayerWallet.locked_balance),'0',
     'the callback must resolve the locked escrow amount after deletion aborts');
   if (isRelease) {
@@ -4906,8 +4906,6 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
       'SELECT status FROM refunds WHERE payment_id=$1',[paymentId],
     );
     assert.equal(refunds[0]?.status,'REFUNDED');
-    assert.equal(String(finalPayerWallet.available_balance),'1000',
-      'refund returns the full employer charge after the hold');
   }
 }
 
