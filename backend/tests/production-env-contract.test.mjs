@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isInternalWalletPayoutEnabled } from '../src/wallet_payout_policy.js';
+import { isInternalWalletAdminCreditEnabled } from '../src/wallet_admin_credit_policy.js';
+import { PRODUCTION_RAILWAY_PROJECT_ID, STAGING_RAILWAY_PROJECT_ID } from '../src/railway_project_ids.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'production-release.yml'), 'utf8');
@@ -267,3 +269,51 @@ test('internal payout policy fails closed on the real production project even if
     },
   }), false);
 });
+
+test('synthetic admin wallet credit is denied on the real Production Railway project even if NODE_ENV is misconfigured', () => {
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:true,
+    env:{
+      NODE_ENV:'test',
+      RAILWAY_PROJECT_ID:PRODUCTION_RAILWAY_PROJECT_ID,
+    },
+  }),false);
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:true,
+    env:{
+      NODE_ENV:'production',
+      RAILWAY_PROJECT_ID:PRODUCTION_RAILWAY_PROJECT_ID,
+    },
+  }),false);
+});
+
+test('synthetic admin wallet credit in production mode is limited to the explicit Staging project and flag', () => {
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:true,
+    env:{
+      NODE_ENV:'production',
+      RAILWAY_PROJECT_ID:STAGING_RAILWAY_PROJECT_ID,
+    },
+  }),true);
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:false,
+    env:{
+      NODE_ENV:'production',
+      RAILWAY_PROJECT_ID:STAGING_RAILWAY_PROJECT_ID,
+    },
+  }),false);
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:true,
+    env:{
+      NODE_ENV:'production',
+    },
+  }),false);
+  assert.equal(isInternalWalletAdminCreditEnabled({
+    enabled:true,
+    env:{
+      NODE_ENV:'production',
+      RAILWAY_PROJECT_ID:'unrecognized-project',
+    },
+  }),false);
+});
+
