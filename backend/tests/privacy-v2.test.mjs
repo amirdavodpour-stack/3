@@ -529,7 +529,7 @@ test('PostgreSQL privacy export bounds every high-volume financial query to the 
     repository.indexOf('export async function getUserPrivacyBundle'),
     repository.indexOf('export async function deleteUserPrivacyBundle'),
   );
-  assert.match(repository, /import \\{ MAX_EXPORT_QUERY_ROWS \\} from '\.\\.\\/privacy\\.js'/);
+  assert.ok(repository.includes("import { MAX_EXPORT_QUERY_ROWS } from '../privacy.js'"));
   for (const relation of [
     'payments WHERE payer_id',
     'wallet_entries e JOIN wallet_accounts',
