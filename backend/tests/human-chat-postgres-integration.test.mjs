@@ -239,6 +239,21 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
   const processingPaymentId = crypto.randomUUID();
   const processingEventId = crypto.randomUUID();
   const suffix = crypto.randomBytes(6).toString('hex');
+  const { rows: jobs } = await pool.query(
+    'INSERT INTO jobs(' +
+      'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+      'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+      'created_at,updated_at) ' +
+      "SELECT gen_random_uuid(),$1,$2,'R05 dispute HOLD fixture'," +
+      "'PostgreSQL dispute HOLD release-event fixture',c.id,'FIXED','FIXED'," +
+      "100,130,1,'R05 dispute HOLD fixture','COMPLETED'," +
+      "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+      'FROM categories c WHERE c.is_active=TRUE ' +
+      'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+    [fixture.ownerId,fixture.workerId],
+  );
+  assert.ok(jobs[0],'dispute HOLD fixture requires an active category');
+  const holdJobId = jobs[0].id;
 
   const insertPayment = async (paymentId, status, key) => pool.query(
     'INSERT INTO payments(' +
@@ -246,7 +261,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
       'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
       'fee_policy_version,currency,created_at,updated_at) ' +
       "VALUES($1,$2,$3,$4,100,$5,$6,$7,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
-    [paymentId,fixture.jobId,fixture.ownerId,fixture.workerId,status,'hold-ref-'+suffix,key],
+    [paymentId,holdJobId,fixture.ownerId,fixture.workerId,status,'hold-ref-'+suffix,key],
   );
 
   const insertEvent = async (eventId, paymentId, status, attempts, leaseToken) => pool.query(
@@ -254,13 +269,13 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
       'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
       'available_at,locked_at,lease_token,created_at) ' +
       "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,$5,$6,NOW(),$7,$8,NOW())",
-    [eventId,paymentId,'dispute-hold-release-'+eventId,JSON.stringify({jobId:fixture.jobId,paymentId}),status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
+    [eventId,paymentId,'dispute-hold-release-'+eventId,JSON.stringify({jobId:holdJobId,paymentId}),status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
   );
 
   try {
     await insertPayment(pendingPaymentId,'RELEASE_PENDING','dispute-hold-pending-'+suffix);
     await insertEvent(pendingEventId,pendingPaymentId,'PENDING',0,null);
-    const held = await holdPaymentForDispute({jobId:fixture.jobId,paymentId:pendingPaymentId});
+    const held = await holdPaymentForDispute({jobId:holdJobId,paymentId:pendingPaymentId});
     assert.equal(held?.held,true);
     assert.equal(held?.paymentStatus,'HELD');
     assert.equal(held?.cancelledReleaseEvents,1);
@@ -277,7 +292,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
     const leaseToken = crypto.randomUUID();
     await insertPayment(processingPaymentId,'RELEASE_PENDING','dispute-hold-processing-'+suffix);
     await insertEvent(processingEventId,processingPaymentId,'PROCESSING',1,leaseToken);
-    const refused = await holdPaymentForDispute({jobId:fixture.jobId,paymentId:processingPaymentId});
+    const refused = await holdPaymentForDispute({jobId:holdJobId,paymentId:processingPaymentId});
     assert.equal(refused?.held,false);
     assert.equal(refused?.reason,'PAYMENT_RELEASE_IN_PROGRESS');
 
@@ -291,6 +306,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
   } finally {
     await pool.query('DELETE FROM outbox_events WHERE id=ANY($1::uuid[])',[[pendingEventId,processingEventId]]);
     await pool.query('DELETE FROM payments WHERE id=ANY($1::uuid[])',[[pendingPaymentId,processingPaymentId]]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[holdJobId]);
   }
 });
 
