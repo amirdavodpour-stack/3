@@ -1797,7 +1797,6 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
   let patchedConnect = false;
 
   const fundingUserGate = deferredGate();
-  const webhookUserGate = deferredGate();
   const fundingUsersLocked = deferredGate();
   const webhookUsersLockAttempted = deferredGate();
   const webhookPaymentLocked = deferredGate();
@@ -1892,7 +1891,6 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
           fundingUsersLocked.resolve();
           await fundingUserGate.promise;
         }
-        if (role === 2 && isUsersLock) await webhookUserGate.promise;
         if (role === 2 && isPaymentLock) webhookPaymentLocked.resolve();
         return result;
       };
@@ -1982,7 +1980,6 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
     assert.equal(persisted[0].active_holds, 1, 'concurrent replay and callback must create exactly one active escrow hold');
   } finally {
     fundingUserGate.resolve();
-    webhookUserGate.resolve();
     if (fundingPromise || webhookPromise) {
       await Promise.allSettled([fundingPromise, webhookPromise].filter(Boolean));
     }
