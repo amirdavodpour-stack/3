@@ -82,7 +82,7 @@ export async function claimJobDisputeResolution(id, {
   const lease = Math.min(1800, Math.max(30, Number(leaseSeconds) || 300));
   return withSqlTransaction(async (client) => {
     const { rows } = await client.query(
-      \`SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE\`,
+      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
       [id],
     );
     const current = rows[0];
@@ -110,7 +110,7 @@ export async function claimJobDisputeResolution(id, {
     const token = crypto.randomUUID();
     const resumed = current.status === 'RESOLVING';
     const { rows: updated } = await client.query(
-      \`UPDATE job_disputes
+      `UPDATE job_disputes
           SET status='RESOLVING',
               resolution=$2,
               resolution_reason=CASE WHEN resolution_reason='' THEN $3 ELSE resolution_reason END,
@@ -121,7 +121,7 @@ export async function claimJobDisputeResolution(id, {
               resolution_lease_until=NOW()+make_interval(secs => $6),
               updated_at=NOW()
         WHERE id=$1
-        RETURNING *\`,
+        RETURNING *`,
       [id,decision,String(reason || '').trim().slice(0,2000),adminId,token,lease],
     );
     return {
@@ -138,7 +138,7 @@ export async function claimJobDisputeResolution(id, {
 export async function completeJobDisputeResolution(id, { resolution, token }) {
   return withSqlTransaction(async (client) => {
     const { rows } = await client.query(
-      \`SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE\`,
+      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
       [id],
     );
     const current = rows[0];
@@ -161,14 +161,14 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
       return { stale:true, dispute:disputeView(current) };
     }
     const { rows: updated } = await client.query(
-      \`UPDATE job_disputes
+      `UPDATE job_disputes
           SET status='RESOLVED',
               resolved_at=NOW(),
               resolution_lease_token=NULL,
               resolution_lease_until=NULL,
               updated_at=NOW()
         WHERE id=$1
-        RETURNING *\`,
+        RETURNING *`,
       [id],
     );
     return disputeView(updated[0]);
@@ -178,7 +178,7 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
 export async function abandonJobDisputeResolutionClaim(id, { resolution, token }) {
   return withSqlTransaction(async (client) => {
     const { rows } = await client.query(
-      \`SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE\`,
+      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
       [id],
     );
     const current = rows[0];
@@ -191,7 +191,7 @@ export async function abandonJobDisputeResolutionClaim(id, { resolution, token }
     ) return { abandoned:false, stale:true, dispute:disputeView(current) };
 
     const { rows: updated } = await client.query(
-      \`UPDATE job_disputes
+      `UPDATE job_disputes
           SET status='ADMIN_REVIEW',
               resolution=NULL,
               resolution_reason='',
@@ -201,7 +201,7 @@ export async function abandonJobDisputeResolutionClaim(id, { resolution, token }
               resolution_lease_until=NULL,
               updated_at=NOW()
         WHERE id=$1
-        RETURNING *\`,
+        RETURNING *`,
       [id],
     );
     return { abandoned:true, dispute:disputeView(updated[0]) };
