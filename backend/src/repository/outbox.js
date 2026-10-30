@@ -5,16 +5,37 @@ import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
 import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
-import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
+import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
 export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentId, providerRef, actorId, leaseToken }) {
   return withSqlTransaction(async (client) => {
-    const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
-    if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
-    if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
+    // Match funding's user -> job -> payment -> outbox lock order. Internal
+    // holds also mutate the payer wallet, so participant rows must be locked
+    // before the payment row; external holds still serialize on job first.
+    const { rows: metadata } = await client.query(
+      `SELECT payer_id,payee_id FROM payments WHERE id=$1 AND job_id=$2`,
+      [paymentId, jobId],
+    );
+    if (!metadata[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
+    if (config.paymentProvider === 'internal') {
+      await lockActiveWalletUsers(
+        client,
+        [metadata[0].payer_id, metadata[0].payee_id].filter(Boolean),
+      );
+    }
+    const { rows: jr } = await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+    if (!jr[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
     const { rows: pr } = await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`, [paymentId, jobId]);
     const payment = pr[0];
     if (!payment) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
+    if (config.paymentProvider === 'internal' &&
+        (String(payment.payer_id) !== String(metadata[0].payer_id) ||
+         String(payment.payee_id) !== String(metadata[0].payee_id))) {
+      const e = new Error('PAYMENT_PARTICIPANTS_CHANGED'); e.code = 'PAYMENT_PARTICIPANTS_CHANGED'; throw e;
+    }
+    const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
+    if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
     if (payment.status === 'HELD') {
       if (payment.provider_ref !== providerRef) {
         const e = new Error('PROVIDER_REF_MISMATCH'); e.code = 'PROVIDER_REF_MISMATCH'; throw e;
