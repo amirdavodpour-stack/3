@@ -1,3 +1,5 @@
+import { PRIVACY_VERSION } from '../privacy.js';
+
 export function createAccountRoutes({ authUser, readBody, sendJson, HttpError, hashPassword, privacyRepo, legacyAccount, storage, anonymizedEmail, deletionCredential, buildDataExport, logEvent }) {
   return async function accountRoutes(req, res, parts) {
     const me = await authUser(req);
@@ -43,7 +45,7 @@ export function createAccountRoutes({ authUser, readBody, sendJson, HttpError, h
         try { await storage.delete({ key }); }
         catch (error) { logEvent?.({ level: 'error', action: 'ACCOUNT_UPLOAD_CLEANUP_FAILED', key, userId: me.id, message: error?.message || String(error) }); }
       }
-      return sendJson(res,200,{deleted:true,privacyVersion:'1.1'});
+      return sendJson(res,200,{deleted:true,privacyVersion:PRIVACY_VERSION});
     }
     throw new HttpError(404,'NOT_FOUND','Account privacy route not found');
   };

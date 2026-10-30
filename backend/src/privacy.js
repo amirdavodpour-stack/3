@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-export const PRIVACY_VERSION = '1.2';
+export const PRIVACY_VERSION = '1.3';
 
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
@@ -77,7 +77,7 @@ export function sanitizeTelemetryProperties(input = {}) {
 export function anonymizedEmail(userId) { return `deleted+${String(userId).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32)}@invalid.local`; }
 export function deletionCredential() { return crypto.randomBytes(48).toString('hex'); }
 
-export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
+export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
   const safeAccount = sanitizeExportObject({
     id: user.id, email: user.email, displayName: user.displayName, role: user.role, status: user.status, createdAt: user.createdAt,
   });
@@ -90,6 +90,10 @@ export function buildDataExport({ user, provider, jobs = [], applications = [], 
     applications: sanitizeExportObject(applications),
     offers: sanitizeExportObject(offers),
     payments: sanitizeExportObject(payments),
+    walletAccounts: sanitizeExportObject(walletAccounts),
+    walletEntries: sanitizeExportObject(walletEntries),
+    walletHolds: sanitizeExportObject(walletHolds),
+    payouts: sanitizeExportObject(payouts),
     notifications: sanitizeExportObject(notifications),
     evidence: sanitizeExportObject(evidence),
     analyticsEvents: sanitizeExportObject(analyticsEvents.map(sanitizeTelemetryExportRecord)),

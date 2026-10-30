@@ -20,7 +20,7 @@ test('deleted email is non-routable and deterministic per user', () => {
 
 test('data export omits payment credentials', () => {
   const out=buildDataExport({user:{id:'u1',email:'a@b.c',displayName:'A',role:'USER',status:'ACTIVE',createdAt:'now'}});
-  assert.equal(out.exportVersion,'1.2');
+  assert.equal(out.exportVersion,'1.3');
   assert.deepEqual(out.evidence,[]);
   assert.deepEqual(out.uploads,[]);
   assert.ok(!('providerRef' in (out.payments[0] || {})));
@@ -375,4 +375,60 @@ test('data export redacts simple PII aliases from stored telemetry but preserves
   assert.equal(out.crashReports[0].context.safe, true);
   assert.equal(out.recommendationProfile.resumeText, 'The account holder\'s own resume');
   assert.deepEqual(out.recommendationProfile.skills, ['Flutter']);
+});
+
+
+test('account data export includes wallet snapshot, ledger entries, holds and payouts without internal provider/idempotency keys', () => {
+  const out = buildDataExport({
+    user: { id:'u11', email:'wallet-owner@example.com', displayName:'Wallet Owner', role:'USER', status:'ACTIVE', createdAt:'now' },
+    walletAccounts: [{
+      id:'wallet-11', currency:'TOMAN', availableBalance:'900', lockedBalance:'100',
+      status:'ACTIVE', createdAt:'created', updatedAt:'updated',
+    }],
+    walletEntries: [{
+      id:'entry-11', walletId:'wallet-11', entryType:'TRANSFER', direction:'CREDIT',
+      amount:'40', currency:'TOMAN', referenceType:'WALLET_TRANSFER', referenceId:'transfer-11',
+      financialOperationId:'operation-11', balanceAfter:'900',
+      metadata:{ source:'api', idempotency_key:'private-key', nested:{ provider_ref:'private-ref', safe:true } },
+      createdAt:'entry-created',
+    }],
+    walletHolds: [{
+      id:'hold-11', walletId:'wallet-11', holdType:'PAYOUT_RESERVATION',
+      referenceType:'PAYOUT', referenceId:'payout-11', financialOperationId:'operation-12',
+      amount:'100', status:'RELEASED', createdAt:'hold-created', releasedAt:'hold-released',
+    }],
+    payouts: [{
+      id:'payout-11', walletId:'wallet-11', amount:'100', currency:'TOMAN', provider:'internal',
+      status:'SUCCEEDED', providerRef:'private-payout-ref', idempotencyKey:'private-payout-key',
+      failureCode:null, createdAt:'payout-created', completedAt:'payout-completed',
+    }],
+  });
+
+  assert.equal(out.exportVersion, '1.3');
+  assert.equal(out.walletAccounts[0].availableBalance, '900');
+  assert.equal(out.walletEntries[0].referenceType, 'WALLET_TRANSFER');
+  assert.equal(out.walletEntries[0].metadata.idempotency_key, undefined);
+  assert.equal(out.walletEntries[0].metadata.nested.provider_ref, undefined);
+  assert.equal(out.walletEntries[0].metadata.nested.safe, true);
+  assert.equal(out.walletHolds[0].holdType, 'PAYOUT_RESERVATION');
+  assert.equal(out.payouts[0].status, 'SUCCEEDED');
+  assert.equal(out.payouts[0].providerRef, undefined);
+  assert.equal(out.payouts[0].idempotencyKey, undefined);
+});
+
+test('PostgreSQL privacy export selects only the current user wallet, ledger, hold and payout records', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  assert.match(repository, /FROM wallet_accounts WHERE user_id=\$1/);
+  assert.match(repository, /FROM wallet_entries e JOIN wallet_accounts w ON w\.id=e\.wallet_id WHERE w\.user_id=\$1/);
+  assert.match(repository, /FROM wallet_holds h JOIN wallet_accounts w ON w\.id=h\.wallet_id WHERE w\.user_id=\$1/);
+  assert.match(repository, /FROM payouts WHERE user_id=\$1/);
+  for (const field of ['walletAccounts:', 'walletEntries:', 'walletHolds:', 'payouts:']) {
+    assert.ok(repository.includes(field), 'privacy bundle must return ' + field);
+  }
+});
+
+test('account deletion response reports the active privacy export version', () => {
+  const route = readFileSync(path.join(ROOT, 'src/routes/account_routes.js'), 'utf8');
+  assert.match(route, /import \{ PRIVACY_VERSION \} from '\.\.\/privacy\.js'/);
+  assert.match(route, /privacyVersion:PRIVACY_VERSION/);
 });
