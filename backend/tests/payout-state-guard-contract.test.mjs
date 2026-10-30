@@ -26,15 +26,19 @@ test('migration checker includes payout state guard migration', () => {
 });
 
 
-test('unknown payout marks the financial operation referenced by the payout hold', () => {
+test('unknown payout resolves its financial operation through the active reservation hold', () => {
+  const markUnknown = payouts
+    .split('export async function markPayoutUnknown')[1]
+    ?.split('export async function resolvePayoutUnknown')[0] || '';
+
   assert.match(
-    payouts,
-    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1\`, \[payout\.financial_operation_id\]\);/,
+    markUnknown,
+    /SELECT \* FROM wallet_holds WHERE reference_id=\$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE/s,
   );
-  assert.equal(
-    payouts.includes(
-      "WHERE id=(SELECT id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' LIMIT 1)",
-    ),
-    false,
-  )
+  assert.match(markUnknown, /if \(!hold\).*PAYOUT_RESERVATION_NOT_FOUND/s);
+  assert.match(
+    markUnknown,
+    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1`, \[hold\.financial_operation_id\]\);/s,
+  );
+  assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
 });
