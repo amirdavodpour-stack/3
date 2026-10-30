@@ -1,8 +1,22 @@
 import crypto from 'node:crypto';
-import { validateIdempotencyPair, paymentAmountForJob, mapPaymentMutationError } from '../application/payment_policy.js';
+import { validateIdempotencyPair, paymentAmountForJob, assertFundingReplayMatches, mapPaymentMutationError } from '../application/payment_policy.js';
 import { verifyPaymentWebhookSignature, normalizePaymentWebhookBody, applyLocalPaymentWebhook } from '../application/payment_webhook.js';
 import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_panel_access.js';
 import { requireAdmin } from '../policies/validation.js';
+function assertExistingFundingReplay({ existing, idempotencyKey, payerId, job, calculatePaymentBreakdown }) {
+  if (!existing || !idempotencyKey || existing.idempotencyKey !== idempotencyKey) return;
+  const amount = paymentAmountForJob(job);
+  const breakdown = calculatePaymentBreakdown(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB'), amount);
+  assertFundingReplayMatches({
+    existing,
+    idempotencyKey,
+    payerId,
+    payeeId: job.providerId || existing.payeeId,
+    requestedAmount: breakdown.baseAmount ?? amount,
+    requestedCurrency: breakdown.currency || existing.currency || 'TOMAN',
+  });
+}
+
 export function createPaymentRoutes({
   authUser, readBody, readRawBody, sendJson, HttpError, config, db, repo, getJob,
   enforceJobState, readIdempotencyKey, requireFields, enumField, paymentView, relatedJob, withTransaction, createAudit,
@@ -58,6 +72,7 @@ export function createPaymentRoutes({
       existing = await paymentUseCases.findByJob(job.id);
       if (existing) {
         if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
+        assertExistingFundingReplay({ existing, idempotencyKey, payerId: me.id, job, calculatePaymentBreakdown });
         if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
         if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
         if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
@@ -66,6 +81,7 @@ export function createPaymentRoutes({
       existing = paymentLegacy.findByJob(job.id);
       if(existing) {
         if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
+        assertExistingFundingReplay({ existing, idempotencyKey, payerId: me.id, job, calculatePaymentBreakdown });
         if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
         if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
         if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');

@@ -23,7 +23,6 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     const job=jobRows[0] ? jobFromRow(jobRows[0]) : null;
     if (!job) return null;
     if (job.ownerId !== payerId) { const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e; }
-    if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE');e.code='INVALID_STATE';throw e; }
     const existingRow = await client.query(`SELECT * FROM payments WHERE job_id=$1 FOR UPDATE`, [jobId]);
     if (existingRow.rows[0]) {
       const existing=paymentFromRow(existingRow.rows[0]);
@@ -55,6 +54,7 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
       }
       return {payment:existing,job,outboxEvent:null,created:false};
     }
+    if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE');e.code='INVALID_STATE';throw e; }
     if (idempotencyKey) {
       const prior=await findPaymentByIdempotency(payerId,idempotencyKey,client);
       if (prior) {
