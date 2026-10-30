@@ -4,7 +4,7 @@ import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal, refundJournal } from '../financial.js';
 import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
-import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
+import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.js';
 import { closeJobChatForJob } from './human_chat.js';
 
@@ -54,6 +54,23 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       return {processed:true,duplicate:true,paymentId:prior.rows[0].payment_id};
     }
 
+    // Internal funding holds participant user locks before job/payment locks.
+    // The internal hold callback must follow the same order or it can deadlock
+    // against a funding replay that already owns the user rows.
+    let lockedHoldParticipants = null;
+    if (eventType === 'PAYMENT_HELD' && config.paymentProvider === 'internal') {
+      const { rows: paymentMeta } = await client.query(
+        `SELECT payer_id,payee_id FROM payments WHERE id=$1`,
+        [paymentId],
+      );
+      if (!paymentMeta[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
+      lockedHoldParticipants = paymentMeta[0];
+      await lockActiveWalletUsers(
+        client,
+        [lockedHoldParticipants.payer_id, lockedHoldParticipants.payee_id].filter(Boolean),
+      );
+    }
+
     // Release and refund paths share the job aggregate with user-initiated
     // release/refund operations. Resolve the immutable relationship without a
     // row lock, then acquire job before payment to keep one lock order.
@@ -79,6 +96,11 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
     const p=pr[0];
     if (lockedJob && String(p.job_id) !== String(lockedJob.id)) {
       throw conflict('PAYMENT_JOB_MISMATCH','Payment job changed while resolving webhook aggregate');
+    }
+    if (lockedHoldParticipants &&
+        (String(p.payer_id) !== String(lockedHoldParticipants.payer_id) ||
+         String(p.payee_id) !== String(lockedHoldParticipants.payee_id))) {
+      throw conflict('PAYMENT_PARTICIPANTS_CHANGED','Payment participants changed while resolving internal hold');
     }
 
     // Release/refund events must carry the operation's own provider reference.
