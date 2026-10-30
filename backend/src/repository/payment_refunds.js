@@ -79,10 +79,14 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
 }
 export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refundId,providerRef,actorId,leaseToken}) {
   return withSqlTransaction(async(client)=>{
+    // Match request/webhook lock ordering: serialize the job aggregate before
+    // claiming the outbox row or locking its payment/refund records.
+    const {rows:jr}=await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`,[jobId]);
+    if(!jr[0])return {completed:false,reason:'PAYMENT_NOT_FOUND'};
     const {rows:er}=await client.query(`SELECT lease_token FROM outbox_events WHERE id=$1 FOR UPDATE`,[eventId]);
     if(!er[0])return {completed:false,reason:'OUTBOX_NOT_FOUND'};
     if(leaseToken && String(er[0].lease_token)!==String(leaseToken))return {completed:false,reason:'STALE_LEASE'};
-    const {rows:pr}=await client.query(`SELECT p.*,j.provider_id,j.status AS job_status FROM payments p JOIN jobs j ON j.id=p.job_id WHERE p.id=$1 AND p.job_id=$2 FOR UPDATE`,[paymentId,jobId]);
+    const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment)return {completed:false,reason:'PAYMENT_NOT_FOUND'};
     const {rows:rr}=await client.query(`SELECT * FROM refunds WHERE id=$1 AND payment_id=$2 FOR UPDATE`,[refundId,paymentId]); const refund=rr[0]; if(!refund)return {completed:false,reason:'REFUND_NOT_FOUND'};
     if(payment.status==='REFUNDED' && refund.status==='REFUNDED'){await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);return {completed:true,alreadyDone:true};}
