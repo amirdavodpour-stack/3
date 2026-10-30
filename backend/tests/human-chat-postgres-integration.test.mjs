@@ -1534,6 +1534,249 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
 });
 
 
+test('refund request and refund webhook serialize job/payment locks without a deadlock', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'refund-lock-owner');
+  const workerId = await createTransferTestUser(pool, 'refund-lock-worker');
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const eventId = 'r05-refund-lock-' + suffix;
+  const paymentId = crypto.randomUUID();
+  const providerRef = 'refund-lock-hold-' + suffix;
+  const refundRef = 'refund-lock-operation-' + suffix;
+  const idempotencyKey = 'refund-lock-request-' + suffix;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId = null;
+  let observer = null;
+  let originalPoolConnect = null;
+  let requestPromise = null;
+  let webhookPromise = null;
+  const requestGate = deferredGate();
+  const webhookPaymentGate = deferredGate();
+  const requestJobLocked = deferredGate();
+  const webhookPaymentLocked = deferredGate();
+  const webhookJobLockAttempted = deferredGate();
+  let patchedConnect = false;
+
+  function deferredGate() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  const waitForBlockedQuery = async (client, pattern, description, timeoutMs = 7000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const { rows } = await client.query(
+        'SELECT pid,query,wait_event_type,wait_event FROM pg_stat_activity ' +
+          'WHERE datname=current_database() AND pid<>pg_backend_pid() ' +
+          "AND wait_event_type='Lock' AND query ILIKE $1",
+        [pattern],
+      );
+      if (rows.length) return rows[0];
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(description + ' did not reach the expected PostgreSQL lock wait');
+  };
+
+  const waitForSignal = async (signal, description, timeoutMs = 7000) => {
+    let timeout;
+    try {
+      await Promise.race([
+        signal.promise,
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(description + ' timed out')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  try {
+    const jobInsert = [
+      'INSERT INTO jobs(',
+      ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
+      ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,',
+      ' created_at,updated_at)',
+      " SELECT gen_random_uuid(),$1,$3,'R05 refund lock-order fixture',",
+      " 'PostgreSQL concurrency regression fixture',c.id,'FIXED','FIXED',",
+      " 100,100,1,'R05 refund lock-order fixture','ASSIGNED',",
+      " 'R05 test','MISSION','PUBLIC',NOW(),NOW()",
+      ' FROM categories c WHERE c.is_active=TRUE',
+      ' ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1',
+      ' RETURNING id',
+    ].join('\n');
+    const { rows: jobs } = await pool.query(jobInsert, [
+      ownerId, 'R05 refund lock-order ' + suffix, workerId,
+    ]);
+    assert.ok(jobs[0], 'refund lock-order fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      'INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'REFUND_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','USD',NOW(),NOW())",
+      [paymentId,jobId,ownerId,workerId,providerRef,'refund-lock-payment-' + suffix],
+    );
+    await pool.query(
+      "INSERT INTO refunds(id,payment_id,amount,currency,status,provider_ref,idempotency_key,created_at,updated_at) " +
+        "VALUES(gen_random_uuid(),$1,130,'USD','PENDING',NULL,$2,NOW(),NOW())",
+      [paymentId,idempotencyKey],
+    );
+
+    observer = await pool.connect();
+    originalPoolConnect = pool.connect;
+    const connect = pool.connect.bind(pool);
+    let serviceConnection = 0;
+    pool.connect = async (...args) => {
+      const client = await connect(...args);
+      serviceConnection += 1;
+      const role = serviceConnection;
+      const originalQuery = client.query.bind(client);
+      client.query = async (queryText, ...queryArgs) => {
+        const sql = typeof queryText === 'string' ? queryText : String(queryText?.text || '');
+        const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
+        const isJobLock = normalized.includes('FROM JOBS WHERE ID=$1 FOR UPDATE');
+        const isPaymentLock = normalized.includes('FROM PAYMENTS WHERE ID=$1') && normalized.includes('FOR UPDATE');
+
+        if (role === 2 && isJobLock) webhookJobLockAttempted.resolve();
+
+        const result = await originalQuery(queryText, ...queryArgs);
+
+        if (role === 1 && isJobLock) {
+          requestJobLocked.resolve();
+          await requestGate.promise;
+        }
+        if (role === 2 && isPaymentLock) {
+          webhookPaymentLocked.resolve();
+          await webhookPaymentGate.promise;
+        }
+        return result;
+      };
+      return client;
+    };
+    patchedConnect = true;
+
+    appConfig.paymentProvider = 'webhook';
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+
+    requestPromise = createRefundAtomic({
+      jobId,
+      paymentId,
+      ownerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey,
+      createdAt:new Date(),
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    await waitForSignal(requestJobLocked, 'refund request job lock');
+
+    webhookPromise = applyPaymentWebhookAtomic({
+      eventId,
+      eventType:'PAYMENT_REFUNDED',
+      paymentId,
+      providerRef:refundRef,
+      payload:{eventId,eventType:'PAYMENT_REFUNDED',paymentId,providerRef:refundRef},
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    const firstWebhookLock = await Promise.race([
+      webhookPaymentLocked.promise.then(() => 'payment-first'),
+      webhookJobLockAttempted.promise.then(() => 'job-first'),
+    ]);
+
+    if (firstWebhookLock === 'payment-first') {
+      // Current implementation: webhook owns payment while request owns job.
+      // Let the request reach its payment lock, then release the webhook so
+      // PostgreSQL sees the real job <-> payment wait cycle.
+      requestGate.resolve();
+      await waitForBlockedQuery(
+        observer,
+        '%FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE%',
+        'duplicate refund request payment lock',
+      );
+      webhookPaymentGate.resolve();
+    } else {
+      // Correct job-first implementation: webhook waits for the request's job
+      // lock before it can acquire payment. Let the request reject the already
+      // pending refund, release job, then allow the webhook to finish.
+      await waitForBlockedQuery(
+        observer,
+        '%FROM jobs%FOR UPDATE%',
+        'refund webhook job-first lock',
+      );
+      requestGate.resolve();
+      await waitForSignal(webhookPaymentLocked, 'refund webhook payment lock after job serialization');
+      webhookPaymentGate.resolve();
+    }
+
+    const [requestOutcome, webhookOutcome] = await Promise.all([requestPromise, webhookPromise]);
+    assert.equal(
+      requestOutcome.error?.code,
+      'INVALID_PAYMENT_STATE',
+      'the duplicate refund request should observe the already-pending refund after lock serialization',
+    );
+    assert.equal(
+      webhookOutcome.ok,
+      true,
+      'the provider refund webhook must complete without a PostgreSQL deadlock; observed ' +
+        (webhookOutcome.error?.code || webhookOutcome.error?.message || 'unknown outcome'),
+    );
+    assert.equal(webhookOutcome.value.processed, true);
+
+    const { rows: persisted } = await observer.query(
+      'SELECT p.status AS payment_status,r.status AS refund_status,j.status AS job_status ' +
+        'FROM payments p JOIN refunds r ON r.payment_id=p.id JOIN jobs j ON j.id=p.job_id ' +
+        'WHERE p.id=$1',
+      [paymentId],
+    );
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].payment_status, 'REFUNDED');
+    assert.equal(persisted[0].refund_status, 'REFUNDED');
+    assert.equal(persisted[0].job_status, 'ASSIGNED');
+  } finally {
+    requestGate.resolve();
+    webhookPaymentGate.resolve();
+    if (requestPromise || webhookPromise) {
+      await Promise.allSettled([requestPromise, webhookPromise].filter(Boolean));
+    }
+    if (patchedConnect) pool.connect = originalPoolConnect;
+    appConfig.paymentProvider = previousProvider;
+
+    if (observer) {
+      try {
+        if (paymentId) {
+          const { rows: posted } = await observer.query(
+            'SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id ' +
+              "WHERE le.reference_type='PAYMENT_REFUND' AND le.reference_id=$1 " +
+              "AND j.status='POSTED' LIMIT 1",
+            [paymentId],
+          );
+          if (!posted.length) {
+            await observer.query('BEGIN');
+            await observer.query('DELETE FROM payment_webhook_events WHERE event_id=$1', [eventId]);
+            await observer.query(
+              'DELETE FROM provider_events WHERE provider=$1 AND provider_event_id=$2',
+              ['webhook',eventId],
+            );
+            await observer.query('DELETE FROM refunds WHERE payment_id=$1', [paymentId]);
+            await observer.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+            if (jobId) await observer.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+            await observer.query('COMMIT');
+          }
+        }
+      } catch (error) {
+        await observer.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        observer.release();
+      }
+    }
+  }
+});
+
+
 async function createExternalFundingFixture(label) {
   const pool = dbModule.getPool();
   const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
