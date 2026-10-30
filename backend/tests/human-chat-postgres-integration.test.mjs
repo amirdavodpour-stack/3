@@ -2543,8 +2543,8 @@ test('terminal release failure serializes with refund supersession without a dea
   const requestPaymentLocked = deferredGate();
   const requestEventLocked = deferredGate();
   const requestEventLockAttempted = deferredGate();
+  const failureJobLockAttempted = deferredGate();
   const failureEventLocked = deferredGate();
-  const failureEventLockAttempted = deferredGate();
 
   function deferredGate() {
     let resolve;
@@ -2631,11 +2631,13 @@ test('terminal release failure serializes with refund supersession without a dea
         const isRequestReleaseEventLock = role === 1 &&
           normalized.includes('FROM OUTBOX_EVENTS') &&
           normalized.includes('AGGREGATE_ID=$1') && normalized.includes('FOR UPDATE');
+        const isFailureJobLock = role === 2 &&
+          normalized.includes('FROM JOBS WHERE ID=$1 FOR UPDATE');
         const isFailureEventLock = role === 2 &&
           normalized.includes('FROM OUTBOX_EVENTS WHERE ID=$1 FOR UPDATE');
 
         if (isRequestReleaseEventLock) requestEventLockAttempted.resolve();
-        if (isFailureEventLock) failureEventLockAttempted.resolve();
+        if (isFailureJobLock) failureJobLockAttempted.resolve();
 
         const result = await originalQuery(queryText, ...queryArgs);
 
@@ -2691,11 +2693,10 @@ test('terminal release failure serializes with refund supersession without a dea
       await waitForBlockedQuery(observer, '%FROM outbox_events%FOR UPDATE%', 'refund release-event lock');
       failureEventGate.resolve();
     } else {
-      // Correct ordering: refund owns the release event before touching payment.
-      // The failure worker must wait for that event lock, then proceed after the
-      // refund observes PROCESSING and safely releases its transaction.
-      await waitForSignal(failureEventLockAttempted, 'terminal release failure outbox lock attempt');
-      await waitForBlockedQuery(observer, '%FROM outbox_events WHERE id=$1 FOR UPDATE%', 'terminal release failure event lock');
+      // Correct aggregate-first ordering: refund owns job -> release-event and
+      // the failure worker must wait for the job before acquiring event/payment.
+      await waitForSignal(failureJobLockAttempted, 'terminal release failure job lock attempt');
+      await waitForBlockedQuery(observer, '%FROM jobs WHERE id=$1 FOR UPDATE%', 'terminal release failure job lock');
       requestEventGate.resolve();
       const requestOutcome = await requestPromise;
       assert.equal(requestOutcome.error?.code, 'PAYMENT_RELEASE_IN_PROGRESS');
