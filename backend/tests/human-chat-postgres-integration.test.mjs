@@ -43,7 +43,7 @@ const { fundJobAtomic } = modules[9] || {};
 const { completePaymentCreateHoldOutbox, failOutboxEvent, holdPaymentForDispute } = modules[10] || {};
 const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
-const { claimJobDisputeResolution, completeJobDisputeResolution } = modules[13] || {};
+const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis } = modules[13] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -163,6 +163,21 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   const loser = attempts.find((attempt) => attempt?.conflict === true);
   assert.ok(winner,'exactly one concurrent administrator decision must acquire the durable claim');
   assert.ok(loser,'the competing, different decision must be rejected while a claim is active');
+
+  const lateAnalysis = await updateJobDisputeAnalysis(disputeId,{
+    decision:'RELEASE',
+    confidence:1,
+    report:{summary:'late participant analysis must not overwrite resolving'},
+    rulesetVersion:'R05-test',
+    manualReview:false,
+  });
+  assert.equal(lateAnalysis,null,'participant/AI analysis cannot overwrite an active admin resolution claim');
+  const { rows: claimedState } = await pool.query(
+    'SELECT status,resolution FROM job_disputes WHERE id=$1',
+    [disputeId],
+  );
+  assert.equal(claimedState[0]?.status,'RESOLVING');
+  assert.ok(['HOLD','REFUND'].includes(claimedState[0]?.resolution));
   assert.equal(attempts.filter((attempt) => attempt?.claimed === true).length,1);
   assert.equal(loser.code,'DISPUTE_RESOLUTION_IN_PROGRESS');
 
