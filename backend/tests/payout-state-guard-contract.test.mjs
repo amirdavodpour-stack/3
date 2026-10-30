@@ -38,9 +38,11 @@ test('unknown payout resolves its financial operation through the active reserva
   assert.match(markUnknown, /PAYOUT_RESERVATION_NOT_FOUND/);
   assert.match(markUnknown, /event\.payload\?\.operationId/);
   assert.match(markUnknown, /PAYOUT_OPERATION_MISMATCH/);
-  assert.match(
-    markUnknown,
-    /UPDATE financial_operations[\\s\\S]*?status='UNKNOWN',[\\s\\S]*?completed_at=NULL[\\s\\S]*?WHERE id=\\$1 AND status IN \\('PROCESSING','UNKNOWN'\\)[\\s\\S]*?RETURNING id/,
-  );
-  assert.match(markUnknown, /\\[hold\\.financial_operation_id\\]/);  assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
+  const operationUpdate = markUnknown.slice(markUnknown.indexOf('UPDATE financial_operations'));
+  assert.ok(operationUpdate.includes("status='UNKNOWN'"));
+  assert.ok(operationUpdate.includes('completed_at=NULL'));
+  assert.ok(operationUpdate.includes("WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')"));
+  assert.ok(operationUpdate.includes('RETURNING id'));
+  assert.match(markUnknown, /\[hold\.financial_operation_id\]/);
+  assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
 });
