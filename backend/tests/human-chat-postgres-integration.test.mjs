@@ -4074,6 +4074,108 @@ test('manual failed resolution of an unknown payout appends a compensating walle
 });
 
 
+test('provider UNKNOWN without an active payout hold remains locked and opens critical reconciliation', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'unknown-payout-missing-hold');
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    await creditWallet({
+      userId,
+      amount: '1700',
+      idempotencyKey: `unknown-payout-missing-hold-seed-${userId}`,
+    });
+
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount: '500',
+      idempotencyKey: `unknown-payout-missing-hold-${userId}`,
+    });
+    const { rows: events } = await pool.query(
+      `UPDATE outbox_events
+          SET status='PROCESSING',attempts=1,locked_at=NOW(),lease_token=gen_random_uuid()
+        WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1
+        RETURNING id,lease_token`,
+      [payout.id],
+    );
+    assert.equal(events.length, 1);
+
+    await pool.query(
+      `UPDATE wallet_holds
+          SET status='CANCELLED',released_at=NOW()
+        WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'`,
+      [payout.id],
+    );
+
+    const marked = await markPayoutUnknown({
+      eventId: events[0].id,
+      payoutId: payout.id,
+      leaseToken: events[0].lease_token,
+    });
+    assert.equal(marked?.marked, true,
+      'an ambiguous provider result must not fall into generic payout failure/retry handling');
+    assert.equal(marked?.requiresReconciliation, true);
+
+    const { rows: payoutRows } = await pool.query(
+      'SELECT status FROM payouts WHERE id=$1',
+      [payout.id],
+    );
+    assert.equal(payoutRows[0]?.status, 'UNKNOWN');
+
+    const { rows: operationRows } = await pool.query(
+      `SELECT operation.status
+         FROM financial_operations operation
+         JOIN wallet_entries entry ON entry.financial_operation_id=operation.id
+        WHERE entry.reference_type='PAYOUT' AND entry.reference_id=$1
+        ORDER BY entry.created_at,entry.id LIMIT 1`,
+      [payout.id],
+    );
+    assert.equal(operationRows[0]?.status, 'PROCESSING',
+      'missing reservation linkage must leave the operation untouched for manual repair');
+
+    const wallet = await getWalletByUserId(userId);
+    assert.equal(String(wallet.available_balance), '1200');
+    assert.equal(String(wallet.locked_balance), '500',
+      'ambiguous provider outcome must never auto-release the reserved funds');
+
+    const { rows: outboxRows } = await pool.query(
+      'SELECT status FROM outbox_events WHERE id=$1',
+      [events[0].id],
+    );
+    assert.equal(outboxRows[0]?.status, 'DONE',
+      'UNKNOWN provider response must not be retried as a definite payout failure');
+
+    const { rows: cases } = await pool.query(
+      `SELECT case_type,severity,status,observed
+         FROM reconciliation_cases
+        WHERE case_type='PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'
+          AND resource_type='payout' AND resource_id=$1
+          AND status IN ('OPEN','INVESTIGATING')`,
+      [payout.id],
+    );
+    assert.equal(cases.length, 1);
+    assert.equal(cases[0].severity, 'CRITICAL');
+    assert.equal(cases[0].status, 'OPEN');
+    assert.equal(cases[0].observed.reason, 'PAYOUT_RESERVATION_NOT_FOUND');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
+    // The test database is disposable; preserve immutable wallet ledger entries.
+  }
+});
+
+
 test('account deletion refuses a non-zero internal wallet balance and preserves account state', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const userId = await createTransferTestUser(pool, 'delete-funded-wallet');
