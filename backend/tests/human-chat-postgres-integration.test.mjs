@@ -1631,7 +1631,12 @@ test('funding idempotency replay after settlement returns the original payment',
   appConfig.paymentProvider = 'webhook';
   try {
     const fixtureRows = await createExternalFundingFixture('funding-replay-after-settlement');
+    await pool.query(`UPDATE payments SET status='HELD' WHERE id=$1`, [fixtureRows.paymentId]);
+    await pool.query(`UPDATE payments SET status='RELEASE_PENDING' WHERE id=$1`, [fixtureRows.paymentId]);
     await pool.query(`UPDATE payments SET status='RELEASED' WHERE id=$1`, [fixtureRows.paymentId]);
+    await pool.query(`UPDATE jobs SET status='IN_PROGRESS' WHERE id=$1`, [fixtureRows.jobId]);
+    await pool.query(`UPDATE jobs SET status='DELIVERED' WHERE id=$1`, [fixtureRows.jobId]);
+    await pool.query(`UPDATE jobs SET status='COMPLETED' WHERE id=$1`, [fixtureRows.jobId]);
     await pool.query(`UPDATE jobs SET status='SETTLED' WHERE id=$1`, [fixtureRows.jobId]);
 
     const replay = await fundJobAtomic({
