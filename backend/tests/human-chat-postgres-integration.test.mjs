@@ -2496,7 +2496,9 @@ test('terminal hold failure serializes with provider hold completion without a d
     if (observer) {
       try {
         const { rows: posted } = await observer.query(
-          "SELECT j.id FROM journals j WHERE j.reference_id=$1 AND j.journal_type='EXTERNAL_FUNDING' AND j.status='POSTED' LIMIT 1",
+          "SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id " +
+            "WHERE le.reference_type='PAYMENT_FUND' AND le.reference_id=$1 " +
+            "AND j.journal_type='EXTERNAL_FUNDING' AND j.status='POSTED' LIMIT 1",
           [paymentId],
         );
         if (!posted.length) {
