@@ -36,7 +36,7 @@ const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle, getUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
 const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserPublic, postInternalPaymentHoldWithClient } = modules[5] || {};
-const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown } = modules[6] || {};
+const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown, listUnknownPayouts } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
@@ -4070,6 +4070,154 @@ test('manual failed resolution of an unknown payout appends a compensating walle
     if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
     else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
     // This PostgreSQL database is disposable; preserve immutable wallet entries.
+  }
+});
+
+
+test('manual payout resolution closes every active reconciliation case atomically', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'manual-payout-close-cases');
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    await creditWallet({
+      userId,
+      amount: '1700',
+      idempotencyKey: `manual-payout-close-cases-seed-${userId}`,
+    });
+
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount: '500',
+      idempotencyKey: `manual-payout-close-cases-${userId}`,
+    });
+    const { rows: events } = await pool.query(
+      "SELECT id FROM outbox_events WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1",
+      [payout.id],
+    );
+    assert.equal(events.length, 1);
+    const marked = await markPayoutUnknown({ eventId: events[0].id, payoutId: payout.id });
+    assert.equal(marked?.marked, true);
+
+    await pool.query(
+      `INSERT INTO reconciliation_cases(
+         id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+       ) VALUES
+         (gen_random_uuid(),'PAYOUT_PROVIDER_PENDING','payout',$1,'HIGH','{"status":"SUCCEEDED|FAILED"}'::jsonb,'{"status":"UNKNOWN"}'::jsonb,'OPEN',NOW(),NOW()),
+         (gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY','payout',$1,'CRITICAL','{"activeReservationHold":true}'::jsonb,'{"reason":"manual-review"}'::jsonb,'INVESTIGATING',NOW(),NOW())`,
+      [payout.id],
+    );
+
+    const resolved = await resolvePayoutUnknown({
+      payoutId: payout.id,
+      decision: 'FAILED',
+      adminId: fixture.adminId,
+      reason: 'admin confirmed provider did not disburse',
+    });
+    assert.equal(resolved?.status, 'FAILED');
+
+    const { rows: cases } = await pool.query(
+      `SELECT case_type,status,resolution_reference,resolved_at
+         FROM reconciliation_cases
+        WHERE resource_type='payout' AND resource_id=$1
+        ORDER BY case_type`,
+      [payout.id],
+    );
+    assert.equal(cases.length, 2);
+    assert.ok(cases.every((item) => item.status === 'RESOLVED'),
+      'manual payout resolution must close all OPEN and INVESTIGATING cases for the payout');
+    assert.ok(cases.every((item) => item.resolved_at),
+      'closed payout reconciliation cases must have resolved_at');
+    assert.ok(cases.every((item) =>
+      String(item.resolution_reference || '').includes(fixture.adminId)
+        && String(item.resolution_reference || '').includes('FAILED'),
+    ), 'case resolution reference must identify the admin and terminal decision');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
+    // Keep immutable wallet ledger rows in the disposable PostgreSQL fixture.
+  }
+});
+
+
+test('unknown payout admin read model includes active reconciliation case details', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createTransferTestUser(pool, 'unknown-payout-admin-read-model');
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousProjectId = process.env.RAILWAY_PROJECT_ID;
+  const previousPayoutFlag = process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    await creditWallet({
+      userId,
+      amount: '1700',
+      idempotencyKey: `unknown-payout-admin-read-model-seed-${userId}`,
+    });
+
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount: '500',
+      idempotencyKey: `unknown-payout-admin-read-model-${userId}`,
+    });
+    const { rows: events } = await pool.query(
+      "SELECT id FROM outbox_events WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1",
+      [payout.id],
+    );
+    assert.equal(events.length, 1);
+    const marked = await markPayoutUnknown({ eventId: events[0].id, payoutId: payout.id });
+    assert.equal(marked?.marked, true);
+
+    const { rows: insertedCases } = await pool.query(
+      `INSERT INTO reconciliation_cases(
+         id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+       ) VALUES
+         (gen_random_uuid(),'PAYOUT_PROVIDER_PENDING','payout',$1,'HIGH','{"status":"SUCCEEDED|FAILED"}'::jsonb,'{"status":"UNKNOWN","providerRef":null}'::jsonb,'OPEN',NOW(),NOW()),
+         (gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY','payout',$1,'CRITICAL','{"activeReservationHold":true}'::jsonb,'{"reason":"PAYOUT_OPERATION_MISMATCH"}'::jsonb,'INVESTIGATING',NOW(),NOW()),
+         (gen_random_uuid(),'PAYOUT_OLD_RESOLVED_CASE','payout',$1,'LOW','{}'::jsonb,'{}'::jsonb,'RESOLVED',NOW(),NOW())
+       RETURNING id`,
+      [payout.id],
+    );
+    assert.equal(insertedCases.length, 3);
+
+    const rows = await listUnknownPayouts({ limit: 100 });
+    const item = rows.find((row) => row.id === payout.id);
+    assert.ok(item, 'unknown payout must remain visible in admin read model');
+    assert.equal(Array.isArray(item.reconciliationCases), true);
+    assert.equal(item.reconciliationCases.length, 2,
+      'admin payout listing must include every active case, excluding resolved history');
+    const pending = item.reconciliationCases.find((entry) => entry.caseType === 'PAYOUT_PROVIDER_PENDING');
+    const critical = item.reconciliationCases.find((entry) => entry.caseType === 'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY');
+    assert.equal(pending?.severity, 'HIGH');
+    assert.equal(pending?.status, 'OPEN');
+    assert.equal(pending?.observed?.status, 'UNKNOWN');
+    assert.equal(critical?.severity, 'CRITICAL');
+    assert.equal(critical?.status, 'INVESTIGATING');
+    assert.equal(critical?.observed?.reason, 'PAYOUT_OPERATION_MISMATCH');
+    assert.ok(pending?.id && critical?.id, 'case identifiers must be available for admin review');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousProjectId === undefined) delete process.env.RAILWAY_PROJECT_ID;
+    else process.env.RAILWAY_PROJECT_ID = previousProjectId;
+    if (previousPayoutFlag === undefined) delete process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT;
+    else process.env.STAGING_ALLOW_INTERNAL_WALLET_PAYOUT = previousPayoutFlag;
+    // Keep immutable wallet ledger rows in the disposable PostgreSQL fixture.
   }
 });
 
