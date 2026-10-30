@@ -49,7 +49,7 @@ export async function createJobDispute({ jobId, openedBy = null, triggerType = '
 }
 
 export async function updateJobDisputeAnalysis(id, analysis) {
-  const { rows } = await requirePool().query(`UPDATE job_disputes SET status=CASE WHEN ($6::jsonb->>'manualReview')::boolean THEN 'ADMIN_REVIEW' ELSE 'AI_ANALYZED' END,ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion, JSON.stringify(analysis)]);
+  const { rows } = await requirePool().query(`UPDATE job_disputes SET status=CASE WHEN status IN ('RESOLVING','RESOLVED') THEN status WHEN ($6::jsonb->>'manualReview')::boolean THEN 'ADMIN_REVIEW' ELSE 'AI_ANALYZED' END,ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 AND status NOT IN ('RESOLVING','RESOLVED') RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion, JSON.stringify(analysis)]);
   return disputeView(rows[0]);
 }
 
@@ -148,11 +148,15 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
         ? { ...disputeView(current), alreadyDone:true }
         : { stale:true, dispute:disputeView(current) };
     }
+    const leaseUntil = current.resolution_lease_until
+      ? new Date(current.resolution_lease_until).getTime()
+      : 0;
     if (
       current.status !== 'RESOLVING' ||
       current.resolution !== resolution ||
       !token ||
-      String(current.resolution_lease_token) !== String(token)
+      String(current.resolution_lease_token) !== String(token) ||
+      leaseUntil <= Date.now()
     ) {
       return { stale:true, dispute:disputeView(current) };
     }
