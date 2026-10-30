@@ -32,28 +32,32 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const paymentMetadata=paymentMetadataRows[0];
     if(!paymentMetadata){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
     if (allowPendingRelease && ['RELEASE_PENDING', 'RELEASE_FAILED'].includes(paymentMetadata.status)) {
-      const releaseEvent = await client.query(
+      const releaseEvents = await client.query(
         `SELECT id,status FROM outbox_events
           WHERE aggregate_type='payment' AND aggregate_id=$1
             AND event_type='PAYMENT_RELEASE'
             AND status IN ('PENDING','FAILED','PROCESSING')
-          ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+          ORDER BY id FOR UPDATE`,
         [paymentId],
       );
-      const release = releaseEvent.rows[0];
-      if (release?.status === 'PROCESSING') {
+      if (releaseEvents.rows.some((event) => event.status === 'PROCESSING')) {
         const e = new Error('PAYMENT_RELEASE_IN_PROGRESS');
         e.code = 'PAYMENT_RELEASE_IN_PROGRESS';
         throw e;
       }
-      if (release && ['PENDING', 'FAILED'].includes(release.status)) {
-        await client.query(
-          `UPDATE outbox_events
-             SET status='DONE', processed_at=COALESCE(processed_at,NOW()),
-                 locked_at=NULL, last_error='SUPERSEDED_BY_REFUND'
-           WHERE id=$1`,
-          [release.id],
-        );
+      for (const release of releaseEvents.rows) {
+        if (['PENDING', 'FAILED'].includes(release.status)) {
+          await client.query(
+            `UPDATE outbox_events
+               SET status='DONE',
+                   processed_at=COALESCE(processed_at,NOW()),
+                   locked_at=NULL,
+                   lease_token=NULL,
+                   last_error='SUPERSEDED_BY_REFUND'
+             WHERE id=$1`,
+            [release.id],
+          );
+        }
       }
     }
 
