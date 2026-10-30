@@ -277,7 +277,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     // their completion paths. A non-locking metadata read selects that order
     // without owning the outbox row prematurely.
     const { rows: metadataRows } = await client.query(
-      `SELECT event_type,aggregate_id FROM outbox_events WHERE id=$1`,
+      `SELECT event_type,aggregate_type,aggregate_id FROM outbox_events WHERE id=$1`,
       [eventId],
     );
     const eventMetadata = metadataRows[0];
@@ -285,6 +285,11 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
 
     const eventType = String(eventMetadata.event_type || '');
     const paymentEvent = ['PAYMENT_CREATE_HOLD','PAYMENT_RELEASE','PAYMENT_REFUND'].includes(eventType);
+    if (paymentEvent && eventMetadata.aggregate_type !== 'payment') {
+      throw Object.assign(new Error('OUTBOX_AGGREGATE_TYPE_MISMATCH'), {
+        code:'OUTBOX_AGGREGATE_TYPE_MISMATCH',
+      });
+    }
     let jobId = null;
     if (paymentEvent) {
       const { rows: paymentMetadataRows } = await client.query(
@@ -307,17 +312,29 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     }
 
     const { rows } = await client.query(
-      `SELECT status,attempts,lease_token FROM outbox_events WHERE id=$1 FOR UPDATE`,
+      `SELECT event_type,aggregate_type,aggregate_id,status,attempts,lease_token
+         FROM outbox_events WHERE id=$1 FOR UPDATE`,
       [eventId],
     );
     if (!rows[0]) return null;
-    const currentStatus = String(rows[0].status || '').toUpperCase();
-    const attempts = Number(rows[0].attempts || 0);
+    const lockedEvent = rows[0];
+    // We selected aggregate metadata without a lock to acquire aggregate locks
+    // in canonical order. Revalidate the event identity after its row lock so
+    // a changed aggregate cannot redirect terminal updates to another resource.
+    if (
+      String(lockedEvent.event_type) !== String(eventMetadata.event_type) ||
+      String(lockedEvent.aggregate_type) !== String(eventMetadata.aggregate_type) ||
+      String(lockedEvent.aggregate_id ?? '') !== String(eventMetadata.aggregate_id ?? '')
+    ) {
+      return { terminal:false, stale:true, identityChanged:true, attempts:Number(lockedEvent.attempts || 0) };
+    }
+    const currentStatus = String(lockedEvent.status || '').toUpperCase();
+    const attempts = Number(lockedEvent.attempts || 0);
     // A completion that committed while this worker waited is authoritative.
     // Do not let a stale failure callback regress a terminal outbox state.
     if (currentStatus === 'DONE') return { terminal:false, alreadyDone:true, attempts };
     if (currentStatus === 'FAILED') return { terminal:true, alreadyFailed:true, attempts };
-    if (leaseToken && String(rows[0].lease_token) !== String(leaseToken)) {
+    if (leaseToken && String(lockedEvent.lease_token) !== String(leaseToken)) {
       return { terminal:false, stale:true, attempts };
     }
 
