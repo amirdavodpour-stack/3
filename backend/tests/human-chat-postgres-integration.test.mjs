@@ -40,7 +40,7 @@ const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown } = modules
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
-const { completePaymentCreateHoldOutbox, failOutboxEvent } = modules[10] || {};
+const { completePaymentCreateHoldOutbox, failOutboxEvent, holdPaymentForDispute } = modules[10] || {};
 const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
 const { claimJobDisputeResolution, completeJobDisputeResolution } = modules[13] || {};
@@ -208,6 +208,68 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   assert.equal(rows[0]?.resolution,winner.resolution);
   assert.equal(rows[0]?.resolution_lease_token,null);
   assert.equal(rows[0]?.resolution_lease_until,null);
+});
+
+test('admin dispute HOLD cancels pending release events but refuses a provider operation already in progress', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const pendingPaymentId = crypto.randomUUID();
+  const pendingEventId = crypto.randomUUID();
+  const processingPaymentId = crypto.randomUUID();
+  const processingEventId = crypto.randomUUID();
+  const suffix = crypto.randomBytes(6).toString('hex');
+
+  const insertPayment = async (paymentId, status, key) => pool.query(
+    'INSERT INTO payments(' +
+      'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+      'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+      'fee_policy_version,currency,created_at,updated_at) ' +
+      "VALUES($1,$2,$3,$4,100,$5,$6,$7,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
+    [paymentId,fixture.jobId,fixture.ownerId,fixture.workerId,'hold-ref-'+suffix,key],
+  );
+
+  const insertEvent = async (eventId, paymentId, status, attempts, leaseToken) => pool.query(
+    'INSERT INTO outbox_events(' +
+      'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+      'available_at,locked_at,lease_token,created_at) ' +
+      'VALUES($1,\\'PAYMENT_RELEASE\\',\\'payment\\',$2,$3,$4::jsonb,$5,$6,NOW(),$7,$8,NOW())',
+    [eventId,paymentId,'dispute-hold-release-'+eventId,JSON.stringify({jobId:fixture.jobId,paymentId}),status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
+  );
+
+  try {
+    await insertPayment(pendingPaymentId,'RELEASE_PENDING','dispute-hold-pending-'+suffix);
+    await insertEvent(pendingEventId,pendingPaymentId,'PENDING',0,null);
+    const held = await holdPaymentForDispute({jobId:fixture.jobId,paymentId:pendingPaymentId});
+    assert.equal(held?.held,true);
+    assert.equal(held?.paymentStatus,'HELD');
+    assert.equal(held?.cancelledReleaseEvents,1);
+
+    const { rows: pendingState } = await pool.query(
+      'SELECT p.status AS payment_status,o.status AS outbox_status,o.last_error ' +
+        'FROM payments p JOIN outbox_events o ON o.id=$2 WHERE p.id=$1',
+      [pendingPaymentId,pendingEventId],
+    );
+    assert.equal(pendingState[0]?.payment_status,'HELD');
+    assert.equal(pendingState[0]?.outbox_status,'DONE');
+    assert.equal(pendingState[0]?.last_error,'CANCELLED_BY_ADMIN_DISPUTE_HOLD');
+
+    const leaseToken = crypto.randomUUID();
+    await insertPayment(processingPaymentId,'RELEASE_PENDING','dispute-hold-processing-'+suffix);
+    await insertEvent(processingEventId,processingPaymentId,'PROCESSING',1,leaseToken);
+    const refused = await holdPaymentForDispute({jobId:fixture.jobId,paymentId:processingPaymentId});
+    assert.equal(refused?.held,false);
+    assert.equal(refused?.reason,'PAYMENT_RELEASE_IN_PROGRESS');
+
+    const { rows: processingState } = await pool.query(
+      'SELECT p.status AS payment_status,o.status AS outbox_status ' +
+        'FROM payments p JOIN outbox_events o ON o.id=$2 WHERE p.id=$1',
+      [processingPaymentId,processingEventId],
+    );
+    assert.equal(processingState[0]?.payment_status,'RELEASE_PENDING');
+    assert.equal(processingState[0]?.outbox_status,'PROCESSING');
+  } finally {
+    await pool.query('DELETE FROM outbox_events WHERE id=ANY($1::uuid[])',[[pendingEventId,processingEventId]]);
+    await pool.query('DELETE FROM payments WHERE id=ANY($1::uuid[])',[[pendingPaymentId,processingPaymentId]]);
+  }
 });
 
 test('PostgreSQL privacy export reads financial collections from a repeatable-read snapshot', { skip: !enabled }, async () => {
