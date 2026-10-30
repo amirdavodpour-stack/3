@@ -80,9 +80,9 @@ export function sanitizeTelemetryProperties(input = {}) {
 export function anonymizedEmail(userId) { return `deleted+${String(userId).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32)}@invalid.local`; }
 export function deletionCredential() { return crypto.randomBytes(48).toString('hex'); }
 
-export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
+export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], refunds = [], settlements = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
   const exportCollections = {
-    jobs, applications, offers, payments, walletAccounts, walletEntries, walletHolds, payouts,
+    jobs, applications, offers, payments, refunds, settlements, walletAccounts, walletEntries, walletHolds, payouts,
     notifications, evidence, uploads, analyticsEvents, crashReports, trustReports, satisfactionHistory, savedSearches,
   };
   const truncatedTopLevelCollections = Object.entries(exportCollections)
@@ -104,6 +104,8 @@ export function buildDataExport({ user, provider, jobs = [], applications = [], 
     applications: sanitizeExportObject(applications),
     offers: sanitizeExportObject(offers),
     payments: sanitizeExportObject(payments),
+    refunds: sanitizeExportObject(refunds),
+    settlements: sanitizeExportObject(settlements),
     walletAccounts: sanitizeExportObject(walletAccounts),
     walletEntries: sanitizeExportObject(walletEntries),
     walletHolds: sanitizeExportObject(walletHolds),

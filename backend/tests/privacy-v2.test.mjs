@@ -474,3 +474,37 @@ test('privacy export explicitly reports top-level collections truncated by the 5
     truncatedTopLevelCollections: ['walletEntries', 'payouts'],
   });
 });
+
+
+test('account data export includes user-owned refund and settlement records without provider references', () => {
+  const out = buildDataExport({
+    user: { id:'u14', email:'payments-owner@example.com', displayName:'Payments Owner', role:'USER', status:'ACTIVE', createdAt:'now' },
+    refunds: [{
+      id:'refund-14', paymentId:'payment-14', amount:'130.33', currency:'USD', status:'REFUNDED',
+      providerRef:'private-refund-ref', idempotencyKey:'private-refund-key',
+      createdAt:new Date('2026-10-29T09:00:00.000Z'), updatedAt:new Date('2026-10-29T09:01:00.000Z'),
+    }],
+    settlements: [{
+      id:'settlement-14', paymentId:'payment-15', amount:'100.25', currency:'USD', status:'RELEASED',
+      providerRef:'private-release-ref',
+      createdAt:new Date('2026-10-28T09:00:00.000Z'), updatedAt:new Date('2026-10-28T09:01:00.000Z'),
+    }],
+  });
+
+  assert.equal(out.refunds[0].paymentId, 'payment-14');
+  assert.equal(out.refunds[0].status, 'REFUNDED');
+  assert.equal(out.refunds[0].currency, 'USD');
+  assert.equal(out.refunds[0].providerRef, undefined);
+  assert.equal(out.refunds[0].idempotencyKey, undefined);
+  assert.equal(out.refunds[0].createdAt, '2026-10-29T09:00:00.000Z');
+  assert.equal(out.settlements[0].status, 'RELEASED');
+  assert.equal(out.settlements[0].providerRef, undefined);
+});
+
+test('PostgreSQL privacy export scopes refund and settlement rows through the current user payments', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  assert.match(repository, /FROM refunds r JOIN payments p ON p\.id=r\.payment_id WHERE p\.payer_id=\$1 OR p\.payee_id=\$1/);
+  assert.match(repository, /FROM settlements s JOIN payments p ON p\.id=s\.payment_id WHERE p\.payer_id=\$1 OR p\.payee_id=\$1/);
+  assert.match(repository, /refunds: refunds\.rows/);
+  assert.match(repository, /settlements: settlements\.rows/);
+});

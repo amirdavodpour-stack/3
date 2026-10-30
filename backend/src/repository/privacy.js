@@ -79,7 +79,7 @@ const userSelect = `id,email,password_hash,password_hash AS "passwordHash",displ
 
 export async function getUserPrivacyBundle(userId) {
   const pool = requirePool();
-  const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts] = await Promise.all([
+  const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts,refunds,settlements] = await Promise.all([
     pool.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
     pool.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
     pool.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
@@ -100,6 +100,8 @@ export async function getUserPrivacyBundle(userId) {
     pool.query(`SELECT e.id,e.wallet_id AS "walletId",e.entry_type AS "entryType",e.direction,e.amount,e.currency,e.reference_type AS "referenceType",e.reference_id AS "referenceId",e.financial_operation_id AS "financialOperationId",e.metadata,e.balance_after AS "balanceAfter",e.created_at AS "createdAt" FROM wallet_entries e JOIN wallet_accounts w ON w.id=e.wallet_id WHERE w.user_id=$1 ORDER BY e.created_at DESC,e.id DESC`, [userId]),
     pool.query(`SELECT h.id,h.wallet_id AS "walletId",h.hold_type AS "holdType",h.reference_type AS "referenceType",h.reference_id AS "referenceId",h.financial_operation_id AS "financialOperationId",h.amount,h.status,h.created_at AS "createdAt",h.released_at AS "releasedAt" FROM wallet_holds h JOIN wallet_accounts w ON w.id=h.wallet_id WHERE w.user_id=$1 ORDER BY h.created_at DESC,h.id DESC`, [userId]),
     pool.query(`SELECT id,wallet_id AS "walletId",amount,currency,provider,status,failure_code AS "failureCode",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE user_id=$1 ORDER BY created_at DESC,id DESC`, [userId]),
+    pool.query(`SELECT r.id,r.payment_id AS "paymentId",r.amount,p.currency,r.status,r.created_at AS "createdAt",r.updated_at AS "updatedAt" FROM refunds r JOIN payments p ON p.id=r.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY r.created_at DESC,r.id DESC`, [userId]),
+    pool.query(`SELECT s.id,s.payment_id AS "paymentId",s.amount,s.currency,s.status,s.created_at AS "createdAt",s.updated_at AS "updatedAt" FROM settlements s JOIN payments p ON p.id=s.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY s.created_at DESC,s.id DESC`, [userId]),
   ]);
   if (!u.rows[0]) return null;
   return { user:userFromRow(u.rows[0]), provider:p.rows[0] ? {id:p.rows[0].id,userId:p.rows[0].user_id,providerType:p.rows[0].provider_type,capacity:p.rows[0].capacity,verificationStatus:p.rows[0].verification_status,createdAt:p.rows[0].created_at?.toISOString?.()??p.rows[0].created_at,updatedAt:p.rows[0].updated_at?.toISOString?.()??p.rows[0].updated_at} : null,
@@ -108,6 +110,8 @@ export async function getUserPrivacyBundle(userId) {
     walletEntries: walletEntries.rows,
     walletHolds: walletHolds.rows,
     payouts: payouts.rows,
+    refunds: refunds.rows,
+    settlements: settlements.rows,
     notifications:n.rows.map(r=>({id:r.id,type:r.type,title:r.title,body:r.body,createdAt:r.created_at?.toISOString?.()??r.created_at,readAt:r.read_at?.toISOString?.()??r.read_at})),
     preferences:prefs.rows[0]||null,
     savedSearches: savedSearches.rows.map(r=>({id:r.id,name:r.name,query:r.query,kind:r.kind,visibility:r.visibility,city:r.city,category:r.category,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
