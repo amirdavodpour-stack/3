@@ -1598,7 +1598,7 @@ test('refund request and refund webhook serialize job/payment locks without a de
       ' id,owner_id,provider_id,title,description,category_id,job_type,budget_type,',
       ' budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,',
       ' created_at,updated_at)',
-      " SELECT gen_random_uuid(),$1,$3,'R05 refund lock-order fixture',",
+      " SELECT gen_random_uuid(),$1,$2,'R05 refund lock-order fixture',",
       " 'PostgreSQL concurrency regression fixture',c.id,'FIXED','FIXED',",
       " 100,100,1,'R05 refund lock-order fixture','ASSIGNED',",
       " 'R05 test','MISSION','PUBLIC',NOW(),NOW()",
@@ -1607,7 +1607,7 @@ test('refund request and refund webhook serialize job/payment locks without a de
       ' RETURNING id',
     ].join('\n');
     const { rows: jobs } = await pool.query(jobInsert, [
-      ownerId, 'R05 refund lock-order ' + suffix, workerId,
+      ownerId, workerId,
     ]);
     assert.ok(jobs[0], 'refund lock-order fixture requires an active category');
     jobId = jobs[0].id;
