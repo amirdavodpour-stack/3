@@ -1777,6 +1777,257 @@ test('refund request and refund webhook serialize job/payment locks without a de
 });
 
 
+test('release outbox completion serializes with a refund that supersedes a pending release', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'release-lock-owner');
+  const workerId = await createTransferTestUser(pool, 'release-lock-worker');
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const eventId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const leaseToken = crypto.randomUUID();
+  const holdRef = 'release-lock-hold-' + suffix;
+  const releaseRef = 'release-lock-settlement-' + suffix;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId = null;
+  let observer = null;
+  let originalPoolConnect = null;
+  let requestPromise = null;
+  let workerPromise = null;
+  let patchedConnect = false;
+
+  const requestJobGate = deferredGate();
+  const requestPaymentGate = deferredGate();
+  const requestJobLocked = deferredGate();
+  const requestPaymentLocked = deferredGate();
+  const requestEventLockAttempted = deferredGate();
+  const workerJobLockAttempted = deferredGate();
+  const workerEventLocked = deferredGate();
+  const workerEventGate = deferredGate();
+
+  function deferredGate() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  const waitForSignal = async (signal, description, timeoutMs = 7000) => {
+    let timeout;
+    try {
+      await Promise.race([
+        signal.promise,
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(description + ' timed out')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const waitForBlockedQuery = async (client, pattern, description, timeoutMs = 7000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const { rows } = await client.query(
+        'SELECT pid,query,wait_event_type,wait_event FROM pg_stat_activity ' +
+          'WHERE datname=current_database() AND pid<>pg_backend_pid() ' +
+          "AND wait_event_type='Lock' AND query ILIKE $1",
+        [pattern],
+      );
+      if (rows.length) return rows[0];
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(description + ' did not reach the expected PostgreSQL lock wait');
+  };
+
+  try {
+    const { rows: jobs } = await pool.query(
+      'INSERT INTO jobs(' +
+        'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+        'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+        'created_at,updated_at) ' +
+        "SELECT gen_random_uuid(),$1,$2,'R05 release lock-order fixture'," +
+        "'PostgreSQL release/refund concurrency fixture',c.id,'FIXED','FIXED'," +
+        "100,130,1,'R05 release lock-order fixture','COMPLETED'," +
+        "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+        'FROM categories c WHERE c.is_active=TRUE ' +
+        'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+      [ownerId,workerId],
+    );
+    assert.ok(jobs[0], 'release lock-order fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'RELEASE_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','USD',NOW(),NOW())",
+      [paymentId,jobId,ownerId,workerId,holdRef,'release-lock-payment-' + suffix],
+    );
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'PROCESSING',1,NOW(),NOW(),$5,NOW())",
+      [eventId,paymentId,'release-lock-event-' + suffix,JSON.stringify({jobId,paymentId}),leaseToken],
+    );
+
+    observer = await pool.connect();
+    originalPoolConnect = pool.connect;
+    const connect = pool.connect.bind(pool);
+    let serviceConnection = 0;
+    pool.connect = async (...args) => {
+      const client = await connect(...args);
+      serviceConnection += 1;
+      const role = serviceConnection;
+      const originalQuery = client.query.bind(client);
+      client.query = async (queryText, ...queryArgs) => {
+        const sql = typeof queryText === 'string' ? queryText : String(queryText?.text || '');
+        const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
+        const isJobLock = normalized.includes('FROM JOBS WHERE ID=$1 FOR UPDATE');
+        const isPaymentLock = normalized.includes('FROM PAYMENTS WHERE ID=$1 AND JOB_ID=$2 FOR UPDATE');
+        const isOutboxLock = normalized.includes('FROM OUTBOX_EVENTS WHERE ID=$1 FOR UPDATE');
+
+        if (role === 1 && isOutboxLock) requestEventLockAttempted.resolve();
+        if (role === 2 && isJobLock) workerJobLockAttempted.resolve();
+
+        const result = await originalQuery(queryText, ...queryArgs);
+
+        if (role === 1 && isJobLock) {
+          requestJobLocked.resolve();
+          await requestJobGate.promise;
+        }
+        if (role === 1 && isPaymentLock) {
+          requestPaymentLocked.resolve();
+          await requestPaymentGate.promise;
+        }
+        if (role === 2 && isOutboxLock) {
+          workerEventLocked.resolve();
+          await workerEventGate.promise;
+        }
+        return result;
+      };
+      return client;
+    };
+    patchedConnect = true;
+
+    appConfig.paymentProvider = 'webhook';
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    const { completePaymentReleaseOutbox } = await import('../src/repository/outbox.js');
+
+    requestPromise = createRefundAtomic({
+      jobId,
+      paymentId,
+      ownerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey:'refund-for-pending-release-' + suffix,
+      createdAt:new Date(),
+      allowPendingRelease:true,
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    await waitForSignal(requestJobLocked, 'refund request job lock');
+
+    workerPromise = completePaymentReleaseOutbox({
+      eventId,
+      jobId,
+      paymentId,
+      actorId:ownerId,
+      leaseToken,
+      providerReleaseRef:releaseRef,
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    const firstWorkerLock = await Promise.race([
+      workerJobLockAttempted.promise.then(() => 'job-first'),
+      workerEventLocked.promise.then(() => 'event-first'),
+    ]);
+
+    if (firstWorkerLock === 'event-first') {
+      // Old lock ordering: worker owns the event; request owns the job.
+      // Let the request lock payment and wait for the event, then let worker
+      // continue until it waits for payment, creating a deterministic cycle.
+      requestJobGate.resolve();
+      await waitForSignal(requestPaymentLocked, 'refund request payment lock');
+      requestPaymentGate.resolve();
+      await waitForSignal(requestEventLockAttempted, 'refund request outbox lock attempt');
+      await waitForBlockedQuery(observer, '%FROM outbox_events%FOR UPDATE%', 'refund request outbox lock');
+      workerEventGate.resolve();
+    } else {
+      // Correct job-first order: the worker cannot own the event while the
+      // request holds the job. The request sees PROCESSING, rejects safely,
+      // and releases the aggregate for the worker to complete the settlement.
+      await waitForBlockedQuery(observer, '%FROM jobs WHERE id=$1 FOR UPDATE%', 'release worker job lock');
+      requestJobGate.resolve();
+      await waitForSignal(requestPaymentLocked, 'refund request payment lock');
+      requestPaymentGate.resolve();
+      const requestOutcome = await requestPromise;
+      assert.equal(requestOutcome.error?.code, 'PAYMENT_RELEASE_IN_PROGRESS');
+      await waitForSignal(workerEventLocked, 'release worker outbox event lock');
+      workerEventGate.resolve();
+    }
+
+    const [requestOutcome, workerOutcome] = await Promise.all([requestPromise, workerPromise]);
+    assert.equal(
+      requestOutcome.error?.code,
+      'PAYMENT_RELEASE_IN_PROGRESS',
+      'refund must reject while the provider release is already processing',
+    );
+    assert.equal(
+      workerOutcome.ok,
+      true,
+      'release outbox completion must proceed without a lock-order deadlock; observed ' +
+        (workerOutcome.error?.code || workerOutcome.error?.message || 'unknown outcome'),
+    );
+    assert.equal(workerOutcome.value.completed, true);
+
+    const { rows: persisted } = await observer.query(
+      'SELECT p.status AS payment_status,j.status AS job_status,o.status AS outbox_status ' +
+        'FROM payments p JOIN jobs j ON j.id=p.job_id JOIN outbox_events o ON o.id=$2 ' +
+        'WHERE p.id=$1',
+      [paymentId,eventId],
+    );
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].payment_status, 'RELEASED');
+    assert.equal(persisted[0].job_status, 'SETTLED');
+    assert.equal(persisted[0].outbox_status, 'DONE');
+  } finally {
+    requestJobGate.resolve();
+    requestPaymentGate.resolve();
+    workerEventGate.resolve();
+    if (requestPromise || workerPromise) {
+      await Promise.allSettled([requestPromise, workerPromise].filter(Boolean));
+    }
+    if (patchedConnect) pool.connect = originalPoolConnect;
+    appConfig.paymentProvider = previousProvider;
+
+    if (observer) {
+      try {
+        const { rows: posted } = await observer.query(
+          'SELECT j.id FROM journals j JOIN ledger_entries le ON le.journal_id=j.id ' +
+            "WHERE le.reference_type IN ('PAYMENT_RELEASE','PAYMENT_PAYOUT') " +
+            "AND le.reference_id=$1 AND j.status='POSTED' LIMIT 1",
+          [paymentId],
+        );
+        if (!posted.length) {
+          await observer.query('BEGIN');
+          await observer.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',paymentId]);
+          await observer.query('DELETE FROM settlements WHERE payment_id=$1', [paymentId]);
+          await observer.query('DELETE FROM outbox_events WHERE id=$1', [eventId]);
+          await observer.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+          if (jobId) await observer.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+          await observer.query('COMMIT');
+        }
+      } catch (error) {
+        await observer.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        observer.release();
+      }
+    }
+  }
+});
+
+
 async function createExternalFundingFixture(label) {
   const pool = dbModule.getPool();
   const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
