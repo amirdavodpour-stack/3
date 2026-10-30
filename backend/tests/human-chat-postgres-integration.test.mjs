@@ -2262,6 +2262,248 @@ test('release outbox completion serializes with a refund that supersedes a pendi
 });
 
 
+
+
+test('internal create-hold outbox completion follows participant/job/payment order during funding replay', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'hold-outbox-lock-owner');
+  const workerId = await createTransferTestUser(pool, 'hold-outbox-lock-worker');
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const eventId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const leaseToken = crypto.randomUUID();
+  const holdRef = 'hold-outbox-provider-' + suffix;
+  const idempotencyKey = 'hold-outbox-funding-' + suffix;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId = null;
+  let observer = null;
+  let originalPoolConnect = null;
+  let fundingPromise = null;
+  let outboxPromise = null;
+  let patchedConnect = false;
+
+  const fundingUserGate = deferredGate();
+  const fundingUsersLocked = deferredGate();
+  const outboxUsersLockAttempted = deferredGate();
+  const outboxPaymentLocked = deferredGate();
+
+  function deferredGate() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  const waitForSignal = async (signal, description, timeoutMs = 7000) => {
+    let timeout;
+    try {
+      await Promise.race([
+        signal.promise,
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(description + ' timed out')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const waitForBlockedQuery = async (client, pattern, description, timeoutMs = 7000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const { rows } = await client.query(
+        'SELECT pid,query,wait_event_type,wait_event FROM pg_stat_activity ' +
+          'WHERE datname=current_database() AND pid<>pg_backend_pid() ' +
+          "AND wait_event_type='Lock' AND query ILIKE $1",
+        [pattern],
+      );
+      if (rows.length) return rows[0];
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(description + ' did not reach the expected PostgreSQL lock wait');
+  };
+
+  try {
+    await creditWallet({
+      userId:ownerId,
+      amount:'1000',
+      idempotencyKey:'seed-hold-outbox-wallet-' + suffix,
+    });
+
+    const { rows: jobs } = await pool.query(
+      'INSERT INTO jobs(' +
+        'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+        'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+        'created_at,updated_at) ' +
+        "SELECT gen_random_uuid(),$1,$2,'R05 hold outbox lock-order fixture'," +
+        "'PostgreSQL internal hold outbox/funding concurrency fixture',c.id,'FIXED','FIXED'," +
+        "100,100,1,'R05 hold outbox lock-order fixture','FUNDED'," +
+        "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+        'FROM categories c WHERE c.is_active=TRUE ' +
+        'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+      [ownerId,workerId],
+    );
+    assert.ok(jobs[0], 'internal hold outbox fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'HOLD_PENDING',$5,$6,100,0,0,1,101,100,'R05-test','TOMAN',NOW(),NOW())",
+      [paymentId,jobId,ownerId,workerId,holdRef,idempotencyKey],
+    );
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_CREATE_HOLD','payment',$2,$3,$4::jsonb,'PROCESSING',1,NOW(),NOW(),$5,NOW())",
+      [eventId,paymentId,'PAYMENT_CREATE_HOLD:' + paymentId,JSON.stringify({jobId,ownerId,paymentId}),leaseToken],
+    );
+
+    observer = await pool.connect();
+    originalPoolConnect = pool.connect;
+    const connect = pool.connect.bind(pool);
+    let serviceConnection = 0;
+    pool.connect = async (...args) => {
+      const client = await connect(...args);
+      serviceConnection += 1;
+      const role = serviceConnection;
+      const originalQuery = client.query.bind(client);
+      client.query = async (queryText, ...queryArgs) => {
+        const sql = typeof queryText === 'string' ? queryText : String(queryText?.text || '');
+        const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
+        const isUsersLock = normalized.includes('FROM USERS') && normalized.includes('FOR NO KEY UPDATE');
+        const isPaymentLock = normalized.includes('FROM PAYMENTS WHERE ID=$1 AND JOB_ID=$2 FOR UPDATE');
+
+        if (role === 2 && isUsersLock) outboxUsersLockAttempted.resolve();
+
+        const result = await originalQuery(queryText, ...queryArgs);
+
+        if (role === 1 && isUsersLock) {
+          fundingUsersLocked.resolve();
+          await fundingUserGate.promise;
+        }
+        if (role === 2 && isPaymentLock) outboxPaymentLocked.resolve();
+        return result;
+      };
+      return client;
+    };
+    patchedConnect = true;
+
+    appConfig.paymentProvider = 'internal';
+    const { fundJobAtomic } = await import('../src/repository/payment_funding.js');
+    const { completePaymentCreateHoldOutbox } = await import('../src/repository/outbox.js');
+
+    fundingPromise = fundJobAtomic({
+      jobId,
+      payerId:ownerId,
+      payeeId:workerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey,
+      createdAt:new Date(),
+      breakdown:{
+        currency:'TOMAN',
+        baseAmount:'100',
+        employerFee:'0',
+        workerFee:'0',
+        platformFee:'1',
+        employerCharge:'101',
+        providerPayout:'100',
+        policyVersion:'R05-test',
+      },
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    await waitForSignal(fundingUsersLocked, 'funding participant locks');
+
+    outboxPromise = completePaymentCreateHoldOutbox({
+      eventId,
+      jobId,
+      paymentId,
+      providerRef:holdRef,
+      actorId:ownerId,
+      leaseToken,
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    const firstOutboxLock = await Promise.race([
+      outboxUsersLockAttempted.promise.then(() => 'users-first'),
+      outboxPaymentLocked.promise.then(() => 'payment-first'),
+    ]);
+
+    if (firstOutboxLock === 'payment-first') {
+      // Old ordering: worker owns payment and event before waiting on users;
+      // funding owns users and then waits for the same payment row.
+      await waitForSignal(outboxUsersLockAttempted, 'outbox internal participant lock');
+      await waitForBlockedQuery(observer, '%FROM users%FOR NO KEY UPDATE%', 'outbox participant lock');
+      fundingUserGate.resolve();
+      await waitForBlockedQuery(
+        observer,
+        '%FROM payments WHERE job_id=$1 FOR UPDATE%',
+        'funding replay payment lock',
+      );
+    } else {
+      // Correct ordering: outbox worker waits for participant rows before
+      // job/payment/event, allowing a funding replay to finish and release them.
+      await waitForBlockedQuery(observer, '%FROM users%FOR NO KEY UPDATE%', 'outbox participant lock');
+      fundingUserGate.resolve();
+    }
+
+    const [fundingOutcome, outboxOutcome] = await Promise.all([fundingPromise,outboxPromise]);
+    assert.equal(fundingOutcome.ok, true,
+      'funding replay must finish without deadlock; observed ' +
+        (fundingOutcome.error?.code || fundingOutcome.error?.message || 'unknown outcome'));
+    assert.equal(fundingOutcome.value.created, false);
+    assert.equal(outboxOutcome.ok, true,
+      'internal create-hold outbox completion must finish without deadlock; observed ' +
+        (outboxOutcome.error?.code || outboxOutcome.error?.message || 'unknown outcome'));
+    assert.equal(outboxOutcome.value.completed, true);
+
+    const { rows: persisted } = await observer.query(
+      'SELECT p.status AS payment_status,o.status AS outbox_status,w.available_balance,w.locked_balance,' +
+        '(SELECT COUNT(*)::int FROM wallet_holds h WHERE h.reference_type=$2 AND h.reference_id=$1 AND h.status=$3) AS active_holds ' +
+        'FROM payments p JOIN outbox_events o ON o.id=$4 ' +
+        'JOIN wallet_accounts w ON w.user_id=p.payer_id AND w.currency=$5 WHERE p.id=$1',
+      [paymentId,'PAYMENT','ACTIVE',eventId,'TOMAN'],
+    );
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].payment_status, 'HELD');
+    assert.equal(persisted[0].outbox_status, 'DONE');
+    assert.equal(String(persisted[0].available_balance), '899');
+    assert.equal(String(persisted[0].locked_balance), '100');
+    assert.equal(persisted[0].active_holds, 1);
+  } finally {
+    fundingUserGate.resolve();
+    if (fundingPromise || outboxPromise) {
+      await Promise.allSettled([fundingPromise,outboxPromise].filter(Boolean));
+    }
+    if (patchedConnect) pool.connect = originalPoolConnect;
+    appConfig.paymentProvider = previousProvider;
+
+    if (observer) {
+      try {
+        const { rows: holds } = await observer.query(
+          'SELECT id FROM wallet_holds WHERE reference_type=$1 AND reference_id=$2 LIMIT 1',
+          ['PAYMENT',paymentId],
+        );
+        if (!holds.length) {
+          await observer.query('BEGIN');
+          await observer.query('DELETE FROM outbox_events WHERE id=$1', [eventId]);
+          await observer.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+          if (jobId) await observer.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+          await observer.query('COMMIT');
+        }
+      } catch (error) {
+        await observer.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        observer.release();
+      }
+    }
+  }
+});
+
+
 async function createExternalFundingFixture(label) {
   const pool = dbModule.getPool();
   const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
