@@ -236,7 +236,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
   const pool = dbModule.getPool();
   const pendingPaymentId = crypto.randomUUID();
   const pendingEventId = crypto.randomUUID();
-  const processingPaymentId = crypto.randomUUID();
+  const processingPaymentId = pendingPaymentId;
   const processingEventId = crypto.randomUUID();
   const suffix = crypto.randomBytes(6).toString('hex');
   const { rows: jobs } = await pool.query(
@@ -290,7 +290,10 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
     assert.equal(pendingState[0]?.last_error,'CANCELLED_BY_ADMIN_DISPUTE_HOLD');
 
     const leaseToken = crypto.randomUUID();
-    await insertPayment(processingPaymentId,'RELEASE_PENDING','dispute-hold-processing-'+suffix);
+    await pool.query(
+      "UPDATE payments SET status='RELEASE_PENDING',updated_at=NOW() WHERE id=$1",
+      [processingPaymentId],
+    );
     await insertEvent(processingEventId,processingPaymentId,'PROCESSING',1,leaseToken);
     const refused = await holdPaymentForDispute({jobId:holdJobId,paymentId:processingPaymentId});
     assert.equal(refused?.held,false);
@@ -305,7 +308,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
     assert.equal(processingState[0]?.outbox_status,'PROCESSING');
   } finally {
     await pool.query('DELETE FROM outbox_events WHERE id=ANY($1::uuid[])',[[pendingEventId,processingEventId]]);
-    await pool.query('DELETE FROM payments WHERE id=ANY($1::uuid[])',[[pendingPaymentId,processingPaymentId]]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[pendingPaymentId]);
     await pool.query('DELETE FROM jobs WHERE id=$1',[holdJobId]);
   }
 });
