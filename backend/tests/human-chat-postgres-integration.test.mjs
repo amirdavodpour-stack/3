@@ -193,6 +193,13 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     "UPDATE job_disputes SET resolution_lease_until=NOW()-INTERVAL '1 second' WHERE id=$1",
     [disputeId],
   );
+  const expiredBeforeTakeover = await completeJobDisputeResolution(disputeId,{
+    resolution:winner.resolution,
+    token:winner.token,
+  });
+  assert.equal(expiredBeforeTakeover?.stale,true,
+    'an expired lease cannot finalize even before another administrator reclaims it');
+
   const resumed = await claimJobDisputeResolution(disputeId,{
     resolution:winner.resolution,
     reason:'resume the same decision after lease expiry',
