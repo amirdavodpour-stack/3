@@ -4743,12 +4743,12 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
        created_at,updated_at
      )
      SELECT $1,$2,$3,$4,'Deterministic account-deletion/payment-webhook race fixture',
-       c.id,'FIXED','FIXED',100,130,1,'Race fixture', 'IN_PROGRESS',
+       c.id,'FIXED','FIXED',100,130,1,'Race fixture', $5,
        'R05 test','MISSION','PUBLIC',NOW(),NOW()
        FROM categories c WHERE c.is_active=TRUE
        ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
        RETURNING id`,
-    [jobId,payerId,workerId,jobTitle],
+    [jobId,payerId,workerId,jobTitle,isRelease ? 'IN_PROGRESS' : 'ASSIGNED'],
   );
   assert.ok(jobs[0], 'account-deletion/webhook race requires an active category');
   if (isRelease) {
@@ -4848,8 +4848,11 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
           `SELECT pid,query FROM pg_stat_activity
             WHERE datname=current_database() AND pid<>pg_backend_pid()
               AND wait_event_type='Lock'
-              AND query ILIKE '%FROM wallet_accounts%'
-              AND query ILIKE '%id = ANY%'`,
+              AND query ILIKE '%wallet_accounts%'
+              AND (
+                query ILIKE '%id = ANY%'
+                OR query ILIKE '%INSERT INTO wallet_accounts%'
+              )`,
         );
         if (waiters.length) { webhookBlockedOnWallet = true; break; }
         if (webhookOutcome) break;
