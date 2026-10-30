@@ -239,7 +239,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
       'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
       'fee_policy_version,currency,created_at,updated_at) ' +
       "VALUES($1,$2,$3,$4,100,$5,$6,$7,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
-    [paymentId,fixture.jobId,fixture.ownerId,fixture.workerId,'hold-ref-'+suffix,key],
+    [paymentId,fixture.jobId,fixture.ownerId,fixture.workerId,status,'hold-ref-'+suffix,key],
   );
 
   const insertEvent = async (eventId, paymentId, status, attempts, leaseToken) => pool.query(
