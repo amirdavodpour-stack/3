@@ -2274,6 +2274,250 @@ test('release outbox completion serializes with a refund that supersedes a pendi
 
 
 
+test('terminal hold failure serializes with provider hold completion without a deadlock', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'hold-failure-lock-owner');
+  const workerId = await createTransferTestUser(pool, 'hold-failure-lock-worker');
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const eventId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const leaseToken = crypto.randomUUID();
+  const holdRef = 'hold-failure-provider-' + suffix;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId = null;
+  let observer = null;
+  let originalPoolConnect = null;
+  let completionPromise = null;
+  let failurePromise = null;
+  let patchedConnect = false;
+
+  const completionPaymentGate = deferredGate();
+  const completionEventGate = deferredGate();
+  const failureEventGate = deferredGate();
+  const completionPaymentLocked = deferredGate();
+  const completionEventLocked = deferredGate();
+  const completionEventLockAttempted = deferredGate();
+  const failureJobLockAttempted = deferredGate();
+  const failureEventLocked = deferredGate();
+
+  function deferredGate() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  const waitForSignal = async (signal, description, timeoutMs = 7000) => {
+    let timeout;
+    try {
+      await Promise.race([
+        signal.promise,
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(description + ' timed out')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const waitForBlockedQuery = async (client, pattern, description, timeoutMs = 7000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const { rows } = await client.query(
+        'SELECT pid,query,wait_event_type,wait_event FROM pg_stat_activity ' +
+          'WHERE datname=current_database() AND pid<>pg_backend_pid() ' +
+          "AND wait_event_type='Lock' AND query ILIKE $1",
+        [pattern],
+      );
+      if (rows.length) return rows[0];
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(description + ' did not reach the expected PostgreSQL lock wait');
+  };
+
+  try {
+    const { rows: jobs } = await pool.query(
+      'INSERT INTO jobs(' +
+        'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+        'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+        'created_at,updated_at) ' +
+        "SELECT gen_random_uuid(),$1,$2,'R05 hold failure lock-order fixture'," +
+        "'PostgreSQL hold failure/completion concurrency fixture',c.id,'FIXED','FIXED'," +
+        "100,130,1,'R05 hold failure lock-order fixture','FUNDED'," +
+        "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+        'FROM categories c WHERE c.is_active=TRUE ' +
+        'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+      [ownerId,workerId],
+    );
+    assert.ok(jobs[0], 'hold failure lock-order fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,funding_previous_job_status,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'HOLD_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','USD','ASSIGNED',NOW(),NOW())",
+      [paymentId,jobId,ownerId,workerId,'PENDING:'+paymentId,'hold-failure-payment-' + suffix],
+    );
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_CREATE_HOLD','payment',$2,$3,$4::jsonb,'PROCESSING',1,NOW(),NOW(),$5,NOW())",
+      [eventId,paymentId,'hold-failure-event-' + suffix,JSON.stringify({jobId,ownerId,paymentId}),leaseToken],
+    );
+
+    observer = await pool.connect();
+    originalPoolConnect = pool.connect;
+    const connect = pool.connect.bind(pool);
+    let serviceConnection = 0;
+    pool.connect = async (...args) => {
+      const client = await connect(...args);
+      serviceConnection += 1;
+      const role = serviceConnection;
+      const originalQuery = client.query.bind(client);
+      client.query = async (queryText, ...queryArgs) => {
+        const sql = typeof queryText === 'string' ? queryText : String(queryText?.text || '');
+        const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
+        const isCompletionPaymentLock = role === 1 &&
+          normalized.includes('FROM PAYMENTS WHERE ID=$1 AND JOB_ID=$2 FOR UPDATE');
+        const isCompletionEventLock = role === 1 &&
+          normalized.includes('FROM OUTBOX_EVENTS WHERE ID=$1 FOR UPDATE');
+        const isFailureJobLock = role === 2 &&
+          normalized.includes('FROM JOBS WHERE ID=$1 FOR UPDATE');
+        const isFailureEventLock = role === 2 &&
+          normalized.includes('FROM OUTBOX_EVENTS WHERE ID=$1 FOR UPDATE');
+
+        if (isCompletionEventLock) completionEventLockAttempted.resolve();
+        if (isFailureJobLock) failureJobLockAttempted.resolve();
+
+        const result = await originalQuery(queryText, ...queryArgs);
+
+        if (isCompletionPaymentLock) {
+          completionPaymentLocked.resolve();
+          await completionPaymentGate.promise;
+        }
+        if (isCompletionEventLock) {
+          completionEventLocked.resolve();
+          await completionEventGate.promise;
+        }
+        if (isFailureEventLock) {
+          failureEventLocked.resolve();
+          await failureEventGate.promise;
+        }
+        return result;
+      };
+      return client;
+    };
+    patchedConnect = true;
+
+    appConfig.paymentProvider = 'webhook';
+    const { completePaymentCreateHoldOutbox } = await import('../src/repository/outbox.js');
+
+    completionPromise = completePaymentCreateHoldOutbox({
+      eventId,
+      jobId,
+      paymentId,
+      providerRef:holdRef,
+      actorId:ownerId,
+      leaseToken,
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    await waitForSignal(completionPaymentLocked, 'provider hold completion payment lock');
+
+    failurePromise = failOutboxEvent({
+      eventId,
+      error:'R05 terminal provider hold failure',
+      maxAttempts:1,
+      leaseToken,
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    const firstFailureLock = await Promise.race([
+      failureEventLocked.promise.then(() => 'event-first'),
+      failureJobLockAttempted.promise.then(() => 'job-first'),
+    ]);
+
+    if (firstFailureLock === 'event-first') {
+      // Old ordering: failure owns outbox while provider completion owns payment.
+      completionPaymentGate.resolve();
+      await waitForSignal(completionEventLockAttempted, 'provider completion outbox lock attempt');
+      await waitForBlockedQuery(observer, '%FROM outbox_events WHERE id=$1 FOR UPDATE%', 'provider completion outbox lock');
+      failureEventGate.resolve();
+    } else {
+      // Correct aggregate ordering: failure waits for the job before outbox.
+      await waitForBlockedQuery(observer, '%FROM jobs WHERE id=$1 FOR UPDATE%', 'terminal hold failure job lock');
+      completionPaymentGate.resolve();
+      await waitForSignal(completionEventLocked, 'provider completion outbox lock');
+      completionEventGate.resolve();
+      const completionOutcome = await completionPromise;
+      assert.equal(completionOutcome.ok, true,
+        'provider hold completion must win without deadlock; observed ' +
+          (completionOutcome.error?.code || completionOutcome.error?.message || 'unknown outcome'));
+      assert.equal(completionOutcome.value.completed, true);
+      await waitForSignal(failureEventLocked, 'terminal failure outbox lock after completion');
+      failureEventGate.resolve();
+    }
+
+    const [completionOutcome,failureOutcome] = await Promise.all([completionPromise,failurePromise]);
+    assert.equal(
+      completionOutcome.ok,
+      true,
+      'provider hold completion must finish without PostgreSQL deadlock; observed ' +
+        (completionOutcome.error?.code || completionOutcome.error?.message || 'unknown outcome'),
+    );
+    assert.equal(completionOutcome.value.completed, true);
+    assert.equal(
+      failureOutcome.ok,
+      true,
+      'terminal hold failure must serialize with provider completion; observed ' +
+        (failureOutcome.error?.code || failureOutcome.error?.message || 'unknown outcome'),
+    );
+    assert.equal(failureOutcome.value.alreadyDone, true);
+
+    const { rows: persisted } = await observer.query(
+      'SELECT p.status AS payment_status,o.status AS outbox_status ' +
+        'FROM payments p JOIN outbox_events o ON o.id=$2 WHERE p.id=$1',
+      [paymentId,eventId],
+    );
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].payment_status, 'HELD');
+    assert.equal(persisted[0].outbox_status, 'DONE');
+  } finally {
+    completionPaymentGate.resolve();
+    completionEventGate.resolve();
+    failureEventGate.resolve();
+    if (completionPromise || failurePromise) {
+      await Promise.allSettled([completionPromise,failurePromise].filter(Boolean));
+    }
+    if (patchedConnect) pool.connect = originalPoolConnect;
+    appConfig.paymentProvider = previousProvider;
+
+    if (observer) {
+      try {
+        const { rows: posted } = await observer.query(
+          "SELECT j.id FROM journals j WHERE j.reference_id=$1 AND j.journal_type='EXTERNAL_FUNDING' AND j.status='POSTED' LIMIT 1",
+          [paymentId],
+        );
+        if (!posted.length) {
+          await observer.query('BEGIN');
+          await observer.query('DELETE FROM audit_logs WHERE entity_type=$1 AND entity_id=$2', ['payment',paymentId]);
+          await observer.query('DELETE FROM outbox_events WHERE id=$1', [eventId]);
+          await observer.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+          if (jobId) await observer.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+          await observer.query('COMMIT');
+        }
+      } catch (error) {
+        await observer.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        observer.release();
+      }
+    }
+  }
+});
+
+
 test('terminal release failure serializes with refund supersession without a deadlock', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
   const ownerId = await createTransferTestUser(pool, 'release-failure-lock-owner');
