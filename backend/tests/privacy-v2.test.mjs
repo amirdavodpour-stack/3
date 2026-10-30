@@ -452,3 +452,25 @@ test('privacy export serializes PostgreSQL Date instances as ISO timestamps', ()
   assert.equal(out.walletAccounts[0].updatedAt, '2026-10-30T01:02:03.000Z');
   assert.equal(out.walletEntries[0].createdAt, '2026-10-30T01:02:03.000Z');
 });
+
+
+test('privacy export explicitly reports top-level collections truncated by the 500-record safety cap', () => {
+  const walletEntries = Array.from({ length: 501 }, (_, index) => ({
+    id: `entry-${index}`, entryType:'TRANSFER', direction:'CREDIT', amount:String(index), currency:'TOMAN',
+  }));
+  const payouts = Array.from({ length: 501 }, (_, index) => ({
+    id: `payout-${index}`, amount:'1', currency:'TOMAN', status:'SUCCEEDED',
+  }));
+  const out = buildDataExport({
+    user: { id:'u13', email:'limit-owner@example.com', displayName:'Limit Owner', role:'USER', status:'ACTIVE', createdAt:'now' },
+    walletEntries,
+    payouts,
+  });
+
+  assert.equal(out.walletEntries.length, 500);
+  assert.equal(out.payouts.length, 500);
+  assert.deepEqual(out.exportLimits, {
+    maxRecordsPerCollection: 500,
+    truncatedTopLevelCollections: ['walletEntries', 'payouts'],
+  });
+});

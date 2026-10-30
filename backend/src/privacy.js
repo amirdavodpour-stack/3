@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 
 export const PRIVACY_VERSION = '1.3';
 
+const MAX_EXPORT_ARRAY_ITEMS = 500;
+
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
 const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
@@ -12,7 +14,7 @@ function sanitizeExportObject(value, depth = 0) {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
   // Never return an un-sanitized object merely because its nesting exceeded the safety bound.
   if (depth > 4) return null;
-  if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeExportObject(v, depth + 1));
+  if (Array.isArray(value)) return value.slice(0, MAX_EXPORT_ARRAY_ITEMS).map(v => sanitizeExportObject(v, depth + 1));
   const out = {};
   for (const [key, val] of Object.entries(value)) {
     const normalizedKey = normalizeFieldKey(key);
@@ -29,7 +31,7 @@ function sanitizeExportObject(value, depth = 0) {
 function sanitizeTelemetryExportObject(value, depth = 0) {
   if (value == null || typeof value !== 'object') return value;
   if (depth > 4) return null;
-  if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeTelemetryExportObject(v, depth + 1));
+  if (Array.isArray(value)) return value.slice(0, MAX_EXPORT_ARRAY_ITEMS).map(v => sanitizeTelemetryExportObject(v, depth + 1));
   const out = {};
   for (const [key, val] of Object.entries(value)) {
     const normalizedKey = normalizeFieldKey(key);
@@ -79,11 +81,22 @@ export function anonymizedEmail(userId) { return `deleted+${String(userId).repla
 export function deletionCredential() { return crypto.randomBytes(48).toString('hex'); }
 
 export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
+  const exportCollections = {
+    jobs, applications, offers, payments, walletAccounts, walletEntries, walletHolds, payouts,
+    notifications, evidence, uploads, analyticsEvents, crashReports, trustReports, satisfactionHistory, savedSearches,
+  };
+  const truncatedTopLevelCollections = Object.entries(exportCollections)
+    .filter(([, records]) => Array.isArray(records) && records.length > MAX_EXPORT_ARRAY_ITEMS)
+    .map(([name]) => name);
   const safeAccount = sanitizeExportObject({
     id: user.id, email: user.email, displayName: user.displayName, role: user.role, status: user.status, createdAt: user.createdAt,
   });
   return {
     exportVersion: PRIVACY_VERSION,
+    exportLimits: {
+      maxRecordsPerCollection: MAX_EXPORT_ARRAY_ITEMS,
+      truncatedTopLevelCollections,
+    },
     generatedAt: new Date().toISOString(),
     account: safeAccount,
     provider: sanitizeExportObject(provider || null),
