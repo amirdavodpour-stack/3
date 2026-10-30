@@ -44,7 +44,10 @@ test('unknown payout resolves its financial operation through the active reserva
   assert.ok(operationUpdate.includes('completed_at=NULL'));
   assert.ok(operationUpdate.includes("WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')"));
   assert.ok(operationUpdate.includes('RETURNING id'));
-  assert.match(markUnknown, /\[hold\.financial_operation_id\]/);
+  assert.ok(markUnknown.includes('operationId = hold.financial_operation_id'));
+  assert.ok(operationUpdate.includes('[operationId]'));
+  assert.ok(markUnknown.includes('PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'));
+  assert.ok(markUnknown.includes('requiresReconciliation: Boolean(reconciliationReason)'));
   assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
 });
 
@@ -56,6 +59,6 @@ test('ambiguous payout provider outcomes never enter generic terminal failure ha
   assert.ok(payoutUnknownBranch.includes('OUTBOX_PAYOUT_UNKNOWN_PERSISTENCE_FAILED'));
   assert.ok(payoutUnknownBranch.includes('OUTBOX_PAYOUT_UNKNOWN_REQUIRES_RECONCILIATION'));
   assert.ok(payoutUnknownBranch.includes('return { processed:false, unknown:true, persistencePending:true }'));
-  assert.ok(!payoutUnknownBranch.includes('failOutboxEvent'));
+  assert.ok(!payoutUnknownBranch.includes('return failOutboxEvent('));
 });
 
