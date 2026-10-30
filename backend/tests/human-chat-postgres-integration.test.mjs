@@ -1581,8 +1581,49 @@ async function createExternalFundingFixture(label) {
   });
   assert.equal(result.created, true);
   assert.ok(result.outboxEvent?.id, 'external funding fixture must enqueue a hold request');
-  return { jobId: jobs[0].id, paymentId, eventId: result.outboxEvent.id, breakdown };
+  return { jobId: jobs[0].id, payerId, payeeId, paymentId, eventId: result.outboxEvent.id, idempotencyKey: `R05-external-fund-${suffix}`, breakdown };
 }
+
+test('funding replay rejects the same idempotency key with a different amount or payee', { skip: !enabled }, async () => {
+  const previousProvider = appConfig.paymentProvider;
+  appConfig.paymentProvider = 'webhook';
+  try {
+    const amountFixture = await createExternalFundingFixture('funding-idempotency-amount');
+    await assert.rejects(
+      fundJobAtomic({
+        jobId: amountFixture.jobId,
+        payerId: amountFixture.payerId,
+        payeeId: amountFixture.payeeId,
+        amount: 101,
+        id: crypto.randomUUID(),
+        idempotencyKey: amountFixture.idempotencyKey,
+        createdAt: new Date(),
+        breakdown: { ...amountFixture.breakdown, baseAmount:101, employerCharge:131.3, platformFee:31.3 },
+      }),
+      (error) => error?.code === 'IDEMPOTENCY_CONFLICT',
+      'the same funding key must not silently replay a payment for a different amount',
+    );
+
+    const payeeFixture = await createExternalFundingFixture('funding-idempotency-payee');
+    const differentPayeeId = await createTransferTestUser(dbModule.getPool(), 'funding-idempotency-different-payee');
+    await assert.rejects(
+      fundJobAtomic({
+        jobId: payeeFixture.jobId,
+        payerId: payeeFixture.payerId,
+        payeeId: differentPayeeId,
+        amount:100,
+        id: crypto.randomUUID(),
+        idempotencyKey: payeeFixture.idempotencyKey,
+        createdAt: new Date(),
+        breakdown: payeeFixture.breakdown,
+      }),
+      (error) => error?.code === 'IDEMPOTENCY_CONFLICT',
+      'the same funding key must not silently replay a payment for a different payee',
+    );
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+  }
+});
 
 test('external funding ledger is posted only after the provider confirms its hold', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
