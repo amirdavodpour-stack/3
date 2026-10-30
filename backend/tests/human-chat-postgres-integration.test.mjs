@@ -4520,6 +4520,37 @@ async function seedFailedRefundRetryFixture(label) {
   return { paymentId, jobId, refundId, eventId, idempotencyKey };
 }
 
+async function seedPendingRefundRetryFixture(label) {
+  const pool = dbModule.getPool();
+  const { paymentId } = await createWebhookMismatchPayment('HELD', label);
+  const { rows: payments } = await pool.query(
+    'SELECT job_id FROM payments WHERE id=$1',
+    [paymentId],
+  );
+  const jobId = payments[0].job_id;
+  const refundId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  const idempotencyKey = 'refund-pending-' + label + '-' + crypto.randomUUID();
+
+  await pool.query(
+    `INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at)
+     VALUES($1,$2,100,'PENDING',NULL,$3,NOW(),NOW())`,
+    [refundId,paymentId,idempotencyKey],
+  );
+  await pool.query(
+    `INSERT INTO outbox_events(
+       id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,
+       available_at,created_at
+     )
+     VALUES($1,'PAYMENT_REFUND','payment',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW())`,
+    [eventId,paymentId,`PAYMENT_REFUND:${paymentId}`,JSON.stringify({
+      jobId, ownerId:fixture.ownerId, paymentId, refundId,
+      providerRef:null, idempotencyKey,
+    })],
+  );
+  return { paymentId, jobId, refundId, eventId, idempotencyKey };
+}
+
 async function cleanupFailedRefundRetryFixture({ paymentId, jobId }) {
   const pool = dbModule.getPool();
   await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1', [paymentId]);
@@ -4635,6 +4666,61 @@ test('pending refund with a different key cannot hide an earlier failed refund o
     await cleanupFailedRefundRetryFixture(seeded);
   }
 });
+
+test('pending refund cannot be duplicated by a different or missing idempotency key', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const seeded = await seedPendingRefundRetryFixture('operation-key');
+  try {
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    const replay = await createRefundAtomic({
+      jobId:seeded.jobId,
+      paymentId:seeded.paymentId,
+      ownerId:fixture.ownerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey:seeded.idempotencyKey,
+      createdAt:new Date(),
+    });
+    assert.equal(replay.refund.id,seeded.refundId,
+      'same-key replay must return the existing pending refund');
+
+    for (const idempotencyKey of [seeded.idempotencyKey + '-different', null]) {
+      await assert.rejects(
+        createRefundAtomic({
+          jobId:seeded.jobId,
+          paymentId:seeded.paymentId,
+          ownerId:fixture.ownerId,
+          amount:100,
+          id:crypto.randomUUID(),
+          idempotencyKey,
+          createdAt:new Date(),
+        }),
+        (error) => error?.code === 'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY',
+      );
+    }
+
+    const { rows: refunds } = await pool.query(
+      'SELECT id,status FROM refunds WHERE payment_id=$1',
+      [seeded.paymentId],
+    );
+    assert.equal(refunds.length,1);
+    assert.equal(refunds[0].id,seeded.refundId);
+    assert.equal(refunds[0].status,'PENDING');
+    const { rows: events } = await pool.query(
+      `SELECT payload->>'refundId' AS payload_refund_id,status,attempts
+         FROM outbox_events WHERE id=$1`,
+      [seeded.eventId],
+    );
+    assert.equal(events.length,1);
+    assert.equal(events[0].payload_refund_id,seeded.refundId);
+    assert.equal(events[0].status,'PENDING');
+    assert.equal(events[0].attempts,0);
+  } finally {
+    await cleanupFailedRefundRetryFixture(seeded);
+  }
+});
+
+
 
 
 after(async () => {

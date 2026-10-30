@@ -72,31 +72,29 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
       if (refundRow?.status === 'REFUNDED') return { refund: refundRow, payment };
     }
 
-    // One immutable PAYMENT_REFUND event exists per payment. A different
-    // failed operation key cannot safely create another refund row because
-    // the existing event payload must continue to identify the original row.
-    // Check failed rows before returning a matching PENDING row so an older
-    // stranded operation cannot be silently acknowledged as a new retry.
-    const { rows: failedRefunds } = await client.query(
+    // A payment has one immutable PAYMENT_REFUND outbox identity. Enforce
+    // one unresolved refund row per payment, whether the prior operation is
+    // PENDING or terminally FAILED, before creating or acknowledging a retry.
+    const { rows: unresolvedRefunds } = await client.query(
       `SELECT * FROM refunds
-        WHERE payment_id=$1 AND status='FAILED'
+        WHERE payment_id=$1 AND status IN ('PENDING','FAILED')
         ORDER BY created_at DESC,id DESC
         FOR UPDATE`,
       [paymentId],
     );
-    if (failedRefunds.length) {
+    if (unresolvedRefunds.length) {
       const suppliedKey = String(idempotencyKey || '');
-      const matchingFailed = failedRefunds.filter(
+      const matchingRefunds = unresolvedRefunds.filter(
         (candidate) => String(candidate.idempotency_key || '') === suppliedKey,
       );
-      if (failedRefunds.length !== 1 || matchingFailed.length !== 1 ||
-          (refundRow && refundRow.id !== matchingFailed[0].id)) {
+      if (unresolvedRefunds.length !== 1 || matchingRefunds.length !== 1 ||
+          (refundRow && refundRow.id !== matchingRefunds[0].id)) {
         const error = new Error('REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY');
         error.code = 'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY';
         error.status = 409;
         throw error;
       }
-      refundRow = matchingFailed[0];
+      refundRow = matchingRefunds[0];
     }
 
     if (refundRow?.status === 'PENDING') {

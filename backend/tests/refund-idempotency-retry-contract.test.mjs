@@ -16,7 +16,7 @@ test('refund idempotency reopens a terminally failed refund instead of returning
   assert.match(source, /payment\.status.*HELD.*RELEASE_PENDING.*RELEASE_FAILED|\['HELD','RELEASE_PENDING','RELEASE_FAILED'\]/);
   assert.match(source, /PAYMENT_RELEASE.*SUPERSEDED_BY_REFUND|SUPERSEDED_BY_REFUND/);
   assert.match(source, /PAYMENT_REFUND:\$\{paymentId\}/);
-  assert.match(source, /status='FAILED'[\s\S]*?ORDER BY created_at DESC,id DESC[\s\S]*?FOR UPDATE/);
+  assert.match(source, /status IN \('PENDING','FAILED'\)/);
   assert.match(source, /REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY/);
   assert.match(source, /attempts=CASE WHEN outbox_events\.status='FAILED' THEN 0 ELSE outbox_events\.attempts END/);
   assert.match(source, /locked_at=CASE WHEN outbox_events\.status='FAILED' THEN NULL ELSE outbox_events\.locked_at END/);
