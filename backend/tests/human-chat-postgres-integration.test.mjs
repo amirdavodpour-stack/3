@@ -1821,9 +1821,9 @@ test('refund supersedes every pending or failed release event and transitions pa
 
     const { rows: persisted } = await pool.query(
       'SELECT p.status AS payment_status,r.status AS refund_status,' +
-        'COUNT(o.id) FILTER (WHERE o.event_type=\\'PAYMENT_RELEASE\\' AND o.status=\\'DONE\\')::int AS release_done_count,' +
-        'COUNT(o.id) FILTER (WHERE o.event_type=\\'PAYMENT_REFUND\\' AND o.status=\\'PENDING\\')::int AS refund_pending_count,' +
-        'COUNT(o.id) FILTER (WHERE o.last_error=\\'SUPERSEDED_BY_REFUND\\')::int AS superseded_count ' +
+        "COUNT(o.id) FILTER (WHERE o.event_type='PAYMENT_RELEASE' AND o.status='DONE')::int AS release_done_count," +
+        "COUNT(o.id) FILTER (WHERE o.event_type='PAYMENT_REFUND' AND o.status='PENDING')::int AS refund_pending_count," +
+        "COUNT(o.id) FILTER (WHERE o.last_error='SUPERSEDED_BY_REFUND')::int AS superseded_count " +
         'FROM payments p LEFT JOIN refunds r ON r.payment_id=p.id ' +
         'LEFT JOIN outbox_events o ON o.aggregate_id=p.id ' +
         'WHERE p.id=$1 GROUP BY p.id,r.id',
