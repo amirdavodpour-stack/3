@@ -54,11 +54,32 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       return {processed:true,duplicate:true,paymentId:prior.rows[0].payment_id};
     }
 
-    // Resolve the aggregate before recording the event. An unknown aggregate
-    // must rollback the entire transaction so the provider can safely retry.
+    // Release and refund paths share the job aggregate with user-initiated
+    // release/refund operations. Resolve the immutable relationship without a
+    // row lock, then acquire job before payment to keep one lock order.
+    let lockedJob = null;
+    if (eventType === 'PAYMENT_RELEASED' || eventType === 'PAYMENT_REFUNDED') {
+      const { rows: paymentMeta } = await client.query(
+        `SELECT job_id FROM payments WHERE id=$1`,
+        [paymentId],
+      );
+      if (!paymentMeta[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
+      if (paymentMeta[0].job_id) {
+        const { rows: jobRows } = await client.query(
+          `SELECT * FROM jobs WHERE id=$1 FOR UPDATE`,
+          [paymentMeta[0].job_id],
+        );
+        if (!jobRows[0]) throw conflict('JOB_NOT_FOUND','Job not found for payment');
+        lockedJob = jobRows[0];
+      }
+    }
+
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 FOR UPDATE`,[paymentId]);
     if(!pr[0]) throw conflict('PAYMENT_NOT_FOUND','Payment not found');
     const p=pr[0];
+    if (lockedJob && String(p.job_id) !== String(lockedJob.id)) {
+      throw conflict('PAYMENT_JOB_MISMATCH','Payment job changed while resolving webhook aggregate');
+    }
 
     // Release/refund events must carry the operation's own provider reference.
     // Replaying the original hold reference is a trust-boundary mismatch; a valid
@@ -100,9 +121,8 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       transitionApplied = true;
     } else if(eventType==='PAYMENT_RELEASED' && RELEASE_STATES.has(p.status)) {
       if (p.job_id) {
-        const { rows: jobRows } = await client.query(`SELECT status FROM jobs WHERE id=$1 FOR UPDATE`, [p.job_id]);
-        if (!jobRows[0]) throw conflict('JOB_NOT_FOUND','Job not found for payment');
-        if (jobRows[0].status !== 'COMPLETED') throw conflict('INVALID_JOB_STATE','Job must be completed before payment release');
+        if (!lockedJob) throw conflict('JOB_NOT_FOUND','Job not found for payment');
+        if (lockedJob.status !== 'COMPLETED') throw conflict('INVALID_JOB_STATE','Job must be completed before payment release');
       }
       if (config.paymentProvider === 'internal') {
         if (b.currency !== 'TOMAN') throw conflict('INTERNAL_CURRENCY_MISMATCH','Internal payment webhook requires TOMAN');
