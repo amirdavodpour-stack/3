@@ -1864,7 +1864,7 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
         'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
         'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
         'fee_policy_version,currency,created_at,updated_at) ' +
-        "VALUES($1,$2,$3,$4,100,'HOLD_PENDING',$5,$6,100,0,0,0,100,100,'R05-test','TOMAN',NOW(),NOW())",
+        "VALUES($1,$2,$3,$4,100,'HOLD_PENDING',$5,$6,100,0,0,1,101,100,'R05-test','TOMAN',NOW(),NOW())",
       [paymentId,jobId,ownerId,workerId,holdRef,idempotencyKey],
     );
 
@@ -1914,8 +1914,8 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
         baseAmount:'100',
         employerFee:'0',
         workerFee:'0',
-        platformFee:'0',
-        employerCharge:'100',
+        platformFee:'1',
+        employerCharge:'101',
         providerPayout:'100',
         policyVersion:'R05-test',
       },
@@ -1975,7 +1975,7 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
     );
     assert.equal(persisted.length, 1);
     assert.equal(persisted[0].payment_status, 'HELD');
-    assert.equal(String(persisted[0].available_balance), '900');
+    assert.equal(String(persisted[0].available_balance), '899');
     assert.equal(String(persisted[0].locked_balance), '100');
     assert.equal(persisted[0].active_holds, 1, 'concurrent replay and callback must create exactly one active escrow hold');
   } finally {
