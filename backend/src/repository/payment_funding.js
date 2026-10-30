@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
-import { releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
+import { releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown, normalizeFinancialAmount } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { findPaymentByIdempotency } from './payment_queries.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
@@ -28,6 +28,16 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     if (existingRow.rows[0]) {
       const existing=paymentFromRow(existingRow.rows[0]);
       if (existing.idempotencyKey && idempotencyKey && existing.idempotencyKey !== idempotencyKey) { const e=new Error('PAYMENT_ALREADY_EXISTS');e.code='PAYMENT_ALREADY_EXISTS';throw e; }
+      if (existing.idempotencyKey && idempotencyKey && existing.idempotencyKey === idempotencyKey) {
+        const existingCurrency = String(existing.currency || config.paymentCurrency).toUpperCase();
+        const requestedCurrency = String(breakdown?.currency || config.paymentCurrency).toUpperCase();
+        const sameAmount = existingCurrency === requestedCurrency &&
+          String(normalizeFinancialAmount(existingCurrency, existing.amount)) ===
+          String(normalizeFinancialAmount(requestedCurrency, amount));
+        if (existing.payerId !== payerId || existing.payeeId !== payeeId || !sameAmount) {
+          const e=new Error('IDEMPOTENCY_CONFLICT');e.code='IDEMPOTENCY_CONFLICT';throw e;
+        }
+      }
       if (existing.status === 'HOLD_FAILED') {
         const recoveryStatus = existing.fundingPreviousJobStatus || job.status;
         if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE'); e.code='INVALID_STATE'; throw e; }
