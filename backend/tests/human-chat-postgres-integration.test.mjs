@@ -1777,6 +1777,243 @@ test('refund request and refund webhook serialize job/payment locks without a de
 });
 
 
+
+
+test('internal PAYMENT_HELD webhook acquires participant locks before payment while funding replay races', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'held-lock-owner');
+  const workerId = await createTransferTestUser(pool, 'held-lock-worker');
+  const suffix = crypto.randomBytes(8).toString('hex');
+  const eventId = 'r05-held-lock-' + suffix;
+  const paymentId = crypto.randomUUID();
+  const holdRef = 'held-lock-provider-' + suffix;
+  const idempotencyKey = 'held-lock-funding-' + suffix;
+  const previousProvider = appConfig.paymentProvider;
+  let jobId = null;
+  let observer = null;
+  let originalPoolConnect = null;
+  let fundingPromise = null;
+  let webhookPromise = null;
+  let patchedConnect = false;
+
+  const fundingUserGate = deferredGate();
+  const webhookUserGate = deferredGate();
+  const fundingUsersLocked = deferredGate();
+  const webhookUsersLockAttempted = deferredGate();
+  const webhookPaymentLocked = deferredGate();
+
+  function deferredGate() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  const waitForSignal = async (signal, description, timeoutMs = 7000) => {
+    let timeout;
+    try {
+      await Promise.race([
+        signal.promise,
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error(description + ' timed out')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const waitForBlockedQuery = async (client, pattern, description, timeoutMs = 7000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const { rows } = await client.query(
+        'SELECT pid,query,wait_event_type,wait_event FROM pg_stat_activity ' +
+          'WHERE datname=current_database() AND pid<>pg_backend_pid() ' +
+          "AND wait_event_type='Lock' AND query ILIKE $1",
+        [pattern],
+      );
+      if (rows.length) return rows[0];
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error(description + ' did not reach the expected PostgreSQL lock wait');
+  };
+
+  try {
+    await creditWallet({
+      userId:ownerId,
+      amount:'1000',
+      idempotencyKey:'seed-held-lock-wallet-' + suffix,
+    });
+
+    const { rows: jobs } = await pool.query(
+      'INSERT INTO jobs(' +
+        'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+        'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+        'created_at,updated_at) ' +
+        "SELECT gen_random_uuid(),$1,$2,'R05 held lock-order fixture'," +
+        "'PostgreSQL internal hold/funding concurrency fixture',c.id,'FIXED','FIXED'," +
+        "100,100,1,'R05 held lock-order fixture','FUNDED'," +
+        "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+        'FROM categories c WHERE c.is_active=TRUE ' +
+        'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+      [ownerId,workerId],
+    );
+    assert.ok(jobs[0], 'internal hold lock-order fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'HOLD_PENDING',$5,$6,100,0,0,0,100,100,'R05-test','TOMAN',NOW(),NOW())",
+      [paymentId,jobId,ownerId,workerId,holdRef,idempotencyKey],
+    );
+
+    observer = await pool.connect();
+    originalPoolConnect = pool.connect;
+    const connect = pool.connect.bind(pool);
+    let serviceConnection = 0;
+    pool.connect = async (...args) => {
+      const client = await connect(...args);
+      serviceConnection += 1;
+      const role = serviceConnection;
+      const originalQuery = client.query.bind(client);
+      client.query = async (queryText, ...queryArgs) => {
+        const sql = typeof queryText === 'string' ? queryText : String(queryText?.text || '');
+        const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
+        const isUsersLock = normalized.includes('FROM USERS') && normalized.includes('FOR NO KEY UPDATE');
+        const isPaymentLock = normalized.includes('FROM PAYMENTS WHERE ID=$1 FOR UPDATE');
+
+        if (role === 2 && isUsersLock) webhookUsersLockAttempted.resolve();
+
+        const result = await originalQuery(queryText, ...queryArgs);
+
+        if (role === 1 && isUsersLock) {
+          fundingUsersLocked.resolve();
+          await fundingUserGate.promise;
+        }
+        if (role === 2 && isUsersLock) await webhookUserGate.promise;
+        if (role === 2 && isPaymentLock) webhookPaymentLocked.resolve();
+        return result;
+      };
+      return client;
+    };
+    patchedConnect = true;
+
+    appConfig.paymentProvider = 'internal';
+    const { fundJobAtomic } = await import('../src/repository/payment_funding.js');
+
+    fundingPromise = fundJobAtomic({
+      jobId,
+      payerId:ownerId,
+      payeeId:workerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey,
+      createdAt:new Date(),
+      breakdown:{
+        currency:'TOMAN',
+        baseAmount:'100',
+        employerFee:'0',
+        workerFee:'0',
+        platformFee:'0',
+        employerCharge:'100',
+        providerPayout:'100',
+        policyVersion:'R05-test',
+      },
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    await waitForSignal(fundingUsersLocked, 'funding participant locks');
+
+    webhookPromise = applyPaymentWebhookAtomic({
+      eventId,
+      eventType:'PAYMENT_HELD',
+      paymentId,
+      providerRef:holdRef,
+      payload:{eventId,eventType:'PAYMENT_HELD',paymentId,providerRef:holdRef},
+    }).then((value) => ({ ok:true,value }), (error) => ({ ok:false,error }));
+
+    const firstWebhookLock = await Promise.race([
+      webhookUsersLockAttempted.promise.then(() => 'users-first'),
+      webhookPaymentLocked.promise.then(() => 'payment-first'),
+    ]);
+
+    if (firstWebhookLock === 'payment-first') {
+      // Old ordering: webhook owns payment while funding owns both participant
+      // rows. Let the callback reach its wallet-user lock, then let funding
+      // proceed until it needs the payment row: PostgreSQL detects the cycle.
+      await waitForSignal(webhookUsersLockAttempted, 'webhook wallet-user lock');
+      await waitForBlockedQuery(observer, '%FROM users%FOR NO KEY UPDATE%', 'webhook participant lock');
+      fundingUserGate.resolve();
+      await waitForBlockedQuery(
+        observer,
+        '%FROM payments WHERE job_id=$1 FOR UPDATE%',
+        'funding replay payment lock',
+      );
+    } else {
+      // Correct ordering: callback waits for participants before touching
+      // payment. Funding replay can complete, after which the callback posts
+      // exactly one internal escrow hold.
+      await waitForBlockedQuery(observer, '%FROM users%FOR NO KEY UPDATE%', 'webhook participant lock');
+      fundingUserGate.resolve();
+    }
+
+    const [fundingOutcome, webhookOutcome] = await Promise.all([fundingPromise, webhookPromise]);
+    assert.equal(fundingOutcome.ok, true,
+      'funding replay must finish without deadlock; observed ' +
+        (fundingOutcome.error?.code || fundingOutcome.error?.message || 'unknown outcome'));
+    assert.equal(fundingOutcome.value.created, false);
+    assert.equal(webhookOutcome.ok, true,
+      'internal hold webhook must finish without deadlock; observed ' +
+        (webhookOutcome.error?.code || webhookOutcome.error?.message || 'unknown outcome'));
+    assert.equal(webhookOutcome.value.processed, true);
+
+    const { rows: persisted } = await observer.query(
+      'SELECT p.status AS payment_status,w.available_balance,w.locked_balance,' +
+        '(SELECT COUNT(*)::int FROM wallet_holds h WHERE h.reference_type=$2 AND h.reference_id=$1 AND h.status=$3) AS active_holds ' +
+        'FROM payments p JOIN wallet_accounts w ON w.user_id=p.payer_id AND w.currency=$4 ' +
+        'WHERE p.id=$1',
+      [paymentId,'PAYMENT','ACTIVE','TOMAN'],
+    );
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].payment_status, 'HELD');
+    assert.equal(String(persisted[0].available_balance), '900');
+    assert.equal(String(persisted[0].locked_balance), '100');
+    assert.equal(persisted[0].active_holds, 1, 'concurrent replay and callback must create exactly one active escrow hold');
+  } finally {
+    fundingUserGate.resolve();
+    webhookUserGate.resolve();
+    if (fundingPromise || webhookPromise) {
+      await Promise.allSettled([fundingPromise, webhookPromise].filter(Boolean));
+    }
+    if (patchedConnect) pool.connect = originalPoolConnect;
+    appConfig.paymentProvider = previousProvider;
+
+    if (observer) {
+      try {
+        const { rows: holds } = await observer.query(
+          'SELECT id FROM wallet_holds WHERE reference_type=$1 AND reference_id=$2 LIMIT 1',
+          ['PAYMENT',paymentId],
+        );
+        if (!holds.length) {
+          await observer.query('BEGIN');
+          await observer.query('DELETE FROM payment_webhook_events WHERE event_id=$1', [eventId]);
+          await observer.query('DELETE FROM provider_events WHERE provider=$1 AND provider_event_id=$2', ['internal',eventId]);
+          await observer.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+          if (jobId) await observer.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+          await observer.query('COMMIT');
+        }
+      } catch (error) {
+        await observer.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        observer.release();
+      }
+    }
+  }
+});
+
+
 test('release outbox completion serializes with a refund that supersedes a pending release', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
   const ownerId = await createTransferTestUser(pool, 'release-lock-owner');
