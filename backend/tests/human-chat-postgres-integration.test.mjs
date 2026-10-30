@@ -1625,6 +1625,40 @@ test('funding replay rejects the same idempotency key with a different amount or
   }
 });
 
+test('funding idempotency replay after settlement returns the original payment', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const previousProvider = appConfig.paymentProvider;
+  appConfig.paymentProvider = 'webhook';
+  try {
+    const fixtureRows = await createExternalFundingFixture('funding-replay-after-settlement');
+    await pool.query(`UPDATE payments SET status='RELEASED' WHERE id=$1`, [fixtureRows.paymentId]);
+    await pool.query(`UPDATE jobs SET status='SETTLED' WHERE id=$1`, [fixtureRows.jobId]);
+
+    const replay = await fundJobAtomic({
+      jobId: fixtureRows.jobId,
+      payerId: fixtureRows.payerId,
+      payeeId: fixtureRows.payeeId,
+      amount:100,
+      id: crypto.randomUUID(),
+      idempotencyKey:fixtureRows.idempotencyKey,
+      createdAt:new Date(),
+      breakdown:fixtureRows.breakdown,
+    });
+
+    assert.equal(replay.created, false);
+    assert.equal(replay.payment.id, fixtureRows.paymentId);
+    assert.equal(replay.payment.status, 'RELEASED');
+    assert.equal(replay.outboxEvent, null);
+    const { rows: payments } = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM payments WHERE job_id=$1`,
+      [fixtureRows.jobId],
+    );
+    assert.equal(payments[0].count, 1, 'replay after settlement must not create another payment');
+  } finally {
+    appConfig.paymentProvider = previousProvider;
+  }
+});
+
 test('external funding ledger is posted only after the provider confirms its hold', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const previousProvider = appConfig.paymentProvider;

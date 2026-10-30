@@ -56,6 +56,22 @@ test('fund is idempotent and cannot be refunded twice', async()=>{
   await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
   const a=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},body:'{}'});assert.equal(a.status,201);
   const b=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},body:'{}'});assert.equal(b.status,200);assert.equal(b.body.data.id,a.body.data.id);
+  const storedJob = db.collection.jobs.find((row) => row.id === job.id);
+  const originalBudgetMin = storedJob.budgetMin;
+  const originalBudgetMax = storedJob.budgetMax;
+  storedJob.budgetMin = 2000000;
+  storedJob.budgetMax = 2000000;
+  await db.save();
+  const mismatch = await json(`/payments/fund/${job.id}`, {
+    method:'POST',
+    headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},
+    body:'{}',
+  });
+  assert.equal(mismatch.status, 409);
+  assert.equal(mismatch.body.error.code, 'IDEMPOTENCY_CONFLICT');
+  storedJob.budgetMin = originalBudgetMin;
+  storedJob.budgetMax = originalBudgetMax;
+  await db.save();
   const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-1'},body:'{}'});assert.equal(refund.status,200);assert.equal(refund.body.data.status,'REFUNDED');
   const again=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-2'},body:'{}'});assert.equal(again.status,409);assert.equal(again.body.error.code,'INVALID_PAYMENT_STATE');
 });
