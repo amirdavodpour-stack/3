@@ -432,3 +432,23 @@ test('account deletion response reports the active privacy export version', () =
   assert.match(route, /import \{ PRIVACY_VERSION \} from '\.\.\/privacy\.js'/);
   assert.match(route, /privacyVersion:PRIVACY_VERSION/);
 });
+
+
+test('privacy export serializes PostgreSQL Date instances as ISO timestamps', () => {
+  const createdAt = new Date('2026-10-30T01:02:03.000Z');
+  const out = buildDataExport({
+    user: { id:'u12', email:'date-owner@example.com', displayName:'Date Owner', role:'USER', status:'ACTIVE', createdAt },
+    walletAccounts: [{
+      id:'wallet-12', currency:'TOMAN', availableBalance:'50', lockedBalance:'0',
+      status:'ACTIVE', createdAt, updatedAt:createdAt,
+    }],
+    walletEntries: [{
+      id:'entry-12', walletId:'wallet-12', entryType:'TRANSFER', direction:'CREDIT',
+      amount:'50', currency:'TOMAN', createdAt,
+    }],
+  });
+
+  assert.equal(out.walletAccounts[0].createdAt, '2026-10-30T01:02:03.000Z');
+  assert.equal(out.walletAccounts[0].updatedAt, '2026-10-30T01:02:03.000Z');
+  assert.equal(out.walletEntries[0].createdAt, '2026-10-30T01:02:03.000Z');
+});

@@ -9,6 +9,7 @@ const telemetryExportSensitiveKeyPattern = /^(?:name|lat|lng|lon)$|(?:full|first
 
 function sanitizeExportObject(value, depth = 0) {
   if (value == null || typeof value !== 'object') return value;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
   // Never return an un-sanitized object merely because its nesting exceeded the safety bound.
   if (depth > 4) return null;
   if (Array.isArray(value)) return value.slice(0, 500).map(v => sanitizeExportObject(v, depth + 1));
