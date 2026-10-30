@@ -50,11 +50,47 @@ export async function processOutboxEvent(event) {
       }
       const result = await paymentProvider.createPayout({ payoutId: payload.payoutId, amount: payload.amount, currency: payload.currency, idempotencyKey: payload.idempotencyKey });
       if (result.status === 'UNKNOWN') {
-        const unknown = await markPayoutUnknown({ eventId:event.id, payoutId:payload.payoutId, reason:'PROVIDER_UNKNOWN', leaseToken:event.lease_token });
-        if (!unknown?.marked) throw new Error(`PAYOUT_UNKNOWN_COMMIT_FAILED:${unknown?.reason || 'UNKNOWN'}`);
+        let unknown;
+        try {
+          unknown = await markPayoutUnknown({
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            reason:'PROVIDER_UNKNOWN',
+            leaseToken:event.lease_token,
+          });
+        } catch (error) {
+          // The provider outcome is ambiguous. Do not send this event through
+          // failOutboxEvent: terminal payout failure would unlock funds even
+          // though the provider may have completed the disbursement.
+          logEvent({
+            level:'error',
+            action:'OUTBOX_PAYOUT_UNKNOWN_PERSISTENCE_FAILED',
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            error:error?.message || String(error),
+          });
+          return { processed:false, unknown:true, persistencePending:true };
+        }
+        if (!unknown?.marked) {
+          logEvent({
+            level:'error',
+            action:'OUTBOX_PAYOUT_UNKNOWN_REQUIRES_RECONCILIATION',
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            reason:unknown?.reason || 'UNKNOWN',
+          });
+          return { processed:false, unknown:true, persistencePending:true };
+        }
         recordOutboxProcessed();
-        logEvent({ level:'warn', action:'OUTBOX_PAYOUT_UNKNOWN', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
-        return { processed:true, unknown:true };
+        logEvent({
+          level:unknown.requiresReconciliation ? 'error' : 'warn',
+          action:unknown.requiresReconciliation ? 'OUTBOX_PAYOUT_UNKNOWN_RECONCILIATION_OPENED' : 'OUTBOX_PAYOUT_UNKNOWN',
+          eventId:event.id,
+          eventType:event.event_type,
+          payoutId:payload.payoutId,
+          reason:unknown.reconciliationReason || null,
+        });
+        return { processed:true, unknown:true, requiresReconciliation:unknown.requiresReconciliation };
       }
       if (result.status !== 'SUCCEEDED' || !result.providerRef) throw new Error(result.status === 'FAILED' ? (result.errorCode || 'PAYOUT_PROVIDER_FAILED') : 'PAYOUT_PROVIDER_UNCONFIRMED');
       const completed = await completePayoutOutbox({ eventId:event.id, payoutId:payload.payoutId, providerRef:result.providerRef, leaseToken:event.lease_token });

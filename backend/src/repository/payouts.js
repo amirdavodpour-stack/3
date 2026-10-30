@@ -102,8 +102,7 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
     }
 
     // payouts has no financial_operation_id column. The reservation hold is the
-    // canonical relation between a payout and its financial operation; lock it
-    // before changing either state so unknown provider outcomes stay reconcilable.
+    // canonical relation between a payout and its financial operation.
     const { rows: holds } = await client.query(
       `SELECT * FROM wallet_holds
         WHERE reference_id=$1
@@ -113,22 +112,54 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
       [payoutId],
     );
     const hold = holds[0];
+    let reconciliationReason = null;
+    let operationId = null;
+
     if (!hold?.financial_operation_id) {
-      return { marked: false, reason: 'PAYOUT_RESERVATION_NOT_FOUND' };
-    }
-    if (String(event.payload?.operationId || '') !== String(hold.financial_operation_id)) {
-      return { marked: false, reason: 'PAYOUT_OPERATION_MISMATCH' };
+      reconciliationReason = 'PAYOUT_RESERVATION_NOT_FOUND';
+    } else {
+      operationId = hold.financial_operation_id;
+      if (String(event.payload?.operationId || '') !== String(operationId)) {
+        reconciliationReason = 'PAYOUT_OPERATION_MISMATCH';
+      }
+      const { rows: operations } = await client.query(
+        `UPDATE financial_operations
+            SET status='UNKNOWN',completed_at=NULL
+          WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')
+          RETURNING id`,
+        [operationId],
+      );
+      if (!operations[0] && !reconciliationReason) {
+        reconciliationReason = 'FINANCIAL_OPERATION_NOT_PROCESSING';
+      }
     }
 
-    const { rows: operations } = await client.query(
-      `UPDATE financial_operations
-          SET status='UNKNOWN',completed_at=NULL
-        WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')
-        RETURNING id`,
-      [hold.financial_operation_id],
-    );
-    if (!operations[0]) {
-      return { marked: false, reason: 'FINANCIAL_OPERATION_NOT_PROCESSING' };
+    // An UNKNOWN provider outcome must never fall through the generic outbox
+    // failure path: its terminal payout failure handler would release the hold.
+    // Preserve the reservation, mark the payout UNKNOWN and surface any broken
+    // internal linkage as a critical reconciliation case for manual repair.
+    if (reconciliationReason) {
+      await client.query(
+        `INSERT INTO reconciliation_cases(
+           id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+         ) VALUES(
+           gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY','payout',$1,'CRITICAL',
+           $2::jsonb,$3::jsonb,'OPEN',NOW(),NOW()
+         )
+         ON CONFLICT (case_type,resource_type,resource_id)
+           WHERE status IN ('OPEN','INVESTIGATING')
+         DO UPDATE SET
+           severity='CRITICAL',expected=EXCLUDED.expected,observed=EXCLUDED.observed,updated_at=NOW()`,
+        [
+          payoutId,
+          JSON.stringify({ payoutStatus: 'UNKNOWN', financialOperationStatus: 'UNKNOWN', activeReservationHold: true }),
+          JSON.stringify({
+            reason: reconciliationReason,
+            eventOperationId: event.payload?.operationId || null,
+            holdOperationId: operationId,
+          }),
+        ],
+      );
     }
 
     if (!alreadyUnknown) {
@@ -141,17 +172,22 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
       await client.query(
         `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
          VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
-        [payoutId, JSON.stringify({ eventId, reason })],
+        [payoutId, JSON.stringify({ eventId, reason, reconciliationReason })],
       );
     }
 
     await client.query(
       `UPDATE outbox_events
-          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL
+          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL
         WHERE id=$1`,
       [eventId],
     );
-    return { marked: true, alreadyUnknown };
+    return {
+      marked: true,
+      alreadyUnknown,
+      requiresReconciliation: Boolean(reconciliationReason),
+      reconciliationReason,
+    };
   });
 }
 
