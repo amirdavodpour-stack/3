@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 
 export const PRIVACY_VERSION = '1.3';
 
-const MAX_EXPORT_ARRAY_ITEMS = 500;
+export const MAX_EXPORT_ARRAY_ITEMS = 500;
+export const MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS + 1;
 
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 

@@ -521,3 +521,28 @@ test('PostgreSQL privacy export reads every collection from one read-only repeat
   assert.match(bundle, /client\.query\(/);
   assert.doesNotMatch(bundle, /pool\.query\(/);
 });
+
+
+test('PostgreSQL privacy export bounds every high-volume financial query to the export cap plus one marker row', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const bundle = repository.slice(
+    repository.indexOf('export async function getUserPrivacyBundle'),
+    repository.indexOf('export async function deleteUserPrivacyBundle'),
+  );
+  assert.match(repository, /MAX_EXPORT_QUERY_ROWS from '\.\.\/privacy\.js'/);
+  for (const relation of [
+    'payments WHERE payer_id',
+    'wallet_entries e JOIN wallet_accounts',
+    'wallet_holds h JOIN wallet_accounts',
+    'FROM payouts WHERE user_id',
+    'FROM refunds r JOIN payments',
+    'FROM settlements s JOIN payments',
+  ]) {
+    const start = bundle.indexOf(relation);
+    assert.notEqual(start, -1, 'missing scoped financial export query: ' + relation);
+    const end = bundle.indexOf('`, [userId])', start);
+    assert.notEqual(end, -1, 'query terminator missing: ' + relation);
+    assert.match(bundle.slice(start, end), /LIMIT \$\{MAX_EXPORT_QUERY_ROWS\}/);
+  }
+  assert.match(repository, /MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS \+ 1/);
+});

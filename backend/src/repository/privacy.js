@@ -1,6 +1,7 @@
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { userFromRow, jobFromRow, offerFromRow, paymentFromRow, applicationFromRow } from './mappers.js';
+import { MAX_EXPORT_QUERY_ROWS } from '../privacy.js';
 
 
 function accountFinancialObligationsPendingError() {
@@ -87,7 +88,7 @@ export async function getUserPrivacyBundle(userId) {
     client.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
     client.query(`SELECT * FROM job_applications WHERE candidate_id=$1 ORDER BY created_at DESC`, [userId]),
     client.query(`SELECT o.* FROM offers o JOIN jobs j ON j.id=o.job_id WHERE o.provider_id=$1 OR j.owner_id=$1 ORDER BY o.created_at DESC`, [userId]),
-    client.query(`SELECT * FROM payments WHERE payer_id=$1 OR payee_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM payments WHERE payer_id=$1 OR payee_id=$1 ORDER BY created_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT id,type,title,body,created_at,read_at FROM notifications WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
     client.query(`SELECT * FROM notification_preferences WHERE user_id=$1`, [userId]),
     client.query(`SELECT * FROM saved_searches WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 20`, [userId]),
@@ -99,11 +100,11 @@ export async function getUserPrivacyBundle(userId) {
     client.query(`SELECT * FROM recommendation_profiles WHERE user_id=$1`, [userId]),
     client.query(`SELECT * FROM job_satisfaction_feedback WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
     client.query(`SELECT id,currency,available_balance AS "availableBalance",locked_balance AS "lockedBalance",status,created_at AS "createdAt",updated_at AS "updatedAt" FROM wallet_accounts WHERE user_id=$1 ORDER BY currency,id`, [userId]),
-    client.query(`SELECT e.id,e.wallet_id AS "walletId",e.entry_type AS "entryType",e.direction,e.amount,e.currency,e.reference_type AS "referenceType",e.reference_id AS "referenceId",e.financial_operation_id AS "financialOperationId",e.metadata,e.balance_after AS "balanceAfter",e.created_at AS "createdAt" FROM wallet_entries e JOIN wallet_accounts w ON w.id=e.wallet_id WHERE w.user_id=$1 ORDER BY e.created_at DESC,e.id DESC`, [userId]),
-    client.query(`SELECT h.id,h.wallet_id AS "walletId",h.hold_type AS "holdType",h.reference_type AS "referenceType",h.reference_id AS "referenceId",h.financial_operation_id AS "financialOperationId",h.amount,h.status,h.created_at AS "createdAt",h.released_at AS "releasedAt" FROM wallet_holds h JOIN wallet_accounts w ON w.id=h.wallet_id WHERE w.user_id=$1 ORDER BY h.created_at DESC,h.id DESC`, [userId]),
-    client.query(`SELECT id,wallet_id AS "walletId",amount,currency,provider,status,failure_code AS "failureCode",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE user_id=$1 ORDER BY created_at DESC,id DESC`, [userId]),
-    client.query(`SELECT r.id,r.payment_id AS "paymentId",r.amount,p.currency,r.status,r.created_at AS "createdAt",r.updated_at AS "updatedAt" FROM refunds r JOIN payments p ON p.id=r.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY r.created_at DESC,r.id DESC`, [userId]),
-    client.query(`SELECT s.id,s.payment_id AS "paymentId",s.amount,s.currency,s.status,s.created_at AS "createdAt",s.updated_at AS "updatedAt" FROM settlements s JOIN payments p ON p.id=s.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY s.created_at DESC,s.id DESC`, [userId]),
+    client.query(`SELECT e.id,e.wallet_id AS "walletId",e.entry_type AS "entryType",e.direction,e.amount,e.currency,e.reference_type AS "referenceType",e.reference_id AS "referenceId",e.financial_operation_id AS "financialOperationId",e.metadata,e.balance_after AS "balanceAfter",e.created_at AS "createdAt" FROM wallet_entries e JOIN wallet_accounts w ON w.id=e.wallet_id WHERE w.user_id=$1 ORDER BY e.created_at DESC,e.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    client.query(`SELECT h.id,h.wallet_id AS "walletId",h.hold_type AS "holdType",h.reference_type AS "referenceType",h.reference_id AS "referenceId",h.financial_operation_id AS "financialOperationId",h.amount,h.status,h.created_at AS "createdAt",h.released_at AS "releasedAt" FROM wallet_holds h JOIN wallet_accounts w ON w.id=h.wallet_id WHERE w.user_id=$1 ORDER BY h.created_at DESC,h.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    client.query(`SELECT id,wallet_id AS "walletId",amount,currency,provider,status,failure_code AS "failureCode",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE user_id=$1 ORDER BY created_at DESC,id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    client.query(`SELECT r.id,r.payment_id AS "paymentId",r.amount,p.currency,r.status,r.created_at AS "createdAt",r.updated_at AS "updatedAt" FROM refunds r JOIN payments p ON p.id=r.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY r.created_at DESC,r.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    client.query(`SELECT s.id,s.payment_id AS "paymentId",s.amount,s.currency,s.status,s.created_at AS "createdAt",s.updated_at AS "updatedAt" FROM settlements s JOIN payments p ON p.id=s.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY s.created_at DESC,s.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
   ]);
   if (!u.rows[0]) return null;
   return { user:userFromRow(u.rows[0]), provider:p.rows[0] ? {id:p.rows[0].id,userId:p.rows[0].user_id,providerType:p.rows[0].provider_type,capacity:p.rows[0].capacity,verificationStatus:p.rows[0].verification_status,createdAt:p.rows[0].created_at?.toISOString?.()??p.rows[0].created_at,updatedAt:p.rows[0].updated_at?.toISOString?.()??p.rows[0].updated_at} : null,
