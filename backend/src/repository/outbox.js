@@ -119,6 +119,10 @@ export async function claimOutboxEvent(leaseSeconds = 60) {
 
 export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, actorId, leaseToken, providerReleaseRef = null }) {
   return withSqlTransaction(async (client) => {
+    // Request-side release/refund flows lock the job first. Do the same here
+    // before taking the event lease row or payment row to avoid lock inversion.
+    const { rows: jr } = await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+    if (!jr[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
     const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
     if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
