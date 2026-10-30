@@ -545,5 +545,5 @@ test('PostgreSQL privacy export bounds every high-volume financial query to the 
     assert.match(bundle.slice(start, end), /LIMIT \$\{MAX_EXPORT_QUERY_ROWS\}/);
   }
   const privacy = readFileSync(path.join(ROOT, 'src/privacy.js'), 'utf8');
-  assert.match(privacy, /MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS \\+ 1/);
+  assert.ok(privacy.includes('MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS + 1'));
 });
