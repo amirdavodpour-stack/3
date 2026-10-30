@@ -32,7 +32,7 @@ const modules = enabled
   : [];
 const dbModule = modules[0];
 const migration = modules[1]?.migration;
-const { deleteUserPrivacyBundle } = modules[3] || {};
+const { deleteUserPrivacyBundle, getUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
 const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserPublic, postInternalPaymentHoldWithClient } = modules[5] || {};
 const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown } = modules[6] || {};
@@ -136,6 +136,19 @@ async function waitForConversationRowLock(pool, timeoutMs = 6000) {
     'postChatMessage did not wait for the conversation row lock; close-vs-send serialization is missing',
   );
 }
+
+test('PostgreSQL privacy export reads financial collections from a repeatable-read snapshot', { skip: !enabled }, async () => {
+  await ensureWalletForUserPublic(fixture.ownerId);
+  const bundle = await getUserPrivacyBundle(fixture.ownerId);
+
+  assert.equal(bundle.user.id, fixture.ownerId);
+  assert.ok(bundle.walletAccounts.some((wallet) => wallet.currency === 'TOMAN'));
+  assert.ok(Array.isArray(bundle.walletEntries));
+  assert.ok(Array.isArray(bundle.walletHolds));
+  assert.ok(Array.isArray(bundle.payouts));
+  assert.ok(Array.isArray(bundle.refunds));
+  assert.ok(Array.isArray(bundle.settlements));
+});
 
 test('migration 034 up is idempotent against real PostgreSQL', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
