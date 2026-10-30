@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isInternalWalletUserTopUpEnabled, STAGING_RAILWAY_PROJECT_ID } from '../src/wallet_topup_policy.js';
 import { PRODUCTION_RAILWAY_PROJECT_ID } from '../src/railway_project_ids.js';
+import { createConfigRoutes } from '../src/routes/config_routes.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -117,4 +118,50 @@ test('admin sandbox-credit route delegates to the shared fail-closed project pol
   const route = await import('../src/application/wallet_routes.js');
   const source = route.createWalletRoutes.toString();
   assert.match(source, /isInternalWalletAdminCreditEnabled/);
+});
+
+
+async function walletCapabilitiesForEnv(env, paymentProvider = 'internal') {
+  let response;
+  const route = createConfigRoutes({
+    sendJson: (_res, status, body) => {
+      response = { status, body };
+      return response;
+    },
+    config: { paymentProvider, paymentCurrency: 'TOMAN' },
+    env,
+  });
+  await route({ method: 'GET' }, {}, ['capabilities']);
+  return response;
+}
+
+test('wallet withdrawal capability is disabled on the real production Railway project', async () => {
+  const response = await walletCapabilitiesForEnv({
+    NODE_ENV: 'production',
+    RAILWAY_PROJECT_ID: PRODUCTION_RAILWAY_PROJECT_ID,
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.capabilities.walletWithdraw, false);
+});
+
+test('wallet withdrawal capability follows the explicit designated staging payout policy', async () => {
+  const response = await walletCapabilitiesForEnv({
+    NODE_ENV: 'production',
+    RAILWAY_PROJECT_ID: STAGING_RAILWAY_PROJECT_ID,
+    STAGING_ALLOW_INTERNAL_WALLET_PAYOUT: 'true',
+  });
+  assert.equal(response.body.capabilities.walletWithdraw, true);
+});
+
+test('wallet withdrawal capability remains disabled without the staging override in production mode', async () => {
+  const response = await walletCapabilitiesForEnv({
+    NODE_ENV: 'production',
+    RAILWAY_PROJECT_ID: STAGING_RAILWAY_PROJECT_ID,
+  });
+  assert.equal(response.body.capabilities.walletWithdraw, false);
+});
+
+test('webhook payment provider does not advertise the synthetic internal wallet payout', async () => {
+  const response = await walletCapabilitiesForEnv({ NODE_ENV: 'test' }, 'webhook');
+  assert.equal(response.body.capabilities.walletWithdraw, false);
 });
