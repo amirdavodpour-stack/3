@@ -36,7 +36,7 @@ const migration = modules[1]?.migration;
 const { deleteUserPrivacyBundle, getUserPrivacyBundle } = modules[3] || {};
 const { insertUpload, createUploadIntent, completeUploadAtomic } = modules[4] || {};
 const { transferAvailable, creditWallet, getWalletByUserId, ensureWalletForUserPublic, postInternalPaymentHoldWithClient } = modules[5] || {};
-const { requestPayoutAtomic, markPayoutUnknown, resolvePayoutUnknown, listUnknownPayouts } = modules[6] || {};
+const { requestPayoutAtomic, completePayoutOutbox, markPayoutUnknown, resolvePayoutUnknown, listUnknownPayouts } = modules[6] || {};
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
@@ -4919,6 +4919,143 @@ test('account deletion and internal release webhook serialize on wallet locks wi
 test('account deletion and internal refund webhook serialize on wallet locks without deadlock', { skip: !enabled, timeout: 30000 }, async () => {
   await runAccountDeletionAgainstInternalPaymentWebhook({eventType:'PAYMENT_REFUNDED'});
 });
+
+
+
+
+test('account deletion and payout completion serialize on wallet locks without deadlock', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+  const userId = await createTransferTestUser(pool, `delete-payout-race-${suffix}`);
+  const previousProvider = appConfig.paymentProvider;
+  const previousNodeEnv = process.env.NODE_ENV;
+  let holder = null;
+  let holderOpen = false;
+  let deleteOutcome = null;
+  let payoutOutcome = null;
+
+  try {
+    appConfig.paymentProvider = 'internal';
+    process.env.NODE_ENV = 'test';
+    await creditWallet({
+      userId,
+      amount:'500',
+      idempotencyKey:`delete-payout-wallet-seed-${suffix}`,
+    });
+    const payout = await requestPayoutAtomic({
+      userId,
+      amount:'500',
+      idempotencyKey:`delete-payout-request-${suffix}`,
+    });
+    assert.equal(payout.status,'RESERVED');
+
+    const { rows: events } = await pool.query(
+      `UPDATE outbox_events
+          SET status='PROCESSING',attempts=1,locked_at=NOW(),lease_token=gen_random_uuid()
+        WHERE event_type='PAYOUT_EXECUTE' AND aggregate_id=$1
+        RETURNING id,lease_token`,
+      [payout.id],
+    );
+    assert.equal(events.length,1,'payout reservation must create one durable execution event');
+    const event = events[0];
+
+    const wallet = await getWalletByUserId(userId);
+    assert.equal(String(wallet.available_balance),'0');
+    assert.equal(String(wallet.locked_balance),'500');
+
+    holder = await pool.connect();
+    await holder.query('BEGIN');
+    holderOpen = true;
+    await holder.query('SELECT id FROM wallet_accounts WHERE id=$1 FOR UPDATE',[wallet.id]);
+
+    const deletePromise = deleteUserPrivacyBundle(userId,{
+      email:`deleted+${userId}@invalid.local`,
+      passwordHash:'integration-only-deleted-account',
+    }).then(
+      (value) => { deleteOutcome = {ok:true,value}; return deleteOutcome; },
+      (error) => { deleteOutcome = {ok:false,error}; return deleteOutcome; },
+    );
+
+    let deleteBlockedOnWallet = false;
+    const deletionDeadline = Date.now() + 7000;
+    while (Date.now() < deletionDeadline) {
+      const { rows: waiters } = await pool.query(
+        `SELECT pid,query FROM pg_stat_activity
+          WHERE datname=current_database() AND pid<>pg_backend_pid()
+            AND wait_event_type='Lock'
+            AND query ILIKE '%FROM wallet_accounts%'
+            AND query ILIKE '%WHERE user_id=$1%'`,
+      );
+      if (waiters.length) { deleteBlockedOnWallet = true; break; }
+      if (deleteOutcome) break;
+      await new Promise((resolve) => setTimeout(resolve,20));
+    }
+
+    const completionPromise = completePayoutOutbox({
+      eventId:event.id,
+      payoutId:payout.id,
+      providerRef:`provider-payout-${suffix}`,
+      leaseToken:event.lease_token,
+    }).then(
+      (value) => { payoutOutcome = {ok:true,value}; return payoutOutcome; },
+      (error) => { payoutOutcome = {ok:false,error}; return payoutOutcome; },
+    );
+
+    let payoutBlockedOnWallet = false;
+    const payoutDeadline = Date.now() + 7000;
+    while (Date.now() < payoutDeadline) {
+      const { rows: waiters } = await pool.query(
+        `SELECT pid,query FROM pg_stat_activity
+          WHERE datname=current_database() AND pid<>pg_backend_pid()
+            AND wait_event_type='Lock'
+            AND query ILIKE '%JOIN wallet_accounts%'
+            AND query ILIKE '%FOR UPDATE%'`,
+      );
+      if (waiters.length) { payoutBlockedOnWallet = true; break; }
+      if (payoutOutcome) break;
+      await new Promise((resolve) => setTimeout(resolve,20));
+    }
+
+    await holder.query('COMMIT');
+    holderOpen = false;
+    await Promise.all([deletePromise,completionPromise]);
+
+    assert.equal(deleteBlockedOnWallet,true,
+      'account deletion must queue on the reserved payout wallet before evaluating obligations');
+    assert.equal(payoutBlockedOnWallet,true,
+      'payout completion must queue on its payout-wallet row while holding the event and payout');
+    assert.equal(deleteOutcome?.ok,false,
+      'account deletion must reject while a payout reservation remains active');
+    assert.equal(deleteOutcome?.error?.code,'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING');
+    assert.equal(payoutOutcome?.ok,true,
+      'payout completion must continue after the rejected deletion rolls back');
+    assert.equal(payoutOutcome?.value?.completed,true);
+
+    const { rows: users } = await pool.query('SELECT status FROM users WHERE id=$1',[userId]);
+    assert.equal(users[0]?.status,'ACTIVE');
+    const { rows: payouts } = await pool.query('SELECT status FROM payouts WHERE id=$1',[payout.id]);
+    assert.equal(payouts[0]?.status,'SUCCEEDED');
+    const { rows: outbox } = await pool.query('SELECT status FROM outbox_events WHERE id=$1',[event.id]);
+    assert.equal(outbox[0]?.status,'DONE');
+    const { rows: holds } = await pool.query(
+      `SELECT status FROM wallet_holds
+        WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION'`,
+      [payout.id],
+    );
+    assert.equal(holds[0]?.status,'RELEASED');
+    const finalWallet = await getWalletByUserId(userId);
+    assert.equal(String(finalWallet.available_balance),'0');
+    assert.equal(String(finalWallet.locked_balance),'0',
+      'completed payout must consume the reservation and leave no locked balance');
+  } finally {
+    if (holderOpen) await holder.query('ROLLBACK').catch(() => {});
+    holder?.release();
+    appConfig.paymentProvider = previousProvider;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+  }
+});
+
 
 
 
