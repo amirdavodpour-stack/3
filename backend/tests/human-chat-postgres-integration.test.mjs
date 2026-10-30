@@ -313,6 +313,52 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
   }
 });
 
+test('outbox event identity and payload are immutable after insertion', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const id = crypto.randomUUID();
+  const aggregateId = crypto.randomUUID();
+  const dedupeKey = 'outbox-identity-immutable-' + crypto.randomBytes(8).toString('hex');
+  await pool.query(
+    'INSERT INTO outbox_events(' +
+      'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) ' +
+      "VALUES($1,'TEST_IMMUTABLE','test_aggregate',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW())",
+    [id,aggregateId,dedupeKey,JSON.stringify({immutable:true})],
+  );
+
+  try {
+    const mutations = [
+      ["UPDATE outbox_events SET event_type='OTHER_EVENT' WHERE id=$1",[id]],
+      ["UPDATE outbox_events SET aggregate_type='other_aggregate' WHERE id=$1",[id]],
+      ["UPDATE outbox_events SET aggregate_id=$2 WHERE id=$1",[id,crypto.randomUUID()]],
+      ["UPDATE outbox_events SET dedupe_key=$2 WHERE id=$1",[id,dedupeKey+'-changed']],
+      ["UPDATE outbox_events SET payload='{\\"changed\\":true}'::jsonb WHERE id=$1",[id]],
+      ["UPDATE outbox_events SET id=$2 WHERE id=$1",[id,crypto.randomUUID()]],
+    ];
+    for (const [sql,args] of mutations) {
+      await assert.rejects(
+        pool.query(sql,args),
+        (error) => error?.code === '55000' && /identity|immutable/i.test(error.message),
+        'outbox identity mutation must be rejected by PostgreSQL',
+      );
+    }
+
+    const { rows } = await pool.query(
+      'SELECT id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status ' +
+        'FROM outbox_events WHERE id=$1',
+      [id],
+    );
+    assert.equal(rows.length,1);
+    assert.equal(rows[0].event_type,'TEST_IMMUTABLE');
+    assert.equal(rows[0].aggregate_type,'test_aggregate');
+    assert.equal(String(rows[0].aggregate_id),String(aggregateId));
+    assert.equal(rows[0].dedupe_key,dedupeKey);
+    assert.deepEqual(rows[0].payload,{immutable:true});
+    assert.equal(rows[0].status,'PENDING');
+  } finally {
+    await pool.query('DELETE FROM outbox_events WHERE id=$1',[id]);
+  }
+});
+
 test('PostgreSQL privacy export reads financial collections from a repeatable-read snapshot', { skip: !enabled }, async () => {
   await ensureWalletForUserPublic(fixture.ownerId);
   const bundle = await getUserPrivacyBundle(fixture.ownerId);
