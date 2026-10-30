@@ -171,6 +171,39 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
   });
 }
 
+export async function abandonJobDisputeResolutionClaim(id, { resolution, token }) {
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      \`SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE\`,
+      [id],
+    );
+    const current = rows[0];
+    if (!current) return null;
+    if (
+      current.status !== 'RESOLVING' ||
+      current.resolution !== resolution ||
+      !token ||
+      String(current.resolution_lease_token) !== String(token)
+    ) return { abandoned:false, stale:true, dispute:disputeView(current) };
+
+    const { rows: updated } = await client.query(
+      \`UPDATE job_disputes
+          SET status='ADMIN_REVIEW',
+              resolution=NULL,
+              resolution_reason='',
+              resolved_by=NULL,
+              resolved_at=NULL,
+              resolution_lease_token=NULL,
+              resolution_lease_until=NULL,
+              updated_at=NOW()
+        WHERE id=$1
+        RETURNING *\`,
+      [id],
+    );
+    return { abandoned:true, dispute:disputeView(updated[0]) };
+  });
+}
+
 export async function listAdminDisputes(limit = 100) {
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
   const { rows } = await requirePool().query(`
