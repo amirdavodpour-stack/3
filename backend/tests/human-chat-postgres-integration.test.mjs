@@ -44,6 +44,7 @@ const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
 const {
   closeJobChatForJob,
+  ensureJobChat,
   postChatMessage,
   getChatConversationForUser,
   listChatMessages,
@@ -1401,16 +1402,18 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
          budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
          created_at,updated_at
        )
-       SELECT gen_random_uuid(),$1,NULL,$2,'External refund journal integration fixture',
+       SELECT gen_random_uuid(),$1,$3,$2,'External refund journal integration fixture',
          c.id,'FIXED','FIXED',100,130,1,'R05 external refund fixture','FUNDED',
          'R05 test','MISSION','PUBLIC',NOW(),NOW()
        FROM categories c WHERE c.is_active=TRUE
        ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
        RETURNING id`,
-      [fixture.ownerId, `R05 external refund ${suffix}`],
+      [fixture.ownerId, `R05 external refund ${suffix}`, fixture.workerId],
     );
     assert.ok(jobs[0], 'external refund fixture requires an active category');
     jobId = jobs[0].id;
+    const conversation = await ensureJobChat(jobId);
+    assert.ok(conversation, 'external refund fixture must have an active worker chat before refund');
 
     await pool.query(
       `INSERT INTO payments(
@@ -1447,6 +1450,14 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
     assert.equal(refundRows.length, 1);
     assert.equal(refundRows[0].status, 'REFUNDED');
     assert.equal(refundRows[0].provider_ref, refundRef);
+
+    const { rows: conversations } = await pool.query(
+      `SELECT status,closed_at FROM chat_conversations WHERE kind='JOB' AND job_id=$1`,
+      [jobId],
+    );
+    assert.equal(conversations.length, 1);
+    assert.equal(conversations[0].status, 'CLOSED');
+    assert.ok(conversations[0].closed_at, 'webhook refund must close the active job chat atomically');
 
     const { rows: journals } = await pool.query(
       `SELECT journal_id,COUNT(*)::int AS entries,
