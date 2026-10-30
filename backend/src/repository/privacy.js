@@ -78,30 +78,32 @@ async function assertNoFinancialObligations(client, userId) {
 const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt"`;
 
 export async function getUserPrivacyBundle(userId) {
-  const pool = requirePool();
-  const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts,refunds,settlements] = await Promise.all([
-    pool.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
-    pool.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
-    pool.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM job_applications WHERE candidate_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT o.* FROM offers o JOIN jobs j ON j.id=o.job_id WHERE o.provider_id=$1 OR j.owner_id=$1 ORDER BY o.created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM payments WHERE payer_id=$1 OR payee_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT id,type,title,body,created_at,read_at FROM notifications WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM notification_preferences WHERE user_id=$1`, [userId]),
-    pool.query(`SELECT * FROM saved_searches WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 20`, [userId]),
-    pool.query(`SELECT * FROM evidence WHERE submitted_by=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM uploads WHERE uploaded_by=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM analytics_events WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
-    pool.query(`SELECT * FROM crash_reports WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
-    pool.query(`SELECT * FROM trust_reports WHERE reporter_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT * FROM recommendation_profiles WHERE user_id=$1`, [userId]),
-    pool.query(`SELECT * FROM job_satisfaction_feedback WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
-    pool.query(`SELECT id,currency,available_balance AS "availableBalance",locked_balance AS "lockedBalance",status,created_at AS "createdAt",updated_at AS "updatedAt" FROM wallet_accounts WHERE user_id=$1 ORDER BY currency,id`, [userId]),
-    pool.query(`SELECT e.id,e.wallet_id AS "walletId",e.entry_type AS "entryType",e.direction,e.amount,e.currency,e.reference_type AS "referenceType",e.reference_id AS "referenceId",e.financial_operation_id AS "financialOperationId",e.metadata,e.balance_after AS "balanceAfter",e.created_at AS "createdAt" FROM wallet_entries e JOIN wallet_accounts w ON w.id=e.wallet_id WHERE w.user_id=$1 ORDER BY e.created_at DESC,e.id DESC`, [userId]),
-    pool.query(`SELECT h.id,h.wallet_id AS "walletId",h.hold_type AS "holdType",h.reference_type AS "referenceType",h.reference_id AS "referenceId",h.financial_operation_id AS "financialOperationId",h.amount,h.status,h.created_at AS "createdAt",h.released_at AS "releasedAt" FROM wallet_holds h JOIN wallet_accounts w ON w.id=h.wallet_id WHERE w.user_id=$1 ORDER BY h.created_at DESC,h.id DESC`, [userId]),
-    pool.query(`SELECT id,wallet_id AS "walletId",amount,currency,provider,status,failure_code AS "failureCode",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE user_id=$1 ORDER BY created_at DESC,id DESC`, [userId]),
-    pool.query(`SELECT r.id,r.payment_id AS "paymentId",r.amount,p.currency,r.status,r.created_at AS "createdAt",r.updated_at AS "updatedAt" FROM refunds r JOIN payments p ON p.id=r.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY r.created_at DESC,r.id DESC`, [userId]),
-    pool.query(`SELECT s.id,s.payment_id AS "paymentId",s.amount,s.currency,s.status,s.created_at AS "createdAt",s.updated_at AS "updatedAt" FROM settlements s JOIN payments p ON p.id=s.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY s.created_at DESC,s.id DESC`, [userId]),
+  requirePool();
+  return withSqlTransaction(async (client) => {
+    await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts,refunds,settlements] = await Promise.all([
+    client.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
+    client.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
+    client.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM job_applications WHERE candidate_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT o.* FROM offers o JOIN jobs j ON j.id=o.job_id WHERE o.provider_id=$1 OR j.owner_id=$1 ORDER BY o.created_at DESC`, [userId]),
+    client.query(`SELECT * FROM payments WHERE payer_id=$1 OR payee_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT id,type,title,body,created_at,read_at FROM notifications WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM notification_preferences WHERE user_id=$1`, [userId]),
+    client.query(`SELECT * FROM saved_searches WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 20`, [userId]),
+    client.query(`SELECT * FROM evidence WHERE submitted_by=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM uploads WHERE uploaded_by=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM analytics_events WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
+    client.query(`SELECT * FROM crash_reports WHERE user_id=$1 ORDER BY occurred_at DESC`, [userId]),
+    client.query(`SELECT * FROM trust_reports WHERE reporter_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT * FROM recommendation_profiles WHERE user_id=$1`, [userId]),
+    client.query(`SELECT * FROM job_satisfaction_feedback WHERE user_id=$1 ORDER BY created_at DESC`, [userId]),
+    client.query(`SELECT id,currency,available_balance AS "availableBalance",locked_balance AS "lockedBalance",status,created_at AS "createdAt",updated_at AS "updatedAt" FROM wallet_accounts WHERE user_id=$1 ORDER BY currency,id`, [userId]),
+    client.query(`SELECT e.id,e.wallet_id AS "walletId",e.entry_type AS "entryType",e.direction,e.amount,e.currency,e.reference_type AS "referenceType",e.reference_id AS "referenceId",e.financial_operation_id AS "financialOperationId",e.metadata,e.balance_after AS "balanceAfter",e.created_at AS "createdAt" FROM wallet_entries e JOIN wallet_accounts w ON w.id=e.wallet_id WHERE w.user_id=$1 ORDER BY e.created_at DESC,e.id DESC`, [userId]),
+    client.query(`SELECT h.id,h.wallet_id AS "walletId",h.hold_type AS "holdType",h.reference_type AS "referenceType",h.reference_id AS "referenceId",h.financial_operation_id AS "financialOperationId",h.amount,h.status,h.created_at AS "createdAt",h.released_at AS "releasedAt" FROM wallet_holds h JOIN wallet_accounts w ON w.id=h.wallet_id WHERE w.user_id=$1 ORDER BY h.created_at DESC,h.id DESC`, [userId]),
+    client.query(`SELECT id,wallet_id AS "walletId",amount,currency,provider,status,failure_code AS "failureCode",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE user_id=$1 ORDER BY created_at DESC,id DESC`, [userId]),
+    client.query(`SELECT r.id,r.payment_id AS "paymentId",r.amount,p.currency,r.status,r.created_at AS "createdAt",r.updated_at AS "updatedAt" FROM refunds r JOIN payments p ON p.id=r.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY r.created_at DESC,r.id DESC`, [userId]),
+    client.query(`SELECT s.id,s.payment_id AS "paymentId",s.amount,s.currency,s.status,s.created_at AS "createdAt",s.updated_at AS "updatedAt" FROM settlements s JOIN payments p ON p.id=s.payment_id WHERE p.payer_id=$1 OR p.payee_id=$1 ORDER BY s.created_at DESC,s.id DESC`, [userId]),
   ]);
   if (!u.rows[0]) return null;
   return { user:userFromRow(u.rows[0]), provider:p.rows[0] ? {id:p.rows[0].id,userId:p.rows[0].user_id,providerType:p.rows[0].provider_type,capacity:p.rows[0].capacity,verificationStatus:p.rows[0].verification_status,createdAt:p.rows[0].created_at?.toISOString?.()??p.rows[0].created_at,updatedAt:p.rows[0].updated_at?.toISOString?.()??p.rows[0].updated_at} : null,
@@ -121,7 +123,8 @@ export async function getUserPrivacyBundle(userId) {
     trustReports:trust.rows.map(r=>({id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
     recommendationProfile: recommendationProfile.rows[0] || null,
     satisfactionHistory: satisfaction.rows.map(r => ({ id:r.id, jobId:r.job_id, userId:r.user_id, role:r.role, overallRating:r.overall_rating, completedAsAgreed:r.completed_as_agreed, communicationRating:r.communication_rating, reportText:r.report_text || '', aiSummary:r.ai_summary || '', aiSatisfactionScore:r.ai_satisfaction_score, aiSentiment:r.ai_sentiment, aiTags:r.ai_tags || [], aiRiskFlags:r.ai_risk_flags || [], status:r.status, createdAt:r.created_at?.toISOString?.() ?? r.created_at, updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at })),
-  };
+    };
+  });
 }
 
 export async function deleteUserPrivacyBundle(userId, replacement) {

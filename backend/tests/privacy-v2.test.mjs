@@ -508,3 +508,16 @@ test('PostgreSQL privacy export scopes refund and settlement rows through the cu
   assert.match(repository, /refunds: refunds\.rows/);
   assert.match(repository, /settlements: settlements\.rows/);
 });
+
+
+test('PostgreSQL privacy export reads every collection from one read-only repeatable-read snapshot', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const bundle = repository.slice(
+    repository.indexOf('export async function getUserPrivacyBundle'),
+    repository.indexOf('export async function deleteUserPrivacyBundle'),
+  );
+  assert.match(bundle, /return withSqlTransaction\(async \(client\) => \{/);
+  assert.match(bundle, /SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY/);
+  assert.match(bundle, /client\.query\(/);
+  assert.doesNotMatch(bundle, /pool\.query\(/);
+});
