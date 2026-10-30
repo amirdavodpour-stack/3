@@ -235,8 +235,26 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
       await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
       await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     }
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN_RESOLVED',$1,'payout',$2,$3::jsonb,NOW())`, [adminId, payoutId, JSON.stringify({ decision: normalized, providerRef, reason })]);
-    return { payoutId, status: normalized };
+    // Resolve all active reconciliation cases in the same transaction as the
+    // terminal payout decision. This keeps the admin queue consistent with the
+    // wallet/ledger transition and also covers automatic provider reconciliation.
+    const resolutionActor = adminId ? `admin:${String(adminId)}` : 'provider-reconciliation';
+    const resolutionEvidence = providerRef
+      ? `providerRef:${String(providerRef)}`
+      : `reason:${String(reason || 'terminal-provider-confirmation')}`;
+    const resolutionReference = `${resolutionActor}:${normalized}:${resolutionEvidence}`.slice(0, 200);
+    const { rows: resolvedCases } = await client.query(
+      `UPDATE reconciliation_cases
+          SET status='RESOLVED',resolution_reference=$2,resolved_at=NOW(),updated_at=NOW()
+        WHERE resource_type='payout'
+          AND resource_id=$1
+          AND status IN ('OPEN','INVESTIGATING')
+        RETURNING id`,
+      [payoutId, resolutionReference],
+    );
+
+    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN_RESOLVED',$1,'payout',$2,$3::jsonb,NOW())`, [adminId, payoutId, JSON.stringify({ decision: normalized, providerRef, reason, reconciliationCasesResolved: resolvedCases.length })]);
+    return { payoutId, status: normalized, reconciliationCasesResolved: resolvedCases.length };
   });
 }
 
@@ -347,21 +365,40 @@ export async function listPayoutsForUser(userId, { limit = 50 } = {}) {
 export async function listUnknownPayouts({ limit = 50 } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const { rows } = await requirePool().query(`
-    SELECT id,
-           wallet_id AS "walletId",
-           user_id AS "userId",
-           amount,
-           currency,
-           provider,
-           status,
-           provider_ref AS "providerRef",
-           failure_code AS "failureCode",
-           failure_message AS "failureMessage",
-           created_at AS "createdAt",
-           updated_at AS "updatedAt"
-      FROM payouts
-     WHERE status='UNKNOWN'
-     ORDER BY updated_at ASC,id ASC
+    SELECT p.id,
+           p.wallet_id AS "walletId",
+           p.user_id AS "userId",
+           p.amount,
+           p.currency,
+           p.provider,
+           p.status,
+           p.provider_ref AS "providerRef",
+           p.failure_code AS "failureCode",
+           p.failure_message AS "failureMessage",
+           p.created_at AS "createdAt",
+           p.updated_at AS "updatedAt",
+           COALESCE((
+             SELECT jsonb_agg(
+               jsonb_build_object(
+                 'id',rc.id,
+                 'caseType',rc.case_type,
+                 'severity',rc.severity,
+                 'status',rc.status,
+                 'expected',rc.expected,
+                 'observed',rc.observed,
+                 'createdAt',rc.created_at,
+                 'updatedAt',rc.updated_at
+               )
+               ORDER BY rc.created_at DESC,rc.id DESC
+             )
+               FROM reconciliation_cases rc
+              WHERE rc.resource_type='payout'
+                AND rc.resource_id=p.id
+                AND rc.status IN ('OPEN','INVESTIGATING')
+           ),'[]'::jsonb) AS "reconciliationCases"
+      FROM payouts p
+     WHERE p.status='UNKNOWN'
+     ORDER BY p.updated_at ASC,p.id ASC
      LIMIT $1`, [safeLimit]);
   return rows;
 }
