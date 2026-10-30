@@ -2234,6 +2234,96 @@ test('internal PAYMENT_HELD webhook acquires participant locks before payment wh
 });
 
 
+test('refund refuses when any release outbox event is processing, even if a newer event is pending', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = crypto.randomBytes(7).toString('hex');
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const processingEventId = crypto.randomUUID();
+  const pendingEventId = crypto.randomUUID();
+  const processingLease = crypto.randomUUID();
+  const refundId = crypto.randomUUID();
+  const { rows: jobs } = await pool.query(
+    'INSERT INTO jobs(' +
+      'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+      'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+      'created_at,updated_at) ' +
+      "SELECT $1,$2,$3,'R05 multiple release-event fixture'," +
+      "'PostgreSQL multiple release event/refund fixture',c.id,'FIXED','FIXED'," +
+      "100,130,1,'R05 multiple release-event fixture','COMPLETED'," +
+      "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+      'FROM categories c WHERE c.is_active=TRUE ' +
+      'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+    [jobId,fixture.ownerId,fixture.workerId],
+  );
+  assert.ok(jobs[0],'multiple release-event fixture requires an active category');
+
+  try {
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'RELEASE_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
+      [paymentId,jobId,fixture.ownerId,fixture.workerId,'provider-hold-'+suffix,'multi-release-refund-'+suffix],
+    );
+
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'PROCESSING',1,NOW(),NOW(),$5,NOW()-INTERVAL '1 minute')",
+      [processingEventId,paymentId,'old-processing-release-'+suffix,JSON.stringify({jobId,paymentId}),processingLease],
+    );
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'PENDING',0,NOW(),NULL,NULL,NOW())",
+      [pendingEventId,paymentId,'new-pending-release-'+suffix,JSON.stringify({jobId,paymentId})],
+    );
+
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    await assert.rejects(
+      createRefundAtomic({
+        jobId,
+        paymentId,
+        ownerId:fixture.ownerId,
+        amount:100,
+        id:refundId,
+        idempotencyKey:'multi-release-refund-request-'+suffix,
+        createdAt:new Date(),
+        allowPendingRelease:true,
+      }),
+      (error) => error?.code === 'PAYMENT_RELEASE_IN_PROGRESS',
+      'an older PROCESSING release event must block refund even when a newer event is PENDING',
+    );
+
+    const { rows: persisted } = await pool.query(
+      'SELECT p.status AS payment_status,' +
+        'old.status AS old_event_status,newer.status AS newer_event_status,' +
+        'COUNT(r.id)::int AS refund_count ' +
+        'FROM payments p ' +
+        'JOIN outbox_events old ON old.id=$2 ' +
+        'JOIN outbox_events newer ON newer.id=$3 ' +
+        'LEFT JOIN refunds r ON r.payment_id=p.id ' +
+        'WHERE p.id=$1 ' +
+        'GROUP BY p.id,old.status,newer.status',
+      [paymentId,processingEventId,pendingEventId],
+    );
+    assert.equal(persisted.length,1);
+    assert.equal(persisted[0].payment_status,'RELEASE_PENDING');
+    assert.equal(persisted[0].old_event_status,'PROCESSING');
+    assert.equal(persisted[0].newer_event_status,'PENDING');
+    assert.equal(persisted[0].refund_count,0);
+  } finally {
+    await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
+    await pool.query('DELETE FROM refunds WHERE payment_id=$1',[paymentId]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+  }
+});
+
 test('release outbox completion serializes with a refund that supersedes a pending release', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
   const ownerId = await createTransferTestUser(pool, 'release-lock-owner');
