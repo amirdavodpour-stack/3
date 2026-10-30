@@ -123,6 +123,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
     if(req.method==='POST'){
       const body=await readBody(req); const existing=await repo.getJobDispute(job.id);
       if(existing?.status==='RESOLVED') throw new HttpError(409,'DISPUTE_RESOLVED','This dispute is already resolved');
+      if(existing?.status==='RESOLVING') throw new HttpError(409,'DISPUTE_RESOLUTION_IN_PROGRESS','An administrator is currently resolving this dispute');
       const dispute=existing||await repo.createJobDispute({jobId:job.id,openedBy:me.id,triggerType:'USER'});
       const analyzed=await analyzeCase(dispute);
       await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:existing?.triggerType||'USER'});
