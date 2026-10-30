@@ -1757,6 +1757,92 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
 });
 
 
+test('refund supersedes every pending or failed release event and transitions payment to REFUND_PENDING', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = crypto.randomBytes(7).toString('hex');
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const pendingEventId = crypto.randomUUID();
+  const failedEventId = crypto.randomUUID();
+  const refundId = crypto.randomUUID();
+  const { rows: jobs } = await pool.query(
+    'INSERT INTO jobs(' +
+      'id,owner_id,provider_id,title,description,category_id,job_type,budget_type,' +
+      'budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,' +
+      'created_at,updated_at) ' +
+      "SELECT $1,$2,$3,'R05 pending release refund fixture'," +
+      "'PostgreSQL pending release refund supersession fixture',c.id,'FIXED','FIXED'," +
+      "100,130,1,'R05 pending release refund fixture','COMPLETED'," +
+      "'R05 test','MISSION','PUBLIC',NOW(),NOW() " +
+      'FROM categories c WHERE c.is_active=TRUE ' +
+      'ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1 RETURNING id',
+    [jobId,fixture.ownerId,fixture.workerId],
+  );
+  assert.ok(jobs[0],'pending release refund fixture requires an active category');
+
+  try {
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'RELEASE_PENDING',$5,$6,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
+      [paymentId,jobId,fixture.ownerId,fixture.workerId,'provider-hold-'+suffix,'pending-release-refund-'+suffix],
+    );
+
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'PENDING',0,NOW(),NULL,NULL,NOW()-INTERVAL '2 minutes')",
+      [pendingEventId,paymentId,'pending-release-before-refund-'+suffix,JSON.stringify({jobId,paymentId})],
+    );
+    await pool.query(
+      'INSERT INTO outbox_events(' +
+        'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
+        'available_at,locked_at,lease_token,created_at) ' +
+        "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'FAILED',1,NOW(),NULL,NULL,NOW()-INTERVAL '1 minute')",
+      [failedEventId,paymentId,'failed-release-before-refund-'+suffix,JSON.stringify({jobId,paymentId})],
+    );
+
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    const refund = await createRefundAtomic({
+      jobId,
+      paymentId,
+      ownerId:fixture.ownerId,
+      amount:100,
+      id:refundId,
+      idempotencyKey:'pending-release-refund-request-'+suffix,
+      createdAt:new Date(),
+      allowPendingRelease:true,
+    });
+    assert.equal(refund?.refund?.id,refundId);
+    assert.equal(refund?.payment?.status,'REFUND_PENDING');
+
+    const { rows: persisted } = await pool.query(
+      'SELECT p.status AS payment_status,r.status AS refund_status,' +
+        'COUNT(o.id) FILTER (WHERE o.event_type=\\'PAYMENT_RELEASE\\' AND o.status=\\'DONE\\')::int AS release_done_count,' +
+        'COUNT(o.id) FILTER (WHERE o.event_type=\\'PAYMENT_REFUND\\' AND o.status=\\'PENDING\\')::int AS refund_pending_count,' +
+        'COUNT(o.id) FILTER (WHERE o.last_error=\\'SUPERSEDED_BY_REFUND\\')::int AS superseded_count ' +
+        'FROM payments p LEFT JOIN refunds r ON r.payment_id=p.id ' +
+        'LEFT JOIN outbox_events o ON o.aggregate_id=p.id ' +
+        'WHERE p.id=$1 GROUP BY p.id,r.id',
+      [paymentId],
+    );
+    assert.equal(persisted.length,1);
+    assert.equal(persisted[0].payment_status,'REFUND_PENDING');
+    assert.equal(persisted[0].refund_status,'PENDING');
+    assert.equal(persisted[0].release_done_count,2);
+    assert.equal(persisted[0].refund_pending_count,1);
+    assert.equal(persisted[0].superseded_count,2);
+  } finally {
+    await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
+    await pool.query('DELETE FROM refunds WHERE payment_id=$1',[paymentId]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+  }
+});
+
 test('refund request and refund webhook serialize job/payment locks without a deadlock', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
   const ownerId = await createTransferTestUser(pool, 'refund-lock-owner');
