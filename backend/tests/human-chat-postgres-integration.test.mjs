@@ -231,7 +231,7 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
     'INSERT INTO outbox_events(' +
       'id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,' +
       'available_at,locked_at,lease_token,created_at) ' +
-      'VALUES($1,\\'PAYMENT_RELEASE\\',\\'payment\\',$2,$3,$4::jsonb,$5,$6,NOW(),$7,$8,NOW())',
+      "VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,$5,$6,NOW(),$7,$8,NOW())",
     [eventId,paymentId,'dispute-hold-release-'+eventId,JSON.stringify({jobId:fixture.jobId,paymentId}),status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
   );
 
