@@ -4485,6 +4485,119 @@ test('job funding waits for the account lock and cannot create a payment after d
 });
 
 
+async function seedFailedRefundRetryFixture(label) {
+  const pool = dbModule.getPool();
+  const { paymentId } = await createWebhookMismatchPayment('HELD', label);
+  const { rows: payments } = await pool.query(
+    'SELECT job_id FROM payments WHERE id=$1',
+    [paymentId],
+  );
+  const jobId = payments[0].job_id;
+  const refundId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  const idempotencyKey = 'refund-retry-' + label + '-' + crypto.randomUUID();
+
+  await pool.query(
+    `INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at)
+     VALUES($1,$2,100,'FAILED',NULL,$3,NOW()-INTERVAL '2 minutes',NOW()-INTERVAL '1 minute')`,
+    [refundId,paymentId,idempotencyKey],
+  );
+  await pool.query(
+    `INSERT INTO outbox_events(
+       id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,
+       available_at,locked_at,lease_token,last_error,created_at,processed_at
+     )
+     VALUES(
+       $1,'PAYMENT_REFUND','payment',$2,$3,$4::jsonb,'FAILED',5,
+       NOW(),NOW()-INTERVAL '1 minute',$5,'provider timed out after max attempts',
+       NOW()-INTERVAL '3 minutes',NOW()-INTERVAL '1 minute'
+     )`,
+    [eventId,paymentId,`PAYMENT_REFUND:${paymentId}`,JSON.stringify({
+      jobId, ownerId:fixture.ownerId, paymentId, refundId,
+      providerRef:null, idempotencyKey,
+    }),crypto.randomUUID()],
+  );
+  return { paymentId, jobId, refundId, eventId, idempotencyKey };
+}
+
+async function cleanupFailedRefundRetryFixture({ paymentId, jobId }) {
+  const pool = dbModule.getPool();
+  await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1', [paymentId]);
+  await pool.query('DELETE FROM refunds WHERE payment_id=$1', [paymentId]);
+  await pool.query('DELETE FROM payments WHERE id=$1', [paymentId]);
+  await pool.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+}
+
+test('same-key refund retry resets terminal outbox attempts and stale delivery metadata', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const seeded = await seedFailedRefundRetryFixture('same-key');
+  try {
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    const retried = await createRefundAtomic({
+      jobId:seeded.jobId,
+      paymentId:seeded.paymentId,
+      ownerId:fixture.ownerId,
+      amount:100,
+      id:crypto.randomUUID(),
+      idempotencyKey:seeded.idempotencyKey,
+      createdAt:new Date(),
+    });
+
+    assert.equal(retried.refund.id,seeded.refundId,
+      'a semantic retry must reopen the original refund operation');
+    const { rows: events } = await pool.query(
+      `SELECT status,attempts,locked_at,lease_token,last_error,processed_at,
+              payload->>'refundId' AS payload_refund_id
+         FROM outbox_events WHERE id=$1`,
+      [seeded.eventId],
+    );
+    assert.equal(events.length,1);
+    assert.equal(events[0].status,'PENDING');
+    assert.equal(events[0].attempts,0,
+      'the retry must receive a fresh bounded delivery-attempt budget');
+    assert.equal(events[0].locked_at,null);
+    assert.equal(events[0].lease_token,null);
+    assert.equal(events[0].last_error,null);
+    assert.equal(events[0].processed_at,null);
+    assert.equal(events[0].payload_refund_id,seeded.refundId,
+      'the immutable outbox payload must still identify the reopened refund');
+  } finally {
+    await cleanupFailedRefundRetryFixture(seeded);
+  }
+});
+
+test('failed refund cannot be retried with a different idempotency key against an immutable outbox payload', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const seeded = await seedFailedRefundRetryFixture('different-key');
+  try {
+    const { createRefundAtomic } = await import('../src/repository/payment_refunds.js');
+    await assert.rejects(
+      createRefundAtomic({
+        jobId:seeded.jobId,
+        paymentId:seeded.paymentId,
+        ownerId:fixture.ownerId,
+        amount:100,
+        id:crypto.randomUUID(),
+        idempotencyKey:seeded.idempotencyKey + '-different',
+        createdAt:new Date(),
+      }),
+      (error) => error?.code === 'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY',
+    );
+
+    const { rows: refunds } = await pool.query(
+      'SELECT id,status,idempotency_key FROM refunds WHERE payment_id=$1 ORDER BY created_at,id',
+      [seeded.paymentId],
+    );
+    assert.equal(refunds.length,1,
+      'a second refund row must not be created behind an immutable outbox payload');
+    assert.equal(refunds[0].id,seeded.refundId);
+    assert.equal(refunds[0].status,'FAILED');
+  } finally {
+    await cleanupFailedRefundRetryFixture(seeded);
+  }
+});
+
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
