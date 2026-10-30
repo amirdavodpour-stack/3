@@ -82,7 +82,7 @@ export async function claimJobDisputeResolution(id, {
   const lease = Math.min(1800, Math.max(30, Number(leaseSeconds) || 300));
   return withSqlTransaction(async (client) => {
     const { rows } = await client.query(
-      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
+      `SELECT *, (resolution_lease_until > NOW()) AS resolution_lease_active FROM job_disputes WHERE id=$1 FOR UPDATE`,
       [id],
     );
     const current = rows[0];
@@ -99,8 +99,7 @@ export async function claimJobDisputeResolution(id, {
       if (current.resolution !== decision) {
         return { claimed:false, conflict:true, code:'DISPUTE_RESOLUTION_IN_PROGRESS', dispute:disputeView(current) };
       }
-      const leaseUntil = current.resolution_lease_until ? new Date(current.resolution_lease_until).getTime() : 0;
-      if (leaseUntil > Date.now()) {
+      if (current.resolution_lease_active === true) {
         return { claimed:false, inProgress:true, resolution:decision, leaseUntil:current.resolution_lease_until, dispute:disputeView(current) };
       }
     } else if (!['OPEN','AI_ANALYZED','ADMIN_REVIEW','ESCALATED'].includes(current.status)) {
@@ -148,18 +147,17 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
         ? { ...disputeView(current), alreadyDone:true }
         : { stale:true, dispute:disputeView(current) };
     }
-    const leaseUntil = current.resolution_lease_until
-      ? new Date(current.resolution_lease_until).getTime()
-      : 0;
     if (
       current.status !== 'RESOLVING' ||
       current.resolution !== resolution ||
       !token ||
-      String(current.resolution_lease_token) !== String(token) ||
-      leaseUntil <= Date.now()
+      String(current.resolution_lease_token) !== String(token)
     ) {
       return { stale:true, dispute:disputeView(current) };
     }
+    // Validate the lease against PostgreSQL time at the state-changing UPDATE.
+    // The predicate is rechecked after any row-lock wait, preventing an expired
+    // worker from finalizing after the lease deadline.
     const { rows: updated } = await client.query(
       `UPDATE job_disputes
           SET status='RESOLVED',
@@ -168,10 +166,16 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
               resolution_lease_until=NULL,
               updated_at=NOW()
         WHERE id=$1
+          AND status='RESOLVING'
+          AND resolution=$2
+          AND resolution_lease_token=$3
+          AND resolution_lease_until > NOW()
         RETURNING *`,
-      [id],
+      [id,resolution,token],
     );
-    return disputeView(updated[0]);
+    return updated[0]
+      ? disputeView(updated[0])
+      : { stale:true, dispute:disputeView(current) };
   });
 }
 
