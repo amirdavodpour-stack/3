@@ -331,7 +331,7 @@ test('outbox event identity and payload are immutable after insertion', { skip: 
       ["UPDATE outbox_events SET aggregate_type='other_aggregate' WHERE id=$1",[id]],
       ["UPDATE outbox_events SET aggregate_id=$2 WHERE id=$1",[id,crypto.randomUUID()]],
       ["UPDATE outbox_events SET dedupe_key=$2 WHERE id=$1",[id,dedupeKey+'-changed']],
-      ["UPDATE outbox_events SET payload='{\\"changed\\":true}'::jsonb WHERE id=$1",[id]],
+      ["UPDATE outbox_events SET payload=$2::jsonb WHERE id=$1",[id,JSON.stringify({changed:true})]],
       ["UPDATE outbox_events SET id=$2 WHERE id=$1",[id,crypto.randomUUID()]],
     ];
     for (const [sql,args] of mutations) {
