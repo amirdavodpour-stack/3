@@ -28,6 +28,7 @@ const modules = enabled
       import('../src/repository/outbox.js'),
       import('../src/outbox_handlers.js'),
       import('../src/payment_provider.js'),
+      import('../src/repository/disputes.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -42,6 +43,7 @@ const { fundJobAtomic } = modules[9] || {};
 const { completePaymentCreateHoldOutbox, failOutboxEvent } = modules[10] || {};
 const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
+const { claimJobDisputeResolution, completeJobDisputeResolution } = modules[13] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -136,6 +138,77 @@ async function waitForConversationRowLock(pool, timeoutMs = 6000) {
     'postChatMessage did not wait for the conversation row lock; close-vs-send serialization is missing',
   );
 }
+
+test('admin dispute resolution atomically admits one decision and recovers its expired claim', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const disputeId = crypto.randomUUID();
+  await pool.query(
+    "INSERT INTO job_disputes(id,job_id,opened_by,trigger_type,status) VALUES($1,$2,$3,'ADMIN','ADMIN_REVIEW')",
+    [disputeId,fixture.jobId,fixture.adminId],
+  );
+
+  const attempts = await Promise.all([
+    claimJobDisputeResolution(disputeId,{
+      resolution:'HOLD',
+      reason:'first administrator decision',
+      adminId:fixture.adminId,
+    }),
+    claimJobDisputeResolution(disputeId,{
+      resolution:'REFUND',
+      reason:'competing administrator decision',
+      adminId:fixture.outsiderId,
+    }),
+  ]);
+  const winner = attempts.find((attempt) => attempt?.claimed === true);
+  const loser = attempts.find((attempt) => attempt?.conflict === true);
+  assert.ok(winner,'exactly one concurrent administrator decision must acquire the durable claim');
+  assert.ok(loser,'the competing, different decision must be rejected while a claim is active');
+  assert.equal(attempts.filter((attempt) => attempt?.claimed === true).length,1);
+  assert.equal(loser.code,'DISPUTE_RESOLUTION_IN_PROGRESS');
+
+  const sameDecision = await claimJobDisputeResolution(disputeId,{
+    resolution:winner.resolution,
+    reason:'retry while the first worker still owns the lease',
+    adminId:fixture.adminId,
+  });
+  assert.equal(sameDecision.inProgress,true,
+    'same-decision retry must not execute the financial action concurrently');
+
+  await pool.query(
+    "UPDATE job_disputes SET resolution_lease_until=NOW()-INTERVAL '1 second' WHERE id=$1",
+    [disputeId],
+  );
+  const resumed = await claimJobDisputeResolution(disputeId,{
+    resolution:winner.resolution,
+    reason:'resume the same decision after lease expiry',
+    adminId:fixture.adminId,
+  });
+  assert.equal(resumed.claimed,true);
+  assert.equal(resumed.resumed,true);
+  assert.notEqual(resumed.token,winner.token,'expired claim must receive a new fencing token');
+
+  const stale = await completeJobDisputeResolution(disputeId,{
+    resolution:winner.resolution,
+    token:winner.token,
+  });
+  assert.equal(stale?.stale,true,'an expired worker must not finalize after a newer claim takes over');
+
+  const completed = await completeJobDisputeResolution(disputeId,{
+    resolution:winner.resolution,
+    token:resumed.token,
+  });
+  assert.equal(completed?.status,'RESOLVED');
+  assert.equal(completed?.resolution,winner.resolution);
+
+  const { rows } = await pool.query(
+    'SELECT status,resolution,resolution_lease_token,resolution_lease_until FROM job_disputes WHERE id=$1',
+    [disputeId],
+  );
+  assert.equal(rows[0]?.status,'RESOLVED');
+  assert.equal(rows[0]?.resolution,winner.resolution);
+  assert.equal(rows[0]?.resolution_lease_token,null);
+  assert.equal(rows[0]?.resolution_lease_until,null);
+});
 
 test('PostgreSQL privacy export reads financial collections from a repeatable-read snapshot', { skip: !enabled }, async () => {
   await ensureWalletForUserPublic(fixture.ownerId);
