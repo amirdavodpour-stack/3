@@ -4010,6 +4010,25 @@ test('manual failed resolution of an unknown payout appends a compensating walle
     const marked = await markPayoutUnknown({ eventId: events[0].id, payoutId: payout.id });
     assert.equal(marked?.marked, true);
 
+    const { rows: unknownPayoutState } = await pool.query(
+      `SELECT p.status AS payout_status,operation.status AS operation_status
+         FROM payouts p
+         JOIN wallet_holds hold
+           ON hold.reference_id=p.id
+          AND hold.hold_type='PAYOUT_RESERVATION'
+          AND hold.status='ACTIVE'
+         JOIN financial_operations operation
+           ON operation.id=hold.financial_operation_id
+        WHERE p.id=$1`,
+      [payout.id],
+    );
+    assert.equal(unknownPayoutState[0]?.payout_status, 'UNKNOWN');
+    assert.equal(
+      unknownPayoutState[0]?.operation_status,
+      'UNKNOWN',
+      'provider UNKNOWN must transition the financial operation from PROCESSING to UNKNOWN',
+    );
+
     const resolved = await resolvePayoutUnknown({
       payoutId: payout.id,
       decision: 'FAILED',
