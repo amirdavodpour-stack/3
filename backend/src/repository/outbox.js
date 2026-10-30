@@ -203,43 +203,92 @@ function outboxRetryDelaySeconds(eventId, attempts, baseSeconds = 5) {
 
 export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeconds = 5, leaseToken }) {
   return withSqlTransaction(async (client) => {
-    const { rows } = await client.query(`SELECT attempts, lease_token FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    // Terminal payment failures must follow the same aggregate lock order as
+    // their completion paths. A non-locking metadata read selects that order
+    // without owning the outbox row prematurely.
+    const { rows: metadataRows } = await client.query(
+      \`SELECT event_type,aggregate_id FROM outbox_events WHERE id=$1\`,
+      [eventId],
+    );
+    const eventMetadata = metadataRows[0];
+    if (!eventMetadata) return null;
+
+    const eventType = String(eventMetadata.event_type || '');
+    const paymentEvent = ['PAYMENT_CREATE_HOLD','PAYMENT_RELEASE','PAYMENT_REFUND'].includes(eventType);
+    let jobId = null;
+    if (paymentEvent) {
+      const { rows: paymentMetadataRows } = await client.query(
+        \`SELECT job_id FROM payments WHERE id=$1\`,
+        [eventMetadata.aggregate_id],
+      );
+      jobId = paymentMetadataRows[0]?.job_id || null;
+      if (jobId) {
+        await client.query(\`SELECT id FROM jobs WHERE id=$1 FOR UPDATE\`, [jobId]);
+      }
+    }
+
+    // Hold completion/funding use job -> payment -> outbox. Release/refund
+    // completion and refund supersession use job -> outbox -> payment.
+    if (eventType === 'PAYMENT_CREATE_HOLD' && jobId) {
+      await client.query(
+        \`SELECT id FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE\`,
+        [eventMetadata.aggregate_id,jobId],
+      );
+    }
+
+    const { rows } = await client.query(
+      \`SELECT status,attempts,lease_token FROM outbox_events WHERE id=$1 FOR UPDATE\`,
+      [eventId],
+    );
     if (!rows[0]) return null;
-    if (leaseToken && String(rows[0].lease_token) !== String(leaseToken)) return { terminal:false, stale:true, attempts:Number(rows[0].attempts || 0) };
+    const currentStatus = String(rows[0].status || '').toUpperCase();
     const attempts = Number(rows[0].attempts || 0);
+    // A completion that committed while this worker waited is authoritative.
+    // Do not let a stale failure callback regress a terminal outbox state.
+    if (currentStatus === 'DONE') return { terminal:false, alreadyDone:true, attempts };
+    if (currentStatus === 'FAILED') return { terminal:true, alreadyFailed:true, attempts };
+    if (leaseToken && String(rows[0].lease_token) !== String(leaseToken)) {
+      return { terminal:false, stale:true, attempts };
+    }
+
+    // Keep the same aggregate-first order for release/refund callbacks. The
+    // event is now locked; take payment before refund rows are updated below.
+    if (['PAYMENT_RELEASE','PAYMENT_REFUND'].includes(eventType)) {
+      await client.query(\`SELECT id FROM payments WHERE id=$1 FOR UPDATE\`, [eventMetadata.aggregate_id]);
+    }
+
     const terminal = attempts >= maxAttempts;
     const nextStatus = terminal ? 'FAILED' : 'PENDING';
     const retryDelay = terminal ? 0 : outboxRetryDelaySeconds(eventId, attempts, backoffSeconds);
     await client.query(
-      `UPDATE outbox_events SET status=$2,available_at=NOW()+make_interval(secs => $3),locked_at=NULL,lease_token=NULL,last_error=$4 WHERE id=$1`,
+      \`UPDATE outbox_events SET status=$2,available_at=NOW()+make_interval(secs => $3),locked_at=NULL,lease_token=NULL,last_error=$4 WHERE id=$1\`,
       [eventId, nextStatus, retryDelay, String(error).slice(0,2000)]
     );
     if (terminal) {
-      const { rows: eventRows } = await client.query(`SELECT event_type,aggregate_id FROM outbox_events WHERE id=$1`, [eventId]);
-      const terminalEvent = eventRows[0];
-      if (terminalEvent?.event_type === 'PAYOUT_EXECUTE') {
+      const terminalEvent = eventMetadata;
+      if (terminalEvent.event_type === 'PAYOUT_EXECUTE') {
         await failPayoutOutboxWithClient(client, { eventId, payoutId: terminalEvent.aggregate_id, error, leaseToken: null });
         return { terminal, attempts };
       }
-      const { rows: failedHoldRows } = await client.query(`
+      const { rows: failedHoldRows } = await client.query(\`
         SELECT p.id,p.job_id,p.funding_previous_job_status,p.payer_id AS owner_id,j.status AS job_status
           FROM payments p
           JOIN outbox_events o ON o.id=$1 AND o.event_type='PAYMENT_CREATE_HOLD' AND p.id=o.aggregate_id
           JOIN jobs j ON j.id=p.job_id
          WHERE p.status='HOLD_PENDING'
          FOR UPDATE OF p,j
-      `, [eventId]);
+      \`, [eventId]);
       if (failedHoldRows[0]) {
         const failedHold = failedHoldRows[0];
-        await client.query(`UPDATE payments SET status='HOLD_FAILED',updated_at=NOW() WHERE id=$1`, [failedHold.id]);
+        await client.query(\`UPDATE payments SET status='HOLD_FAILED',updated_at=NOW() WHERE id=$1\`, [failedHold.id]);
         if (['PUBLISHED','ASSIGNED'].includes(failedHold.funding_previous_job_status) && failedHold.job_status === 'FUNDED') {
-          await client.query(`UPDATE jobs SET status=$2,updated_at=NOW() WHERE id=$1 AND status='FUNDED'`, [failedHold.job_id, failedHold.funding_previous_job_status]);
+          await client.query(\`UPDATE jobs SET status=$2,updated_at=NOW() WHERE id=$1 AND status='FUNDED'\`, [failedHold.job_id, failedHold.funding_previous_job_status]);
         }
-        await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYMENT_HOLD_FAILED',$1,'payment',$2,$3::jsonb,NOW())`, [null, failedHold.id, JSON.stringify({ eventId, restoredJobStatus: failedHold.funding_previous_job_status }),]);
+        await client.query(\`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYMENT_HOLD_FAILED',$1,'payment',$2,$3::jsonb,NOW())\`, [null, failedHold.id, JSON.stringify({ eventId, restoredJobStatus: failedHold.funding_previous_job_status }),]);
       }
-      await client.query(`UPDATE refunds r SET status='FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND r.id=(o.payload->>'refundId')::uuid AND r.status='PENDING'`, [eventId]);
-      await client.query(`UPDATE payments p SET status='HELD',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND p.id=o.aggregate_id AND p.status='REFUND_PENDING'`, [eventId]);
-      await client.query(`UPDATE payments p SET status='RELEASE_FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_RELEASE' AND p.id=o.aggregate_id AND p.status='RELEASE_PENDING'`, [eventId]);
+      await client.query(\`UPDATE refunds r SET status='FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND r.id=(o.payload->>'refundId')::uuid AND r.status='PENDING'\`, [eventId]);
+      await client.query(\`UPDATE payments p SET status='HELD',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND p.id=o.aggregate_id AND p.status='REFUND_PENDING'\`, [eventId]);
+      await client.query(\`UPDATE payments p SET status='RELEASE_FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_RELEASE' AND p.id=o.aggregate_id AND p.status='RELEASE_PENDING'\`, [eventId]);
     }
     return { terminal, attempts };
   });
