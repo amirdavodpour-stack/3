@@ -2031,8 +2031,10 @@ test('release outbox completion serializes with a refund that supersedes a pendi
 
   const requestJobGate = deferredGate();
   const requestPaymentGate = deferredGate();
+  const requestEventGate = deferredGate();
   const requestJobLocked = deferredGate();
   const requestPaymentLocked = deferredGate();
+  const requestEventLocked = deferredGate();
   const requestEventLockAttempted = deferredGate();
   const workerJobLockAttempted = deferredGate();
   const workerEventLocked = deferredGate();
@@ -2120,9 +2122,12 @@ test('release outbox completion serializes with a refund that supersedes a pendi
         const normalized = sql.replace(/\s+/g, ' ').toUpperCase();
         const isJobLock = normalized.includes('FROM JOBS WHERE ID=$1 FOR UPDATE');
         const isPaymentLock = normalized.includes('FROM PAYMENTS WHERE ID=$1 AND JOB_ID=$2 FOR UPDATE');
+        const isRequestReleaseEventLock = role === 1 &&
+          normalized.includes('FROM OUTBOX_EVENTS') &&
+          normalized.includes('AGGREGATE_ID=$1') && normalized.includes('FOR UPDATE');
         const isOutboxLock = normalized.includes('FROM OUTBOX_EVENTS WHERE ID=$1 FOR UPDATE');
 
-        if (role === 1 && isOutboxLock) requestEventLockAttempted.resolve();
+        if (isRequestReleaseEventLock) requestEventLockAttempted.resolve();
         if (role === 2 && isJobLock) workerJobLockAttempted.resolve();
 
         const result = await originalQuery(queryText, ...queryArgs);
@@ -2130,6 +2135,10 @@ test('release outbox completion serializes with a refund that supersedes a pendi
         if (role === 1 && isJobLock) {
           requestJobLocked.resolve();
           await requestJobGate.promise;
+        }
+        if (role === 1 && isRequestReleaseEventLock) {
+          requestEventLocked.resolve();
+          await requestEventGate.promise;
         }
         if (role === 1 && isPaymentLock) {
           requestPaymentLocked.resolve();
@@ -2192,8 +2201,8 @@ test('release outbox completion serializes with a refund that supersedes a pendi
       // and releases the aggregate for the worker to complete the settlement.
       await waitForBlockedQuery(observer, '%FROM jobs WHERE id=$1 FOR UPDATE%', 'release worker job lock');
       requestJobGate.resolve();
-      await waitForSignal(requestPaymentLocked, 'refund request payment lock');
-      requestPaymentGate.resolve();
+      await waitForSignal(requestEventLocked, 'refund request release-event lock');
+      requestEventGate.resolve();
       const requestOutcome = await requestPromise;
       assert.equal(requestOutcome.error?.code, 'PAYMENT_RELEASE_IN_PROGRESS');
       await waitForSignal(workerEventLocked, 'release worker outbox event lock');
@@ -2227,6 +2236,7 @@ test('release outbox completion serializes with a refund that supersedes a pendi
   } finally {
     requestJobGate.resolve();
     requestPaymentGate.resolve();
+    requestEventGate.resolve();
     workerEventGate.resolve();
     if (requestPromise || workerPromise) {
       await Promise.allSettled([requestPromise, workerPromise].filter(Boolean));
