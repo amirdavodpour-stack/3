@@ -33,12 +33,14 @@ test('unknown payout resolves its financial operation through the active reserva
 
   assert.match(
     markUnknown,
-    /SELECT \* FROM wallet_holds WHERE reference_id=\$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE/s,
+    /SELECT \* FROM wallet_holds[\s\S]*?reference_id=\$1[\s\S]*?hold_type='PAYOUT_RESERVATION'[\s\S]*?status='ACTIVE'[\s\S]*?FOR UPDATE/,
   );
-  assert.match(markUnknown, /if \(!hold\).*PAYOUT_RESERVATION_NOT_FOUND/s);
+  assert.match(markUnknown, /PAYOUT_RESERVATION_NOT_FOUND/);
+  assert.match(markUnknown, /event\.payload\?\.operationId/);
+  assert.match(markUnknown, /PAYOUT_OPERATION_MISMATCH/);
   assert.match(
     markUnknown,
-    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1`, \[hold\.financial_operation_id\]\);/s,
+    /UPDATE financial_operations[\s\S]*?status='UNKNOWN',[\s\S]*?completed_at=NULL[\s\S]*?WHERE id=\$1[\s\S]*?hold\.financial_operation_id[\s\S]*?RETURNING id/,
   );
   assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
 });

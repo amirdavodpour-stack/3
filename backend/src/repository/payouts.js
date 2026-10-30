@@ -96,16 +96,62 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
     const { rows: payouts } = await client.query(`SELECT * FROM payouts WHERE id=$1 FOR UPDATE`, [payoutId]);
     const payout = payouts[0];
     if (!payout) return { marked: false, reason: 'PAYOUT_NOT_FOUND' };
-    if (payout.status === 'UNKNOWN') {
-      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
-      return { marked: true, alreadyUnknown: true };
+    const alreadyUnknown = payout.status === 'UNKNOWN';
+    if (!alreadyUnknown && !['RESERVED','PROCESSING'].includes(payout.status)) {
+      return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
     }
-    if (!['RESERVED','PROCESSING'].includes(payout.status)) return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
-    await client.query(`UPDATE payouts SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW() WHERE id=$1`, [payoutId, String(reason).slice(0, 1000)]);
-    await client.query(`UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=$1`, [payout.financial_operation_id]);
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`, [payoutId, JSON.stringify({ eventId, reason })]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
-    return { marked: true, alreadyUnknown: false };
+
+    // payouts has no financial_operation_id column. The reservation hold is the
+    // canonical relation between a payout and its financial operation; lock it
+    // before changing either state so unknown provider outcomes stay reconcilable.
+    const { rows: holds } = await client.query(
+      `SELECT * FROM wallet_holds
+        WHERE reference_id=$1
+          AND hold_type='PAYOUT_RESERVATION'
+          AND status='ACTIVE'
+        FOR UPDATE`,
+      [payoutId],
+    );
+    const hold = holds[0];
+    if (!hold?.financial_operation_id) {
+      return { marked: false, reason: 'PAYOUT_RESERVATION_NOT_FOUND' };
+    }
+    if (String(event.payload?.operationId || '') !== String(hold.financial_operation_id)) {
+      return { marked: false, reason: 'PAYOUT_OPERATION_MISMATCH' };
+    }
+
+    const { rows: operations } = await client.query(
+      `UPDATE financial_operations
+          SET status='UNKNOWN',completed_at=NULL
+        WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')
+        RETURNING id`,
+      [hold.financial_operation_id],
+    );
+    if (!operations[0]) {
+      return { marked: false, reason: 'FINANCIAL_OPERATION_NOT_PROCESSING' };
+    }
+
+    if (!alreadyUnknown) {
+      await client.query(
+        `UPDATE payouts
+            SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW()
+          WHERE id=$1`,
+        [payoutId, String(reason).slice(0, 1000)],
+      );
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
+        [payoutId, JSON.stringify({ eventId, reason })],
+      );
+    }
+
+    await client.query(
+      `UPDATE outbox_events
+          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL
+        WHERE id=$1`,
+      [eventId],
+    );
+    return { marked: true, alreadyUnknown };
   });
 }
 
