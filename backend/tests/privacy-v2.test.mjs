@@ -531,7 +531,18 @@ test('PostgreSQL privacy export bounds every high-volume financial query to the 
   );
   assert.ok(repository.includes("import { MAX_EXPORT_QUERY_ROWS } from '../privacy.js'"));
   for (const relation of [
+    'jobs WHERE owner_id',
+    'job_applications WHERE candidate_id',
+    'offers o JOIN jobs',
     'payments WHERE payer_id',
+    'notifications WHERE user_id',
+    'saved_searches WHERE user_id',
+    'evidence WHERE submitted_by',
+    'uploads WHERE uploaded_by',
+    'analytics_events WHERE user_id',
+    'crash_reports WHERE user_id',
+    'trust_reports WHERE reporter_id',
+    'job_satisfaction_feedback WHERE user_id',
     'wallet_entries e JOIN wallet_accounts',
     'wallet_holds h JOIN wallet_accounts',
     'FROM payouts WHERE user_id',
