@@ -251,14 +251,14 @@ export async function getAdminPanelIdentity(userId) {
 }
 
 export async function setAdminPanelVerified(userId) {
-  const { rows } = await requirePool().query(`UPDATE users SET admin_panel_verified_at=NOW() WHERE id=$1 AND role='ADMIN' RETURNING id,admin_panel_verified_at`, [userId]);
+  const { rows } = await requirePool().query(`UPDATE users SET admin_panel_verified_at=NOW() WHERE id=$1 AND role='ADMIN' AND status='ACTIVE' RETURNING id,admin_panel_verified_at`, [userId]);
   return rows[0] ? { verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at } : null;
 }
 
 export async function isAdminPanelVerified(userId, ttlMinutes = 15) {
-  const { rows } = await requirePool().query(`SELECT role,admin_panel_verified_at FROM users WHERE id=$1`, [userId]);
+  const { rows } = await requirePool().query(`SELECT role,status,admin_panel_verified_at FROM users WHERE id=$1`, [userId]);
   const at = rows[0]?.admin_panel_verified_at;
-  return rows[0]?.role === 'ADMIN' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000;
+  return rows[0]?.role === 'ADMIN' && rows[0]?.status === 'ACTIVE' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000;
 }
 
 export async function clearAdminPanelVerification(userId) {

@@ -35,7 +35,7 @@ export async function getAdminUser(id) {
 export async function setUserStatus(id,status) {
   return withSqlTransaction(async (client) => {
     const { rows } = await client.query(
-      `UPDATE users SET status=$2, session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`,
+      `UPDATE users SET status=$2, session_version=session_version+1, admin_panel_verified_at=NULL WHERE id=$1 RETURNING ${userSelect}`,
       [id,status],
     );
     if (!rows[0]) return null;
@@ -60,14 +60,14 @@ export async function revokeAdminById(id, actorId) {
     if (String(rows[0].role || '').toUpperCase() !== 'ADMIN') {
       const error = new Error('NOT_AN_ADMIN'); error.code='NOT_AN_ADMIN'; error.status=409; throw error;
     }
-    const { rows: updated } = await client.query(`UPDATE users SET role='USER', session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [id]);
+    const { rows: updated } = await client.query(`UPDATE users SET role='USER', session_version=session_version+1, admin_panel_verified_at=NULL WHERE id=$1 RETURNING ${userSelect}`, [id]);
     await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
     return updated[0] ? userFromRow(updated[0]) : null;
   });
 }
 export async function revokeUserSessions(id) {
   return withSqlTransaction(async (client) => {
-    const { rows } = await client.query(`UPDATE users SET session_version=session_version+1 WHERE id=$1 RETURNING id,session_version`, [id]);
+    const { rows } = await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1 RETURNING id,session_version`, [id]);
     if (!rows[0]) return null;
     await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
     return { id: rows[0].id, sessionVersion: Number(rows[0].session_version) };
@@ -116,7 +116,7 @@ export async function grantAdminByEmail(email, actorId) {
     const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE LOWER(email)=LOWER($1) FOR UPDATE`, [normalizedEmail]);
     if (!rows[0]) return null;
     if (String(rows[0].role || '').toUpperCase() === 'ADMIN') return userFromRow(rows[0]);
-    const { rows: updated } = await client.query(`UPDATE users SET role='ADMIN', session_version=session_version+1 WHERE id=$1 RETURNING ${userSelect}`, [rows[0].id]);
+    const { rows: updated } = await client.query(`UPDATE users SET role='ADMIN', session_version=session_version+1, admin_panel_verified_at=NULL WHERE id=$1 RETURNING ${userSelect}`, [rows[0].id]);
     return updated[0] ? userFromRow(updated[0]) : null;
   });
 }

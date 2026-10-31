@@ -180,7 +180,7 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     await client.query(`UPDATE evidence SET submitted_by=NULL WHERE submitted_by=$1`, [userId]);
     await client.query(`UPDATE uploads SET uploaded_by=NULL WHERE uploaded_by=$1`, [userId]);
     await client.query(`UPDATE jobs SET provider_id=NULL WHERE provider_id=$1 AND status IN ('DRAFT','PUBLISHED')`, [userId]);
-    await client.query(`UPDATE users SET email=$2,password_hash=$3,display_name='Deleted user',status='DELETED',session_version=session_version+1 WHERE id=$1`, [userId,replacement.email,replacement.passwordHash]);
+    await client.query(`UPDATE users SET email=$2,password_hash=$3,display_name='Deleted user',admin_panel_verified_at=NULL,status='DELETED',session_version=session_version+1 WHERE id=$1`, [userId,replacement.email,replacement.passwordHash]);
     await client.query(`UPDATE audit_logs SET actor_id=NULL WHERE actor_id=$1`, [userId]);
     await client.query(`DELETE FROM trust_reports WHERE reporter_id=$1`, [userId]);
     await client.query(`DELETE FROM recommendation_profiles WHERE user_id=$1`, [userId]);
