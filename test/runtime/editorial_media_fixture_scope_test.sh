@@ -18,4 +18,12 @@ if grep -Fq "HOPE Runtime" "$runtime_driver" || grep -Fq "runtime@example.invali
   exit 1
 fi
 
+if grep -Fq 'کاربر نمونه' "$runtime_driver"; then
+  echo "FAIL: generic sample-user placeholder must not appear in rendered runtime evidence" >&2
+  exit 1
+fi
+grep -Fq "const _evidenceDisplayName = _captureLocale == 'en' ? 'Jordan Lee' : 'رها سادات';" "$runtime_driver"
+grep -Fq "'displayName': _evidenceDisplayName" "$runtime_driver"
+grep -Fq 'senderName: _evidenceDisplayName' "$runtime_driver"
+
 echo "PASS: captured screens use category fallback art and non-artificial identities"

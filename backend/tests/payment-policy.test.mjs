@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateIdempotencyPair, paymentAmountForJob, mapPaymentMutationError } from '../src/application/payment_policy.js';
+import { readFileSync } from 'node:fs';
+import { validateIdempotencyPair, paymentAmountForJob, assertFundingReplayMatches, mapPaymentMutationError } from '../src/application/payment_policy.js';
 
 test('payment policy accepts matching and normalizes header/body idempotency keys consistently', () => {
   assert.equal(validateIdempotencyPair({ headerKey: ' abc-123 ', bodyKey: 'abc-123', maxLength: 64 }), 'abc-123');
@@ -29,4 +30,40 @@ test('payment mutation errors map to stable HTTP contracts', () => {
   assert.equal(mapped.code, 'INVALID_OFFER_STATE');
   const unknown = Object.assign(new Error('unexpected'), { code: 'UNKNOWN' });
   assert.equal(mapPaymentMutationError(unknown), unknown);
+});
+
+
+test('funding replay accepts only the same payer, payee, currency and exact amount', () => {
+  const existing = {
+    id:'payment-1', idempotencyKey:'same-key', payerId:'payer-1', payeeId:'payee-1',
+    amount:'100.00', currency:'TOMAN',
+  };
+  const valid = {
+    existing, idempotencyKey:'same-key', payerId:'payer-1', payeeId:'payee-1',
+    requestedAmount:'100', requestedCurrency:'TOMAN',
+  };
+  assert.doesNotThrow(() => assertFundingReplayMatches(valid));
+
+  for (const change of [
+    { requestedAmount:'101' },
+    { payerId:'payer-2' },
+    { payeeId:'payee-2' },
+    { requestedCurrency:'USD' },
+  ]) {
+    assert.throws(
+      () => assertFundingReplayMatches({ ...valid, ...change }),
+      (error) => error?.code === 'IDEMPOTENCY_CONFLICT' && error?.status === 409,
+    );
+  }
+});
+
+test('funding replay validation is wired before early responses in PostgreSQL and legacy route branches', () => {
+  const routes = readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
+  const start = routes.indexOf("if (req.method === 'POST' && parts[1] === 'fund'");
+  const end = routes.indexOf("if (req.method === 'POST' && parts[1] === 'refund'", start);
+  const fundRoute = routes.slice(start, end);
+  const dbBranch = fundRoute.slice(fundRoute.indexOf("if (process.env.DATABASE_URL)"), fundRoute.indexOf("} else {"));
+  const legacyBranch = fundRoute.slice(fundRoute.indexOf("} else {"), fundRoute.indexOf("enforceJobState"));
+  assert.ok(dbBranch.includes('assertExistingFundingReplay('));
+  assert.ok(legacyBranch.includes('assertExistingFundingReplay('));
 });

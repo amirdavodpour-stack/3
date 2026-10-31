@@ -19,3 +19,21 @@ test('admin promotion endpoint is primary-owner-only and audit logged', () => {
   assert.match(ports, /grantAdminByEmail/);
   assert.match(repo, /PRIMARY_ADMIN_ONLY/);
 });
+test('primary-admin privileges require a linked verified Google identity at every authorization layer', () => {
+  const access = read('backend/src/application/admin_panel_access.js');
+  const validation = read('backend/src/policies/validation.js');
+  const auth = read('backend/src/routes/auth_routes.js');
+  const repo = read('backend/src/repository/admin.js');
+  const legacy = read('backend/src/application/legacy/admin_legacy.js');
+
+  assert.match(access, /shouldBootstrapPrimaryAdmin\(\{ email, verifiedIdentity = false, googleSubject \}/);
+  assert.match(access, /Boolean\(normalize\(googleSubject\)\)/);
+  assert.match(access, /isPrimaryAdminEmail\(user\.email\) && Boolean\(normalize\(user\.googleSubject\)\)/);
+  assert.match(access, /isPrimaryAdminEmail\(user\.email\) && !normalize\(user\.googleSubject\)/);
+  assert.match(validation, /PRIMARY_ADMIN_IDENTITY_REQUIRED/);
+  assert.match(validation, /isPrimaryAdminEmail\(user\.email\) && !String\(user\.googleSubject \|\| ''\)\.trim\(\)/);
+  assert.match(auth, /shouldBootstrapPrimaryAdmin\(\{ email: identity\.email, verifiedIdentity: true, googleSubject: identity\.subject \}\)/);
+  assert.match(repo, /SELECT id,email,role,google_subject FROM users WHERE id=\$1 FOR UPDATE/);
+  assert.equal((repo.match(/!String\(actors\[0\]\.google_subject \|\| ''\)\.trim\(\)/g) || []).length, 2);
+  assert.equal((legacy.match(/!String\(actor\.googleSubject \|\| ''\)\.trim\(\)/g) || []).length, 2);
+});

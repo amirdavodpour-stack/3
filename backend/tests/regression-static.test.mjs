@@ -131,10 +131,21 @@ test('payment idempotency is normalized consistently across header and body', ()
   assert.match(paymentPolicy, /IDEMPOTENCY_CONFLICT|INVALID_IDEMPOTENCY_KEY/);
 });
 
-test('multipart parsing cleans temporary files on parse failures', () => {
+test('multipart parsing bounds body ingestion and cleans temporary files on failures', () => {
   const source = fs.readFileSync(new URL('../src/http.js', import.meta.url), 'utf8');
-  assert.match(source, /try \{\n    const body = await fs\.promises\.readFile\(tempPath\)/);
-  assert.match(source, /catch \(error\) \{\n    try \{ await fs\.promises\.unlink\(tempPath\); \} catch \{\}/);
+  const routeSource = fs.readFileSync(new URL('../src/routes/storage_routes.js', import.meta.url), 'utf8');
+  const multipartSource = source.slice(source.indexOf('export async function readMultipartSingleFile(req) {'));
+  assert.ok(
+    multipartSource.indexOf('await acquireUploadParser();') < multipartSource.indexOf('fs.createWriteStream('),
+    'the upload slot must be acquired before creating an incoming temp file',
+  );
+  assert.ok(
+    multipartSource.indexOf('await acquireUploadParser();') < multipartSource.indexOf('for await (const chunk of req)'),
+    'the upload slot must be acquired before consuming the multipart request body',
+  );
+  assert.match(source, /if \(tempPath\) \{\s*try \{ await fs\.promises\.unlink\(tempPath\); \} catch \{\}/);
+  assert.match(source, /if \(!ownershipTransferred\) release\(\)/);
+  assert.match(routeSource, /file\.release\?\.\(\)/);
 });
 
 test('object upload cleans up the temp file and compensates for DB insert failure', () => {
@@ -147,4 +158,3 @@ test('object upload cleans up the temp file and compensates for DB insert failur
   assert.match(storageSource, /DeleteObjectCommand/);
   assert.match(storageSource, /async delete\(\{ key \}\)/);
 });
-

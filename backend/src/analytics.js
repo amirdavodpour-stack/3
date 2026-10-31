@@ -6,7 +6,7 @@ const EVENT_RE = /^[A-Za-z][A-Za-z0-9_.:-]{1,63}$/;
 const PLATFORM = new Set(['ANDROID','IOS','WEB','UNKNOWN']);
 const MAX_PROPERTIES = 40;
 const MAX_STRING = 256;
-const SENSITIVE = /pass(word)?|token|secret|authorization|cookie|email|phone|address|resume|document|national|iban|card|cvv/i;
+const SENSITIVE = /pass(word)?|token|secret|authorization|cookie|email|phone|mobile|address|resume|document|national|iban|card|cvv|name|location|coordinate|latitude|longitude/i;
 
 function redactText(value) {
   return String(value || '').slice(0, 12000)

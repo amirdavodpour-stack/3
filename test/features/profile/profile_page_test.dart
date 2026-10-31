@@ -1,14 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
+import 'package:hope_mobile/core/auth/google_sign_in_service.dart';
+import 'package:hope_mobile/core/config/backend_capabilities.dart';
 import 'package:hope_mobile/core/auth/auth_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import '../../core/network/test_fixtures.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
@@ -20,7 +24,16 @@ import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _AuthRepo implements AuthRepository {
+class _AuthRepo implements AuthRepository, GoogleAccountLinkRepository {
+  String? linkedGoogleToken;
+  Object? googleLinkFailure;
+
+  @override
+  Future<void> linkGoogleAccount(String idToken) async {
+    if (googleLinkFailure != null) throw googleLinkFailure!;
+    linkedGoogleToken = idToken;
+  }
+
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
       throw UnimplementedError();
@@ -33,6 +46,20 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
+}
+
+class _FakeGoogleSignInService extends GoogleSignInService {
+  _FakeGoogleSignInService() : super(serverClientId: 'test-server-client');
+
+  @override
+  Future<String> authenticate() async => 'verified-google-id-token';
+}
+
+class _CapabilitiesRepo implements BackendCapabilitiesRepository {
+  _CapabilitiesRepo(this.enabled);
+  final bool enabled;
+  @override
+  Future<BackendCapabilities> load() async => BackendCapabilities(googleSignIn: enabled);
 }
 
 class _ProfileRepo implements ProfileRepository {
@@ -89,6 +116,10 @@ Future<void> _pump(
   ProfileRepository? repository,
   bool settle = true,
   ThemeData? theme,
+  double textScale = 1.0,
+  bool googleCapabilityEnabled = false,
+  GoogleSignInService? googleSignIn,
+  _AuthRepo? authRepository,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -97,7 +128,7 @@ Future<void> _pump(
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
-  final auth = AuthController(_AuthRepo(), SecureStore());
+  final auth = AuthController(authRepository ?? _AuthRepo(), SecureStore());
   if (authenticated) {
     await auth.applyRefreshedUser({'id': 'u1', 'displayName': 'کاربر'});
   } else {
@@ -113,15 +144,22 @@ Future<void> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: Scaffold(
-      body: MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: settings),
-          ChangeNotifierProvider(create: (_) => ThemeController(settings)),
-          ChangeNotifierProvider.value(value: auth),
-          Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
-        ],
-        child: const ProfilePage(),
+    home: MediaQuery(
+      data: MediaQueryData.fromView(tester.view).copyWith(
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: Scaffold(
+        body: MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: settings),
+            ChangeNotifierProvider(create: (_) => ThemeController(settings)),
+            ChangeNotifierProvider.value(value: auth),
+            Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
+            Provider<BackendCapabilitiesRepository>.value(value: _CapabilitiesRepo(googleCapabilityEnabled)),
+            if (googleSignIn != null) Provider<GoogleSignInService>.value(value: googleSignIn),
+          ],
+          child: const ProfilePage(),
+        ),
       ),
     ),
   ));
@@ -133,6 +171,51 @@ Future<void> _pump(
 }
 
 void main() {
+  setUp(() => installFakeSecureStorageForTests());
+
+  testWidgets('profile can explicitly link a verified Google account from account settings', (tester) async {
+    final repository = _AuthRepo();
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: true,
+      googleSignIn: _FakeGoogleSignInService(),
+      authRepository: repository,
+    );
+
+    final linkAction = find.byKey(const ValueKey('profile-link-google-account'));
+    expect(linkAction, findsOneWidget);
+    await tester.tap(linkAction);
+    await tester.pumpAndSettle();
+
+    expect(repository.linkedGoogleToken, 'verified-google-id-token');
+    expect(find.text('حساب گوگل با موفقیت متصل شد.'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('profile hides Google account linking when backend capability is disabled', (tester) async {
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: false,
+      googleSignIn: _FakeGoogleSignInService(),
+    );
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsNothing);
+  });
+
+  testWidgets('authenticated profile exposes the explicit Google account-link action only when Google is enabled', (tester) async {
+    await _pump(
+      tester,
+      authenticated: true,
+      googleCapabilityEnabled: true,
+      googleSignIn: _FakeGoogleSignInService(),
+    );
+
+    expect(find.byKey(const ValueKey('profile-link-google-account')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
     'profile professional loading uses the canonical async state',
     (tester) async {
@@ -227,6 +310,36 @@ testWidgets('profile keeps application management in the dedicated work destinat
       expect(tester.takeException(), isNull, reason: 'render exception at $width dp');
     }
   });
+
+  testWidgets(
+    'compact profile setting labels fully wrap at 1.5x text scale',
+    (tester) async {
+      await _pump(
+        tester,
+        authenticated: true,
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+      );
+
+      const label = 'پیشنهادهای شخصی‌سازی‌شده';
+      final finder = find.text(label);
+      expect(finder, findsOneWidget);
+      final widget = tester.widget<Text>(finder);
+      expect(
+        widget.maxLines,
+        isNull,
+        reason:
+            'Compact account settings must preserve full setting names at enlarged text scale.',
+      );
+      expect(widget.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(finder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('authenticated profile compresses secondary settings on narrow screens', (tester) async {
     await _pump(tester, authenticated: true, width: 390);
@@ -350,5 +463,44 @@ testWidgets('profile keeps application management in the dedicated work destinat
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'compact appearance action keeps a 48dp rendered and semantic target',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          authenticated: true,
+          width: 390,
+          height: 844,
+          theme: AppTheme.dark(),
+        );
+
+        final appearanceLabel = find.text('ظاهر برنامه');
+        expect(appearanceLabel, findsOneWidget);
+        final appearanceTile = find.ancestor(
+          of: appearanceLabel,
+          matching: find.byType(ListTile),
+        ).first;
+        await tester.ensureVisible(appearanceTile);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.getSize(appearanceTile).height,
+          greaterThanOrEqualTo(48),
+        );
+        expect(
+          tester.getSemantics(appearanceTile).rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The TalkBack action target must meet the 48dp minimum.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
 
 }

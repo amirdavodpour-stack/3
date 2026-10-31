@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -13,6 +14,8 @@ import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/transactions/payment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
@@ -217,6 +220,7 @@ Future<void> _pump(
   double height = 3400,
   double textScale = 1.0,
   double? bottomSafeAreaInset,
+  ThemeData? theme,
   Locale locale = const Locale('en'),
 }) async {
   tester.view.physicalSize = Size(width, height);
@@ -243,7 +247,7 @@ Future<void> _pump(
       Provider<UploadQueue>.value(value: _FakeQueue()),
     ],
     child: MaterialApp(
-      theme: ThemeData.light(),
+      theme: theme ?? ThemeData.light(),
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
@@ -289,6 +293,142 @@ void main() {
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
+
+  testWidgets(
+    'T10 report opportunity control exposes a full-height semantic action',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          job: _job(),
+          width: 360,
+          height: 640,
+          locale: const Locale('fa'),
+          theme: AppTheme.dark(),
+        );
+
+        final report = find.byKey(
+          const ValueKey('opportunity-report-action'),
+        );
+        final semanticTarget = find.byKey(
+          const ValueKey('opportunity-report-semantic-target'),
+        );
+        final detailList = find.byKey(
+          const ValueKey('opportunity-detail-content-list'),
+        );
+        await tester.scrollUntilVisible(
+          report,
+          120,
+          scrollable: find.descendant(
+            of: detailList,
+            matching: find.byType(Scrollable),
+          ).first,
+          maxScrolls: 80,
+        );
+        await tester.pumpAndSettle();
+        expect(report, findsOneWidget);
+        final visualReportButton = tester.widget<TextButton>(find.descendant(
+          of: report,
+          matching: find.byType(TextButton),
+        ));
+        expect(
+          visualReportButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
+          AppTheme.dark().colorScheme.onSurfaceVariant,
+          reason: 'Disabled report text should use the neutral readable text tone, not the indigo action accent.',
+        );
+        final reportGesture = tester.widget<GestureDetector>(report);
+        expect(
+          reportGesture,
+          isA<GestureDetector>(),
+          reason: 'The keyed report target must be the full-height gesture surface.',
+        );
+        expect(
+          reportGesture.onTap,
+          isNotNull,
+          reason: 'The pointer GestureDetector must preserve the report tap callback.',
+        );
+        expect(
+          reportGesture.excludeFromSemantics,
+          isTrue,
+          reason: 'The pointer recognizer must not create a competing accessibility action.',
+        );
+        expect(semanticTarget, findsOneWidget);
+        final semanticWidget = tester.widget<Semantics>(semanticTarget);
+        expect(semanticWidget.container, isTrue);
+        expect(
+          semanticWidget.explicitChildNodes,
+          isTrue,
+          reason: 'The actionable report node must retain its own semantic bounds instead of merging down to text geometry.',
+        );
+        expect(semanticWidget.properties.button, isTrue);
+        expect(semanticWidget.properties.label, 'گزارش فرصت');
+        expect(
+          semanticWidget.properties.onTap,
+          isNotNull,
+          reason: 'The independent semantic container must own the accessible tap action.',
+        );
+
+        final renderedButtonSize = tester.getSize(semanticTarget);
+        expect(
+          renderedButtonSize.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report semantic container must have a rendered 48dp width.',
+        );
+        expect(
+          renderedButtonSize.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report semantic container must have a rendered 48dp height.',
+        );
+
+        final node = tester.getSemantics(semanticTarget);
+        final data = node.getSemanticsData();
+        expect(data.label, 'گزارش فرصت');
+        expect(data.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          node.rect.width,
+          greaterThanOrEqualTo(48),
+          reason: 'The report gesture semantic target must expose a real 48dp width.',
+        );
+        expect(
+          node.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'The report gesture semantic target must expose a real 48dp height.',
+        );
+
+        // Walk the complete semantics tree to verify that the fixed-size
+        // gesture surface exposes exactly one actionable node with 48dp bounds.
+        final root =
+            tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
+        expect(root, isNotNull);
+        final actionableReportNodes = <SemanticsNode>[];
+        final pendingNodes = <SemanticsNode>[root!];
+        while (pendingNodes.isNotEmpty) {
+          final candidate = pendingNodes.removeLast();
+          final candidateData = candidate.getSemanticsData();
+          if (candidateData.hasAction(SemanticsAction.tap) &&
+              candidateData.label.trim() == 'گزارش فرصت') {
+            actionableReportNodes.add(candidate);
+          }
+          pendingNodes.addAll(candidate.debugListChildrenInOrder(
+            DebugSemanticsDumpOrder.traversalOrder,
+          ));
+        }
+        expect(
+          actionableReportNodes,
+          hasLength(1),
+          reason: 'Report opportunity must expose exactly one semantic tap target.',
+        );
+        expect(
+          actionableReportNodes.single.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'Every exposed report action must preserve the 48dp semantic height.',
+        );
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets(
     'Wave 36 known job categories stay localized across hero and decision strip',
@@ -351,7 +491,63 @@ void main() {
 
   testWidgets('decision strip renders all four breakdown dimensions in a compact grid',
       (tester) async {
-    await _pump(tester, job: _job(), width: 390, height: 844);
+    await _pump(
+      tester,
+      job: _job(city: 'تهران'),
+      width: 360,
+      height: 1200,
+      locale: const Locale('fa'),
+    );
+
+    final decision = find.byKey(const ValueKey('opportunity-decision-strip'));
+    final hero = find.byType(PremiumHero);
+    expect(decision, findsOneWidget);
+    expect(hero, findsOneWidget);
+    expect(
+      tester.getTopLeft(decision).dy - tester.getBottomLeft(hero).dy,
+      greaterThanOrEqualTo(8),
+      reason: 'The hero and decision surfaces need a visible, stable gap on compact screens.',
+    );
+    // The key is owned by the PremiumPanel inside the decision strip.
+    final decisionPanel = tester.widget<PremiumPanel>(decision);
+    expect(
+      decisionPanel.highlight,
+      isFalse,
+      reason: 'Job detail should not tint the full surface indigo for a high score.',
+    );
+
+    final locationMetadata = find.byKey(
+      const ValueKey('opportunity-decision-location-inline'),
+    );
+    final rationale = find.byKey(
+      const ValueKey('opportunity-decision-match-rationale'),
+    );
+    expect(locationMetadata, findsOneWidget);
+    expect(rationale, findsOneWidget);
+    expect(
+      (tester.getRect(locationMetadata).center.dy - tester.getRect(rationale).center.dy).abs(),
+      lessThan(18),
+      reason: 'The Tehran metadata and matching reason should share the compact metadata row.',
+    );
+
+    final scoreRing = find.descendant(
+      of: find.byKey(const ValueKey('opportunity-match-score-ring')),
+      matching: find.byType(CircularProgressIndicator),
+    );
+    expect(scoreRing, findsOneWidget);
+    final chartColor = HopeV2ChartColors.matchSignal(
+      tester.element(decision),
+    );
+    expect(
+      tester.widget<CircularProgressIndicator>(scoreRing).valueColor,
+      isA<AlwaysStoppedAnimation<Color>>(),
+    );
+    expect(
+      (tester.widget<CircularProgressIndicator>(scoreRing).valueColor
+              as AlwaysStoppedAnimation<Color>)
+          .value,
+      chartColor,
+    );
 
     final skills = find.byKey(const ValueKey('opportunity-decision-breakdown-skills'));
     final category = find.byKey(const ValueKey('opportunity-decision-breakdown-category'));
@@ -362,6 +558,19 @@ void main() {
     expect(category, findsOneWidget);
     expect(location, findsOneWidget);
     expect(salary, findsOneWidget);
+    final chartBars = tester.widgetList<LinearProgressIndicator>(
+      find.descendant(
+        of: find.byKey(const ValueKey('opportunity-decision-strip')),
+        matching: find.byType(LinearProgressIndicator),
+      ),
+    ).toList(growable: false);
+    expect(chartBars, hasLength(4));
+    for (final bar in chartBars) {
+      expect(
+        (bar.valueColor as AlwaysStoppedAnimation<Color>).value,
+        chartColor,
+      );
+    }
     expect(
       (tester.getTopLeft(category).dy - tester.getTopLeft(skills).dy).abs(),
       lessThan(90),
@@ -456,6 +665,20 @@ void main() {
     expect(tester.getSize(decision).width, greaterThan(220));
     expect(find.byKey(const ValueKey('opportunity-match-score-ring')), findsOneWidget);
     expect(find.text('94%'), findsOneWidget);
+    final matchCaption = find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          (widget.data == 'MATCH' ||
+              widget.data == 'match' ||
+              widget.data == 'تطبیق'),
+      description: 'localized Match score caption',
+    );
+    expect(matchCaption, findsOneWidget);
+    expect(
+      tester.widget<Text>(matchCaption).style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'The visible Match score caption is meaningful text, not decorative microcopy.',
+    );
     expect(find.text('Quick decision'), findsOneWidget);
     expect(find.text('Match signals'), findsOneWidget);
     expect(tester.getTopLeft(decision).dy, lessThan(300));
@@ -512,13 +735,38 @@ void main() {
         of: list,
         matching: find.byType(Scrollable),
       ).first;
-      await tester.scrollUntilVisible(
-        finalSection,
-        180,
-        scrollable: listScroller,
-        maxScrolls: 80,
-      );
-      await tester.pumpAndSettle();
+
+      // Advance in short increments and inspect the tree immediately when a
+      // render exception is first raised, before lazy sliver recycling detaches
+      // the offending Row and hides its creator chain from diagnostics.
+      var reachedFinalSection = false;
+      for (var scrollStep = 0; scrollStep < 80; scrollStep++) {
+        if (finalSection.evaluate().isNotEmpty) {
+          final candidateRect = tester.getRect(finalSection);
+          final currentViewport = tester.getRect(list);
+          reachedFinalSection = candidateRect.top >= currentViewport.top &&
+              candidateRect.bottom <= currentViewport.bottom;
+          if (reachedFinalSection) break;
+        }
+
+        await tester.drag(listScroller, const Offset(0, -90));
+        await tester.pumpAndSettle();
+        final scrollException = tester.takeException();
+        if (scrollException != null) {
+          debugPrint(
+            'WAVE42_SCROLL_LAYOUT_EXCEPTION width=$width step=$scrollStep '
+            'textScale=1.5: $scrollException',
+          );
+          debugDumpRenderTree();
+        }
+        expect(
+          scrollException,
+          isNull,
+          reason: 'Wave 42 render layout at $width dp / 1.5x must not overflow '
+              'during scroll step $scrollStep.',
+        );
+      }
+      expect(reachedFinalSection || finalSection.evaluate().isNotEmpty, isTrue);
       await tester.ensureVisible(finalSection);
       await tester.pumpAndSettle();
 
@@ -559,6 +807,125 @@ void main() {
     expect(widget.maxLines, 2);
     expect(widget.overflow, TextOverflow.ellipsis);
   });
+
+  testWidgets(
+    'Job Detail hero expands to preserve long titles at 1.5x system text',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('fa'),
+      );
+
+      final titleFinder = find.text(title);
+      final heroFinder = find.byType(PremiumHero);
+      expect(titleFinder, findsOneWidget);
+      expect(heroFinder, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+        reason: 'At enlarged system text, the Job Detail hero must show the entire opportunity title instead of clipping it to two lines.',
+      );
+      final titleRect = tester.getRect(titleFinder);
+      final heroRect = tester.getRect(heroFinder);
+      expect(
+        titleRect.bottom,
+        lessThanOrEqualTo(heroRect.bottom),
+        reason: 'The expanded title must remain inside the hero surface.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Wave53 long RTL Job Detail title does not overlap Back at 1.5x in LTR',
+    (tester) async {
+      const title =
+          'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل';
+      await _pump(
+        tester,
+        job: _job(title: title),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(title);
+      final backFinder = find.byTooltip('Back');
+      expect(titleFinder, findsOneWidget);
+      expect(backFinder, findsOneWidget);
+
+      final paragraph = tester.renderObject<RenderParagraph>(titleFinder);
+      final visibleGlyphRects = paragraph
+          .getBoxesForSelection(
+            TextSelection(baseOffset: 0, extentOffset: title.length),
+          )
+          .map((box) {
+        final local = box.toRect();
+        return Rect.fromPoints(
+          paragraph.localToGlobal(local.topLeft),
+          paragraph.localToGlobal(local.bottomRight),
+        );
+      }).toList();
+      final backRect = tester.getRect(backFinder);
+      expect(visibleGlyphRects, isNotEmpty);
+      expect(
+        visibleGlyphRects.any((rect) => rect.overlaps(backRect)),
+        isFalse,
+        reason: 'The overlaid Back control must not cover visible title glyphs at 1.5x.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Job Detail snapshot facts fully wrap long values at 1.5x text scale',
+    (tester) async {
+      const longLocation =
+          'Greater Metropolitan District North-East Administrative Corridor';
+      await _pump(
+        tester,
+        job: _job(city: longLocation),
+        width: 360,
+        height: 900,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+
+      final decisionStrip = find.byKey(
+        const ValueKey('opportunity-decision-strip'),
+      );
+      expect(decisionStrip, findsOneWidget);
+      await tester.ensureVisible(decisionStrip);
+      await tester.pumpAndSettle();
+
+      final valueFinder = find.descendant(
+        of: decisionStrip,
+        matching: find.text(longLocation),
+      );
+      expect(valueFinder, findsOneWidget);
+      final value = tester.widget<Text>(valueFinder);
+      expect(
+        value.maxLines,
+        isNull,
+        reason:
+            'Snapshot facts must not truncate the real location at enlarged system text.',
+      );
+      expect(value.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
       (tester) async {

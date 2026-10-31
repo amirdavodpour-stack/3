@@ -13,6 +13,22 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
       user.passwordHash = passwordHash;
       db.touch('users');
     },
+    findUserByGoogleSubject(subject) {
+      return db.collection.users.find((user) => user.googleSubject === subject) || null;
+    },
+    linkGoogleSubject(userId, subject) {
+      const user = db.collection.users.find((item) => item.id === userId);
+      if (!user || user.googleSubject) return null;
+      const duplicate = db.collection.users.find((item) => item.id !== userId && item.googleSubject === subject);
+      if (duplicate) {
+        const error = new Error('GOOGLE_IDENTITY_ALREADY_LINKED');
+        error.code = '23505';
+        throw error;
+      }
+      user.googleSubject = subject;
+      db.touch('users');
+      return user;
+    },
     async rotateRefreshToken({ presentedHash, issue }) {
       const item = db.collection.refreshTokens.find((t) => t.tokenHash === presentedHash);
       if (!item || new Date(item.expiresAt).getTime() <= Date.now()) return { kind: 'invalid' };

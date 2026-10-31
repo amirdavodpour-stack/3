@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 const root = path.resolve(new URL('..', import.meta.url).pathname, '..');
 
 test('Flutter lockfile never commits a session-local package registry', () => {
@@ -168,6 +169,36 @@ test('staging certification requires a real external staging base URL and does n
 });
 
 
+test('manual staging diagnostics never fall back to production URLs or production metrics credentials', () => {
+  const perf = fs.readFileSync(path.join(root, '.github/workflows/staging-perf-diagnostic.yml'), 'utf8');
+  const emulator = fs.readFileSync(path.join(root, '.github/workflows/android-emulator-certification.yml'), 'utf8');
+
+  assert.match(perf, /STAGING_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(perf, /STAGING_BASE_URL:\s*\$\{\{[^\n]*\|\|\s*['"]https:\/\//);
+  assert.doesNotMatch(perf, /STAGING_METRICS_TOKEN:\s*\$\{\{\s*secrets\.STAGING_METRICS_TOKEN\s*\|\|\s*secrets\.METRICS_TOKEN\s*\}\}/);
+  assert.match(perf, /STAGING_METRICS_TOKEN:\s*\$\{\{\s*secrets\.STAGING_METRICS_TOKEN\s*\}\}/);
+  assert.match(perf, /Production host is forbidden for staging performance diagnostics/);
+  const perfJobEnv = perf.match(/  diagnostic:[\s\S]*?(?=    steps:)/)?.[0] || '';
+  assert.doesNotMatch(perfJobEnv, /STAGING_METRICS_TOKEN:/, 'metrics token must not be a job-level secret');
+  assert.match(perf, /STAGING_BASE_URL must be an HTTPS URL/);
+
+  assert.match(emulator, /API_BASE_URL_STAGING:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(emulator, /API_BASE_URL_STAGING:\s*\$\{\{[^\n]*\|\|\s*['"]https:\/\//);
+  assert.match(emulator, /API_BASE_URL_STAGING is required/);
+  assert.match(emulator, /Production host is forbidden for Android emulator staging certification/);
+});
+
+test('Main CI staging performance is staging-only and skips untrusted fork pull requests', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  assert.match(workflow, /if:\s*\$\{\{\s*github\.event_name == 'pull_request'\s*&&\s*github\.base_ref == 'Main'\s*&&\s*github\.event\.pull_request\.head\.repo\.full_name == github\.repository\s*\}\}/);
+  const step = workflow.match(/name: Staging performance smoke[\s\S]*?run:\s*\|[\s\S]*?node \.\.\/tools\/perf-smoke\.mjs/)?.[0] || '';
+  assert.ok(step, 'staging performance smoke step must exist');
+  assert.match(step, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(step, /PERF_BASE_URL:\s*https:\/\/v2hope-production-7e9e\.up\.railway\.app/);
+  assert.match(step, /PERF_BASE_URL is required; production fallback is disabled/);
+  assert.match(step, /Production host is forbidden for main workflow staging performance smoke/);
+});
+
 test('CI Android toolchain is explicit and release builds enforce the lockfile', () => {
   const setup = fs.readFileSync(path.join(root, 'tools/ci-android-toolchain.sh'), 'utf8');
   assert.match(setup, /platforms;android-36/);
@@ -224,7 +255,11 @@ test('Android Gradle launcher is executable and does not depend on a missing wra
   assert.ok(props.includes('https\\://services.gradle.org/distributions/'));
   assert.match(wrapper, /GRADLE_DISTRIBUTION_SHA256|\.sha256/);
   assert.doesNotMatch(wrapper, /CLASSPATH=.*gradle-wrapper\.jar/);
-  assert.equal(fs.statSync(path.join(root, 'android/gradlew')).mode & 0o111, 0o111);
+  // Android/Termux may expose only owner execute bits locally; Git's index is authoritative for the tracked executable mode.
+  assert.ok((fs.statSync(path.join(root, 'android/gradlew')).mode & 0o100) !== 0);
+  const indexEntry = execFileSync('git', ['ls-files', '--stage', '--', 'android/gradlew'], {cwd: root, encoding: 'utf8'});
+  assert.equal(indexEntry.split(/\s+/)[0], '100755');
+  assert.ok(indexEntry.includes('\tandroid/gradlew'));
 });
 
 test('release manifest records content-addressed backend image identity when supplied', () => {
@@ -271,16 +306,35 @@ test('release validation consumes the actual reusable staging certification outp
 });
 
 
-test('production reset bootstrap targets the same configured URL used by runtime delivery', () => {
+test('release validation has no production side effects and keeps production secrets out of the job environment', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/release-validation.yml'), 'utf8');
-  assert.match(
-    workflow,
-    /RESET_WEBHOOK_URL:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_URL_PRODUCTION\s*\|\|\s*'https:\/\/oumueyftltvakimtbemj\.supabase\.co\/functions\/v1\/hope-password-reset'\s*\}\}/,
-  );
-  const block = workflow.match(/name: Provision password reset webhook receiver[\s\S]*?\n      - name: Setup Node\.js 24/)?.[0] || '';
-  assert.match(block, /RESET_WEBHOOK_URL/);
-  assert.match(block, /RESET_TOKEN_DELIVERY_SECRET_PRODUCTION/);
-  assert.match(block, /curl -fsS --retry 2/);
+  const start = workflow.indexOf('  production_artifact:');
+  const end = workflow.indexOf('  release_gate:', start);
+  assert.ok(start >= 0 && end > start, 'production artifact job not found');
+  const job = workflow.slice(start, end);
+
+  // Artifact validation may sign/package and upload an artifact, but it must
+  // never mutate production state or provision the live reset receiver.
+  assert.doesNotMatch(job, /Provision password reset webhook receiver/);
+  assert.doesNotMatch(job, /\/_bootstrap/);
+  assert.doesNotMatch(job, /curl[^\n]*(?:-X\s+POST|--data(?:-raw)?\s)/i);
+  
+  // Do not expose production credentials to npm install, audit, image build,
+  // SBOM generation, or artifact upload. Production secrets are step-scoped.
+  assert.doesNotMatch(job, /^    env:\s*$/m, 'production artifact job must not define job-level environment variables');
+
+  const validateStart = job.indexOf('- name: Validate production environment contract');
+  const validateEnd = job.indexOf('\n      - name:', validateStart);
+  assert.ok(validateStart >= 0 && validateEnd > validateStart, 'production env validation step not found');
+  const validateStep = job.slice(validateStart, validateEnd);
+  assert.match(validateStep, /DATABASE_URL:\s*\$\{\{\s*secrets\.DATABASE_URL_PRODUCTION\s*\}\}/);
+  assert.match(validateStep, /RESET_TOKEN_DELIVERY_SECRET:\s*\$\{\{\s*secrets\.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION\s*\}\}/);
+
+  const buildStart = job.indexOf('- name: Build signed production APK');
+  const buildEnd = job.indexOf('\n      - name:', buildStart);
+  assert.ok(buildStart >= 0 && buildEnd > buildStart, 'signed APK build step not found');
+  const buildStep = job.slice(buildStart, buildEnd);
+  assert.match(buildStep, /API_BASE_URL:\s*\$\{\{\s*secrets\.API_BASE_URL_PRODUCTION\s*\}\}/);
 });
 
 

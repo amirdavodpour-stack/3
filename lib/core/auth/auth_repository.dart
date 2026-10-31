@@ -31,6 +31,10 @@ class AuthSession {
   }
 }
 
+abstract interface class GoogleAccountLinkRepository {
+  Future<void> linkGoogleAccount(String idToken);
+}
+
 abstract interface class AuthRepository {
   Future<AuthSession> login(String email, String password);
   Future<AuthSession> loginWithGoogle(String idToken);
@@ -40,7 +44,7 @@ abstract interface class AuthRepository {
   Future<void> requestPasswordReset(String email);
 }
 
-class ApiAuthRepository implements AuthRepository {
+class ApiAuthRepository implements AuthRepository, GoogleAccountLinkRepository {
   ApiAuthRepository(this._api);
   final ApiClient _api;
 
@@ -70,6 +74,13 @@ class ApiAuthRepository implements AuthRepository {
       'idToken': idToken,
     });
     return AuthSession.fromResponse(data);
+  }
+
+  @override
+  Future<void> linkGoogleAccount(String idToken) async {
+    await _api.request('POST', '/auth/google/link', auth: true, body: {
+      'idToken': idToken,
+    });
   }
 
   @override

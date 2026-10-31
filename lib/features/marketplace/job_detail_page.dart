@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -102,7 +101,7 @@ class _OpportunitySnapshot extends StatelessWidget {
         id: 'location',
         icon: HopeV2Icons.location,
         label: _t(context, 'مکان', 'Location'),
-        value: _opportunityLocationLabel(context, job),
+        value: _t(context, 'در خلاصه بالا', 'See above'),
         color: HopeV2Colors.secondary,
       ),
     ];
@@ -114,17 +113,43 @@ class _OpportunitySnapshot extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(_t(context, 'خلاصه فرصت', 'Opportunity snapshot'), style: HopeV2Type.section(context)),
-              ),
-              PremiumTag(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackHeader =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.2;
+              final title = Text(
+                _t(context, 'خلاصه فرصت', 'Opportunity snapshot'),
+                style: HopeV2Type.section(context),
+              );
+              final tag = PremiumTag(
                 icon: HopeV2Icons.insights,
                 label: _t(context, 'اطلاعات کلیدی', 'Key facts'),
                 color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+                allowWrap: stackHeader,
+              );
+              if (stackHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: 6),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: tag,
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  tag,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           LayoutBuilder(
@@ -767,6 +792,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             : HopeCopy.of(context)
                                 .copy_offer_for_mission_ced8d4c,
                 child: FilledButton.icon(
+                  style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                   key: const ValueKey('opportunity-detail-primary-cta'),
                   onPressed: loading
                       ? null
@@ -781,8 +807,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 ),
                               )
                           : action,
-                  icon: HugeIcon(
-                    icon: canViewFinance
+                  icon: HopeIcon( canViewFinance
                         ? HopeV2Icons.wallet
                         : isJob
                             ? HopeV2Icons.userAdd
@@ -835,11 +860,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   icon: isJob ? HopeV2Icons.job : HopeV2Icons.mission,
                   mediaUrl: _mediaUrl(),
                   height: compactViewport
-                      ? (denseViewport ? 96 : 128)
+                      ? (viewportWidth < 360 ? 96 : 184)
                       : denseViewport
-                          ? 148
+                          ? 184
                           : 214,
                   compactHero: denseViewport,
+                  maxHeightOverride:
+                      viewportWidth >= 360 && viewportWidth < 840 ? 184 : null,
+                  expandForAccessibilityText: true,
                   semanticLabel: j.title,
                 ),
                 PositionedDirectional(
@@ -855,18 +883,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 ),
               ],
             ),
+            // Separate the hero and decision surfaces so their rounded
+            // edges never visually merge on compact Android captures.
+            SizedBox(height: compactViewport ? 10 : 14),
             HopeOpportunityDecisionStrip(
               matchScore: j.recommendationScore,
+              highlightHighScore: false,
               kind: isJob ? _t('فرصت شغلی', 'Job') : _t('ماموریت', 'Mission'),
-              budget: isJob
-                  ? moneyLabel(context, j.monthlySalary ?? j.budgetMin ?? '—')
-                  : _budgetRangeLabel(context, j),
-              category: hopeCategoryLabel(
-                context,
-                j.category?.trim().isNotEmpty == true
-                    ? j.category!
-                    : j.categoryId ?? '—',
-              ),
+              budget: '—',
+              category: '—',
               location: _opportunityLocationLabel(context, j),
               accent: Theme.of(context).colorScheme.primary,
               breakdown: j.recommendationComponents,
@@ -907,6 +932,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     j.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.55),
                   ),
+                  const SizedBox(height: 10),
+                  _OpportunitySnapshot(job: j),
                   const SizedBox(height: 10),
                   PremiumPanel(
                     quiet: true,
@@ -959,7 +986,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const HugeIcon(icon: HopeV2Icons.secure, size: 20),
+                          const HopeIcon( HopeV2Icons.secure, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -983,7 +1010,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       alignment: AlignmentDirectional.centerStart,
                       child: OutlinedButton.icon(
                         onPressed: () => _openEmployerCandidateMatches(context, j),
-                        icon: const HugeIcon(icon: HopeV2Icons.match, size: 18),
+                        icon: const HopeIcon( HopeV2Icons.match, size: 18),
                         label: Text(
                           _t(
                             'پذیرندگان بر اساس انطباق',
@@ -1081,7 +1108,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                       onPressed: _candidateBusyId == null
                                           ? () => _compareCandidates(list)
                                           : null,
-                                      icon: const HugeIcon(icon: HopeV2Icons.insights, size: 18),
+                                      icon: const HopeIcon( HopeV2Icons.insights, size: 18),
                                       label: Text(_t('مقایسه', 'Compare')),
                                     ),
                                 ],
@@ -1151,8 +1178,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.userAdd,
+                                                    : const HopeIcon( HopeV2Icons.userAdd,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1178,8 +1204,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.payments,
+                                                    : const HopeIcon( HopeV2Icons.payments,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1205,8 +1230,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                                           strokeWidth: 2,
                                                         ),
                                                       )
-                                                    : const HugeIcon(
-                                                        icon: HopeV2Icons.completed,
+                                                    : const HopeIcon( HopeV2Icons.completed,
                                                         size: 18,
                                                       ),
                                                 label: Text(
@@ -1230,10 +1254,51 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (!isOwner)
                     Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        onPressed: _reportJob,
-                        icon: const HugeIcon(icon: HopeV2Icons.notifications, size: 18),
-                        label: Text(_t('گزارش فرصت', 'Report opportunity')),
+                      child: Semantics(
+                        key: const ValueKey('opportunity-report-semantic-target'),
+                        container: true,
+                        // Keep the 48dp parent bounds as its own semantics node;
+                        // merging descendant semantics can shrink the exported
+                        // TalkBack rect to the inner label's text bounds.
+                        explicitChildNodes: true,
+                        label: _t('گزارش فرصت', 'Report opportunity'),
+                        button: true,
+                        onTap: loading ? null : _reportJob,
+                        child: GestureDetector(
+                          key: const ValueKey('opportunity-report-action'),
+                          behavior: HitTestBehavior.opaque,
+                          // The parent Semantics container owns the sole
+                          // accessibility action; this recognizer is pointer-only.
+                          excludeFromSemantics: true,
+                          onTap: loading ? null : _reportJob,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: HopeV2Touch.minimum,
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ExcludeSemantics(
+                                child: TextButton.icon(
+                                  // Keep the visual treatment, but let the
+                                  // independent 48dp parent own accessibility.
+                                  onPressed: null,
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size(0, HopeV2Touch.minimum),
+                                    tapTargetSize: MaterialTapTargetSize.padded,
+                                    disabledForegroundColor:
+                                        Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                  icon: const HopeIcon(
+                                    HopeV2Icons.notifications,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    _t('گزارش فرصت', 'Report opportunity'),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   if (canViewFinance)
@@ -1245,7 +1310,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const HugeIcon(icon: HopeV2Icons.wallet, size: 20),
+                              const HopeIcon( HopeV2Icons.wallet, size: 20),
                               const SizedBox(width: 9),
                               Expanded(
                                 child: Text(
@@ -1310,7 +1375,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          const HugeIcon(icon: HopeV2Icons.message, size: 21),
+                          const HopeIcon( HopeV2Icons.message, size: 21),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -1337,6 +1402,44 @@ class _JobDetailPageState extends State<JobDetailPage> {
     String label,
     String value,
   ) {
+    final width = MediaQuery.sizeOf(context).width;
+    final largeTextOnNarrowScreen =
+        width < 360 ||
+        (width < HopeV2Breakpoints.compact &&
+            MediaQuery.textScalerOf(context).scale(1) > 1.2);
+    if (largeTextOnNarrowScreen) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIcon(icon, size: 19, color: AppColors.primary, strokeWidth: 1.9),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    label,
+                    softWrap: true,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 28),
+              child: Text(
+                value,
+                softWrap: true,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -1407,6 +1510,7 @@ class _JobLifecycleCard extends StatelessWidget {
     ];
     final current = _current();
     final status = job.status?.toUpperCase() ?? 'UNKNOWN';
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
     return PremiumPanel(
       quiet: true,
@@ -1477,7 +1581,9 @@ class _JobLifecycleCard extends StatelessWidget {
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < HopeV2Breakpoints.compact) {
+              if (constraints.maxWidth >= 360 &&
+                  constraints.maxWidth < HopeV2Breakpoints.compact &&
+                  MediaQuery.textScalerOf(context).scale(1) <= 1.2) {
                 return HopeLifecycleRail(
                   labels: [for (final stage in stages) _label(context, stage)],
                   icons: const [
@@ -1490,6 +1596,78 @@ class _JobLifecycleCard extends StatelessWidget {
                     HopeV2Icons.completed,
                   ],
                   current: current,
+                );
+              }
+              if (enlargedText && constraints.maxWidth < 360) {
+                // Preserve a readable full-size label while keeping this
+                // final section compact: a horizontal lifecycle rail is more
+                // space-efficient than wrapping seven stages vertically.
+                return Semantics(
+                  container: true,
+                  label: _t(
+                    context,
+                    'برای مشاهده همه مراحل چرخه، افقی پیمایش کنید.',
+                    'Scroll horizontally to view all lifecycle stages.',
+                  ),
+                  explicitChildNodes: true,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var index = 0; index < stages.length; index++)
+                          SizedBox(
+                            width: 136,
+                            child: Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                end: index < stages.length - 1 ? 10 : 0,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: current == index ? 14 : 11,
+                                        height: current == index ? 14 : 11,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: current >= index
+                                              ? Theme.of(context).colorScheme.primary
+                                              : Theme.of(context).colorScheme.outlineVariant,
+                                        ),
+                                      ),
+                                      if (index < stages.length - 1)
+                                        Expanded(
+                                          child: Container(
+                                            height: 2,
+                                            margin: const EdgeInsetsDirectional.only(
+                                              start: 8,
+                                            ),
+                                            color: current > index
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Theme.of(context).colorScheme.outlineVariant,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _label(context, stages[index]),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontWeight: current == index
+                                              ? FontWeight.w800
+                                              : FontWeight.w500,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 );
               }
               return Column(
@@ -1518,7 +1696,10 @@ class _JobLifecycleCard extends StatelessWidget {
                       if (index < stages.length - 1)
                         Container(
                           width: 2,
-                          height: 25,
+                          // Keep the vertical lifecycle rail compact when
+                          // the system font is enlarged; stage labels still
+                          // expand naturally and remain fully readable.
+                          height: enlargedText ? 12 : 25,
                           color: reached && current > index
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.outlineVariant,
@@ -1529,7 +1710,9 @@ class _JobLifecycleCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 9),
+                    padding: EdgeInsets.only(
+                      bottom: enlargedText ? 4 : 9,
+                    ),
                     child: Text(
                       _label(context, stages[index]),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1612,7 +1795,7 @@ class _MatchIntelligence extends StatelessWidget {
 
   Widget _compactSurface(BuildContext context) {
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null
         ? null
@@ -1697,7 +1880,7 @@ class _MatchIntelligence extends StatelessWidget {
                                       .textTheme
                                       .labelSmall
                                       ?.copyWith(
-                                        fontSize: 7,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: HopeV2SemanticColors.info(context),
                                         letterSpacing: .4,
@@ -1798,6 +1981,7 @@ class _MatchIntelligence extends StatelessWidget {
     }
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
     final primary = Theme.of(context).colorScheme.primary;
+    final chartColor = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     final fit = score == null ? null : score >= 90
         ? _t(context, 'تناسب بسیار قوی', 'Very strong fit')
@@ -1839,15 +2023,15 @@ class _MatchIntelligence extends StatelessWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: primary.withValues(alpha: .10))),
-                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: primary)),
+                            SizedBox.square(dimension: compact ? 50 : 56, child: CircularProgressIndicator(value: 1, strokeWidth: 5.0, color: chartColor.withValues(alpha: .10))),
+                            SizedBox.square(dimension: compact ? 50 : 52, child: CircularProgressIndicator(value: value, strokeWidth: 5.0, strokeCap: StrokeCap.round, color: chartColor)),
                             Column(mainAxisSize: MainAxisSize.min, children: [
                               Text(HopeDisplayFormatter.percent(
                                     score.clamp(0, 100),
                                     locale: Localizations.localeOf(context).languageCode,
                                   ), style: TextStyle(fontSize: compact ? 15 : 16, height: 1, fontWeight: FontWeight.w900)),
                               const SizedBox(height: 3),
-                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 8, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.info(context), letterSpacing: .6)),
+                              Text(_t(context, 'تطبیق', 'MATCH'), style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w900, color: HopeV2SemanticColors.info(context), letterSpacing: .6)),
                             ]),
                           ],
                         ),
@@ -1901,7 +2085,7 @@ class _MatchIntelligence extends StatelessWidget {
   }
 
   Widget _breakdownBar(BuildContext context, {required String key, required double value}) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final percent = (value.clamp(0, 1) * 100).round();
     return Container(
       key: ValueKey('match-breakdown-$key'),
@@ -1927,7 +2111,7 @@ class _MatchIntelligence extends StatelessWidget {
 
   void _showDetails(BuildContext context) {
     final score = HopeDisplayFormatter.matchPercentage(job.recommendationScore);
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = HopeV2ChartColors.matchSignal(context);
     final value = score == null ? 0.0 : (score / 100).clamp(0.0, 1.0);
     showModalBottomSheet<void>(
       context: context,

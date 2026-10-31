@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:flutter_test/flutter_test.dart";
 import "package:flutter_localizations/flutter_localizations.dart";
+import "package:hope_mobile/core/ui/brand.dart";
 import "package:hope_mobile/core/ui/components.dart";
 import "package:hope_mobile/core/ui/premium_components.dart";
 import "package:hope_mobile/l10n/generated/app_localizations.dart";
@@ -30,6 +31,7 @@ void main() {
             body: SingleChildScrollView(
               child: Column(
                 children: [
+                  const SoftPill(icon: Icons.star_outline, label: "ویژه"),
                   StatusPill("منتشر شده",
                       icon: Icons.check_circle_outline_rounded),
                   HopeIconTile(Icons.work_rounded),
@@ -44,6 +46,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text("منتشر شده"), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text("ویژه")).style?.fontSize,
+        greaterThanOrEqualTo(12),
+        reason: "SoftPill labels must preserve the canonical 12sp minimum.",
+      );
+      expect(
+        tester.widget<Text>(find.text("منتشر شده")).style?.fontSize,
+        greaterThanOrEqualTo(12),
+        reason: "A status pill communicates the current state and must keep the 12sp floor.",
+      );
       expect(find.byIcon(Icons.work_rounded), findsOneWidget);
       expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
     } finally {

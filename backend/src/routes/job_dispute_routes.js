@@ -3,7 +3,7 @@ import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_p
 import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_access_policy.js';
 import { DISPUTE_DECISIONS, analyzeDisputeWithAI, parseDisputeDecision } from '../services/dispute_resolution.js';
 
-export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
+export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit, notifyUser, NOTIFICATION_TYPES, now }) {
   const participantRole = (me, job) => job?.ownerId === me.id ? 'EMPLOYER' : job?.providerId === me.id ? 'WORKER' : null;
 
   async function analyzeCase(dispute) {
@@ -24,7 +24,19 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
     const payment = context?.payment;
     const job = context?.job;
     if (!payment || !job) throw new HttpError(404,'PAYMENT_OR_JOB_NOT_FOUND','Payment or job not found');
-    if (resolution === 'HOLD') return { paymentStatus: payment.status, outbox: null };
+    if (resolution === 'HOLD') {
+      const held = await repo.holdPaymentForDispute({ jobId:job.id, paymentId:payment.id });
+      if (!held?.held) {
+        if (held?.reason === 'PAYMENT_RELEASE_IN_PROGRESS') {
+          throw new HttpError(409,'PAYMENT_RELEASE_IN_PROGRESS','A release provider operation is already in progress; retry HOLD after it settles');
+        }
+        if (held?.reason === 'PAYMENT_NOT_FOUND' || held?.reason === 'JOB_NOT_FOUND') {
+          throw new HttpError(404,'PAYMENT_OR_JOB_NOT_FOUND','Payment or job not found');
+        }
+        throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be held from its current state');
+      }
+      return { paymentStatus:'HELD', outbox:null, cancelledReleaseEvents:held.cancelledReleaseEvents };
+    }
     if (resolution === 'RELEASE') {
       if (!['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) {
         if (payment.status === 'RELEASED') return { paymentStatus: 'RELEASED', outbox: null, alreadyDone: true };
@@ -53,7 +65,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
   return async function route(req,res,parts) {
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
-      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') return sendJson(res,200,await repo.listAdminDisputes());
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'GET') {
         const dispute = await repo.getAdminDispute(parts[2]); if (!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found'); return sendJson(res,200,dispute);
@@ -62,8 +74,32 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
         assertAdminPermission(me, ADMIN_PERMISSIONS.RESOLVE_DISPUTES);
         const body=await readBody(req); const resolution=String(body?.resolution||'').toUpperCase(); if(!DISPUTE_DECISIONS.includes(resolution)) throw new HttpError(400,'INVALID_DISPUTE_RESOLUTION','resolution must be RELEASE, REFUND, or HOLD');
         const dispute=await repo.getAdminDispute(parts[2]); if(!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
-        await resolvePayment(dispute,resolution,me.id,String(body?.reason||'').trim().slice(0,2000));
-        const resolved=await repo.resolveJobDispute(dispute.id,{resolution,reason:String(body?.reason||'').trim().slice(0,2000),adminId:me.id});
+        const reason=String(body?.reason||'').trim().slice(0,2000);
+        const claim=await repo.claimJobDisputeResolution(dispute.id,{resolution,reason,adminId:me.id});
+        if(!claim) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
+        if(claim.conflict) {
+          const code=claim.code||'DISPUTE_RESOLUTION_CONFLICT';
+          throw new HttpError(409,code,code==='DISPUTE_ALREADY_RESOLVED'
+            ? 'Dispute has already been resolved with a different decision'
+            : code==='DISPUTE_RESOLUTION_IN_PROGRESS'
+              ? 'Another administrator is resolving this dispute'
+              : 'Dispute is not in a resolvable state');
+        }
+        if(claim.alreadyResolved) return sendJson(res,200,claim.dispute);
+        if(claim.inProgress) return sendJson(res,202,{
+          disputeId:dispute.id,status:'RESOLVING',resolution:claim.resolution,
+          retryAfter:claim.leaseUntil,
+        });
+        try {
+          await resolvePayment(dispute,resolution,me.id,reason);
+        } catch (error) {
+          if (['PAYMENT_OR_JOB_NOT_FOUND','PAYMENT_NOT_FOUND','INVALID_PAYMENT_STATE'].includes(error?.code)) {
+            await repo.abandonJobDisputeResolutionClaim(dispute.id,{resolution,token:claim.token});
+          }
+          throw error;
+        }
+        const resolved=await repo.completeJobDisputeResolution(dispute.id,{resolution,token:claim.token});
+        if(!resolved || resolved.stale) throw new HttpError(409,'DISPUTE_RESOLUTION_CLAIM_STALE','This administrator resolution claim expired or was superseded; retry the same decision');
         await createAudit('ADMIN_DISPUTE_RESOLVE',me.id,'job_dispute',dispute.id,{jobId:dispute.jobId,resolution,aiDecision:dispute.aiDecision,aiConfidence:dispute.aiConfidence});
         await notifyUser({userId:dispute.worker.id,type:NOTIFICATION_TYPES.PAYMENT_UPDATE,title:'نتیجه بررسی اختلاف همکاری',body:`اختلاف مربوط به «${dispute.jobTitle}» تعیین تکلیف شد.`,data:{jobId:dispute.jobId,disputeId:dispute.id,resolution},dedupeKey:`dispute:${dispute.id}:resolved:worker`,channels:['IN_APP','PUSH','EMAIL']}).catch(()=>{});
         return sendJson(res,200,resolved);
@@ -87,6 +123,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJ
     if(req.method==='POST'){
       const body=await readBody(req); const existing=await repo.getJobDispute(job.id);
       if(existing?.status==='RESOLVED') throw new HttpError(409,'DISPUTE_RESOLVED','This dispute is already resolved');
+      if(existing?.status==='RESOLVING') throw new HttpError(409,'DISPUTE_RESOLUTION_IN_PROGRESS','An administrator is currently resolving this dispute');
       const dispute=existing||await repo.createJobDispute({jobId:job.id,openedBy:me.id,triggerType:'USER'});
       const analyzed=await analyzeCase(dispute);
       await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:existing?.triggerType||'USER'});

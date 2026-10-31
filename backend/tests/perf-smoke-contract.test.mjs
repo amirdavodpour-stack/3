@@ -23,7 +23,7 @@ test('performance smoke tool is dependency-free and exposes CI budgets', () => {
     'latencyMs',
     'PERF_ENDPOINTS',
     'PERF_REQUIRE_ALL_OK',
-    'schemaVersion: 1',
+    'schemaVersion: 2',
   ]) assert.ok(source.includes(marker), marker);
 });
 

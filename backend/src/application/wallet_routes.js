@@ -1,6 +1,8 @@
 import { creditWallet, transferAvailable, INTERNAL_CURRENCY } from '../wallet_ledger.js';
 import { ADMIN_PERMISSIONS, assertAdminPermission } from './admin_panel_access.js';
 import { requestPayoutAtomic, listPayoutsForUser } from '../repository/payouts.js';
+import { isInternalWalletUserTopUpEnabled } from '../wallet_topup_policy.js';
+import { isInternalWalletAdminCreditEnabled } from '../wallet_admin_credit_policy.js';
 
 export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, HttpError, config, walletRepo }) {
   return async function walletRoutes(req, res, parts) {
@@ -79,12 +81,13 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     }
     if (req.method === 'POST' && parts[1] === 'top-up') {
       const me = await authUser(req);
-      // Production deployments keep this endpoint off by default. The
-      // explicit staging flag permits the internal TOMAN funding path in the
-      // hardening environment even though Railway's environment is named
-      // "production". It never enables an external payment provider.
-      const stagingSandbox = process.env.STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true';
-      const enabled = config.paymentProvider === 'internal' && config.internalWalletUserTopUpEnabled && (process.env.NODE_ENV !== 'production' || stagingSandbox);
+      // Production is denied by default. The staging exception is bound to the
+      // dedicated Railway project ID; the environment name alone is not enough
+      // because Railway names the staging project's environment "production".
+      const enabled = isInternalWalletUserTopUpEnabled({
+        paymentProvider: config.paymentProvider,
+        enabled: config.internalWalletUserTopUpEnabled,
+      });
       if (!enabled) {
         throw new HttpError(404, 'NOT_FOUND', 'Wallet top-up is disabled in this environment');
       }
@@ -110,8 +113,11 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     if (req.method === 'POST' && parts[1] === 'sandbox-credit') {
       const me = await authUser(req);
       await adminGuard(me);
+      if (process.env.DATABASE_URL && !(await walletRepo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) {
+        throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
+      }
       assertAdminPermission(me, ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT);
-      if (process.env.NODE_ENV === 'production' && !config.internalWalletAdminCreditEnabled) {
+      if (!isInternalWalletAdminCreditEnabled({ enabled: config.internalWalletAdminCreditEnabled })) {
         throw new HttpError(404,'NOT_FOUND','Wallet sandbox credit is disabled');
       }
       const body = await readBody(req);

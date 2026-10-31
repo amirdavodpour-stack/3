@@ -3,17 +3,39 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
+import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
 import { config } from '../config.js';
-import { postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
+import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
 export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentId, providerRef, actorId, leaseToken }) {
   return withSqlTransaction(async (client) => {
-    const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
-    if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
-    if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
+    // Match funding's user -> job -> payment -> outbox lock order. Internal
+    // holds also mutate the payer wallet, so participant rows must be locked
+    // before the payment row; external holds still serialize on job first.
+    const { rows: metadata } = await client.query(
+      `SELECT payer_id,payee_id FROM payments WHERE id=$1 AND job_id=$2`,
+      [paymentId, jobId],
+    );
+    if (!metadata[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
+    if (config.paymentProvider === 'internal') {
+      await lockActiveWalletUsers(
+        client,
+        [metadata[0].payer_id, metadata[0].payee_id].filter(Boolean),
+      );
+    }
+    const { rows: jr } = await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+    if (!jr[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
     const { rows: pr } = await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`, [paymentId, jobId]);
     const payment = pr[0];
     if (!payment) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
+    if (config.paymentProvider === 'internal' &&
+        (String(payment.payer_id) !== String(metadata[0].payer_id) ||
+         String(payment.payee_id) !== String(metadata[0].payee_id))) {
+      const e = new Error('PAYMENT_PARTICIPANTS_CHANGED'); e.code = 'PAYMENT_PARTICIPANTS_CHANGED'; throw e;
+    }
+    const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
+    if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
     if (payment.status === 'HELD') {
       if (payment.provider_ref !== providerRef) {
         const e = new Error('PROVIDER_REF_MISMATCH'); e.code = 'PROVIDER_REF_MISMATCH'; throw e;
@@ -36,6 +58,17 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
         paymentId, payerId: payment.payer_id, employerCharge, providerPayout, platformFee, currency,
         idempotencyKey: `internal:hold:${paymentId}`,
       });
+    } else {
+      // Recognize the external cash/escrow funding only after the provider has
+      // confirmed the hold. Every line must share one journal ID so PostgreSQL's
+      // deferred ledger balance trigger validates the balanced group at COMMIT.
+      const currency = payment.currency || config.paymentCurrency;
+      const breakdown = {
+        employerCharge: normalizeFinancialAmount(currency, payment.employer_charge || payment.amount),
+        providerPayout: normalizeFinancialAmount(currency, payment.provider_payout || payment.amount),
+        platformFee: normalizeFinancialAmount(currency, payment.platform_fee || 0),
+      };
+      await postExternalFundingJournalWithClient(client, { paymentId, currency, breakdown });
     }
     await client.query(`UPDATE payments SET status='HELD',provider_ref=$2,updated_at=NOW() WHERE id=$1`, [paymentId, providerRef]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_HOLD_CONFIRMED',$2,'payment',$3,$4::jsonb,NOW())`, [crypto.randomUUID(), actorId, paymentId, JSON.stringify({ jobId, outboxEventId:eventId, providerRef })]);
@@ -74,6 +107,76 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
   });
 }
 
+export async function holdPaymentForDispute({ jobId, paymentId }) {
+  return withSqlTransaction(async (client) => {
+    const { rows: jobs } = await client.query(
+      `SELECT id FROM jobs WHERE id=$1 FOR UPDATE`,
+      [jobId],
+    );
+    if (!jobs[0]) return { held:false, reason:'JOB_NOT_FOUND' };
+
+    // Match release/refund aggregate ordering: job -> release event -> payment.
+    // Lock every live release event so a worker cannot lease a queued event after
+    // the dispute has successfully placed escrow on hold.
+    const { rows: eventMetadata } = await client.query(
+      `SELECT id FROM outbox_events
+        WHERE event_type='PAYMENT_RELEASE'
+          AND aggregate_type='payment'
+          AND aggregate_id=$1
+          AND status IN ('PENDING','PROCESSING','FAILED')
+        ORDER BY id`,
+      [paymentId],
+    );
+    const eventIds = eventMetadata.map((row) => row.id);
+    const { rows: events } = eventIds.length
+      ? await client.query(
+          `SELECT id,status FROM outbox_events
+            WHERE id=ANY($1::uuid[])
+            ORDER BY id
+            FOR UPDATE`,
+          [eventIds],
+        )
+      : { rows: [] };
+
+    if (events.some((event) => event.status === 'PROCESSING')) {
+      return { held:false, reason:'PAYMENT_RELEASE_IN_PROGRESS' };
+    }
+
+    const { rows: payments } = await client.query(
+      `SELECT id,status FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,
+      [paymentId,jobId],
+    );
+    const payment = payments[0];
+    if (!payment) return { held:false, reason:'PAYMENT_NOT_FOUND' };
+    if (!['HELD','RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) {
+      return { held:false, reason:'INVALID_PAYMENT_STATE', paymentStatus:payment.status };
+    }
+
+    for (const event of events) {
+      if (event.status === 'PENDING' || event.status === 'FAILED') {
+        await client.query(
+          `UPDATE outbox_events
+              SET status='DONE',
+                  processed_at=COALESCE(processed_at,NOW()),
+                  locked_at=NULL,
+                  lease_token=NULL,
+                  last_error='CANCELLED_BY_ADMIN_DISPUTE_HOLD'
+            WHERE id=$1`,
+          [event.id],
+        );
+      }
+    }
+
+    if (payment.status !== 'HELD') {
+      await client.query(
+        `UPDATE payments SET status='HELD',updated_at=NOW() WHERE id=$1`,
+        [paymentId],
+      );
+    }
+    return { held:true, paymentStatus:'HELD', cancelledReleaseEvents:events.length };
+  });
+}
+
 export async function getOutboxEvent(id) {
   const { rows } = await requirePool().query(`SELECT * FROM outbox_events WHERE id=$1`, [id]);
   return rows[0] ? rows[0] : null;
@@ -107,6 +210,10 @@ export async function claimOutboxEvent(leaseSeconds = 60) {
 
 export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, actorId, leaseToken, providerReleaseRef = null }) {
   return withSqlTransaction(async (client) => {
+    // Request-side release/refund flows lock the job first. Do the same here
+    // before taking the event lease row or payment row to avoid lock inversion.
+    const { rows: jr } = await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+    if (!jr[0]) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
     const { rows: er } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!er[0]) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
     if (leaseToken && String(er[0].lease_token) !== String(leaseToken)) return { completed:false, reason:'STALE_LEASE' };
@@ -134,10 +241,16 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
         idempotencyKey:`internal:release:${paymentId}`,
       });
     } else {
-      for (const [idx,journal] of [releaseJournal(breakdown),payoutJournal(breakdown)].entries()) {
-        const journalId=crypto.randomUUID(); const reference=idx===0?'PAYMENT_RELEASE':'PAYMENT_PAYOUT';
-        for (const entry of journal) await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())`, [crypto.randomUUID(),journalId,reference,paymentId,entry.account,entry.debit,entry.credit,breakdown.currency]);
-      }
+      await postExternalLedgerJournalWithClient(client, {
+        operationType:'RELEASE', journalType:'EXTERNAL_RELEASE', referenceType:'PAYMENT_RELEASE',
+        referenceId:paymentId, currency:breakdown.currency, entries:releaseJournal(breakdown),
+        idempotencyKey:`external:RELEASE:${paymentId}`,
+      });
+      await postExternalLedgerJournalWithClient(client, {
+        operationType:'PAYOUT', journalType:'EXTERNAL_PAYOUT', referenceType:'PAYMENT_PAYOUT',
+        referenceId:paymentId, currency:breakdown.currency, entries:payoutJournal(breakdown),
+        idempotencyKey:`external:PAYOUT:${paymentId}`,
+      });
     }
     const settlementProviderRef = providerReleaseRef || payment.provider_ref;
     if (!settlementProviderRef) {
@@ -160,10 +273,77 @@ function outboxRetryDelaySeconds(eventId, attempts, baseSeconds = 5) {
 
 export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeconds = 5, leaseToken }) {
   return withSqlTransaction(async (client) => {
-    const { rows } = await client.query(`SELECT attempts, lease_token FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    // Terminal payment failures must follow the same aggregate lock order as
+    // their completion paths. A non-locking metadata read selects that order
+    // without owning the outbox row prematurely.
+    const { rows: metadataRows } = await client.query(
+      `SELECT event_type,aggregate_type,aggregate_id FROM outbox_events WHERE id=$1`,
+      [eventId],
+    );
+    const eventMetadata = metadataRows[0];
+    if (!eventMetadata) return null;
+
+    const eventType = String(eventMetadata.event_type || '');
+    const paymentEvent = ['PAYMENT_CREATE_HOLD','PAYMENT_RELEASE','PAYMENT_REFUND'].includes(eventType);
+    if (paymentEvent && eventMetadata.aggregate_type !== 'payment') {
+      throw Object.assign(new Error('OUTBOX_AGGREGATE_TYPE_MISMATCH'), {
+        code:'OUTBOX_AGGREGATE_TYPE_MISMATCH',
+      });
+    }
+    let jobId = null;
+    if (paymentEvent) {
+      const { rows: paymentMetadataRows } = await client.query(
+        `SELECT job_id FROM payments WHERE id=$1`,
+        [eventMetadata.aggregate_id],
+      );
+      jobId = paymentMetadataRows[0]?.job_id || null;
+      if (jobId) {
+        await client.query(`SELECT id FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+      }
+    }
+
+    // Hold completion/funding use job -> payment -> outbox. Release/refund
+    // completion and refund supersession use job -> outbox -> payment.
+    if (eventType === 'PAYMENT_CREATE_HOLD' && jobId) {
+      await client.query(
+        `SELECT id FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,
+        [eventMetadata.aggregate_id,jobId],
+      );
+    }
+
+    const { rows } = await client.query(
+      `SELECT event_type,aggregate_type,aggregate_id,status,attempts,lease_token
+         FROM outbox_events WHERE id=$1 FOR UPDATE`,
+      [eventId],
+    );
     if (!rows[0]) return null;
-    if (leaseToken && String(rows[0].lease_token) !== String(leaseToken)) return { terminal:false, stale:true, attempts:Number(rows[0].attempts || 0) };
-    const attempts = Number(rows[0].attempts || 0);
+    const lockedEvent = rows[0];
+    // We selected aggregate metadata without a lock to acquire aggregate locks
+    // in canonical order. Revalidate the event identity after its row lock so
+    // a changed aggregate cannot redirect terminal updates to another resource.
+    if (
+      String(lockedEvent.event_type) !== String(eventMetadata.event_type) ||
+      String(lockedEvent.aggregate_type) !== String(eventMetadata.aggregate_type) ||
+      String(lockedEvent.aggregate_id ?? '') !== String(eventMetadata.aggregate_id ?? '')
+    ) {
+      return { terminal:false, stale:true, identityChanged:true, attempts:Number(lockedEvent.attempts || 0) };
+    }
+    const currentStatus = String(lockedEvent.status || '').toUpperCase();
+    const attempts = Number(lockedEvent.attempts || 0);
+    // A completion that committed while this worker waited is authoritative.
+    // Do not let a stale failure callback regress a terminal outbox state.
+    if (currentStatus === 'DONE') return { terminal:false, alreadyDone:true, attempts };
+    if (currentStatus === 'FAILED') return { terminal:true, alreadyFailed:true, attempts };
+    if (leaseToken && String(lockedEvent.lease_token) !== String(leaseToken)) {
+      return { terminal:false, stale:true, attempts };
+    }
+
+    // Keep the same aggregate-first order for release/refund callbacks. The
+    // event is now locked; take payment before refund rows are updated below.
+    if (['PAYMENT_RELEASE','PAYMENT_REFUND'].includes(eventType)) {
+      await client.query(`SELECT id FROM payments WHERE id=$1 FOR UPDATE`, [eventMetadata.aggregate_id]);
+    }
+
     const terminal = attempts >= maxAttempts;
     const nextStatus = terminal ? 'FAILED' : 'PENDING';
     const retryDelay = terminal ? 0 : outboxRetryDelaySeconds(eventId, attempts, backoffSeconds);
@@ -172,9 +352,8 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
       [eventId, nextStatus, retryDelay, String(error).slice(0,2000)]
     );
     if (terminal) {
-      const { rows: eventRows } = await client.query(`SELECT event_type,aggregate_id FROM outbox_events WHERE id=$1`, [eventId]);
-      const terminalEvent = eventRows[0];
-      if (terminalEvent?.event_type === 'PAYOUT_EXECUTE') {
+      const terminalEvent = eventMetadata;
+      if (terminalEvent.event_type === 'PAYOUT_EXECUTE') {
         await failPayoutOutboxWithClient(client, { eventId, payoutId: terminalEvent.aggregate_id, error, leaseToken: null });
         return { terminal, attempts };
       }

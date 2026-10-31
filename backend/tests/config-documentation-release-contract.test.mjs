@@ -22,8 +22,9 @@ test('backend payment documentation matches production policy', () => {
 
 test('production release is tag-bound and canonicalizes the release artifact', () => {
   const workflow = read('.github/workflows/production-release.yml');
-  assert.match(workflow, /GITHUB_REF_TYPE.*tag/);
-  assert.match(workflow, /refs\/tags\/\$TAG/);
+  assert.match(workflow, /GITHUB_REF.*refs\/tags\/v/);
+  assert.match(workflow, /Application version is missing/);
+  assert.match(workflow, /Release tag \$TAG does not match application version/);
   assert.match(workflow, /HOPE-\$\{VERSION\}-production\.apk/);
   assert.doesNotMatch(workflow, /HOPE-3\.8\.0\+11-production\.apk/);
   assert.match(workflow, /attest-build-provenance/);

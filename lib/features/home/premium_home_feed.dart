@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/application/application_registry_context.dart';
@@ -321,6 +320,8 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();
     final auth = context.watch<AuthController>();
+    final compactViewport =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact;
     final compactFold = MediaQuery.sizeOf(context).height < 760 ||
         MediaQuery.textScalerOf(context).scale(1) > 1.2;
     final displayName = auth.user?['displayName']?.toString().trim() ?? '';
@@ -359,14 +360,18 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
-            if (!compactFold) _homePulse(context, auth),
-            if (!compactFold)
-              const SizedBox(height: HopeV2Spacing.sm),
+            if (!compactViewport)
+              _homePulse(context, auth, compact: compactFold),
+            if (!compactViewport)
+              SizedBox(height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm),
             FutureBuilder<List<HopeJob>>(
               future: _opportunities,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _PulseSkeleton();
+                  return _PulseSkeleton(
+                    compact: compactViewport,
+                    single: compactFold || compactViewport,
+                  );
                 }
                 if (snapshot.hasError || _error != null) {
                   return HopeAsyncState(
@@ -383,8 +388,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                     ),
                     action: FilledButton.icon(
                       onPressed: _refresh,
-                      icon: const HugeIcon(
-                        icon: HopeV2Icons.refresh,
+                      icon: const HopeIcon( HopeV2Icons.refresh,
                         size: 20,
                       ),
                       label: Text(_t(context, 'تلاش دوباره', 'Retry')),
@@ -396,12 +400,13 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                   context,
                   jobs,
                   settings,
-                  compactPulse: compactFold
-                      ? _homePulse(context, auth, compact: true)
-                      : null,
                 );
               },
             ),
+            if (compactViewport) ...[
+              SizedBox(height: HopeV2Spacing.xs),
+              _homePulse(context, auth, compact: true),
+            ],
             SizedBox(
               height: compactFold ? HopeV2Spacing.xs : HopeV2Spacing.sm,
             ),
@@ -563,16 +568,38 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
-                                      child: Text(
-                                        '${stats[index].value} ${index == 3 ? _t(context, 'امانت', 'Escrow') : stats[index].label}',
-                                        maxLines: 1,
-                                        softWrap: false,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              color: Theme.of(context).colorScheme.onSurface,
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              stats[index].value,
+                                              maxLines: 1,
+                                              softWrap: false,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                  ),
                                             ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              index == 3
+                                                  ? _t(context, 'امانت', 'Escrow')
+                                                  : stats[index].label,
+                                              maxLines: 1,
+                                              softWrap: false,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -787,7 +814,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 maxLines: 3,
                 softWrap: true,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 1.0,
                       color: HopeV2Colors.darkMuted,
                     ),
@@ -864,7 +891,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             ),
             action: OutlinedButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 18),
+              icon: const HopeIcon( HopeV2Icons.workshop, size: 18),
               label: Text(_t(context, 'رفتن به کاوش', 'Open Explore')),
             ),
           ),
@@ -998,8 +1025,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
           else
             FilledButton.icon(
               onPressed: widget.onOpenExplore,
-              icon: HugeIcon(
-                icon: Directionality.of(context) == TextDirection.rtl
+              icon: HopeIcon( Directionality.of(context) == TextDirection.rtl
                     ? HopeV2Icons.arrowLeft
                     : HopeV2Icons.arrowRight,
                 size: 17,
@@ -1021,13 +1047,26 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       const SizedBox(height: HopeV2Spacing.sm),
       LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= 1080 ? 3 : constraints.maxWidth >= HopeV2Breakpoints.medium ? 2 : 1;
-        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.sm), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: jobs.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: columns, crossAxisSpacing: HopeV2Spacing.md, mainAxisSpacing: HopeV2Spacing.md, childAspectRatio: columns == 3 ? 0.92 : 1.02),
-          itemBuilder: (_, i) => OpportunityCard(job: jobs[i]),
+        if (columns == 1) return Column(children: [for (final j in jobs) Padding(padding: const EdgeInsets.only(bottom: HopeV2Spacing.md), child: OpportunityCard(job: j, variant: OpportunityCardVariant.compact))]);
+        final gap = HopeV2Spacing.md;
+        final cardWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
+        // A fixed-aspect GridView reserved ~480dp for these wide cards even
+        // when their content needed much less. Use content-sized grid tiles:
+        // the compactGrid variant keeps metadata scannable without blank tails.
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final job in jobs)
+              SizedBox(
+                width: cardWidth,
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.compactGrid,
+                ),
+              ),
+          ],
         );
       }),
     ]);
@@ -1081,12 +1120,20 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
             const SizedBox(height: HopeV2Spacing.sm),
             OpportunityCard(job: job, variant: OpportunityCardVariant.compact),
             const SizedBox(height: HopeV2Spacing.sm),
-            Align(alignment: AlignmentDirectional.centerEnd, child: FilledButton.icon(onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)), icon: HugeIcon(
-                              icon: Directionality.of(context) == TextDirection.rtl
-                                  ? HopeV2Icons.arrowLeft
-                                  : HopeV2Icons.arrowRight,
-                              size: 19,
-                            ), label: Text(action))),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FilledButton.icon(
+                style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
+                onPressed: () => Navigator.push(context, HopeRoutes.jobDetail(job)),
+                icon: HopeIcon(
+                  Directionality.of(context) == TextDirection.rtl
+                      ? HopeV2Icons.arrowLeft
+                      : HopeV2Icons.arrowRight,
+                  size: 19,
+                ),
+                label: Text(action),
+              ),
+            ),
           ]),
         );
       },
@@ -1097,11 +1144,22 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
 }
 
 class _PulseSkeleton extends StatelessWidget {
-  const _PulseSkeleton();
+  const _PulseSkeleton({this.compact = false, this.single = false});
+
+  final bool compact;
+  final bool single;
+
   @override
-  Widget build(BuildContext context) => const Column(children: [
-    OpportunitySkeletonCard(),
-    SizedBox(height: HopeV2Spacing.md),
-    OpportunitySkeletonCard(),
-  ]);
+  Widget build(BuildContext context) {
+    if (single) {
+      return OpportunitySkeletonCard(compact: compact);
+    }
+    return const Column(
+      children: [
+        OpportunitySkeletonCard(),
+        SizedBox(height: HopeV2Spacing.md),
+        OpportunitySkeletonCard(),
+      ],
+    );
+  }
 }

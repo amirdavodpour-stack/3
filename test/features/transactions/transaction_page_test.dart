@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -96,19 +97,19 @@ class _FakeTx implements TransactionRepository {
           'baseAmount': 1000000,
           'employerFee': 100000,
           'workerFee': 100000,
-          'platformFee': 0,
+          'platformFee': 200000,
           'employerCharge': 1100000,
           'providerPayout': 900000,
-          'policyVersion': 'v1',
-          'currency': 'IRR',
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
         },
       });
 }
 
-HopeJob _job(String id, String status, {String? providerId}) =>
+HopeJob _job(String id, String status, {String? providerId, String? title}) =>
     HopeJob.fromMap({
       'id': id,
-      'title': 'Design landing page',
+      'title': title ?? 'Design landing page',
       'description': 'Deliver a landing page.',
       'categoryId': 'c1',
       'kind': 'MISSION',
@@ -235,6 +236,40 @@ void main() {
     }
   });
 
+  testWidgets(
+    'transaction detail initial loading previews its financial card hierarchy',
+    (tester) async {
+      final pending = Completer<HopePayment>();
+      final repo = _FakeTx()..paymentResponses.add(pending.future);
+
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        textScale: 1.5,
+        disableAnimations: true,
+        useActualViewportMetrics: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('transaction-detail-loading-skeleton')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('transaction-loading-financial-summary')),
+        findsOneWidget,
+      );
+      expect(find.text('Loading financial status'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      pending.complete(_FakeTx._data('j1', 'HELD'));
+      await tester.pump();
+    },
+  );
+
   testWidgets('financial summary leads into the payment lifecycle', (tester) async {
     final repo = _FakeTx()
       ..payment = Future.value(HopePayment.fromMap({
@@ -243,10 +278,37 @@ void main() {
         'amount': 1000000,
         'providerRef': 'ref-1',
         'job': _job('j1', 'FUNDED', providerId: 'u1').toMap(),
+        'fees': {
+          'baseAmount': 1000000,
+          'employerFee': 100000,
+          'workerFee': 100000,
+          'platformFee': 200000,
+          'employerCharge': 1100000,
+          'providerPayout': 900000,
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
+        },
       }));
     await _pump(tester, repo, ownerId: 'u1');
 
     expect(find.text('Financial summary'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('transaction-payment-base-amount-label')),
+      findsOneWidget,
+      reason: 'The headline amount must identify the backend base amount, not an unlabeled generic amount.',
+    );
+    final payoutSummary = find.byKey(
+      const ValueKey('transaction-payment-payout-summary'),
+    );
+    expect(payoutSummary, findsOneWidget);
+    expect(
+      find.descendant(of: payoutSummary, matching: find.text('Employer charge')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: payoutSummary, matching: find.text('Worker payout')),
+      findsOneWidget,
+    );
     final header = tester.widget<PremiumHeader>(
       find.byType(PremiumHeader).first,
     );
@@ -257,6 +319,17 @@ void main() {
     expect(find.text('Protected by HOPE'), findsOneWidget);
     expect(find.text('Start work'), findsOneWidget);
     expect(find.text('Stage 2 of 6'), findsOneWidget);
+    final lifecycleProgress = find.byKey(
+      const ValueKey('transaction-lifecycle-progress'),
+    );
+    expect(lifecycleProgress, findsOneWidget);
+    expect(
+      (tester.widget<LinearProgressIndicator>(lifecycleProgress).valueColor
+              as AlwaysStoppedAnimation<Color>)
+          .value,
+      HopeV2ChartColors.matchSignal(tester.element(lifecycleProgress)),
+      reason: 'Numeric lifecycle progress uses the shared teal chart role, not indigo.',
+    );
     expect(
       find.byWidgetPredicate(
         (widget) => widget is PremiumTag && widget.label == 'Funds held',
@@ -318,6 +391,11 @@ void main() {
     expect(find.text('Design landing page'), findsAtLeastNWidgets(1));
     expect(find.text('Start work'), findsOneWidget);
     await tester.ensureVisible(find.text('Start work'));
+    final startAction = find.widgetWithText(FilledButton, 'Start work');
+    expect(
+      tester.widget<FilledButton>(startAction).style?.backgroundColor?.resolve({}),
+      HopeV2Colors.markedPrimaryActionDarkGreen,
+    );
     await tester.tap(find.text('Start work'));
     await tester.pumpAndSettle();
     expect(repo.calls, contains('start:j1'));
@@ -451,6 +529,46 @@ void main() {
   });
 
   testWidgets(
+    'transaction detail preserves a long opportunity title at 1.5x',
+    (tester) async {
+      const longTitle =
+          'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, and cross-functional delivery';
+      final repo = _FakeTx()
+        ..payment = Future.value(HopePayment.fromMap({
+          'id': 'p1',
+          'status': 'HELD',
+          'amount': '9000000000',
+          'providerRef': 'ref-1',
+          'job': _job(
+            'j1',
+            'FUNDED',
+            providerId: 'u1',
+            title: longTitle,
+          ).toMap(),
+        }));
+
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        textScale: 1.5,
+        useActualViewportMetrics: true,
+      );
+
+      final titleFinder = find.text(longTitle);
+      expect(titleFinder, findsOneWidget);
+      final titleText = tester.widget<Text>(titleFinder);
+      expect(titleText.maxLines, isNull);
+      expect(titleText.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(titleFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 45 transaction summary preserves full TOMAN amount and fee values at 1.5x',
     (tester) async {
       final repo = _FakeTx()
@@ -482,7 +600,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Payment status'), findsOneWidget);
-      expect(find.text('Amount'), findsOneWidget);
+      final baseAmountLabel = find.byKey(
+        const ValueKey('transaction-payment-base-amount-label'),
+      );
+      expect(baseAmountLabel, findsOneWidget);
+      expect(tester.widget<Text>(baseAmountLabel).data, 'Base amount');
       expect(find.text('Reference'), findsNothing);
       expect(
         find.text(
@@ -496,7 +618,13 @@ void main() {
       );
       expect(mainAmount, findsOneWidget);
       final mainAmountText = tester.widget<Text>(mainAmount);
-      expect(mainAmountText.data!.replaceAll(',', ''), '9000000000000000 TOMAN');
+      expect(
+        mainAmountText.data!.replaceAll(',', ''),
+        '8999999999000000 TOMAN',
+        reason: 'The headline value is the canonical backend baseAmount; employerCharge remains a separate amount.',
+      );
+      expect(find.text('Employer charge'), findsAtLeastNWidgets(1));
+      expect(find.text('Worker payout'), findsAtLeastNWidgets(1));
       expect(mainAmountText.maxLines, isNull);
       expect(mainAmountText.softWrap, isTrue);
       expect(mainAmountText.overflow, TextOverflow.visible);
@@ -509,7 +637,13 @@ void main() {
                 widget.data!.replaceAll(',', '') == '$digits TOMAN',
           );
 
-      final feeAmount = moneyTextWithoutCommas('8999999999000000');
+      final detailsPanel = find.byKey(
+        const ValueKey('transaction-payment-financial-details'),
+      );
+      final feeAmount = find.descendant(
+        of: detailsPanel,
+        matching: moneyTextWithoutCommas('8999999999000000'),
+      );
       await tester.scrollUntilVisible(
         feeAmount,
         180,
@@ -582,11 +716,11 @@ void main() {
           'baseAmount': 1000000,
           'employerFee': 100000,
           'workerFee': 100000,
-          'platformFee': 0,
+          'platformFee': 200000,
           'employerCharge': 1100000,
           'providerPayout': 900000,
-          'policyVersion': 'v1',
-          'currency': 'IRR',
+          'policyVersion': '2026-08-v1',
+          'currency': 'TOMAN',
         },
       }));
     await _pump(tester, repo);
@@ -594,12 +728,26 @@ void main() {
     // Scroll the fee breakdown into the built viewport.
     await tester.drag(find.byType(ListView), const Offset(0, -350));
     await tester.pumpAndSettle();
-    expect(find.text('Financial details'), findsOneWidget);
-    expect(find.text('Base amount'), findsOneWidget);
-    expect(find.text('Employer fee'), findsOneWidget);
-    expect(find.text('Worker fee'), findsOneWidget);
-    expect(find.text('Employer charge'), findsOneWidget);
-    expect(find.text('Worker payout'), findsOneWidget);
+    final detailPanel = find.byKey(
+      const ValueKey('transaction-payment-financial-details'),
+    );
+    expect(detailPanel, findsOneWidget);
+    Finder detailText(String label) => find.descendant(
+          of: detailPanel,
+          matching: find.text(label),
+        );
+    expect(detailText('Financial details'), findsOneWidget);
+    expect(detailText('Base amount'), findsOneWidget);
+    expect(detailText('Employer fee'), findsOneWidget);
+    expect(detailText('Worker fee'), findsOneWidget);
+    expect(detailText('Platform fee'), findsOneWidget);
+    expect(detailText('Employer charge'), findsOneWidget);
+    expect(detailText('Worker payout'), findsOneWidget);
+    // Exact MISSION contract fixture: 10% fee on each side, 20% platform fee.
+    expect(detailText('100,000 TOMAN'), findsNWidgets(2));
+    expect(detailText('200,000 TOMAN'), findsOneWidget);
+    expect(detailText('1,100,000 TOMAN'), findsOneWidget);
+    expect(detailText('900,000 TOMAN'), findsOneWidget);
   });
 
 

@@ -94,7 +94,7 @@ const analyticsLegacy = createAnalyticsLegacy({ db });
 const { analyticsRoutes, analyticsAdminRoutes } = createAnalyticsRoutes({
   authUser, requireAdmin, readBody, sendJson, HttpError, sanitizeTelemetryProperties,
   recordAnalyticsEvent, recordCrash, logEvent, repo, getProductFunnelSummary,
-  localProductFunnelSummary, legacy: analyticsLegacy,
+  localProductFunnelSummary, legacy: analyticsLegacy, config,
 });
 
 async function notifyApplicationCandidate(applicationId, type, title, body) {
@@ -147,10 +147,10 @@ const accountRoutes = createAccountRoutes({
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
-const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo });
+const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo, storage, config });
 const configRoutes = createConfigRoutes({ sendJson, config });
 const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
-const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
+const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, config, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const recommendationProfileRoutes = createRecommendationProfileRoutes({
   authUser,
   readBody,
@@ -200,7 +200,7 @@ const paymentRoutes = createPaymentRoutes({
   processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, logEvent, now,
 });
 
-const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent, ensureJobChat: repo.ensureJobChat });
+const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent, ensureJobChat: repo.ensureJobChat });
 const offerRoutes = createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy: offerLegacy, id: db.id, getJob, getUserById, enforceJobState, createAudit, now, jobView, ensureJobChat: repo.ensureJobChat });
 const savedSearchLegacy = createSavedSearchLegacy({ db, textField, now });
 const savedSearchRoutes = createSavedSearchRoutes({ authUser, repo, legacy: savedSearchLegacy, readBody, sendJson, HttpError, textField });

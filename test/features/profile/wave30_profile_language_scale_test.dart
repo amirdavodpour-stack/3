@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -9,6 +10,7 @@ import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/profile/profile_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -67,7 +69,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'language': 'en'});
 
       final settings = HopeSettingsController();
       await settings.load();
@@ -77,7 +79,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData.light(),
+          theme: AppTheme.dark(),
           locale: const Locale('en'),
           supportedLocales: const [Locale('fa'), Locale('en')],
           localizationsDelegates: const [
@@ -114,6 +116,13 @@ void main() {
       );
       final dock = find.byKey(const ValueKey('hope-navigation-dock'));
 
+      await tester.scrollUntilVisible(
+        title,
+        120,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 20,
+      );
+      await tester.pumpAndSettle();
       expect(title, findsOneWidget);
       expect(selector, findsOneWidget);
       expect(dock, findsOneWidget);
@@ -141,7 +150,32 @@ void main() {
         selectorRect.bottom,
         lessThanOrEqualTo(dockRect.top - HopeV2Navigation.scrollEndGap),
       );
-      expect(tester.takeException(), isNull);
+      final semanticsHandle = tester.ensureSemantics();
+      try {
+        final aboutTarget = find.byKey(
+          const ValueKey('profile-about-hope-semantic-target'),
+        );
+        await tester.scrollUntilVisible(
+          aboutTarget,
+          120,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 20,
+        );
+        await tester.pumpAndSettle();
+        expect(aboutTarget, findsOneWidget);
+        final aboutTargetNode = tester.getSemantics(aboutTarget);
+        final aboutTargetSemantics = aboutTargetNode.getSemanticsData();
+        expect(aboutTargetSemantics.hasAction(SemanticsAction.tap), isTrue);
+        expect(
+          aboutTargetNode.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'About HOPE must keep a 48dp semantic tap target at 1.5x text scale.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        // Flutter verifies semantics-handle disposal before test tearDown callbacks.
+        semanticsHandle.dispose();
+      }
     },
   );
 }

@@ -31,3 +31,17 @@ test('admin routes expose dispute report and explicit financial resolution', () 
   assert.match(routes, /REFUND/);
   assert.match(routes, /resolveJobDispute/);
 });
+test('admin dispute decisions claim a fenced resolution before financial side effects and HOLD cancels pending release', () => {
+  const route = read('backend/src/routes/job_dispute_routes.js');
+  const claim = route.indexOf('repo.claimJobDisputeResolution');
+  const financialAction = route.indexOf('await resolvePayment(dispute,resolution,me.id,reason)');
+  const finalize = route.indexOf('repo.completeJobDisputeResolution');
+  assert.ok(claim >= 0 && financialAction > claim,
+    'the durable one-winner claim must commit before release/refund/HOLD side effects');
+  assert.ok(finalize > financialAction,
+    'the dispute may become RESOLVED only after its financial action is confirmed');
+  assert.match(route, /repo\.holdPaymentForDispute/);
+  assert.match(route, /DISPUTE_RESOLUTION_IN_PROGRESS/);
+  assert.match(route, /existing\?\.status==='RESOLVING'/);
+  assert.match(route, /repo\.abandonJobDisputeResolutionClaim/);
+});

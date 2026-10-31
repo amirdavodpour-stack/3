@@ -10,6 +10,7 @@ process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
 process.env.AUTH_RATE_LIMIT_MAX = '1000';
 process.env.GENERAL_RATE_LIMIT_MAX = '5000';
+process.env.ADMIN_PANEL_USERNAME = 'hope-admin';
 
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
@@ -28,6 +29,15 @@ async function register(email, displayName = email) {
   });
   assert.equal(r.status, 201);
   return r.body.data;
+}
+
+async function unlockAdminPanel(admin) {
+  const unlocked = await json('/admin/access', {
+    method: 'POST',
+    headers: {Authorization: `Bearer ${admin.accessToken}`},
+    body: JSON.stringify({name: admin.user.displayName, username: 'hope-admin'}),
+  });
+  assert.equal(unlocked.status, 200, JSON.stringify(unlocked.body));
 }
 
 async function categoryId() {
@@ -135,7 +145,11 @@ test('job applications are deadline-aware and employer candidate view is identit
   assert.ok(!('candidateId' in applied.body.data));
 
   const admin = await register('product-admin@example.com', 'Admin User');
-  db.collection.users.find((u) => u.id === admin.user.id).role = 'ADMIN';
+  const primaryAdminRow = db.collection.users.find((u) => u.id === admin.user.id);
+  primaryAdminRow.role = 'ADMIN';
+  primaryAdminRow.googleSubject = 'verified-google-subject';
+  await db.save();
+  await unlockAdminPanel(admin);
   const apps = await json('/admin/applications', {headers:{Authorization:`Bearer ${admin.accessToken}`}});
   assert.equal(apps.status, 200);
   const row = apps.body.data.find((a) => a.id === applied.body.data.id);
@@ -158,8 +172,12 @@ test('job applications are deadline-aware and employer candidate view is identit
 test('admin delete removes only non-transactional opportunities and mirrors relational cascades in file mode', async () => {
   const owner = await register('delete-owner@example.com');
   const candidate = await register('delete-candidate@example.com');
-  const admin = await register('delete-admin@example.com');
-  db.collection.users.find((u) => u.id === admin.user.id).role = 'ADMIN';
+  const admin = await register('amir.davodpour@gmail.com', 'Primary Admin');
+  const primaryAdminRow = db.collection.users.find((u) => u.id === admin.user.id);
+  primaryAdminRow.role = 'ADMIN';
+  primaryAdminRow.googleSubject = 'verified-google-subject';
+  await db.save();
+  await unlockAdminPanel(admin);
 
   const published = await createOpportunity(owner.accessToken, {kind:'JOB'});
   const app = await json('/applications', {method:'POST', headers:{Authorization:`Bearer ${candidate.accessToken}`}, body:JSON.stringify({jobId:published.id,resumeText:'Candidate resume content is long enough.',skills:'testing'})});

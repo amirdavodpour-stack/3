@@ -1,6 +1,22 @@
 import crypto from 'node:crypto';
-import { validateIdempotencyPair, paymentAmountForJob, mapPaymentMutationError } from '../application/payment_policy.js';
+import { validateIdempotencyPair, paymentAmountForJob, assertFundingReplayMatches, mapPaymentMutationError } from '../application/payment_policy.js';
 import { verifyPaymentWebhookSignature, normalizePaymentWebhookBody, applyLocalPaymentWebhook } from '../application/payment_webhook.js';
+import { ADMIN_PERMISSIONS, assertAdminPermission } from '../application/admin_panel_access.js';
+import { requireAdmin } from '../policies/validation.js';
+function assertExistingFundingReplay({ existing, idempotencyKey, payerId, job, calculatePaymentBreakdown }) {
+  if (!existing || !idempotencyKey || existing.idempotencyKey !== idempotencyKey) return;
+  const amount = paymentAmountForJob(job);
+  const breakdown = calculatePaymentBreakdown(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB'), amount);
+  assertFundingReplayMatches({
+    existing,
+    idempotencyKey,
+    payerId,
+    payeeId: job.providerId || existing.payeeId,
+    requestedAmount: breakdown.baseAmount ?? amount,
+    requestedCurrency: breakdown.currency || existing.currency || 'TOMAN',
+  });
+}
+
 export function createPaymentRoutes({
   authUser, readBody, readRawBody, sendJson, HttpError, config, db, repo, getJob,
   enforceJobState, readIdempotencyKey, requireFields, enumField, paymentView, relatedJob, withTransaction, createAudit,
@@ -34,7 +50,13 @@ export function createPaymentRoutes({
   }
   if (req.method === 'GET' && parts[1] === 'financials' && parts[2]) {
     const me = await authUser(req); const job = await getJob(parts[2]); if (!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
-    if (!relatedJob(me.id, job) && me.role !== 'ADMIN') throw new HttpError(403,'FORBIDDEN','You are not a participant in this job');
+    if (!relatedJob(me.id, job)) {
+      const admin = requireAdmin(me);
+      assertAdminPermission(admin, ADMIN_PERMISSIONS.VIEW_FINANCE);
+      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(admin.id, config?.adminPanelVerificationMinutes ?? 15))) {
+        throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
+      }
+    }
     const payment = process.env.DATABASE_URL ? await paymentUseCases.findByJob(job.id) : paymentLegacy.findByJob(job.id);
     const ledger = payment && process.env.DATABASE_URL ? await repo.listLedgerEntriesForPayment(payment.id) : (payment ? paymentLegacy.listLedgerEntries(payment.id) : []);
     return sendJson(res,200,{payment:payment?await paymentView(payment,job):await paymentView(null,job),ledger});
@@ -50,6 +72,7 @@ export function createPaymentRoutes({
       existing = await paymentUseCases.findByJob(job.id);
       if (existing) {
         if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
+        assertExistingFundingReplay({ existing, idempotencyKey, payerId: me.id, job, calculatePaymentBreakdown });
         if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
         if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
         if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
@@ -58,6 +81,7 @@ export function createPaymentRoutes({
       existing = paymentLegacy.findByJob(job.id);
       if(existing) {
         if (idempotencyKey && existing.idempotencyKey && existing.idempotencyKey !== idempotencyKey) throw new HttpError(409, 'PAYMENT_ALREADY_EXISTS', 'A payment already exists for this job');
+        assertExistingFundingReplay({ existing, idempotencyKey, payerId: me.id, job, calculatePaymentBreakdown });
         if (existing.status === 'HELD' || existing.status === 'RELEASE_PENDING' || existing.status === 'RELEASED') return sendJson(res,200,await paymentView(existing,job));
         if (existing.status === 'HOLD_PENDING') return sendJson(res,202,{...(await paymentView(existing,job)),settlement:{status:'PENDING',outboxEventId:null}});
         if (existing.status !== 'HOLD_FAILED') throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be funded from its current state');
@@ -105,7 +129,7 @@ export function createPaymentRoutes({
     let created;
     try {
       created=process.env.DATABASE_URL?await paymentUseCases.refund({jobId:job.id,paymentId:payment.id,ownerId:me.id,amount:payment.amount,id:refundId,idempotencyKey,createdAt}):await paymentLegacy.refund({ payment, job, idempotencyKey, refundId, createdAt });
-    } catch(e){ if(e.code==='INVALID_PAYMENT_STATE')throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state'); if(e.code==='PARTIAL_REFUND_UNSUPPORTED')throw new HttpError(400,'PARTIAL_REFUND_UNSUPPORTED','Only full refunds are currently supported'); throw e; }
+    } catch(e){ if(e.code==='INVALID_PAYMENT_STATE')throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state'); if(e.code==='REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY')throw new HttpError(409,'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY','An existing refund operation must be retried using the same idempotency key'); if(e.code==='PARTIAL_REFUND_UNSUPPORTED')throw new HttpError(400,'PARTIAL_REFUND_UNSUPPORTED','Only full refunds are currently supported'); throw e; }
     if(process.env.DATABASE_URL){ try{await processPaymentRefundNow();}catch(error){logEvent({level:'warn',action:'PAYMENT_REFUND_WORKER_TRIGGER_FAILED',paymentId:payment.id,error:error.message});} const refreshed=await paymentUseCases.findByJob(job.id); return sendJson(res,created.refund.status==='PENDING'?202:200,{...(await paymentView(refreshed||created.payment,await repo.findJobById(job.id))),refund:created.refund}); }
     await createAudit('PAYMENT_REFUND',me.id,'payment',payment.id,{jobId:job.id}); return sendJson(res,200,{...(await paymentView(created.payment,job)),refund:created.refund});
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import 'package:hope_mobile/core/opportunity/opportunity_agent_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/ui/copy.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/home/premium_home_feed.dart';
@@ -85,15 +87,20 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _SequencedMarketplaceRepository implements MarketplaceRepository {
+  _SequencedMarketplaceRepository({HopeJob? initial, HopeJob? fresh})
+      : initial = initial ??
+            _job(
+              'initial',
+              'Initial opportunity',
+              recommended: true,
+            ),
+        fresh = fresh ?? _job('fresh', 'Fresh opportunity');
+
   int calls = 0;
   final Completer<List<HopeJob>> staleRefresh =
       Completer<List<HopeJob>>();
-  final initial = _job(
-    'initial',
-    'Initial opportunity',
-    recommended: true,
-  );
-  final fresh = _job('fresh', 'Fresh opportunity');
+  final HopeJob initial;
+  final HopeJob fresh;
 
   @override
   Future<List<HopeCategory>> listCategories() async => const [];
@@ -158,6 +165,90 @@ HopeJob _job(String id, String title, {bool recommended = false}) =>
       'recommendationReasons':
           recommended ? ['SKILL_MATCH'] : const <String>[],
     });
+
+class _LoadingMarketplaceRepository extends _SequencedMarketplaceRepository {
+  final Completer<List<HopeJob>> pendingOpportunities =
+      Completer<List<HopeJob>>();
+
+  @override
+  Future<List<HopeCategory>> listCategories() async => const [];
+
+  @override
+  Future<HopeJob> getOpportunity(String id) => Future.value(initial);
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) => pendingOpportunities.future;
+}
+
+const _wideGridLongTitle =
+    'Senior product design lead responsible for editorial systems, accessible financial workflows, multilingual experience strategy, component governance, and cross-functional delivery';
+
+class _WideGridMarketplaceRepository extends _SequencedMarketplaceRepository {
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) async =>
+      [
+        HopeJob.fromMap({
+          'id': 'wide-grid-a',
+          'title': _wideGridLongTitle,
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 1.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'tech',
+          'category': 'فناوری',
+          'budgetMin': 1200000,
+          'budgetMax': 2400000,
+        }),
+        HopeJob.fromMap({
+          'id': 'wide-grid-b',
+          'title': 'Product interface review',
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 2.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'tech',
+          'category': 'فناوری',
+          'budgetMin': 1500000,
+          'budgetMax': 2600000,
+        }),
+        HopeJob.fromMap({
+          'id': 'wide-grid-c',
+          'title': 'Editorial visual design',
+          'description': 'A short description.',
+          'kind': 'MISSION',
+          'visibility': 'PUBLIC',
+          'city': 'تهران',
+          'distanceKm': 3.0,
+          'status': 'PUBLISHED',
+          'categoryId': 'design',
+          'category': 'طراحی',
+          'budgetMin': 1800000,
+          'budgetMax': 3000000,
+        }),
+      ];
+}
 
 class _ImmediateTransactions implements TransactionRepository {
   @override
@@ -423,6 +514,125 @@ void main() {
     expect(find.text('Matches'), findsNothing);
   });
 
+  testWidgets(
+    'compact home loading follows width-based density on a tall phone',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _LoadingMarketplaceRepository();
+      final harness = await _host(repository);
+      await tester.pumpWidget(harness.widget);
+      await tester.pump();
+
+      final skeleton = find.byType(OpportunitySkeletonCard);
+      expect(
+        skeleton,
+        findsOneWidget,
+        reason: 'A compact phone should reserve one primary opportunity skeleton, not two full cards.',
+      );
+      expect(
+        tester.getSize(skeleton).height,
+        lessThanOrEqualTo(200),
+        reason: 'The loading placeholder must respect the compact featured-card height budget.',
+      );
+
+      final cardRect = tester.getRect(skeleton);
+      final viewportRect = tester.getRect(find.byType(ListView).first);
+      expect(cardRect.top, greaterThanOrEqualTo(viewportRect.top));
+      expect(
+        cardRect.bottom,
+        lessThanOrEqualTo(viewportRect.bottom),
+        reason: 'The compact loading card should not overflow the initial viewport.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wide Home opportunity titles remain complete at 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _WideGridMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final title = find.text(_wideGridLongTitle);
+      expect(title, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+        reason: 'Wide Home compact-grid cards must wrap long titles instead of truncating them when system text is enlarged.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'compact Home opportunity titles remain complete at 1.5x system text',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(
+        _WideGridMarketplaceRepository(),
+        textScale: 1.5,
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final title = find.text(_wideGridLongTitle);
+      await tester.scrollUntilVisible(
+        title,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(title, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+        reason: 'Compact Home summaries must wrap the full opportunity title at enlarged text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wide Home opportunity cards size to content instead of square grid cells',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final harness = await _host(_WideGridMarketplaceRepository());
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(OpportunityCard);
+      expect(cards, findsNWidgets(3));
+      for (var index = 0; index < 3; index++) {
+        expect(
+          tester.getSize(cards.at(index)).height,
+          lessThanOrEqualTo(320),
+          reason: 'Wide Home opportunity cards should not reserve a square fixed-height cell when their content is short.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('compact home fold prioritizes the featured opportunity before the pulse',
       (tester) async {
     tester.view.physicalSize = const Size(360, 640);
@@ -459,6 +669,19 @@ void main() {
     expect(tester.getSize(compactPulse).height, lessThanOrEqualTo(64));
     final metrics = find.byKey(const ValueKey('home-pulse-compact-metrics'));
     expect(metrics, findsOneWidget);
+    final compactMetricTexts = find.descendant(
+      of: metrics,
+      matching: find.byType(Text),
+    );
+    expect(compactMetricTexts, findsAtLeastNWidgets(8));
+    for (final text in compactMetricTexts.evaluate()) {
+      final textWidget = text.widget as Text;
+      expect(
+        textWidget.style?.fontSize ?? 0,
+        greaterThanOrEqualTo(12),
+        reason: 'Compact Home Pulse values and labels must retain the 12sp floor without truncating the amount.',
+      );
+    }
     final metricsRect = tester.getRect(metrics);
     final chipRects = <Rect>[];
     for (var index = 0; index < 4; index++) {
@@ -477,6 +700,71 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'compact fa-RTL Home keeps every featured tag inside the visible rail',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final featured = HopeJob.fromMap({
+        'id': 'compact-home-match-rail',
+        'title': 'طراحی رابط موبایل حرفه‌ای',
+        'description': 'Responsive match-score rail fixture.',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'PUBLISHED',
+        'categoryId': 'software',
+        'category': 'نرم افزار',
+        'isRecommended': true,
+        'recommendationScore': 0.94,
+        'recommendationReasons': const <String>[],
+        'budgetMin': '15000000',
+        'budgetMax': '25000000',
+        'city': 'تهران',
+      });
+      final harness = await _host(
+        _SequencedMarketplaceRepository(initial: featured),
+        locale: 'fa',
+      );
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(
+        const ValueKey('opportunity-featured-scan-tag-rail'),
+      );
+      expect(rail, findsOneWidget);
+      final tags = find.descendant(
+        of: rail,
+        matching: find.byType(PremiumTag),
+      );
+      expect(tags, findsNWidgets(3));
+      expect(
+        tester.widgetList<PremiumTag>(tags).map((tag) => tag.label),
+        contains('۹۴٪ تطابق'),
+      );
+
+      final railRect = tester.getRect(rail);
+      for (var index = 0; index < tags.evaluate().length; index++) {
+        final tagRect = tester.getRect(tags.at(index));
+        expect(
+          tagRect.left,
+          greaterThanOrEqualTo(railRect.left),
+          reason:
+              'Featured tag $index must not be clipped at the rail left edge.',
+        );
+        expect(
+          tagRect.right,
+          lessThanOrEqualTo(railRect.right),
+          reason:
+              'Featured tag $index must not be clipped at the rail right edge.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'late wallet result from an old Home load cannot overwrite the newest refresh',
@@ -712,6 +1000,19 @@ void main() {
       ].map((key) => find.byKey(ValueKey(key))).toList(growable: false);
       for (final stat in keys) {
         expect(stat, findsOneWidget);
+        final texts = find.descendant(
+          of: stat,
+          matching: find.byType(Text),
+        );
+        expect(texts, findsAtLeastNWidgets(2));
+        for (final text in texts.evaluate()) {
+          final textWidget = text.widget as Text;
+          expect(
+            textWidget.style?.fontSize ?? 0,
+            greaterThanOrEqualTo(12),
+            reason: 'Every meaningful Home Pulse metric value/label must retain the 12sp minimum.',
+          );
+        }
       }
       final rects = keys.map((finder) => tester.getRect(finder)).toList(growable: false);
       expect((rects[0].top - rects[1].top).abs(), lessThan(1.0));

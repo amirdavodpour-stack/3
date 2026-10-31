@@ -17,6 +17,22 @@ on:
         options:
           - fa
           - en
+      capture_theme:
+        description: "Theme to render"
+        required: true
+        type: choice
+        options:
+          - dark
+          - light
+      capture_text_scale:
+        description: "Text scale to render"
+        required: true
+        type: choice
+        options:
+          - "1.0"
+          - "1.25"
+          - "1.5"
+          - "2.0"
 
   # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
 # [runtime-capture] validate Wallet chunked settle diagnostic at exact current HEAD.
@@ -45,7 +61,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16') && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16' || (github.head_ref == 'fix/hopev2-visual-audit-v1-v2-2026-10-20' && github.event.pull_request.number == 38)) && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
     # Only an authorized runtime job acquires this lock. Skipped PR events cannot cancel capture.
     concurrency:
       group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -96,8 +112,12 @@ jobs:
 
       - name: Test Android ADB recovery contract
         run: bash test/runtime/android_runtime_adb_recovery_test.sh
+      - name: Test Android Emulator package retry contract
+        run: bash test/runtime/android_emulator_install_retry_test.sh
       - name: Test Android screenshot transport contract
         run: bash test/runtime/android_screenshot_transport_test.sh
+      - name: Test auth screenshot near-duplicate validator
+        run: node test/runtime/auth_capture_similarity_test.mjs
       - name: Test TalkBack bound-service contract
         run: bash test/runtime/hope_enable_talkback_test.sh
 
@@ -151,6 +171,9 @@ jobs:
           # Patch only this disposable upstream checkout to include x86_64 for CI.
           sed -i 's/abiFilters "armeabi-v7a", "arm64-v8a"/abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"/' .ci/talkback/shared.gradle
           grep -Fq 'abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"' .ci/talkback/shared.gradle
+          # Avoid replacing the emulator's stock TalkBack package with a different signature.
+          sed -i 's/talkbackApplicationId = "com.android.talkback"/talkbackApplicationId = "com.hopev2.ci.talkback"/' .ci/talkback/shared.gradle
+          grep -Fq 'talkbackApplicationId = "com.hopev2.ci.talkback"' .ci/talkback/shared.gradle
           printf 'sdk.dir=%s\n' "$SDK_ROOT" > .ci/talkback/local.properties
           ./android/gradlew --no-daemon --stacktrace -p .ci/talkback assemblePhoneDebug
           APK_PATH=".ci/talkback/build/outputs/apk/phone/debug/talkback-phone-debug.apk"
@@ -161,7 +184,7 @@ jobs:
           fi
           AAPT="$SDK_ROOT/build-tools/36.0.0/aapt"
           test -x "$AAPT"
-          "$AAPT" dump badging "$APK_PATH" | grep -Fq "package: name='com.android.talkback'"
+          "$AAPT" dump badging "$APK_PATH" | grep -Fq "package: name='com.hopev2.ci.talkback'"
           "$AAPT" dump xmltree "$APK_PATH" AndroidManifest.xml | grep -Fq 'com.google.android.marvin.talkback.TalkBackService'
           mkdir -p "$RUNNER_TEMP"
           cp "$APK_PATH" "$RUNNER_TEMP/hope-talkback.apk"
@@ -197,7 +220,26 @@ jobs:
           test -r /dev/kvm
           test -w /dev/kvm
 
-      # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 6 responsive
+      # Android Emulator's host-side QEMU binary dynamically links PulseAudio
+      # even for the non-interactive version probe used by the installer guard.
+      # Hosted Ubuntu runners may omit this optional desktop runtime library.
+      - name: Install Android Emulator host runtime libraries
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libpulse0
+          ldconfig -p | grep -F 'libpulse.so.0'
+
+      # Warm the latest emulator package with a bounded retry before the pinned
+      # action invokes sdkmanager itself; this recovers from truncated SDK archives.
+      - name: Prepare Android Emulator package with bounded retry
+        env:
+          HOPE_ANDROID_EMULATOR_INSTALL_ATTEMPTS: '3'
+          HOPE_ANDROID_EMULATOR_INSTALL_RETRY_DELAY_SECONDS: '5'
+        run: bash tools/install-android-emulator-retry.sh
+
+      # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 7 responsive
       # on Run #35741811401. Keep the proven memory/AVD lifecycle contract intact.
       - name: Android runtime evidence
         uses: ./.ci/android-emulator-runner
@@ -205,10 +247,12 @@ jobs:
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
           HOPE_REQUIRE_GOOGLE_AUTH: '1'
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
-          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
+          HOPE_CAPTURE_THEME: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_theme || 'dark' }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_text_scale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5') || '1.0' }}
           HOPE_RUNTIME_STRICT_VALIDATION: '0'
           HOPE_TALKBACK_REQUIRED: '1'
           HOPE_TALKBACK_APK: ${{ runner.temp }}/hope-talkback.apk
+          HOPE_TALKBACK_PACKAGE: com.hopev2.ci.talkback
           HOPE_TALKBACK_SOURCE_SHA: 229212fdf5842191d0a93fc95d9ca1423b346866
           HOPE_CAPTURE_HOME_ONLY: ${{ ((github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[runtime-capture-fa-home]'))) && '1' || '0' }}
         with:
@@ -216,15 +260,17 @@ jobs:
           arch: x86_64
           target: default
           profile: pixel_2
-          # Recreate the AVD from the cached API-35 system image to avoid stale/corrupt AVD state.
+          # Force AVD recreation and wipe user data before installing run-specific debug APKs.
+          # Cached app packages may be signed by prior per-run keys, causing INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+          # Emulator -wipe-data guarantees user apps/settings are removed even if AVD metadata is cached.
           # Use the current SwiftShader software renderer mode supported by modern Emulator releases.
           # Keep Vulkan explicitly disabled for deterministic GLES/PixelCopy capture on the headless lane.
-          force-avd-creation: false
+          force-avd-creation: true
           cores: 4
           ram-size: 8192M
           disable-linux-hw-accel: false
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -no-snapshot -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          emulator-options: -no-window -no-snapshot -wipe-data -gpu swiftshader -feature -Vulkan -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
           script: bash tools/hope-wallet-runtime-evidence.sh
 
@@ -232,15 +278,21 @@ jobs:
         if: ${{ success() && !(github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) }}
         env:
           HOPE_CAPTURE_LOCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_locale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && 'en') || (github.event_name == 'pull_request' && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]')) && 'fa') || ((contains(github.event.head_commit.message, '[runtime-capture-fa]') || contains(github.event.head_commit.message, '[runtime-capture-fa-home]')) && 'fa' || 'en') }}
-          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5' || '1.0' }}
+          HOPE_CAPTURE_THEME: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_theme || 'dark' }}
+          HOPE_CAPTURE_TEXT_SCALE: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_text_scale || (github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-en-scale]') && '1.5') || '1.0' }}
         run: |
           test -d docs/audit/evidence/android-runtime
           png_count="$(find docs/audit/evidence/android-runtime -type f -name '*.png' | wc -l)"
-          # Full capture gate: 19 baseline + 6 responsive screenshots.
-          test "${png_count}" -ge 31
-          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
-            '.sha == $sha and .capture_locale == $locale and .text_scale == $scale and .screens == 19 and .responsive_screens == 6 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 25 and .scroll_end_screens == 6' \
+          # Full capture gate: 19 baseline + 7 responsive + 10 scroll-end screenshots.
+          test "${png_count}" -ge 36
+          jq -e --arg sha "${HOPE_RUNTIME_EXACT_HEAD:-$GITHUB_SHA}" --arg locale "$HOPE_CAPTURE_LOCALE" --arg theme "$HOPE_CAPTURE_THEME" --argjson scale "$HOPE_CAPTURE_TEXT_SCALE" --arg talkback_sha "229212fdf5842191d0a93fc95d9ca1423b346866" \
+            '.sha == $sha and .capture_locale == $locale and .theme == $theme and .text_scale == $scale and .screens == 19 and .responsive_screens == 7 and .test_exit_code == 0 and .capture_transport == "native_android_pixelcopy" and .visual_capture_accessibility_service == "disabled" and .visual_capture_talkback_enabled == false and .visual_capture_accessibility_disable_verified == true and .talkback_semantics_mode == "separate_bound_service_pass" and .talkback_required == true and .talkback_enabled == true and .talkback_service_bound == true and .talkback_source_sha == $talkback_sha and (.talkback_apk_sha256 | length == 64) and .talkback_semantics_screens == 26 and .scroll_end_screens == 10 and .talkback_target_bounds_screens == 26 and .talkback_target_bounds_checked > 0 and .talkback_target_bounds_failures == 0 and .talkback_target_bounds_min_width_dp >= 48 and .talkback_target_bounds_min_height_dp >= 48' \
             docs/audit/evidence/android-runtime/metadata.json
+          auth_locale_suffix="en-ltr"
+          if [ "$HOPE_CAPTURE_LOCALE" = "fa" ]; then auth_locale_suffix="fa-rtl"; fi
+          node tools/validate-auth-capture-pair.mjs \
+            "docs/audit/evidence/android-runtime/register-${auth_locale_suffix}.png" \
+            "docs/audit/evidence/android-runtime/password-reset-${auth_locale_suffix}.png"
 
       - name: Validate home-only diagnostic artifact contents
         if: ${{ success() && github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[runtime-capture-fa-home]') }}
@@ -249,7 +301,7 @@ jobs:
 
       - name: Upload critical-screen runtime evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hope-critical-screens-runtime-evidence-${{ github.sha }}-${{ github.run_id }}
           path: |

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { normalizePaymentWebhookBody } from '../src/application/payment_webhook.js';
 import { readFileSync } from 'node:fs';
+import { operationProviderRefMismatch } from '../src/domain/payment_webhook_policy.js';
 
 const route = readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
 const repo = readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
@@ -16,9 +17,14 @@ test('signed webhook event id is bound to the payload event id', () => {
   assert.match(route, /event\.eventId !== eventId/);
 });
 
-test('release webhook can reconcile RELEASE_FAILED and provider ref mismatch is rejected', () => {
+test('release/refund callbacks reject a hold reference masquerading as the operation-specific reference', () => {
   assert.match(repo, /RELEASE_STATES\.has\(p\.status\)/);
-  assert.match(repo, /PROVIDER_REF_MISMATCH/);
+  assert.match(repo, /operationProviderRefMismatch\(eventType, providerRef, p\.provider_ref\)/);
+  assert.equal(operationProviderRefMismatch('PAYMENT_RELEASED', 'hold-1', 'hold-1'), true);
+  assert.equal(operationProviderRefMismatch('PAYMENT_REFUNDED', 'hold-1', 'hold-1'), true);
+  assert.equal(operationProviderRefMismatch('PAYMENT_RELEASED', 'release-1', 'hold-1'), false);
+  assert.equal(operationProviderRefMismatch('PAYMENT_REFUNDED', 'refund-1', 'hold-1'), false);
+  assert.equal(operationProviderRefMismatch('PAYMENT_HELD', 'hold-1', 'hold-1'), false);
 });
 
 test('migration rollback fails closed instead of rewriting RELEASE_FAILED rows', () => {

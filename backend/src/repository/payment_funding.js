@@ -2,9 +2,10 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
-import { fundingJournal, releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
+import { releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown, normalizeFinancialAmount } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { findPaymentByIdempotency } from './payment_queries.js';
+import { lockActiveWalletUsers } from '../wallet_ledger.js';
 
 function financialNumber(currency, value) {
   return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
@@ -12,6 +13,9 @@ function financialNumber(currency, value) {
 
 export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,id,idempotencyKey,createdAt,breakdown}) {
   return withSqlTransaction(async (client) => {
+    // Account deletion takes the same user-row lock before checking obligations.
+    // Lock both participants before creating a payment row/outbox obligation.
+    await lockActiveWalletUsers(client, [payerId, payeeId]);
     if (idempotencyKey) {
       await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 918273645))`, [`payment:${payerId}:${idempotencyKey}`]);
     }
@@ -19,11 +23,20 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     const job=jobRows[0] ? jobFromRow(jobRows[0]) : null;
     if (!job) return null;
     if (job.ownerId !== payerId) { const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e; }
-    if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE');e.code='INVALID_STATE';throw e; }
     const existingRow = await client.query(`SELECT * FROM payments WHERE job_id=$1 FOR UPDATE`, [jobId]);
     if (existingRow.rows[0]) {
       const existing=paymentFromRow(existingRow.rows[0]);
       if (existing.idempotencyKey && idempotencyKey && existing.idempotencyKey !== idempotencyKey) { const e=new Error('PAYMENT_ALREADY_EXISTS');e.code='PAYMENT_ALREADY_EXISTS';throw e; }
+      if (existing.idempotencyKey && idempotencyKey && existing.idempotencyKey === idempotencyKey) {
+        const existingCurrency = String(existing.currency || config.paymentCurrency).toUpperCase();
+        const requestedCurrency = String(breakdown?.currency || config.paymentCurrency).toUpperCase();
+        const sameAmount = existingCurrency === requestedCurrency &&
+          String(normalizeFinancialAmount(existingCurrency, existing.amount)) ===
+          String(normalizeFinancialAmount(requestedCurrency, amount));
+        if (existing.payerId !== payerId || existing.payeeId !== payeeId || !sameAmount) {
+          const e=new Error('IDEMPOTENCY_CONFLICT');e.code='IDEMPOTENCY_CONFLICT';throw e;
+        }
+      }
       if (existing.status === 'HOLD_FAILED') {
         const recoveryStatus = existing.fundingPreviousJobStatus || job.status;
         if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE'); e.code='INVALID_STATE'; throw e; }
@@ -41,6 +54,7 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
       }
       return {payment:existing,job,outboxEvent:null,created:false};
     }
+    if (!['PUBLISHED','ASSIGNED','FUNDED'].includes(job.status)) { const e=new Error('INVALID_STATE');e.code='INVALID_STATE';throw e; }
     if (idempotencyKey) {
       const prior=await findPaymentByIdempotency(payerId,idempotencyKey,client);
       if (prior) {
@@ -57,12 +71,12 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     }
     const fees = breakdown || calculatePaymentBreakdown(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB'), amount);
     const placeholderRef = `PENDING:${id}`;
-    const {rows}=await client.query(`INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,fee_policy_version,currency,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'HOLD_PENDING',$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16) RETURNING *`, [id,jobId,payerId,payeeId,amount,placeholderRef,idempotencyKey || null,fees.baseAmount,fees.employerFee,fees.workerFee,fees.platformFee,fees.employerCharge,fees.providerPayout,fees.policyVersion,fees.currency,createdAt]);
+    const fundingPreviousJobStatus = ['PUBLISHED','ASSIGNED'].includes(job.status) ? job.status : null;
+    const {rows}=await client.query(`INSERT INTO payments(id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,fee_policy_version,currency,funding_previous_job_status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'HOLD_PENDING',$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$17) RETURNING *`, [id,jobId,payerId,payeeId,amount,placeholderRef,idempotencyKey || null,fees.baseAmount,fees.employerFee,fees.workerFee,fees.platformFee,fees.employerCharge,fees.providerPayout,fees.policyVersion,fees.currency,fundingPreviousJobStatus,createdAt]);
     const {rows:job2}=await client.query(`UPDATE jobs SET status='FUNDED',updated_at=$2,provider_id=COALESCE(provider_id,$3) WHERE id=$1 RETURNING *`, [jobId,createdAt,payeeId]);
-    if (config.paymentProvider !== 'internal') {
-      const journalId = crypto.randomUUID();
-      for (const entry of fundingJournal(fees)) await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,$2,'PAYMENT_FUND',$3,$4,$5,$6,$7,$8)`, [crypto.randomUUID(),journalId,id,entry.account,entry.debit,entry.credit,fees.currency,createdAt]);
-    }
+    // External cash/escrow entries are only posted after the provider confirms
+    // its hold in completePaymentCreateHoldOutbox. A pending/failed hold must
+    // not create a recognized funding journal.
     const {rows:ev}=await client.query(`
       INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
       VALUES(gen_random_uuid(),'PAYMENT_CREATE_HOLD','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())

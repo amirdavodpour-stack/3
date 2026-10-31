@@ -41,53 +41,9 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    env:
-      BUILD_PROFILE: production
-      API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
-      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
-      REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
-      PAYMENT_PROVIDER: internal
-      PAYMENT_CURRENCY: TOMAN
-      PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
-      RESET_TOKEN_DELIVERY_MODE: webhook
-      RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
-      RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
-      PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL_PRODUCTION }}
-      METRICS_TOKEN: ${{ secrets.METRICS_TOKEN_PRODUCTION }}
-      ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
-      RATE_LIMIT_STORE: postgres
-      STORAGE_BACKEND: s3
-      S3_BUCKET: ${{ secrets.S3_BUCKET_PRODUCTION }}
-      S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
-      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT_PRODUCTION }}
-      S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE_PRODUCTION || 'false' }}
-      STAGING_CERTIFICATION_STATUS: ${{ needs.staging.outputs.certification_status }}
-      STAGING_CERTIFICATION_RUN_ID: ${{ needs.staging.outputs.certification_run_id }}
-      STAGING_CERTIFICATION_SHA: ${{ needs.staging.outputs.certification_sha }}
-      STAGING_CERTIFICATION_ATTEMPT: ${{ needs.staging.outputs.certification_attempt }}
-      ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Provision password reset webhook receiver
-        shell: bash
-        env:
-          RESET_WEBHOOK_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
-          RESET_WEBHOOK_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
-        run: |
-          set -euo pipefail
-          : "${RESET_WEBHOOK_SECRET:?RESET_TOKEN_DELIVERY_SECRET_PRODUCTION is required}"
-          : "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:?GitHub OIDC token request token is required}"
-          : "${ACTIONS_ID_TOKEN_REQUEST_URL:?GitHub OIDC token request URL is required}"
-          oidc_token="$(curl -fsSL --get -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" --data-urlencode "audience=hope-reset-bootstrap" "${ACTIONS_ID_TOKEN_REQUEST_URL}" | jq -er ".value")"
-          payload="$(jq -n --arg secret "$RESET_WEBHOOK_SECRET" '{secret:$secret}')"
-          curl -fsS --retry 2 --retry-delay 1 -X POST "${RESET_WEBHOOK_URL}/_bootstrap" -H "Authorization: Bearer ${oidc_token}" -H "Content-Type: application/json" --data "$payload"
 
       - name: Setup Node.js 24
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -105,6 +61,8 @@ jobs:
 
       - name: Validate production API base URL
         shell: bash
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL_PRODUCTION }}
         run: |
           set -euo pipefail
           [ -n "${API_BASE_URL:-}" ] || { echo 'Production API_BASE_URL secret is required.' >&2; exit 1; }
@@ -114,22 +72,25 @@ jobs:
         working-directory: backend
         env:
           NODE_ENV: production
-          PAYMENT_PROVIDER: ${{ env.PAYMENT_PROVIDER }}
-          PAYMENT_CURRENCY: ${{ env.PAYMENT_CURRENCY }}
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          PUBLIC_BASE_URL: ${{ env.PUBLIC_BASE_URL }}
-          METRICS_TOKEN: ${{ env.METRICS_TOKEN }}
-          S3_BUCKET: ${{ env.S3_BUCKET }}
-          S3_REGION: ${{ env.S3_REGION }}
-          S3_ENDPOINT: ${{ env.S3_ENDPOINT }}
-          STORAGE_BACKEND: ${{ env.STORAGE_BACKEND }}
-          RESET_TOKEN_DELIVERY_MODE: ${{ env.RESET_TOKEN_DELIVERY_MODE }}
-          RESET_TOKEN_DELIVERY_URL: ${{ env.RESET_TOKEN_DELIVERY_URL }}
-          RESET_TOKEN_DELIVERY_SECRET: ${{ env.RESET_TOKEN_DELIVERY_SECRET }}
-          ALLOWED_CORS_ORIGINS: ${{ env.ALLOWED_CORS_ORIGINS }}
-          ACCESS_TOKEN_SECRET: ${{ env.ACCESS_TOKEN_SECRET }}
-          REFRESH_TOKEN_SECRET: ${{ env.REFRESH_TOKEN_SECRET }}
-          PAYMENT_WEBHOOK_SECRET: ${{ env.PAYMENT_WEBHOOK_SECRET }}
+          PAYMENT_PROVIDER: internal
+          PAYMENT_CURRENCY: TOMAN
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION }}
+          PUBLIC_BASE_URL: ${{ secrets.PUBLIC_BASE_URL_PRODUCTION }}
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN_PRODUCTION }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_PRODUCTION }}
+          S3_REGION: ${{ secrets.S3_REGION_PRODUCTION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT_PRODUCTION }}
+          S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE_PRODUCTION || 'false' }}
+          STORAGE_BACKEND: s3
+          RATE_LIMIT_STORE: postgres
+          RESET_TOKEN_DELIVERY_MODE: webhook
+          RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
+          RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
+          ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
+          ADMIN_PANEL_USERNAME: ${{ secrets.ADMIN_PANEL_USERNAME_PRODUCTION }}
+          PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
         run: bash scripts/validate-production-env.sh
 
       - name: Backend install
@@ -145,6 +106,11 @@ jobs:
       - name: Configure production keystore
         id: keystore_prepare
         shell: bash
+        env:
+          ANDROID_RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           : "${ANDROID_RELEASE_KEYSTORE_B64:?ANDROID_RELEASE_KEYSTORE_B64 is required}"

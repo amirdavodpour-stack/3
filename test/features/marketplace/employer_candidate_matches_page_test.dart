@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -12,6 +13,245 @@ import 'package:hope_mobile/core/marketplace/employer_candidate_matching_reposit
 import 'package:hope_mobile/features/marketplace/employer_candidate_matches_page.dart';
 
 void main() {
+  testWidgets(
+    'candidate compensation component renders in the localized salary breakdown',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'candidate-compensation',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-compensation',
+            displayName: 'Candidate Compensation',
+            score: 91,
+            components: {'skills': 90, 'compensation': 85},
+            applicationId: 'app-compensation',
+            status: 'PENDING',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final salarySignal = find.byKey(
+        const ValueKey('candidate-signal-salary'),
+      );
+      expect(salarySignal, findsOneWidget);
+      expect(
+        find.descendant(of: salarySignal, matching: find.text('Salary')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: salarySignal, matching: find.text('85%')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'candidate card preserves the full skills summary at 1.5x text scale',
+    (tester) async {
+      const longSkills =
+          'Flutter, Dart, accessibility audits, financial workflow reconciliation and responsive interface engineering';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-card-skills',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-card-skills',
+            displayName: 'Candidate One',
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90},
+            applicationId: 'app-long-card-skills',
+            status: 'PENDING',
+            skills: longSkills,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final skillsFinder = find.text(longSkills);
+      expect(skillsFinder, findsOneWidget);
+      final skills = tester.widget<Text>(skillsFinder);
+      expect(
+        skills.maxLines,
+        isNull,
+        reason: 'The ranked candidate card should not hard-truncate a skills summary when system text is enlarged.',
+      );
+      expect(skills.overflow, TextOverflow.visible);
+      expect(
+        tester.renderObject<RenderParagraph>(skillsFinder).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'candidate component progress bars remain safe for out-of-range API values',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'invalid-components',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-invalid-components',
+            displayName: 'Candidate with stale scoring data',
+            score: 92,
+            components: {
+              'skills': 150,
+              'experience': -25,
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(
+              data: data,
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final indicators = tester
+          .widgetList<LinearProgressIndicator>(
+            find.byType(LinearProgressIndicator),
+          )
+          .where((indicator) => indicator.value != null)
+          .toList(growable: false);
+      expect(indicators, hasLength(2));
+      final chartColor = HopeV2ChartColors.matchSignal(
+        tester.element(find.byType(EmployerCandidateMatchesPage)),
+      );
+      for (final indicator in indicators) {
+        expect(indicator.value, inInclusiveRange(0.0, 1.0));
+        expect(
+          (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
+          chartColor,
+          reason: 'Candidate score bars share the HOPE teal chart role.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+
+  testWidgets(
+    'fractional candidate scores normalize before display and gap calculation',
+    (tester) async {
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'fractional-scores',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-94',
+            displayName: 'Candidate 94',
+            score: 0.94,
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-91',
+            displayName: 'Candidate 91',
+            score: 0.91,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(
+              data: data,
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('candidate-comparison-best-score')),
+          matching: find.text('94%'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('91%'), findsWidgets);
+      expect(find.text('3 percentage-point gap'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
   testWidgets('renders ranked candidates with compatibility score and reasons',
       (tester) async {
     const data = HopeEmployerCandidateMatchList(
@@ -319,6 +559,189 @@ void main() {
     },
   );
   testWidgets(
+    'candidate names preserve their full wording at 1.5x text scale',
+    (tester) async {
+      const longName =
+          'Senior financial systems analyst responsible for marketplace settlement operations';
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-candidate-name',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-name',
+            displayName: longName,
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 98, 'experience': 90},
+            applicationId: 'app-long-name',
+            status: 'PENDING',
+            skills: 'Flutter and financial workflows',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final titleFinder = find.text(longName);
+      expect(titleFinder, findsNWidgets(2));
+      for (final title in tester.widgetList<Text>(titleFinder)) {
+        expect(
+          title.maxLines,
+          isNull,
+          reason:
+              'Both the best-match overview and ranked candidate card must preserve the full display name at enlarged system text.',
+        );
+        expect(title.overflow, TextOverflow.visible);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'candidate comparison matrix fully wraps long names and skills at 1.5x',
+    (tester) async {
+      const longName =
+          'Senior financial systems analyst responsible for marketplace settlement operations';
+      const longSkills =
+          'Flutter, Dart, accessibility audits, financial workflow reconciliation and responsive interface engineering';
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-long-matrix-values',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-long-matrix-name',
+            displayName: longName,
+            score: 94,
+            reasons: ['SKILL_MATCH'],
+            components: {'experience': 90, 'location': 82},
+            applicationId: 'app-long-matrix-name',
+            status: 'PENDING',
+            skills: longSkills,
+          ),
+          HopeEmployerCandidateMatch(
+            rank: 2,
+            userId: 'worker-second-matrix',
+            displayName: 'Candidate Two',
+            score: 86,
+            reasons: ['CATEGORY_MATCH'],
+            components: {'experience': 84, 'location': 80},
+            applicationId: 'app-second-matrix',
+            status: 'PENDING',
+            skills: 'Flutter',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: EmployerCandidateMatchesPage(data: data, onRetry: () {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final matrix = find.byKey(
+        const ValueKey('candidate-comparison-matrix'),
+      );
+      // At a 360x640 viewport the overview can push this ListView child below
+      // the fold; scroll until the lazy ListView delegate builds the matrix.
+      await tester.scrollUntilVisible(
+        matrix,
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(matrix, findsOneWidget);
+
+      for (final label in ['Experience', 'Location']) {
+        final labelFinder = find.descendant(
+          of: matrix,
+          matching: find.text(label),
+        );
+        expect(labelFinder, findsOneWidget);
+        final paragraph = tester.renderObject<RenderParagraph>(labelFinder);
+        final lineBoxes = paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: label.length),
+        );
+        expect(
+          lineBoxes,
+          hasLength(1),
+          reason: '$label must not split inside the word at 1.5x text scale.',
+        );
+      }
+
+      for (final wording in [longName, longSkills]) {
+        final valueFinder = find.descendant(
+          of: matrix,
+          matching: find.text(wording),
+        );
+        expect(valueFinder, findsOneWidget);
+        final value = tester.widget<Text>(valueFinder);
+        expect(
+          value.maxLines,
+          isNull,
+          reason:
+              'Candidate names and skills inside the comparison matrix must retain their full wording at enlarged text.',
+        );
+        expect(value.overflow, TextOverflow.visible);
+        expect(
+          tester.renderObject<RenderParagraph>(valueFinder).didExceedMaxLines,
+          isFalse,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'candidate match loader uses a single compact page shell in loading and loaded states',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -363,6 +786,132 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(PremiumPageFrame), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'Candidate Matches exposes reachable details and a visible back action',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const data = HopeEmployerCandidateMatchList(
+        jobId: 'job-details-action',
+        kind: 'JOB',
+        candidates: [
+          HopeEmployerCandidateMatch(
+            rank: 1,
+            userId: 'worker-details-action',
+            displayName: 'Candidate With Details',
+            score: 91,
+            reasons: ['SKILL_MATCH'],
+            components: {'skills': 90},
+            applicationId: 'app-details-action',
+            status: 'PENDING',
+            skills: 'Flutter, Dart and accessible UI engineering',
+            resumeHighlights:
+                'Evidence of Flutter delivery and settlement operations.',
+            offerPrice: '1200000',
+            offerMessage: 'Available to start next week.',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en'),
+          supportedLocales: const [Locale('en'), Locale('fa')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        body: EmployerCandidateMatchesPage(
+                          data: data,
+                          onRetry: () {},
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: const Text('Origin screen'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Origin screen'));
+      await tester.pumpAndSettle();
+
+      final backAction = find.byKey(
+        const ValueKey('candidate-matches-back-action'),
+      );
+      expect(backAction, findsOneWidget);
+      expect(backAction.hitTestable(), findsOneWidget);
+
+      final detailsAction = find.byKey(
+        const ValueKey('candidate-match-details-worker-details-action'),
+      );
+      expect(detailsAction, findsOneWidget);
+      expect(detailsAction.hitTestable(), findsOneWidget);
+
+      await tester.ensureVisible(detailsAction);
+      await tester.tap(detailsAction);
+      await tester.pumpAndSettle();
+
+      final detailsSheet = find.byType(BottomSheet);
+      expect(detailsSheet, findsOneWidget);
+      expect(
+        find.descendant(
+          of: detailsSheet,
+          matching: find.text('Candidate details'),
+        ),
+        findsOneWidget,
+      );
+      for (final detail in <String>[
+        'Flutter, Dart and accessible UI engineering',
+        'Evidence of Flutter delivery and settlement operations.',
+        'Available to start next week.',
+      ]) {
+        expect(
+          find.descendant(of: detailsSheet, matching: find.text(detail)),
+          findsOneWidget,
+          reason: 'Details sheet should show only backend-provided candidate fields.',
+        );
+      }
+      expect(
+        find.descendant(
+          of: detailsSheet,
+          matching: find.textContaining('1,200,000'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      final closeAction = find.byKey(
+        const ValueKey('candidate-details-close-action'),
+      );
+      expect(closeAction, findsOneWidget);
+      await tester.tap(closeAction);
+      await tester.pumpAndSettle();
+
+      await tester.tap(backAction);
+      await tester.pumpAndSettle();
+      expect(find.text('Origin screen'), findsOneWidget);
+      expect(find.byType(EmployerCandidateMatchesPage), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

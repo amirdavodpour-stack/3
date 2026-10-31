@@ -1,21 +1,27 @@
-export function createConfigRoutes({ sendJson, config }) {
+import { isInternalWalletUserTopUpEnabled } from '../wallet_topup_policy.js';
+import { isInternalWalletPayoutEnabled } from '../wallet_payout_policy.js';
+
+export function createConfigRoutes({ sendJson, config, env = process.env }) {
   return async function configRoutes(req, res, parts) {
     if (req.method !== 'GET' || parts.length !== 1 || parts[0] !== 'capabilities') {
       return false;
     }
 
-    const internalTopUp =
-      config.paymentProvider === 'internal' &&
-      config.internalWalletUserTopUpEnabled &&
-      (process.env.NODE_ENV !== 'production' ||
-        process.env.STAGING_ALLOW_INTERNAL_WALLET_TOPUP === 'true');
+    const internalTopUp = isInternalWalletUserTopUpEnabled({
+      paymentProvider: config.paymentProvider,
+      enabled: config.internalWalletUserTopUpEnabled,
+    });
+    const internalPayout = isInternalWalletPayoutEnabled({
+      paymentProvider: config.paymentProvider,
+      env,
+    });
 
     return sendJson(res, 200, {
       capabilities: {
         googleSignIn: Boolean(config.googleAuthEnabled && config.googleOAuthClientId),
         wallet: true,
         walletTransfer: true,
-        walletWithdraw: config.paymentProvider === 'internal',
+        walletWithdraw: internalPayout,
         walletDeposit: internalTopUp,
         notifications: true,
         savedOpportunities: false,

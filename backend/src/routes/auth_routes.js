@@ -1,4 +1,4 @@
-import { isPrimaryAdminEmail, shouldBootstrapPrimaryAdmin } from '../application/admin_panel_access.js';
+import { shouldBootstrapPrimaryAdmin } from '../application/admin_panel_access.js';
 
 export function createAuthRoutes({
   authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser,
@@ -19,7 +19,7 @@ export function createAuthRoutes({
       if (password.length < 12 || password.length > PASSWORD_MAX_LENGTH) throw new HttpError(400, 'WEAK_PASSWORD', 'Password must be between 12 and 128 characters');
       const displayName = stringField(body.displayName, 'displayName', { min: 1, max: 120, required: true });
       if (await getUserByEmail(email)) throw new HttpError(409, 'EMAIL_IN_USE', 'An account with this email already exists');
-      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: isPrimaryAdminEmail(email) ? 'ADMIN' : 'USER', status: 'ACTIVE', sessionVersion: 0, createdAt: now() };
+      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: 'USER', status: 'ACTIVE', sessionVersion: 0, createdAt: now() };
       const providerDraft = { id: id(), userId: userDraft.id, providerType: 'INDIVIDUAL', capacity: 'OPEN', verificationStatus: 'UNVERIFIED', createdAt: now(), updatedAt: now() };
       let user;
       try {
@@ -31,6 +31,74 @@ export function createAuthRoutes({
       const session = await issueSession(user);
       await createAudit('AUTH_REGISTER', user.id, 'user', user.id);
       return sendJson(res, 201, { ...session, user: authUserView(user) });
+    }
+
+    if (req.method === 'POST' && route === 'google/link') {
+      if (!config.googleAuthEnabled || !config.googleOAuthClientId) {
+        throw new HttpError(503, 'GOOGLE_AUTH_UNAVAILABLE', 'Google sign-in is not currently available');
+      }
+      const user = await authUser(req);
+      if (!user || !user.id || user.status !== 'ACTIVE') {
+        throw new HttpError(401, 'AUTH_REQUIRED', 'Sign in to HOPE before linking Google');
+      }
+      const body = await readBody(req);
+      requireFields(body, ['idToken']);
+      const idToken = stringField(body.idToken, 'idToken', { min: 1, max: 16384, required: true });
+      let identity;
+      try {
+        identity = await verifyGoogleIdToken(idToken, config.googleOAuthClientId);
+      } catch (error) {
+        logEvent({ level: 'warn', action: 'GOOGLE_ACCOUNT_LINK_REJECTED', code: error?.code || error?.message || 'INVALID_GOOGLE_TOKEN' });
+        throw new HttpError(401, 'INVALID_GOOGLE_TOKEN', 'Google authentication could not be verified');
+      }
+
+      if (!identity?.subject || !String(identity.email || '').trim()) {
+        throw new HttpError(401, 'INVALID_GOOGLE_TOKEN', 'Google authentication could not be verified');
+      }
+      if (String(identity.email).trim().toLowerCase() !== String(user.email || '').trim().toLowerCase()) {
+        throw new HttpError(403, 'GOOGLE_LINK_EMAIL_MISMATCH', 'The verified Google email must match the signed-in HOPE account');
+      }
+
+      if (user.googleSubject) {
+        if (user.googleSubject === identity.subject) {
+          return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(user) });
+        }
+        throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
+      }
+
+      const existingSubject = process.env.DATABASE_URL
+        ? await repo.findUserByGoogleSubject(identity.subject)
+        : await legacy.findUserByGoogleSubject(identity.subject);
+      if (existingSubject && existingSubject.id !== user.id) {
+        throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
+      }
+      if (existingSubject?.id === user.id) {
+        return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(existingSubject) });
+      }
+
+      let linked;
+      try {
+        linked = process.env.DATABASE_URL
+          ? await repo.linkGoogleSubject(user.id, identity.subject)
+          : await legacy.linkGoogleSubject(user.id, identity.subject);
+      } catch (error) {
+        if (error?.code === '23505') {
+          throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
+        }
+        throw error;
+      }
+      if (!linked) {
+        const currentSubject = process.env.DATABASE_URL
+          ? await repo.findUserByGoogleSubject(identity.subject)
+          : await legacy.findUserByGoogleSubject(identity.subject);
+        if (currentSubject?.id === user.id) {
+          return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(currentSubject) });
+        }
+        throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
+      }
+      if (!process.env.DATABASE_URL) await legacy.save();
+      await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, { provider: 'google' });
+      return sendJson(res, 200, { linked: true, alreadyLinked: false, user: authUserView(linked) });
     }
 
     if (req.method === 'POST' && route === 'google') {
@@ -68,7 +136,7 @@ export function createAuthRoutes({
         email: identity.email,
         passwordHash: await hashPassword(randomToken(48)),
         displayName: identity.displayName,
-        role: isPrimaryAdminEmail(identity.email) ? 'ADMIN' : 'USER',
+        role: shouldBootstrapPrimaryAdmin({ email: identity.email, verifiedIdentity: true, googleSubject: identity.subject }) ? 'ADMIN' : 'USER',
         status: 'ACTIVE',
         sessionVersion: 0,
         createdAt: now(),
@@ -93,6 +161,9 @@ export function createAuthRoutes({
         if (error?.code === '23505') {
           const raced = process.env.DATABASE_URL ? await repo.findUserByGoogleSubject(identity.subject) : null;
           if (raced) {
+            if (raced.status !== 'ACTIVE') {
+              throw new HttpError(401, 'INVALID_CREDENTIALS', 'Account is not active');
+            }
             const session = await issueSession(raced);
             await createAudit('AUTH_GOOGLE_LOGIN', raced.id, 'user', raced.id);
             return sendJson(res, 200, { ...session, user: authUserView(raced) });

@@ -30,6 +30,10 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Backend fast tests
+        working-directory: backend
+        run: npm run test:fast
+
       - name: Backend static check
         working-directory: backend
         run: npm run check
@@ -41,7 +45,7 @@ jobs:
   flutter:
     name: Flutter analyze + full test suite
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -62,6 +66,71 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
+      - name: Setup Gradle build cache
+        uses: gradle/actions/setup-gradle@0f4528296b4bc09e8ae0fc7be30185a4ab435545 # v6.0.0
+
+      - name: Cache Android compile SDK components
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.0.1
+        with:
+          path: |
+            /usr/local/lib/android/sdk/platforms/android-36
+            /usr/local/lib/android/sdk/build-tools/36.0.0
+            /usr/local/lib/android/sdk/ndk/28.2.13676358
+          key: hope-android-compile-sdk-api36-ndk28.2-${{ runner.os }}-v1
+
+      - name: Prepare Android compile SDK components
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+
+      - name: Compile Android debug APK
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          timeout --foreground --signal=TERM --kill-after=30s 480s flutter build apk --debug --no-pub
+          APK="build/app/outputs/flutter-apk/app-debug.apk"
+          test -s "$APK"
+          sha256sum "$APK" > android-debug-apk.sha256
+          echo "PASS: Android debug APK compiled."
+          cat android-debug-apk.sha256
+
+      - name: Upload Android debug APK evidence
+        if: ${{ success() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hope-android-debug-apk-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            android-debug-apk.sha256
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Contrast guard
+        run: python3 tool/contrast_check.py
+
+      - name: Runtime source guard
+        run: bash test/runtime/premium_visual_wave_source_test.sh
+
+      - name: Runtime driver contract
+        run: bash tools/tests/hope-runtime-driver-contract.sh
+
+      - name: Android Emulator package retry contract
+        run: bash test/runtime/android_emulator_install_retry_test.sh
+
+      - name: Android runtime golden baseline contract
+        run: bash test/runtime/android_runtime_golden_baseline_test.sh
+
+      - name: Android screenshot transport contract
+        run: bash test/runtime/android_screenshot_transport_test.sh
+
+      - name: TalkBack exact-bound-service contract
+        run: bash test/runtime/hope_enable_talkback_test.sh
+
       - name: Flutter analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
@@ -75,7 +144,7 @@ jobs:
 
       - name: Upload expanded Flutter output
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hope-flutter-expanded-${{ github.sha }}-${{ github.run_id }}
           path: flutter-test-expanded.log

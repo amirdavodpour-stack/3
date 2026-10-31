@@ -84,5 +84,3 @@ test('rerankWithAI returns null when the model response is not valid ranking JSO
 
   assert.equal(result, null);
 });
-
-[executed on device: localhost (ad4940fb-3108-4ab5-af41-ee34669dd70c)]

@@ -29,6 +29,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
   bool _operationBusy = false;
+  bool _initialLoadPending = true;
   Set<String> _permissions = <String>{};
   bool _hasPermission(String permission) => _permissions.contains(permission);
 
@@ -70,7 +71,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _initialLoadPending = false);
   }
 
   String _t(String fa, String en) =>
@@ -198,7 +199,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   }
 
   Widget _loadingOrError<T>(AsyncSnapshot<T> s, Widget Function(T data) child) {
-    if (s.connectionState == ConnectionState.waiting) {
+    if (_initialLoadPending || s.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator());
     }
     if (s.hasError) {
@@ -351,6 +352,14 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
 
   Widget _payoutCard(Map<String, dynamic> row) {
     final id = '${row['id'] ?? row['payoutId'] ?? ''}';
+    final rawCases = row['reconciliationCases'];
+    final reconciliationCases = rawCases is List
+        ? rawCases
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
@@ -368,13 +377,22 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             row.entries
                 .where(
                   (e) =>
-                      !{'id', 'payoutId', 'status', 'currency'}.contains(e.key) &&
+                      !{'id', 'payoutId', 'status', 'currency', 'reconciliationCases'}.contains(e.key) &&
                       (e.value is String || e.value is num),
                 )
                 .take(6)
                 .map((e) => '${e.key}: ${e.value}')
                 .join(' • '),
           ),
+          if (reconciliationCases.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              _t('پرونده‌های تطبیق', 'Reconciliation cases'),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            ...reconciliationCases.map(_reconciliationCaseCard),
+          ],
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: OutlinedButton(
@@ -391,6 +409,92 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       ),
     );
   }
+
+  Widget _reconciliationCaseCard(Map<String, dynamic> item) {
+    final caseId = '${item['id'] ?? ''}';
+    final caseType = '${item['caseType'] ?? _t('پرونده تطبیق', 'Reconciliation case')}';
+    final severity = '${item['severity'] ?? '—'}'.trim().toUpperCase();
+    final status = '${item['status'] ?? '—'}'.trim().toUpperCase();
+    final expected = item['expected'] is Map
+        ? Map<String, dynamic>.from(item['expected'] as Map)
+        : const <String, dynamic>{};
+    final observed = item['observed'] is Map
+        ? Map<String, dynamic>.from(item['observed'] as Map)
+        : const <String, dynamic>{};
+    final theme = Theme.of(context);
+    final severityColor = switch (severity) {
+      'CRITICAL' || 'HIGH' => theme.colorScheme.error,
+      'MEDIUM' => theme.colorScheme.tertiary,
+      _ => theme.colorScheme.outline,
+    };
+
+    String evidenceText(Map<String, dynamic> evidence) {
+      if (evidence.isEmpty) return _t('اطلاعات ثبت نشده', 'No evidence recorded');
+      return evidence.entries
+          .take(5)
+          .map((entry) => '${entry.key}: ${entry.value}')
+          .join(' • ');
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        border: Border.all(color: severityColor.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  caseType.replaceAll('_', ' '),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              StatusPill(
+                _reconciliationSeverityLabel(severity),
+                color: severityColor,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('${_t('وضعیت پرونده', 'Case status')}: ${_reconciliationStatusLabel(status)}'),
+          const SizedBox(height: 4),
+          Text('${_t('مورد انتظار', 'Expected')}: ${evidenceText(expected)}'),
+          const SizedBox(height: 4),
+          Text('${_t('مشاهده‌شده', 'Observed')}: ${evidenceText(observed)}'),
+          if (caseId.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${_t('شناسه پرونده', 'Case ID')}: $caseId',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _reconciliationSeverityLabel(String value) => switch (value) {
+        'CRITICAL' => _t('بحرانی', 'Critical'),
+        'HIGH' => _t('زیاد', 'High'),
+        'MEDIUM' => _t('متوسط', 'Medium'),
+        'LOW' => _t('کم', 'Low'),
+        _ => value.isEmpty ? '—' : value,
+      };
+
+  String _reconciliationStatusLabel(String value) => switch (value) {
+        'OPEN' => _t('باز', 'Open'),
+        'INVESTIGATING' => _t('در حال بررسی', 'Investigating'),
+        'RESOLVED' => _t('حل‌شده', 'Resolved'),
+        'DISMISSED' => _t('مختومه', 'Dismissed'),
+        _ => value.isEmpty ? '—' : value,
+      };
 
   Future<void> _resolvePayout(String id, String decision) async {
     if (_operationBusy || !mounted) return;
@@ -542,45 +646,52 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                 : constraints.maxWidth >= 420
                     ? 2
                     : 1;
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final enlargedText = textScale > 1.2;
+        const gap = 8.0;
+        final metricWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
 
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            mainAxisExtent: columns == 1 ? 82 : 96,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: entries.take(20).length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            return PremiumPanel(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _value(entry.value),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w900),
+        // Metrics are data cards, not fixed-height dashboard tiles: long backend
+        // values and larger system text must expand instead of being clipped.
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final entry in entries.take(20))
+              SizedBox(
+                width: metricWidth,
+                child: PremiumPanel(
+                  padding: EdgeInsets.all(enlargedText ? 10 : 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _value(entry.value),
+                        softWrap: true,
+                        maxLines: null,
+                        overflow: TextOverflow.visible,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.key,
+                        softWrap: true,
+                        maxLines: enlargedText ? null : 2,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    entry.key,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+                ),
               ),
-            );
-          },
+          ],
         );
       },
     );

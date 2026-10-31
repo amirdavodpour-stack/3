@@ -1,6 +1,6 @@
 import { URL } from 'node:url';
 
-export function createAnalyticsRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, sanitizeTelemetryProperties, recordAnalyticsEvent, recordCrash, logEvent, repo, getProductFunnelSummary, localProductFunnelSummary, legacy }) {
+export function createAnalyticsRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, sanitizeTelemetryProperties, recordAnalyticsEvent, recordCrash, logEvent, repo, getProductFunnelSummary, localProductFunnelSummary, legacy, config }) {
   async function analyticsRoutes(req, res, parts) {
     if (req.method === 'POST' && parts[0] === 'events') {
       const body = await readBody(req);
@@ -23,7 +23,10 @@ export function createAnalyticsRoutes({ authUser, requireAdmin, readBody, sendJs
   }
 
   async function analyticsAdminRoutes(req, res, parts) {
-    requireAdmin(await authUser(req));
+    const me = requireAdmin(await authUser(req));
+    if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) {
+      throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
+    }
     if (req.method !== 'GET') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'GET required');
     const days = Math.min(Math.max(Number(new URL(req.url, `http://${req.headers.host || 'localhost'}`).searchParams.get('days') || 30), 1), 365);
     if (parts[0] === 'crashes') {

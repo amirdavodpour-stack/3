@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../storage/secure_store.dart';
@@ -162,6 +163,28 @@ class ApiClient {
   Future<void> _delayBeforeRetry(int attempt) =>
       Future<void>.delayed(_retryBaseDelay * (attempt + 1));
 
+
+  /// Downloads authenticated binary content and follows the same token refresh
+  /// policy as ordinary API requests.
+  Future<Uint8List> downloadBytes(String path, {bool auth = true}) async {
+    var response = await _sendChecked('GET', path, auth: auth);
+    if (response.statusCode == 401 && auth) {
+      final refreshed = await _refreshAccessToken();
+      if (refreshed) {
+        response = await _sendChecked('GET', path, auth: true);
+        if (response.statusCode == 401) await _handleUnauthorized();
+      } else {
+        await _handleUnauthorized();
+      }
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final decoded = response.body.isEmpty ? null : _decodeBody(response.body);
+      final error = _apiException(response.statusCode, decoded, 'Download failed');
+      onError?.call(error);
+      throw error;
+    }
+    return response.bodyBytes;
+  }
 
   Future<dynamic> request(String method, String path,
       {Object? body, bool auth = false, Map<String, String>? headers}) async {
