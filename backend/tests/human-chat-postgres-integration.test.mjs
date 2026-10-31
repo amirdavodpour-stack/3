@@ -29,6 +29,8 @@ const modules = enabled
       import('../src/outbox_handlers.js'),
       import('../src/payment_provider.js'),
       import('../src/repository/disputes.js'),
+      import('../src/repository/auth.js'),
+      import('../src/repository/admin.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -44,6 +46,9 @@ const { completePaymentCreateHoldOutbox, failOutboxEvent, holdPaymentForDispute 
 const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
 const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis } = modules[13] || {};
+const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
+const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword } = modules[14] || {};
+const { setUserStatus, revokeUserSessions } = modules[15] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -5057,6 +5062,102 @@ test('account deletion and payout completion serialize on wallet locks without d
 });
 
 
+
+
+
+
+async function createPanelTestAdmin(pool, prefix) {
+  const userId = await createTransferTestUser(pool, prefix);
+  await pool.query("UPDATE users SET role='ADMIN' WHERE id=$1", [userId]);
+  return userId;
+}
+
+async function assertPanelVerificationCleared(pool, userId) {
+  const { rows } = await pool.query(
+    "SELECT admin_panel_verified_at FROM users WHERE id=$1",
+    [userId],
+  );
+  assert.equal(rows[0]?.admin_panel_verified_at ?? null, null);
+  assert.equal(await isAdminPanelVerified(userId), false);
+}
+
+test('PostgreSQL logout session-version bump clears existing admin-panel verification', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-logout-invalidation');
+  assert.ok(await setAdminPanelVerified(userId));
+  assert.equal(await isAdminPanelVerified(userId), true);
+
+  const version = await bumpUserSessionVersion(userId);
+  assert.equal(version, 1);
+  await assertPanelVerificationCleared(pool, userId);
+});
+
+test('PostgreSQL password reset clears admin-panel verification atomically', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-reset-invalidation');
+  assert.ok(await setAdminPanelVerified(userId));
+
+  const resetId = crypto.randomUUID();
+  await insertResetToken({
+    id: resetId,
+    userId,
+    tokenHash: `admin-panel-reset-${crypto.randomUUID()}`,
+    familyId: crypto.randomUUID(),
+    expiresAt: new Date(Date.now() + 60000).toISOString(),
+    createdAt: new Date().toISOString(),
+  });
+  assert.equal(
+    await consumeResetTokenAndChangePassword(resetId, userId, 'integration-only-password-hash'),
+    true,
+  );
+  await assertPanelVerificationCleared(pool, userId);
+});
+
+test('PostgreSQL forced session revocation clears admin-panel verification', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-revoke-session');
+  assert.ok(await setAdminPanelVerified(userId));
+
+  const result = await revokeUserSessions(userId);
+  assert.equal(result?.id, userId);
+  assert.equal(result?.sessionVersion, 1);
+  await assertPanelVerificationCleared(pool, userId);
+});
+
+test('PostgreSQL admin status changes clear admin-panel verification', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-status-invalidation');
+  assert.ok(await setAdminPanelVerified(userId));
+
+  const updated = await setUserStatus(userId, 'DISABLED');
+  assert.equal(updated?.status, 'DISABLED');
+  await assertPanelVerificationCleared(pool, userId);
+});
+
+test('PostgreSQL privacy deletion clears admin-panel verification from the account tombstone', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-privacy-invalidation');
+  assert.ok(await setAdminPanelVerified(userId));
+
+  const result = await deleteUserPrivacyBundle(userId, {
+    email: `deleted+${userId}@invalid.local`,
+    passwordHash: 'integration-only-deleted-account',
+  });
+  assert.equal(result?.deleted, true);
+  await assertPanelVerificationCleared(pool, userId);
+});
+
+test('PostgreSQL refuses to set or honor admin-panel verification for a disabled admin', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-disabled-guard');
+  await pool.query(
+    "UPDATE users SET status='DISABLED',admin_panel_verified_at=NOW() WHERE id=$1",
+    [userId],
+  );
+
+  assert.equal(await setAdminPanelVerified(userId), null);
+  assert.equal(await isAdminPanelVerified(userId), false);
+});
 
 
 after(async () => {
