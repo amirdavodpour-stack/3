@@ -47,7 +47,7 @@ const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
 const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis } = modules[13] || {};
 const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
-const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword } = modules[14] || {};
+const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
 const { setUserStatus, revokeUserSessions } = modules[15] || {};
 const {
   closeJobChatForJob,
@@ -5146,6 +5146,63 @@ test('PostgreSQL privacy deletion clears admin-panel verification from the accou
   assert.equal(result?.deleted, true);
   await assertPanelVerificationCleared(pool, userId);
 });
+
+
+test('PostgreSQL refresh-token reuse revokes the user session and clears admin-panel verification', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-refresh-reuse');
+  assert.ok(await setAdminPanelVerified(userId));
+  assert.equal(await isAdminPanelVerified(userId), true);
+
+  const familyId = crypto.randomUUID();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
+  const oldTokenHash = `refresh-reuse-old-${crypto.randomUUID()}`;
+  const siblingTokenHash = `refresh-reuse-sibling-${crypto.randomUUID()}`;
+
+  await insertRefreshToken({
+    id: crypto.randomUUID(),
+    userId,
+    tokenHash: oldTokenHash,
+    familyId,
+    expiresAt,
+    createdAt: now.toISOString(),
+    revokedAt: now.toISOString(),
+    replacedBy: siblingTokenHash,
+  });
+  await insertRefreshToken({
+    id: crypto.randomUUID(),
+    userId,
+    tokenHash: siblingTokenHash,
+    familyId,
+    expiresAt,
+    createdAt: now.toISOString(),
+    revokedAt: null,
+    replacedBy: null,
+  });
+
+  const result = await rotateRefreshToken(oldTokenHash, null, familyId);
+  assert.equal(result?.kind, 'reuse');
+
+  const { rows: users } = await pool.query(
+    'SELECT session_version,admin_panel_verified_at FROM users WHERE id=$1',
+    [userId],
+  );
+  assert.equal(Number(users[0]?.session_version), 1,
+    'refresh-token reuse must revoke previously issued access-token sessions');
+  assert.equal(users[0]?.admin_panel_verified_at ?? null, null,
+    'refresh-token reuse must clear any prior admin-panel unlock');
+  assert.equal(await isAdminPanelVerified(userId), false);
+
+  const { rows: family } = await pool.query(
+    'SELECT revoked_at FROM refresh_tokens WHERE family_id=$1 AND user_id=$2',
+    [familyId,userId],
+  );
+  assert.equal(family.length, 2);
+  assert.ok(family.every((token) => token.revoked_at),
+    'all refresh tokens in the compromised family must be revoked');
+});
+
 
 test('PostgreSQL refuses to set or honor admin-panel verification for a disabled admin', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();

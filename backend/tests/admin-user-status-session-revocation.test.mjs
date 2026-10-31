@@ -77,6 +77,22 @@ test('admin session revocation, status changes and role changes clear prior pane
   }
 });
 
+
+test('refresh-token reuse invalidates access sessions and admin-panel verification', () => {
+  const rotate = functionSource(authRepositorySource, 'rotateRefreshToken', 'revokeRefreshFamily');
+  const reuseStart = rotate.indexOf('if(r.revoked_at)');
+  const reuseEnd = rotate.indexOf("if(new Date(r.expires_at)", reuseStart);
+  assert.ok(reuseStart >= 0 && reuseEnd > reuseStart, 'refresh reuse branch must exist');
+  const reuseBranch = rotate.slice(reuseStart, reuseEnd);
+  assert.match(
+    reuseBranch,
+    /UPDATE users SET[^\`]*session_version\s*=\s*session_version\s*\+\s*1[^\`]*admin_panel_verified_at\s*=\s*NULL[^\`]*WHERE id=\$1/is,
+  );
+  assert.match(reuseBranch, /r\.user_id/,
+    'reuse invalidation must target the account owning the compromised token');
+});
+
+
 test('account deletion clears admin-panel verification with the privacy tombstone', () => {
   const deletion = privacyRepositorySource.slice(
     privacyRepositorySource.indexOf('export async function deleteUserPrivacyBundle('),
