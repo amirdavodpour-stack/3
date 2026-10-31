@@ -258,7 +258,7 @@ export async function setAdminPanelVerified(userId) {
 export async function isAdminPanelVerified(userId, ttlMinutes = 15) {
   const { rows } = await requirePool().query(`SELECT role,status,admin_panel_verified_at FROM users WHERE id=$1`, [userId]);
   const at = rows[0]?.admin_panel_verified_at;
-  return rows[0]?.role === 'ADMIN' && rows[0]?.status === 'ACTIVE' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000;
+  return Boolean(rows[0]?.role === 'ADMIN' && rows[0]?.status === 'ACTIVE' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000);
 }
 
 export async function clearAdminPanelVerification(userId) {
