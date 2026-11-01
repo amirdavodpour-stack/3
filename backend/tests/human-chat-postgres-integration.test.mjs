@@ -5282,6 +5282,14 @@ test('PostgreSQL account deletion releases the verified Google subject for a new
   assert.deepEqual(existing.rows.map((row) => row.id), [newUserId]);
 });
 
+
+test('migration 040 permits cancelling a funded job after a pre-work refund', { skip: !enabled }, async () => {
+  const { rows } = await dbModule.getPool().query(
+    "SELECT hope_job_transition_allowed('FUNDED','CANCELLED') AS allowed",
+  );
+  assert.equal(rows[0]?.allowed, true);
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
