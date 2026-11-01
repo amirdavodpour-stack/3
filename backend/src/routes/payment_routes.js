@@ -124,12 +124,13 @@ export function createPaymentRoutes({
   if (req.method === 'POST' && parts[1] === 'refund' && parts[2]) {
     const me=await authUser(req); const body=await readBody(req); const job=await getJob(parts[2]); if(!job)throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
     if(job.ownerId!==me.id)throw new HttpError(403,'FORBIDDEN','Only the owner can refund payment');
+    if(job.status!=='FUNDED')throw new HttpError(409,'REFUND_REQUIRES_DISPUTE','Refund after work has started must be resolved through the dispute process');
     const payment=process.env.DATABASE_URL?await paymentUseCases.findByJob(job.id):paymentLegacy.findByJob(job.id); if(!payment)throw new HttpError(409,'PAYMENT_REQUIRED','No payment exists for this job');
     const idempotencyKey=readIdempotencyKey(req, config.maxIdempotencyKeyLength); const createdAt=now(); const refundId=crypto.randomUUID();
     let created;
     try {
       created=process.env.DATABASE_URL?await paymentUseCases.refund({jobId:job.id,paymentId:payment.id,ownerId:me.id,amount:payment.amount,id:refundId,idempotencyKey,createdAt}):await paymentLegacy.refund({ payment, job, idempotencyKey, refundId, createdAt });
-    } catch(e){ if(e.code==='INVALID_PAYMENT_STATE')throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state'); if(e.code==='REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY')throw new HttpError(409,'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY','An existing refund operation must be retried using the same idempotency key'); if(e.code==='PARTIAL_REFUND_UNSUPPORTED')throw new HttpError(400,'PARTIAL_REFUND_UNSUPPORTED','Only full refunds are currently supported'); throw e; }
+    } catch(e){ if(e.code==='REFUND_REQUIRES_DISPUTE')throw new HttpError(409,'REFUND_REQUIRES_DISPUTE','Refund after work has started must be resolved through the dispute process'); if(e.code==='INVALID_PAYMENT_STATE')throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment cannot be refunded from its current state'); if(e.code==='REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY')throw new HttpError(409,'REFUND_RETRY_REQUIRES_SAME_IDEMPOTENCY_KEY','An existing refund operation must be retried using the same idempotency key'); if(e.code==='PARTIAL_REFUND_UNSUPPORTED')throw new HttpError(400,'PARTIAL_REFUND_UNSUPPORTED','Only full refunds are currently supported'); throw e; }
     if(process.env.DATABASE_URL){ try{await processPaymentRefundNow();}catch(error){logEvent({level:'warn',action:'PAYMENT_REFUND_WORKER_TRIGGER_FAILED',paymentId:payment.id,error:error.message});} const refreshed=await paymentUseCases.findByJob(job.id); return sendJson(res,created.refund.status==='PENDING'?202:200,{...(await paymentView(refreshed||created.payment,await repo.findJobById(job.id))),refund:created.refund}); }
     await createAudit('PAYMENT_REFUND',me.id,'payment',payment.id,{jobId:job.id}); return sendJson(res,200,{...(await paymentView(created.payment,job)),refund:created.refund});
   }
