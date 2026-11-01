@@ -64,6 +64,7 @@ test('opening a dispute holds payment before creating the case and blocks later 
     'the payment must be held before a new dispute is persisted');
   assert.match(route, /DISPUTE_PAYMENT_ALREADY_SETTLED/);
   assert.match(route, /PAYMENT_RELEASE_IN_PROGRESS/);
+  assert.match(route, /if\(existing\) return sendJson\(res,200,\{dispute:existing,payment:\{status:'HELD'\}\}\)/);
 
   const payments = read('backend/src/routes/payment_routes.js');
   assert.match(payments, /JOB_DISPUTE_OPEN/);
@@ -74,6 +75,9 @@ test('opening a dispute holds payment before creating the case and blocks later 
   const automaticCreate = satisfaction.indexOf("triggerType: 'SATISFACTION_CONFLICT'");
   assert.ok(automaticHold >= 0 && automaticCreate > automaticHold,
     'automatic satisfaction disputes must secure escrow before creating a financial case');
+  const existingHold = satisfaction.indexOf('repo.holdPaymentForDispute', satisfaction.indexOf('const existingDispute'));
+  assert.ok(existingHold > satisfaction.indexOf('const existingDispute'),
+    'legacy unresolved satisfaction disputes must re-acquire an escrow hold before being surfaced');
 
   const outbox = read('backend/src/repository/outbox.js');
   assert.match(outbox, /DISPUTE_RELEASE_CLAIM_REQUIRED/);
