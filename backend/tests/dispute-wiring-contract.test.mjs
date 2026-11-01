@@ -57,31 +57,27 @@ test('participants can open disputes during active work as well as after complet
 });
 
 
-test('opening a dispute holds payment before creating the case and blocks later release', () => {
+test('dispute creation and escrow hold are one transaction for user and satisfaction cases', () => {
   const route = read('backend/src/routes/job_dispute_routes.js');
-  const hold = route.indexOf('const held=await repo.holdPaymentForDispute');
-  const create = route.indexOf('repo.createJobDispute', hold);
-  assert.ok(hold >= 0 && create > hold,
-    'the payment must be held before a new dispute is persisted');
+  assert.match(route, /repo\.openJobDisputeWithHold/);
   assert.match(route, /DISPUTE_PAYMENT_ALREADY_SETTLED/);
   assert.match(route, /PAYMENT_RELEASE_IN_PROGRESS/);
-  assert.match(route, /if\(existing\) return sendJson\(res,200,\{dispute:existing,payment:\{status:'HELD'\}\}\)/);
 
   const payments = read('backend/src/routes/payment_routes.js');
   assert.match(payments, /JOB_DISPUTE_OPEN/);
   const satisfaction = read('backend/src/routes/job_satisfaction_routes.js');
   assert.match(satisfaction, /existingDispute && existingDispute.status !== 'RESOLVED'/);
   assert.match(satisfaction, /DISPUTE_HOLDABLE_PAYMENT_STATUSES/);
-  const automaticHold = satisfaction.indexOf('repo.holdPaymentForDispute');
-  const automaticCreate = satisfaction.indexOf("triggerType: 'SATISFACTION_CONFLICT'");
-  assert.ok(automaticHold >= 0 && automaticCreate > automaticHold,
-    'automatic satisfaction disputes must secure escrow before creating a financial case');
-  const existingHold = satisfaction.indexOf('repo.holdPaymentForDispute', satisfaction.indexOf('const existingDispute'));
-  assert.ok(existingHold > satisfaction.indexOf('const existingDispute'),
-    'legacy unresolved satisfaction disputes must re-acquire an escrow hold before being surfaced');
+  assert.match(satisfaction, /repo\.openJobDisputeWithHold/);
+
+  const disputes = read('backend/src/repository/disputes.js');
+  const hold = disputes.indexOf('holdPaymentForDisputeWithClient');
+  const insert = disputes.indexOf('INSERT INTO job_disputes', hold);
+  assert.ok(hold >= 0 && insert > hold,
+    'escrow mutation and dispute persistence must share one PostgreSQL transaction');
+  assert.match(disputes, /withSqlTransaction\(async \(client\)/);
 
   const outbox = read('backend/src/repository/outbox.js');
   assert.match(outbox, /DISPUTE_RELEASE_CLAIM_REQUIRED/);
-  const disputes = read('backend/src/repository/disputes.js');
-  assert.match(disputes, /CASE WHEN \$2='HOLD' THEN 'ADMIN_REVIEW' ELSE 'RESOLVED' END/);
+  assert.match(outbox, /holdPaymentForDisputeWithClient/);
 });
