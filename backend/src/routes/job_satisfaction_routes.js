@@ -2,6 +2,8 @@ import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_a
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
 import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 
+const DISPUTE_HOLDABLE_PAYMENT_STATUSES = new Set(['HELD','RELEASE_PENDING','RELEASE_FAILED']);
+
 export function createJobSatisfactionRoutes({
   authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases,
   askAI, processPaymentReleaseNow, createAudit, notifyUser, NOTIFICATION_TYPES, now,
@@ -12,7 +14,7 @@ export function createJobSatisfactionRoutes({
     return null;
   };
 
-  async function ensureDisputeIfNeeded(job, feedback) {
+  async function ensureDisputeIfNeeded(job, feedback, payment) {
     if (!Array.isArray(feedback) || feedback.length < 2) return null;
     const conflict =
       feedback.some((item) => item.completedAsAgreed !== true || item.aiSentiment !== 'SATISFIED') ||
@@ -21,12 +23,22 @@ export function createJobSatisfactionRoutes({
     if (!conflict) return null;
 
     const existing = await repo.getJobDispute(job.id);
+    if (existing?.status === 'RESOLVED') return existing;
+    if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
+      return null;
+    }
+    // Satisfaction conflicts can race an already-enqueued owner release. Hold
+    // the escrow first; the repository serializes/cancels a pending release and
+    // refuses a provider operation already in progress.
+    const held = await repo.holdPaymentForDispute({ jobId:job.id, paymentId:payment.id });
+    if (!held?.held) return null;
+
     const dispute = existing || await repo.createJobDispute({
       jobId: job.id,
       triggerType: 'SATISFACTION_CONFLICT',
     });
     if (!dispute) return null;
-    if (['AI_ANALYZED', 'ADMIN_REVIEW', 'RESOLVED'].includes(dispute.status)) return dispute;
+    if (['AI_ANALYZED', 'ADMIN_REVIEW'].includes(dispute.status)) return dispute;
 
     const context = await repo.getJobDisputeContext(job.id);
     assertAutomatedAiAccess({ route: 'dispute-resolution', source: 'SYSTEM' });
@@ -65,7 +77,7 @@ export function createJobSatisfactionRoutes({
       return { gate, payment: payment || null, autoReleased: false, dispute: existingDispute };
     }
     if (!gate.ready || !payment) {
-      const dispute = await ensureDisputeIfNeeded(job, feedback);
+      const dispute = await ensureDisputeIfNeeded(job, feedback, payment);
       return { gate, payment: payment || null, autoReleased: false, dispute };
     }
 
