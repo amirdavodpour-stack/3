@@ -129,7 +129,6 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
     if(req.method==='POST'){
       if(existing?.status==='RESOLVED') throw new HttpError(409,'DISPUTE_RESOLVED','This dispute is already resolved');
       if(existing?.status==='RESOLVING') throw new HttpError(409,'DISPUTE_RESOLUTION_IN_PROGRESS','An administrator is currently resolving this dispute');
-      if(existing) return sendJson(res,200,{dispute:existing});
       if(!DISPUTABLE_JOB_STATUSES.has(String(job.status||'').toUpperCase())) {
         throw new HttpError(409,'JOB_NOT_DISPUTABLE','A dispute may be opened during active work or after delivery');
       }
@@ -148,6 +147,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
         }
         throw new HttpError(409,'DISPUTE_PAYMENT_NOT_HOLDABLE','The payment could not be held safely for dispute review');
       }
+      if(existing) return sendJson(res,200,{dispute:existing,payment:{status:'HELD'}});
       const dispute=await repo.createJobDispute({jobId:job.id,openedBy:me.id,triggerType:'USER'});
       const analyzed=await analyzeCase(dispute);
       await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:'USER',paymentHeld:true,cancelledReleaseEvents:held.cancelledReleaseEvents||0});
