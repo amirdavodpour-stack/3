@@ -74,7 +74,17 @@ export function createJobSatisfactionRoutes({
     });
     const existingDispute = await repo.getJobDispute(job.id);
     if (existingDispute && existingDispute.status !== 'RESOLVED') {
-      return { gate, payment: payment || null, autoReleased: false, dispute: existingDispute };
+      if (existingDispute.status === 'RESOLVING') {
+        return { gate, payment: payment || null, autoReleased: false, dispute: existingDispute };
+      }
+      if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
+        return { gate, payment: payment || null, autoReleased: false, dispute: null };
+      }
+      const held = await repo.holdPaymentForDispute({ jobId:job.id, paymentId:payment.id });
+      if (!held?.held) {
+        return { gate, payment: payment || null, autoReleased: false, dispute: null };
+      }
+      return { gate, payment: { ...payment, status:'HELD' }, autoReleased: false, dispute: existingDispute };
     }
     if (!gate.ready || !payment) {
       const dispute = await ensureDisputeIfNeeded(job, feedback, payment);
