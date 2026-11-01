@@ -44,6 +44,7 @@ test('admin dispute decisions claim a fenced resolution before financial side ef
   assert.match(route, /DISPUTE_RESOLUTION_IN_PROGRESS/);
   assert.match(route, /existing\?\.status==='RESOLVING'/);
   assert.match(route, /repo\.abandonJobDisputeResolutionClaim/);
+  assert.match(route, /'JOB_NOT_COMPLETED','PAYMENT_RELEASE_IN_PROGRESS'/, 'deterministic no-action outcomes must release the admin claim');
 });
 
 
