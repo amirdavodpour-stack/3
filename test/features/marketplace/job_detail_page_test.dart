@@ -80,6 +80,12 @@ class _FakeDetail implements JobDetailRepository {
   @override
   Future<void> reportJob(String jobId,
       {required String reason, String details = ''}) async {}
+
+  @override
+  Future<Map<String, dynamic>> openDispute(String jobId) async {
+    calls.add('dispute:$jobId');
+    return {'dispute': {'id': 'd1', 'status': 'OPEN'}, 'payment': {'status': 'HELD'}};
+  }
 }
 
 class _FakeTx implements TransactionRepository {
@@ -1559,15 +1565,23 @@ void main() {
     },
   );
 
-  testWidgets('active participants see a dispute action from job details', (tester) async {
+  testWidgets('active participants can open a dispute from job details', (tester) async {
+    final detail = _FakeDetail();
     await _pump(
       tester,
+      detail: detail,
       job: _job(ownerId: 'u1', status: 'IN_PROGRESS'),
       userId: 'u1',
       width: 390,
       height: 1600,
     );
-    expect(find.byKey(const ValueKey('job-dispute-open-action')), findsOneWidget);
+    final action = find.byKey(const ValueKey('job-dispute-open-action'));
+    expect(action, findsOneWidget);
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    expect(detail.calls, contains('dispute:j1'));
+    expect(find.text('Dispute opened'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
