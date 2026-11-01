@@ -372,6 +372,10 @@ class _EvidenceJobDetailRepository implements JobDetailRepository {
     required String reason,
     String details = '',
   }) async {}
+
+  @override
+  Future<Map<String, dynamic>> openDispute(String jobId) async =>
+      const {'dispute': {'id': 'd1', 'status': 'OPEN'}, 'payment': {'status': 'HELD'}};
 }
 
 class _EvidenceOfferRepository implements OfferRepository {
