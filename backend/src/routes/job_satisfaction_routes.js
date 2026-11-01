@@ -27,17 +27,16 @@ export function createJobSatisfactionRoutes({
     if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
       return null;
     }
-    // Satisfaction conflicts can race an already-enqueued owner release. Hold
-    // the escrow first; the repository serializes/cancels a pending release and
-    // refuses a provider operation already in progress.
-    const held = await repo.holdPaymentForDispute({ jobId:job.id, paymentId:payment.id });
-    if (!held?.held) return null;
-
-    const dispute = existing || await repo.createJobDispute({
-      jobId: job.id,
-      triggerType: 'SATISFACTION_CONFLICT',
+    // Satisfaction conflicts can race an already-enqueued owner release.
+    // Escrow hold and dispute creation must commit or roll back together.
+    const opened = await repo.openJobDisputeWithHold({
+      jobId:job.id,
+      paymentId:payment.id,
+      openedBy:existing?.openedBy ?? null,
+      triggerType:'SATISFACTION_CONFLICT',
     });
-    if (!dispute) return null;
+    if (!opened?.opened) return null;
+    const dispute = opened.dispute;
     if (['AI_ANALYZED', 'ADMIN_REVIEW'].includes(dispute.status)) return dispute;
 
     const context = await repo.getJobDisputeContext(job.id);
@@ -80,11 +79,16 @@ export function createJobSatisfactionRoutes({
       if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
         return { gate, payment: payment || null, autoReleased: false, dispute: null };
       }
-      const held = await repo.holdPaymentForDispute({ jobId:job.id, paymentId:payment.id });
-      if (!held?.held) {
+      const opened = await repo.openJobDisputeWithHold({
+        jobId:job.id,
+        paymentId:payment.id,
+        openedBy:existingDispute.openedBy ?? null,
+        triggerType:existingDispute.triggerType || 'USER',
+      });
+      if (!opened?.opened) {
         return { gate, payment: payment || null, autoReleased: false, dispute: null };
       }
-      return { gate, payment: { ...payment, status:'HELD' }, autoReleased: false, dispute: existingDispute };
+      return { gate, payment: { ...payment, status:'HELD' }, autoReleased: false, dispute: opened.dispute };
     }
     if (!gate.ready || !payment) {
       const dispute = await ensureDisputeIfNeeded(job, feedback, payment);
