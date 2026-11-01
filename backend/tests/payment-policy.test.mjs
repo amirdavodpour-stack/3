@@ -67,3 +67,22 @@ test('funding replay validation is wired before early responses in PostgreSQL an
   assert.ok(dbBranch.includes('assertExistingFundingReplay('));
   assert.ok(legacyBranch.includes('assertExistingFundingReplay('));
 });
+
+
+test('self-service refunds are pre-work only and refund completion preserves the executed job lifecycle', () => {
+  const routes = readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
+  const start = routes.indexOf("if (req.method === 'POST' && parts[1] === 'refund'");
+  const end = routes.indexOf("if (req.method === 'POST' && parts[1] === 'release'", start);
+  const refundRoute = routes.slice(start, end);
+  assert.match(refundRoute, /job\.status\s*!==\s*'FUNDED'/);
+  assert.match(refundRoute, /REFUND_REQUIRES_DISPUTE/);
+
+  const refundRepository = readFileSync(new URL('../src/repository/payment_refunds.js', import.meta.url), 'utf8');
+  assert.match(refundRepository, /CASE WHEN status IN \('ASSIGNED','FUNDED'\) THEN 'CANCELLED' ELSE status END/);
+
+  const webhookRepository = readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
+  assert.match(webhookRepository, /CASE WHEN status IN \('ASSIGNED','FUNDED'\) THEN 'CANCELLED' ELSE status END/);
+
+  const legacy = readFileSync(new URL('../src/application/legacy/payment_legacy.js', import.meta.url), 'utf8');
+  assert.match(legacy, /job\.status\s*=\s*'CANCELLED'/);
+});
