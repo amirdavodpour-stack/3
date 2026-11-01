@@ -12,10 +12,10 @@ export const migration = {
           WHEN 'PUBLISHED' THEN next_status IN ('ASSIGNED','CANCELLED')
           WHEN 'ASSIGNED' THEN next_status IN ('FUNDED','PUBLISHED','CANCELLED')
           WHEN 'FUNDED' THEN next_status IN ('IN_PROGRESS','PUBLISHED','ASSIGNED','CANCELLED')
-          WHEN 'IN_PROGRESS' THEN next_status = 'DELIVERED'
-          WHEN 'DELIVERED' THEN next_status IN ('UNDER_REVIEW','COMPLETED')
-          WHEN 'UNDER_REVIEW' THEN next_status = 'COMPLETED'
-          WHEN 'COMPLETED' THEN next_status = 'SETTLED'
+          WHEN 'IN_PROGRESS' THEN next_status IN ('DELIVERED','CANCELLED')
+          WHEN 'DELIVERED' THEN next_status IN ('UNDER_REVIEW','COMPLETED','CANCELLED')
+          WHEN 'UNDER_REVIEW' THEN next_status IN ('COMPLETED','CANCELLED')
+          WHEN 'COMPLETED' THEN next_status IN ('SETTLED','CANCELLED')
           WHEN 'SETTLED' THEN FALSE
           WHEN 'CANCELLED' THEN FALSE
           ELSE FALSE
@@ -46,6 +46,17 @@ export const migration = {
              (linked_payment_status IS DISTINCT FROM 'HOLD_FAILED' OR
               linked_funding_previous_status IS DISTINCT FROM 'ASSIGNED') THEN
             RAISE EXCEPTION 'funded job can return to assigned only after a failed hold that originated from assigned' USING ERRCODE='55000';
+          END IF;
+        END IF;
+        IF NEW.status='CANCELLED' AND OLD.status IN ('FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED') THEN
+          SELECT status INTO linked_payment_status
+            FROM payments
+           WHERE job_id=OLD.id
+           ORDER BY created_at DESC,id DESC
+           LIMIT 1
+           FOR UPDATE;
+          IF linked_payment_status IS DISTINCT FROM 'REFUNDED' THEN
+            RAISE EXCEPTION 'funded or active job can be cancelled only after a confirmed full refund' USING ERRCODE='55000';
           END IF;
         END IF;
         RETURN NEW;
