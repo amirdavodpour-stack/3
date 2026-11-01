@@ -193,7 +193,7 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       }
       await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[refund.id,providerRef||null]);
       await client.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);
-      await client.query(`UPDATE jobs SET status=CASE WHEN status='FUNDED' THEN 'CANCELLED' ELSE status END,updated_at=NOW() WHERE id=$1`,[p.job_id]);
+      await client.query(`UPDATE jobs SET status='CANCELLED',updated_at=NOW() WHERE id=$1`,[p.job_id]);
       await closeJobChatForJob(p.job_id, client);
       transitionApplied = true;
     }
