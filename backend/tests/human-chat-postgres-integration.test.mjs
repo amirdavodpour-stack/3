@@ -226,7 +226,7 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     resolution:winner.resolution,
     token:resumed.token,
   });
-  assert.equal(completed?.status,'RESOLVED');
+  assert.equal(completed?.status,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
   assert.equal(completed?.resolution,winner.resolution);
 
   const { rows } = await pool.query(
@@ -2050,7 +2050,7 @@ test('refund request and refund webhook serialize job/payment locks without a de
     assert.equal(persisted.length, 1);
     assert.equal(persisted[0].payment_status, 'REFUNDED');
     assert.equal(persisted[0].refund_status, 'REFUNDED');
-    assert.equal(persisted[0].job_status, 'ASSIGNED');
+    assert.equal(persisted[0].job_status, 'CANCELLED');
   } finally {
     requestGate.resolve();
     webhookPaymentGate.resolve();
