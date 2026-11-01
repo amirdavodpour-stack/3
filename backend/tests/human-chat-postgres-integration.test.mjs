@@ -43,10 +43,10 @@ const { requestPayoutAtomic, completePayoutOutbox, markPayoutUnknown, resolvePay
 const { config: appConfig } = modules[7] || {};
 const { applyPaymentWebhookAtomic } = modules[8] || {};
 const { fundJobAtomic } = modules[9] || {};
-const { completePaymentCreateHoldOutbox, failOutboxEvent, holdPaymentForDispute } = modules[10] || {};
+const { completePaymentCreateHoldOutbox, failOutboxEvent, holdPaymentForDispute, enqueuePaymentRelease } = modules[10] || {};
 const { processOutboxEvent } = modules[11] || {};
 const { createPaymentProvider } = modules[12] || {};
-const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis } = modules[13] || {};
+const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis, createJobDispute } = modules[13] || {};
 const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
 const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
 const { setUserStatus, revokeUserSessions } = modules[15] || {};
@@ -5393,6 +5393,130 @@ test('PostgreSQL refuses to cancel an active job before confirmed refund and per
 
   await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
   await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+});
+
+
+test('HELD payment can be released only by the matching active admin dispute RELEASE claim', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'dispute-release-owner');
+  const workerId = await createTransferTestUser(pool, 'dispute-release-worker');
+  const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  let disputeId = null;
+
+  try {
+    const { rows: jobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT $1,$2,$3,$4,'Admin dispute release fixture',
+         c.id,'FIXED','FIXED',100,100,1,'R05 dispute release','COMPLETED',
+         'R05 test','MISSION','PUBLIC',NOW(),NOW()
+         FROM categories c WHERE c.is_active=TRUE
+         ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+         RETURNING id`,
+      [jobId,ownerId,workerId,`Dispute release ${suffix}`],
+    );
+    assert.ok(jobs[0]);
+
+    await pool.query(
+      `INSERT INTO payments(
+         id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,
+         base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,
+         fee_policy_version,currency,created_at,updated_at
+       )
+       VALUES($1,$2,$3,$4,100,'HELD',$5,$6,100,0,0,0,100,100,'R05-dispute','TOMAN',NOW(),NOW())`,
+      [paymentId,jobId,ownerId,workerId,`dispute-hold-${suffix}`,`dispute-release-${suffix}`],
+    );
+    const dispute = await createJobDispute({jobId,openedBy:ownerId,triggerType:'USER'});
+    disputeId = dispute.id;
+
+    await assert.rejects(
+      enqueuePaymentRelease({jobId,ownerId,paymentId,dedupeKey:`RELEASE-NO-CLAIM:${paymentId}`}),
+      (error) => error?.code === 'DISPUTE_RELEASE_CLAIM_REQUIRED',
+      'a HELD payment cannot be released without the active dispute claim',
+    );
+    const { rows: stillHeld } = await pool.query('SELECT status FROM payments WHERE id=$1',[paymentId]);
+    assert.equal(stillHeld[0]?.status,'HELD');
+
+    const claim = await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Evidence reviewed',adminId:workerId});
+    assert.equal(claim?.claimed,true);
+    const event = await enqueuePaymentRelease({
+      jobId,ownerId,paymentId,disputeId,
+      dedupeKey:`PAYMENT_RELEASE:ADMIN_DISPUTE:${paymentId}`,
+    });
+    assert.ok(event?.id);
+    const { rows: releasedPending } = await pool.query('SELECT status FROM payments WHERE id=$1',[paymentId]);
+    assert.equal(releasedPending[0]?.status,'RELEASE_PENDING');
+    const { rows: outbox } = await pool.query('SELECT event_type,status FROM outbox_events WHERE id=$1',[event.id]);
+    assert.equal(outbox[0]?.event_type,'PAYMENT_RELEASE');
+    assert.equal(outbox[0]?.status,'PENDING');
+  } finally {
+    if(disputeId) await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
+    await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+  }
+});
+
+test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'dispute-hold-owner');
+  const workerId = await createTransferTestUser(pool, 'dispute-hold-worker');
+  const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  let disputeId = null;
+
+  try {
+    const { rows: jobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT $1,$2,$3,$4,'Admin HOLD fixture',
+         c.id,'FIXED','FIXED',100,100,1,'R05 dispute hold','IN_PROGRESS',
+         'R05 test','MISSION','PUBLIC',NOW(),NOW()
+         FROM categories c WHERE c.is_active=TRUE
+         ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+         RETURNING id`,
+      [jobId,ownerId,workerId,`Dispute hold ${suffix}`],
+    );
+    assert.ok(jobs[0]);
+    await pool.query(
+      `INSERT INTO payments(
+         id,job_id,payer_id,payee_id,amount,status,provider_ref,base_amount,
+         employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,currency,created_at,updated_at
+       )
+       VALUES($1,$2,$3,$4,100,'HELD',$5,100,0,0,0,100,100,'TOMAN',NOW(),NOW())`,
+      [paymentId,jobId,ownerId,workerId,`dispute-hold-${suffix}`],
+    );
+    const dispute=await createJobDispute({jobId,openedBy:ownerId,triggerType:'USER'});
+    disputeId=dispute.id;
+    const claim=await claimJobDisputeResolution(disputeId,{resolution:'HOLD',reason:'Further evidence required',adminId:workerId});
+    assert.equal(claim?.claimed,true);
+    const completed=await completeJobDisputeResolution(disputeId,{resolution:'HOLD',token:claim.token});
+    assert.equal(completed?.status,'ADMIN_REVIEW');
+    assert.equal(completed?.resolution,'HOLD');
+    assert.equal(completed?.resolvedAt ?? null,null);
+    const { rows: paymentRows }=await pool.query('SELECT status FROM payments WHERE id=$1',[paymentId]);
+    assert.equal(paymentRows[0]?.status,'HELD');
+    const nextClaim=await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Work later completed',adminId:workerId});
+    assert.equal(nextClaim?.claimed,true,'the same held case must remain resolvable after new evidence arrives');
+    await pool.query(
+      `UPDATE job_disputes SET status='ADMIN_REVIEW',resolution=NULL,resolution_reason='',resolved_by=NULL,
+        resolution_lease_token=NULL,resolution_lease_until=NULL WHERE id=$1`,
+      [disputeId],
+    );
+  } finally {
+    if(disputeId) await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+  }
 });
 
 after(async () => {
