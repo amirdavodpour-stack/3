@@ -5343,6 +5343,58 @@ test('PostgreSQL fences a funded job while its refund is pending and permits can
   await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
 });
 
+
+test('PostgreSQL refuses to cancel an active job before confirmed refund and permits it after REFUNDED', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'refund-cancel-owner');
+  const workerId = await createTransferTestUser(pool, 'refund-cancel-worker');
+  const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT $1,$2,$3,$4,'Confirmed refund cancellation integration fixture',
+       c.id,'FIXED','FIXED',100,100,1,'R04 cancellation test','IN_PROGRESS',
+       'R04 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+    [jobId,ownerId,workerId,`Refund cancellation ${suffix}`],
+  );
+  assert.ok(jobs[0], 'refund cancellation test requires an active category');
+
+  await pool.query(
+    `INSERT INTO payments(
+       id,job_id,payer_id,payee_id,amount,status,provider_ref,base_amount,
+       employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,
+       currency,created_at,updated_at
+     )
+     VALUES($1,$2,$3,$4,100,'HELD',$5,100,0,0,0,100,100,'TOMAN',NOW(),NOW())`,
+    [paymentId,jobId,ownerId,workerId,`refund-cancel-${suffix}`],
+  );
+
+  await assert.rejects(
+    pool.query(`UPDATE jobs SET status='CANCELLED' WHERE id=$1`,[jobId]),
+    (error) => error?.code === '55000',
+    'an active paid job cannot be cancelled while escrow has not been refunded',
+  );
+
+  await pool.query(`UPDATE payments SET status='REFUND_PENDING',updated_at=NOW() WHERE id=$1`,[paymentId]);
+  await pool.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);
+  await pool.query(`UPDATE jobs SET status='CANCELLED',updated_at=NOW() WHERE id=$1`,[jobId]);
+
+  const { rows: finalJobs } = await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+  assert.equal(finalJobs[0]?.status,'CANCELLED');
+
+  await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+  await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
