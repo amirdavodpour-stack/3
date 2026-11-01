@@ -31,6 +31,7 @@ const modules = enabled
       import('../src/repository/disputes.js'),
       import('../src/repository/auth.js'),
       import('../src/repository/admin.js'),
+      import('../src/repository/core.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -49,6 +50,7 @@ const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisput
 const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
 const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
 const { setUserStatus, revokeUserSessions } = modules[15] || {};
+const { linkGoogleSubject } = modules[16] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -5201,6 +5203,21 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
   assert.equal(family.length, 2);
   assert.ok(family.every((token) => token.revoked_at),
     'all refresh tokens in the compromised family must be revoked');
+});
+
+
+
+test('PostgreSQL linking a Google identity clears existing admin-panel verification', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const userId = await createPanelTestAdmin(pool, 'admin-panel-google-link');
+  assert.ok(await setAdminPanelVerified(userId));
+  assert.equal(await isAdminPanelVerified(userId), true);
+
+  const subject = `google-subject-${crypto.randomUUID()}`;
+  const linked = await linkGoogleSubject(userId, subject);
+  assert.equal(linked?.googleSubject, subject);
+  assert.equal(linked?.role, 'ADMIN');
+  await assertPanelVerificationCleared(pool, userId);
 });
 
 

@@ -31,6 +31,10 @@ const disputeRepositorySource = fs.readFileSync(
   path.resolve(import.meta.dirname, '../src/repository/disputes.js'),
   'utf8',
 );
+const coreRepositorySource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/repository/core.js'),
+  'utf8',
+);
 
 function functionSource(source, name, nextName) {
   const start = source.indexOf(`export async function ${name}(`);
@@ -90,6 +94,16 @@ test('refresh-token reuse invalidates access sessions and admin-panel verificati
   );
   assert.match(reuseBranch, /r\.user_id/,
     'reuse invalidation must target the account owning the compromised token');
+});
+
+
+
+test('linking a Google identity clears prior admin-panel verification', () => {
+  const link = functionSource(coreRepositorySource, 'linkGoogleSubject', 'findUserById');
+  assert.match(
+    link,
+    /UPDATE users SET[^\`]*google_subject\s*=\s*\$2[^\`]*admin_panel_verified_at\s*=\s*NULL[^\`]*WHERE id=\$1/is,
+  );
 });
 
 
