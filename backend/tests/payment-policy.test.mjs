@@ -78,10 +78,10 @@ test('self-service refunds are pre-work only and refund completion preserves the
   assert.match(refundRoute, /REFUND_REQUIRES_DISPUTE/);
 
   const refundRepository = readFileSync(new URL('../src/repository/payment_refunds.js', import.meta.url), 'utf8');
-  assert.match(refundRepository, /CASE WHEN status IN \('ASSIGNED','FUNDED'\) THEN 'CANCELLED' ELSE status END/);
+  assert.match(refundRepository, /CASE WHEN status='FUNDED' THEN 'CANCELLED' ELSE status END/);
 
   const webhookRepository = readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
-  assert.match(webhookRepository, /CASE WHEN status IN \('ASSIGNED','FUNDED'\) THEN 'CANCELLED' ELSE status END/);
+  assert.match(webhookRepository, /CASE WHEN status='FUNDED' THEN 'CANCELLED' ELSE status END/);
 
   const legacy = readFileSync(new URL('../src/application/legacy/payment_legacy.js', import.meta.url), 'utf8');
   assert.match(legacy, /job\.status\s*=\s*'CANCELLED'/);
