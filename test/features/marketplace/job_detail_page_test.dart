@@ -1559,5 +1559,30 @@ void main() {
     },
   );
 
+  testWidgets('active participants see a dispute action from job details', (tester) async {
+    await _pump(
+      tester,
+      job: _job(ownerId: 'u1', status: 'IN_PROGRESS'),
+      userId: 'u1',
+      width: 390,
+      height: 1600,
+    );
+    expect(find.byKey(const ValueKey('job-dispute-open-action')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unrelated users do not see the job dispute action', (tester) async {
+    await _pump(
+      tester,
+      job: _job(ownerId: 'u1', status: 'IN_PROGRESS'),
+      userId: 'u9',
+      width: 390,
+      height: 1600,
+    );
+    expect(find.byKey(const ValueKey('job-dispute-open-action')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+
 
 }
