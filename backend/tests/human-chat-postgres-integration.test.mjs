@@ -5248,6 +5248,40 @@ test('PostgreSQL refuses to set or honor admin-panel verification for a disabled
 });
 
 
+
+test('PostgreSQL account deletion releases the verified Google subject for a new account', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const deletedUserId = await createTransferTestUser(pool, 'delete-google-identity');
+  const subject = `google-subject-delete-${crypto.randomUUID()}`;
+
+  await pool.query('UPDATE users SET google_subject=$2 WHERE id=$1', [deletedUserId, subject]);
+
+  const result = await deleteUserPrivacyBundle(deletedUserId, {
+    email: `deleted+${deletedUserId}@invalid.local`,
+    passwordHash: 'integration-only-deleted-account',
+  });
+  assert.equal(result?.deleted, true);
+
+  const { rows: tombstone } = await pool.query(
+    'SELECT status,google_subject FROM users WHERE id=$1',
+    [deletedUserId],
+  );
+  assert.equal(tombstone[0]?.status, 'DELETED');
+  assert.equal(tombstone[0]?.google_subject ?? null, null,
+    'deleted-account tombstones must not retain a third-party identity subject');
+
+  const newUserId = await createTransferTestUser(pool, 'relink-google-identity');
+  const linked = await linkGoogleSubject(newUserId, subject);
+  assert.equal(linked?.googleSubject, subject,
+    'the verified Google subject must be linkable to a newly created account after deletion');
+
+  const existing = await pool.query(
+    'SELECT id FROM users WHERE google_subject=$1',
+    [subject],
+  );
+  assert.deepEqual(existing.rows.map((row) => row.id), [newUserId]);
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
