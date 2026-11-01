@@ -21,9 +21,6 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const {rows:jr}=await client.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`,[jobId]);
     if(!jr[0]) return null;
     if(jr[0].owner_id!==ownerId){const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e;}
-    if (!allowPendingRelease && jr[0].status !== 'FUNDED') {
-      const e = new Error('REFUND_REQUIRES_DISPUTE'); e.code = 'REFUND_REQUIRES_DISPUTE'; e.status = 409; throw e;
-    }
     // A terminal release failure locks the outbox row before updating payments.
     // Acquire the release event before the payment row so refund supersession
     // cannot form payment -> outbox against failOutboxEvent's outbox -> payment.
@@ -67,6 +64,9 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
     if(!refundablePaymentStateAllowed(payment.status, allowPendingRelease)){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
+    if (!allowPendingRelease && jr[0].status !== 'FUNDED') {
+      const e = new Error('REFUND_REQUIRES_DISPUTE'); e.code = 'REFUND_REQUIRES_DISPUTE'; e.status = 409; throw e;
+    }
     const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=normalizeFinancialAmount(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(normalizeFinancialAmount(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
     let refundRow = null;
     if (idempotencyKey) {
