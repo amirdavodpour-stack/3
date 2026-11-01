@@ -124,8 +124,9 @@ export function createPaymentRoutes({
   if (req.method === 'POST' && parts[1] === 'refund' && parts[2]) {
     const me=await authUser(req); const body=await readBody(req); const job=await getJob(parts[2]); if(!job)throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
     if(job.ownerId!==me.id)throw new HttpError(403,'FORBIDDEN','Only the owner can refund payment');
-    if(job.status!=='FUNDED')throw new HttpError(409,'REFUND_REQUIRES_DISPUTE','Refund after work has started must be resolved through the dispute process');
     const payment=process.env.DATABASE_URL?await paymentUseCases.findByJob(job.id):paymentLegacy.findByJob(job.id); if(!payment)throw new HttpError(409,'PAYMENT_REQUIRED','No payment exists for this job');
+    if(payment.status==='REFUNDED')throw new HttpError(409,'INVALID_PAYMENT_STATE','Payment has already been refunded');
+    if(job.status!=='FUNDED')throw new HttpError(409,'REFUND_REQUIRES_DISPUTE','Refund after work has started must be resolved through the dispute process');
     const idempotencyKey=readIdempotencyKey(req, config.maxIdempotencyKeyLength); const createdAt=now(); const refundId=crypto.randomUUID();
     let created;
     try {
