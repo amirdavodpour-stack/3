@@ -20,6 +20,7 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
     if(r.revoked_at){
       await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[r.family_id]);
       await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1`,[r.user_id]);
+      await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,[r.user_id,JSON.stringify({tokenFamilyId:r.family_id})]);
       return {kind:'reuse'};
     }
     if(new Date(r.expires_at).getTime()<=Date.now()) return {kind:'invalid'};
