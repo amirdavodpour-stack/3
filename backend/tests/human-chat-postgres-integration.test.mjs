@@ -233,7 +233,7 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     'SELECT status,resolution,resolution_lease_token,resolution_lease_until FROM job_disputes WHERE id=$1',
     [disputeId],
   );
-  assert.equal(rows[0]?.status,'RESOLVED');
+  assert.equal(rows[0]?.status,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
   assert.equal(rows[0]?.resolution,winner.resolution);
   assert.equal(rows[0]?.resolution_lease_token,null);
   assert.equal(rows[0]?.resolution_lease_until,null);
