@@ -1277,7 +1277,7 @@ test('payout reservation rejects a deleted account and does not move its availab
 });
 
 
-async function createWebhookMismatchPayment(status, label) {
+async function createWebhookMismatchPayment(status, label, jobStatus = 'IN_PROGRESS') {
   const pool = dbModule.getPool();
   const suffix = `${label}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const { rows: jobs } = await pool.query(
@@ -1287,12 +1287,12 @@ async function createWebhookMismatchPayment(status, label) {
        created_at,updated_at
      )
      SELECT gen_random_uuid(),$1,$2,$3,'Webhook state mismatch integration fixture',
-       c.id,'FIXED','FIXED',100,100,1,'R05 webhook fixture','IN_PROGRESS',
+       c.id,'FIXED','FIXED',100,100,1,'R05 webhook fixture',$4,
        'R05 test','MISSION','PUBLIC',NOW(),NOW()
      FROM categories c WHERE c.is_active=TRUE
      ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
      RETURNING id`,
-    [fixture.ownerId, fixture.workerId, `R05 webhook ${suffix}`],
+    [fixture.ownerId, fixture.workerId, `R05 webhook ${suffix}`, jobStatus],
   );
   assert.ok(jobs[0], 'webhook fixture requires an active category');
   const paymentId = crypto.randomUUID();
@@ -4494,7 +4494,7 @@ test('job funding waits for the account lock and cannot create a payment after d
 
 async function seedFailedRefundRetryFixture(label) {
   const pool = dbModule.getPool();
-  const { paymentId } = await createWebhookMismatchPayment('HELD', label);
+  const { paymentId } = await createWebhookMismatchPayment('HELD', label, 'FUNDED');
   const { rows: payments } = await pool.query(
     'SELECT job_id FROM payments WHERE id=$1',
     [paymentId],
@@ -4529,7 +4529,7 @@ async function seedFailedRefundRetryFixture(label) {
 
 async function seedPendingRefundRetryFixture(label) {
   const pool = dbModule.getPool();
-  const { paymentId } = await createWebhookMismatchPayment('HELD', label);
+  const { paymentId } = await createWebhookMismatchPayment('HELD', label, 'FUNDED');
   const { rows: payments } = await pool.query(
     'SELECT job_id FROM payments WHERE id=$1',
     [paymentId],
