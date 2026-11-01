@@ -19,6 +19,7 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
     if(!r) return {kind:'invalid'};
     if(r.revoked_at){
       await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[r.family_id]);
+      await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1`,[r.user_id]);
       return {kind:'reuse'};
     }
     if(new Date(r.expires_at).getTime()<=Date.now()) return {kind:'invalid'};
