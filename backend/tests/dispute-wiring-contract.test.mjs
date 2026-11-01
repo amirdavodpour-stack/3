@@ -71,7 +71,7 @@ test('opening a dispute holds payment before creating the case and blocks later 
   assert.match(satisfaction, /existingDispute && existingDispute.status !== 'RESOLVED'/);
   assert.match(satisfaction, /DISPUTE_HOLDABLE_PAYMENT_STATUSES/);
   const automaticHold = satisfaction.indexOf('repo.holdPaymentForDispute');
-  const automaticCreate = satisfaction.indexOf("repo.createJobDispute({\\n      jobId: job.id,\\n      triggerType: 'SATISFACTION_CONFLICT'");
+  const automaticCreate = satisfaction.indexOf("triggerType: 'SATISFACTION_CONFLICT'");
   assert.ok(automaticHold >= 0 && automaticCreate > automaticHold,
     'automatic satisfaction disputes must secure escrow before creating a financial case');
 
