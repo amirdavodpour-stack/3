@@ -60,6 +60,10 @@ export function createJobSatisfactionRoutes({
       paymentStatus: payment?.status,
       feedback,
     });
+    const existingDispute = await repo.getJobDispute(job.id);
+    if (existingDispute && existingDispute.status !== 'RESOLVED') {
+      return { gate, payment: payment || null, autoReleased: false, dispute: existingDispute };
+    }
     if (!gate.ready || !payment) {
       const dispute = await ensureDisputeIfNeeded(job, feedback);
       return { gate, payment: payment || null, autoReleased: false, dispute };
