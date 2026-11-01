@@ -2,7 +2,7 @@ export const migration = {
   version: 40,
   name: 'job_refund_lifecycle',
   async up(client) {
-    await client.query(\`
+    await client.query(`
       CREATE OR REPLACE FUNCTION hope_job_transition_allowed(current_status TEXT, next_status TEXT) RETURNS BOOLEAN
       LANGUAGE plpgsql IMMUTABLE AS $$
       BEGIN
@@ -44,10 +44,10 @@ export const migration = {
         RETURN NEW;
       END;
       $$;
-    \`);
+    `);
   },
   async down(client) {
-    await client.query(\`
+    await client.query(`
       CREATE OR REPLACE FUNCTION hope_job_transition_allowed(current_status TEXT, next_status TEXT) RETURNS BOOLEAN
       LANGUAGE plpgsql IMMUTABLE AS $$
       BEGIN
@@ -77,6 +77,6 @@ export const migration = {
         RETURN NEW;
       END;
       $$;
-    \`);
+    `);
   },
 };
