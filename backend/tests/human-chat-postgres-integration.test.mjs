@@ -4755,7 +4755,7 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
        FROM categories c WHERE c.is_active=TRUE
        ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
        RETURNING id`,
-    [jobId,payerId,workerId,jobTitle,isRelease ? 'IN_PROGRESS' : 'ASSIGNED'],
+    [jobId,payerId,workerId,jobTitle,isRelease ? 'IN_PROGRESS' : 'FUNDED'],
   );
   assert.ok(jobs[0], 'account-deletion/webhook race requires an active category');
   if (isRelease) {
@@ -4916,6 +4916,8 @@ async function runAccountDeletionAgainstInternalPaymentWebhook({ eventType }) {
       'SELECT status FROM refunds WHERE payment_id=$1',[paymentId],
     );
     assert.equal(refunds[0]?.status,'REFUNDED');
+    const { rows: refundedJobs } = await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+    assert.equal(refundedJobs[0]?.status,'CANCELLED');
   }
 }
 
@@ -5288,6 +5290,57 @@ test('migration 040 permits cancelling a funded job after a pre-work refund', { 
     "SELECT hope_job_transition_allowed('FUNDED','CANCELLED') AS allowed",
   );
   assert.equal(rows[0]?.allowed, true);
+});
+
+
+test('PostgreSQL fences a funded job while its refund is pending and permits cancellation after confirmation', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'refund-fence-owner');
+  const workerId = await createTransferTestUser(pool, 'refund-fence-worker');
+  const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
+  const jobId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT $1,$2,$3,$4,'Refund fence integration fixture',
+       c.id,'FIXED','FIXED',100,100,1,'R04 fence test','FUNDED',
+       'R04 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+    [jobId,ownerId,workerId,`Refund fence ${suffix}`],
+  );
+  assert.ok(jobs[0], 'refund fence test requires an active category');
+
+  await pool.query(
+    `INSERT INTO payments(
+       id,job_id,payer_id,payee_id,amount,status,provider_ref,base_amount,
+       platform_fee,employer_charge,provider_payout,currency,created_at,updated_at
+     )
+     VALUES($1,$2,$3,$4,100,'REFUND_PENDING',$5,100,0,100,100,'TOMAN',NOW(),NOW())`,
+    [paymentId,jobId,ownerId,workerId,`refund-fence-${suffix}`],
+  );
+
+  await assert.rejects(
+    pool.query(`UPDATE jobs SET status='IN_PROGRESS' WHERE id=$1`, [jobId]),
+    (error) => error?.code === '55000',
+    'a job must not start while an accepted refund is pending',
+  );
+  const { rows: unchanged } = await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+  assert.equal(unchanged[0]?.status,'FUNDED');
+
+  await pool.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);
+  await pool.query(`UPDATE jobs SET status='CANCELLED',updated_at=NOW() WHERE id=$1`,[jobId]);
+  const { rows: final } = await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+  assert.equal(final[0]?.status,'CANCELLED');
+
+  await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+  await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
 });
 
 after(async () => {
