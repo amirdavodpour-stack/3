@@ -5528,84 +5528,54 @@ test('dispute creation and escrow hold roll back together when dispute persisten
   const jobId = paymentRows[0].job_id;
   const eventId = crypto.randomUUID();
   const suffix = crypto.randomBytes(5).toString('hex');
-  const triggerName = 'hope_test_dispute_hold_' + suffix;
-  const functionName = 'hope_test_dispute_hold_' + suffix;
+  const constraintName = 'hope_test_dispute_hold_' + suffix;
 
-  const insertReleaseEvent = [
-    'INSERT INTO outbox_events(',
-    ' id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at',
-    ') VALUES($1,\'PAYMENT_RELEASE\',\'payment\',$2,$3,$4::jsonb,\'PENDING\',0,NOW(),NOW())',
-  ].join('\\n');
-  await pool.query(insertReleaseEvent, [
-    eventId,
-    paymentId,
-    'atomic-dispute-release-' + paymentId,
-    JSON.stringify({ jobId, paymentId }),
-  ]);
+  const insertReleaseEvent = "INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW())";
+  await pool.query(insertReleaseEvent, [eventId,paymentId,'atomic-dispute-release-' + paymentId,JSON.stringify({jobId,paymentId})]);
 
   try {
-    const createFunctionSql = [
-      'CREATE FUNCTION ' + functionName + '() RETURNS trigger',
-      'LANGUAGE plpgsql AS $body
-  if (enabled) await dbModule.db.close();
-});
-,
-      'BEGIN',
-      '  IF NEW.job_id = ' + String.fromCharCode(39) + jobId + String.fromCharCode(39) + '::uuid THEN',
-      '    RAISE EXCEPTION ' + String.fromCharCode(39) + 'forced dispute persistence failure' + String.fromCharCode(39) + ' USING ERRCODE=' + String.fromCharCode(39) + 'P0001' + String.fromCharCode(39) + ';',
-      '  END IF;',
-      '  RETURN NEW;',
-      'END;',
-      '$body
-  if (enabled) await dbModule.db.close();
-});
-,
-    ].join('\\n');
-    await pool.query(createFunctionSql);
+    const quotedJobId = String.fromCharCode(39) + jobId + String.fromCharCode(39);
     await pool.query(
-      'CREATE TRIGGER ' + triggerName + ' BEFORE INSERT ON job_disputes ' +
-      'FOR EACH ROW EXECUTE FUNCTION ' + functionName + '()',
+      'ALTER TABLE job_disputes ADD CONSTRAINT ' + constraintName +
+      ' CHECK (job_id <> ' + quotedJobId + '::uuid) NOT VALID',
     );
 
     await assert.rejects(
-      openJobDisputeWithHold({ jobId, paymentId, openedBy:fixture.ownerId, triggerType:'USER' }),
-      (error) => error?.code === 'P0001',
-      'the forced dispute insert failure must abort the complete transaction',
+      openJobDisputeWithHold({jobId,paymentId,openedBy:fixture.ownerId,triggerType:'USER'}),
+      (error) => error?.code === '23514',
+      'the forced dispute insert constraint must abort the complete transaction',
     );
 
     const { rows: rolledBack } = await pool.query(
       'SELECT p.status AS payment_status,o.status AS release_status,COUNT(d.id)::int AS dispute_count ' +
       'FROM payments p JOIN outbox_events o ON o.aggregate_id=p.id AND o.id=$2 ' +
       'LEFT JOIN job_disputes d ON d.job_id=p.job_id WHERE p.id=$1 GROUP BY p.id,o.id',
-      [paymentId, eventId],
+      [paymentId,eventId],
     );
-    assert.equal(rolledBack.length, 1);
-    assert.equal(rolledBack[0].payment_status, 'RELEASE_PENDING', 'the payment hold must roll back');
-    assert.equal(rolledBack[0].release_status, 'PENDING', 'release cancellation must roll back too');
-    assert.equal(rolledBack[0].dispute_count, 0);
+    assert.equal(rolledBack.length,1);
+    assert.equal(rolledBack[0].payment_status,'RELEASE_PENDING','the payment hold must roll back');
+    assert.equal(rolledBack[0].release_status,'PENDING','release cancellation must roll back too');
+    assert.equal(rolledBack[0].dispute_count,0);
 
-    await pool.query('DROP TRIGGER IF EXISTS ' + triggerName + ' ON job_disputes');
-    await pool.query('DROP FUNCTION IF EXISTS ' + functionName + '()');
-
-    const opened = await openJobDisputeWithHold({ jobId, paymentId, openedBy:fixture.ownerId, triggerType:'USER' });
-    assert.equal(opened?.opened, true);
-    assert.equal(opened.dispute?.status, 'OPEN');
+    await pool.query('ALTER TABLE job_disputes DROP CONSTRAINT IF EXISTS ' + constraintName);
+    const opened = await openJobDisputeWithHold({jobId,paymentId,openedBy:fixture.ownerId,triggerType:'USER'});
+    assert.equal(opened?.opened,true);
+    assert.equal(opened.dispute?.status,'OPEN');
     const { rows: committed } = await pool.query(
       'SELECT p.status AS payment_status,o.status AS release_status,d.status AS dispute_status ' +
       'FROM payments p JOIN outbox_events o ON o.aggregate_id=p.id AND o.id=$2 ' +
       'JOIN job_disputes d ON d.job_id=p.job_id WHERE p.id=$1',
-      [paymentId, eventId],
+      [paymentId,eventId],
     );
-    assert.equal(committed[0]?.payment_status, 'HELD');
-    assert.equal(committed[0]?.release_status, 'DONE');
-    assert.equal(committed[0]?.dispute_status, 'OPEN');
+    assert.equal(committed[0]?.payment_status,'HELD');
+    assert.equal(committed[0]?.release_status,'DONE');
+    assert.equal(committed[0]?.dispute_status,'OPEN');
   } finally {
-    await pool.query('DROP TRIGGER IF EXISTS ' + triggerName + ' ON job_disputes');
-    await pool.query('DROP FUNCTION IF EXISTS ' + functionName + '()');
-    await pool.query('DELETE FROM job_disputes WHERE job_id=$1', [jobId]);
-    await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1', [paymentId]);
-    await pool.query('DELETE FROM payments WHERE id=$1', [paymentId]);
-    await pool.query('DELETE FROM jobs WHERE id=$1', [jobId]);
+    await pool.query('ALTER TABLE job_disputes DROP CONSTRAINT IF EXISTS ' + constraintName);
+    await pool.query('DELETE FROM job_disputes WHERE job_id=$1',[jobId]);
+    await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
   }
 });
 
