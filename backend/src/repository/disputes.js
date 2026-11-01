@@ -160,8 +160,8 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
     // worker from finalizing after the lease deadline.
     const { rows: updated } = await client.query(
       `UPDATE job_disputes
-          SET status='RESOLVED',
-              resolved_at=NOW(),
+          SET status=CASE WHEN $2='HOLD' THEN 'ADMIN_REVIEW' ELSE 'RESOLVED' END,
+              resolved_at=CASE WHEN $2='HOLD' THEN NULL ELSE NOW() END,
               resolution_lease_token=NULL,
               resolution_lease_until=NULL,
               updated_at=NOW()
