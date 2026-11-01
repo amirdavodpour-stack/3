@@ -45,3 +45,12 @@ test('admin dispute decisions claim a fenced resolution before financial side ef
   assert.match(route, /existing\?\.status==='RESOLVING'/);
   assert.match(route, /repo\.abandonJobDisputeResolutionClaim/);
 });
+
+
+test('participants can open disputes during active work as well as after completion', () => {
+  const routes = read('backend/src/routes/job_dispute_routes.js');
+  assert.match(routes, /DISPUTABLE_JOB_STATUSES/);
+  for (const status of ['IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED']) {
+    assert.match(routes, new RegExp(status));
+  }
+});
