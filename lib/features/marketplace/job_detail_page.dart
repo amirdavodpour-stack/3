@@ -211,6 +211,8 @@ class JobDetailPage extends StatefulWidget {
 
 class _JobDetailPageState extends State<JobDetailPage> {
   bool loading = false;
+  bool _disputeBusy = false;
+  bool _disputeOpened = false;
   String? _candidateBusyId;
   // Contract guard: _candidateBusyId == candidate.id
   late final JobDetailController _controller;
@@ -738,6 +740,36 @@ class _JobDetailPageState extends State<JobDetailPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(apiErrorMessage(e))));
+    }
+  }
+
+  Future<void> _openDispute() async {
+    if (_disputeBusy || _disputeOpened) return;
+    setState(() => _disputeBusy = true);
+    try {
+      await context.read<JobDetailRepository>().openDispute(widget.job.id);
+      if (!mounted) return;
+      setState(() => _disputeOpened = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_t(
+            'پرونده اختلاف ثبت شد و وجه تا بررسی ادمین نگه داشته می‌شود.',
+            'Dispute opened. Funds are held while an administrator reviews the case.',
+          )),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiErrorMessage(
+            error,
+            fallback: _t('ثبت اختلاف انجام نشد.', 'Could not open the dispute.'),
+          )),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _disputeBusy = false);
     }
   }
 
@@ -1348,6 +1380,21 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   .copy_view_transaction_a91f1e6,
                             ),
                           ),
+                          if ((isOwner || isProvider) &&
+                              ['IN_PROGRESS','DELIVERED','UNDER_REVIEW','COMPLETED']
+                                  .contains(j.status?.toUpperCase())) ...[
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              key: const ValueKey('job-dispute-open-action'),
+                              onPressed: _disputeBusy || _disputeOpened ? null : _openDispute,
+                              icon: const HopeIcon(HopeV2Icons.legal, size: 19),
+                              label: Text(_disputeOpened
+                                  ? _t('پرونده ثبت شد', 'Dispute opened')
+                                  : _disputeBusy
+                                      ? _t('در حال ثبت اختلاف', 'Opening dispute')
+                                      : _t('ثبت اختلاف و توقف تسویه', 'Open dispute & hold payment')),
+                            ),
+                          ],
                           if (j.status?.toUpperCase() == 'COMPLETED') ...[
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
