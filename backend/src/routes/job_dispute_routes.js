@@ -140,17 +140,16 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
       if(!DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status||'').toUpperCase())) {
         throw new HttpError(409,'DISPUTE_PAYMENT_NOT_HOLDABLE','The payment is not in a state that can be safely held for dispute review');
       }
-      const held=await repo.holdPaymentForDispute({jobId:job.id,paymentId:payment.id});
-      if(!held?.held) {
-        if(held?.reason==='PAYMENT_RELEASE_IN_PROGRESS') {
+      const opened=await repo.openJobDisputeWithHold({jobId:job.id,paymentId:payment.id,openedBy:me.id,triggerType:'USER'});
+      if(!opened?.opened) {
+        if(opened?.reason==='PAYMENT_RELEASE_IN_PROGRESS') {
           throw new HttpError(409,'PAYMENT_RELEASE_IN_PROGRESS','A provider release is already in progress. The case was not opened because the funds could not be safely held.');
         }
         throw new HttpError(409,'DISPUTE_PAYMENT_NOT_HOLDABLE','The payment could not be held safely for dispute review');
       }
-      if(existing) return sendJson(res,200,{dispute:existing,payment:{status:'HELD'}});
-      const dispute=await repo.createJobDispute({jobId:job.id,openedBy:me.id,triggerType:'USER'});
+      const dispute=opened.dispute;
       const analyzed=await analyzeCase(dispute);
-      await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:'USER',paymentHeld:true,cancelledReleaseEvents:held.cancelledReleaseEvents||0});
+      await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:'USER',paymentHeld:true,cancelledReleaseEvents:opened.cancelledReleaseEvents||0});
       return sendJson(res,200,{dispute:analyzed,payment:{status:'HELD'}});
     }
     throw new HttpError(405,'METHOD_NOT_ALLOWED','Method not allowed');
