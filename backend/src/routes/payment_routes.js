@@ -139,6 +139,10 @@ export function createPaymentRoutes({
     const me = await authUser(req); const job = await getJob(parts[2]); if (!job) throw new HttpError(404, 'JOB_NOT_FOUND', 'Job not found');
     if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the owner can release payment');
     enforceJobState(job, ['COMPLETED']);
+    if (process.env.DATABASE_URL) {
+      const dispute = await repo.getJobDispute(job.id);
+      if (dispute && dispute.status !== 'RESOLVED') throw new HttpError(409,'JOB_DISPUTE_OPEN','Payment cannot be released while a dispute is awaiting admin resolution');
+    }
     const payment = process.env.DATABASE_URL ? await paymentUseCases.findByJob(job.id) : paymentLegacy.findByJob(job.id); if (!payment || !['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) throw new HttpError(409, 'INVALID_PAYMENT_STATE', 'Payment is not ready for release');
     if (process.env.DATABASE_URL) {
       const event = await paymentUseCases.release({ jobId:job.id, ownerId:me.id, paymentId:payment.id, dedupeKey:`PAYMENT_RELEASE:${payment.id}` });
