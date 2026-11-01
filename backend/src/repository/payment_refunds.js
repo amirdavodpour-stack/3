@@ -21,6 +21,9 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     const {rows:jr}=await client.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`,[jobId]);
     if(!jr[0]) return null;
     if(jr[0].owner_id!==ownerId){const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e;}
+    if (!allowPendingRelease && jr[0].status !== 'FUNDED') {
+      const e = new Error('REFUND_REQUIRES_DISPUTE'); e.code = 'REFUND_REQUIRES_DISPUTE'; e.status = 409; throw e;
+    }
     // A terminal release failure locks the outbox row before updating payments.
     // Acquire the release event before the payment row so refund supersession
     // cannot form payment -> outbox against failOutboxEvent's outbox -> payment.
@@ -151,7 +154,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     const breakdown={baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount||payment.amount),employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee||0),workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee||0),platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee||0),employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge||payment.amount),providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout||payment.amount),currency:payment.currency||config.paymentCurrency,policyVersion:payment.fee_policy_version||'legacy',kind:'JOB'};
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
     await client.query(`UPDATE payments SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[paymentId,payment.provider_ref]);
-    await client.query(`UPDATE jobs SET status=CASE WHEN provider_id IS NULL THEN 'PUBLISHED' ELSE 'ASSIGNED' END,updated_at=NOW() WHERE id=$1`,[jobId]);
+    await client.query(`UPDATE jobs SET status=CASE WHEN status='FUNDED' THEN 'CANCELLED' ELSE status END,updated_at=NOW() WHERE id=$1`,[jobId]);
     await closeJobChatForJob(jobId, client);
     if (config.paymentProvider === 'internal') {
       if (breakdown.currency !== 'TOMAN') {
