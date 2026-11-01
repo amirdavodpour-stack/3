@@ -558,3 +558,14 @@ test('PostgreSQL privacy export bounds every high-volume financial query to the 
   const privacy = readFileSync(path.join(ROOT, 'src/privacy.js'), 'utf8');
   assert.ok(privacy.includes('MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS + 1'));
 });
+
+
+test('account deletion releases the Google identity subject in PostgreSQL and legacy adapters', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion, /google_subject=NULL/);
+
+  const legacy = readFileSync(path.join(ROOT, 'src/application/legacy/account_legacy.js'), 'utf8');
+  const legacyDeletion = legacy.slice(legacy.indexOf('async deleteUserPrivacyBundle'));
+  assert.match(legacyDeletion, /googleSubject:\s*null/);
+});
