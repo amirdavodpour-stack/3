@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { requirePool } from './context.js';
 import { withSqlTransaction } from '../db.js';
+import { holdPaymentForDisputeWithClient } from './outbox.js';
 
 const disputeView = (row) => row ? ({
   id: row.id, jobId: row.job_id, openedBy: row.opened_by, triggerType: row.trigger_type, status: row.status,
@@ -46,6 +47,29 @@ export async function createJobDispute({ jobId, openedBy = null, triggerType = '
     RETURNING *
   `, [jobId, openedBy, triggerType]);
   return disputeView(rows[0]);
+}
+
+export async function openJobDisputeWithHold({
+  jobId,
+  paymentId,
+  openedBy = null,
+  triggerType = 'USER',
+}) {
+  return withSqlTransaction(async (client) => {
+    // Escrow protection and the dispute row are one atomic commit. If the
+    // insert/upsert fails, the payment and release outbox are rolled back too.
+    const held = await holdPaymentForDisputeWithClient(client, { jobId, paymentId });
+    if (!held?.held) return { opened:false, dispute:null, ...held };
+
+    const { rows } = await client.query(`
+      INSERT INTO job_disputes(id,job_id,opened_by,trigger_type,status)
+      VALUES(gen_random_uuid(),$1,$2,$3,'OPEN')
+      ON CONFLICT(job_id) DO UPDATE SET updated_at=NOW()
+      RETURNING *
+    `, [jobId, openedBy, triggerType]);
+
+    return { opened:true, dispute:disputeView(rows[0]), ...held };
+  });
 }
 
 export async function updateJobDisputeAnalysis(id, analysis) {
