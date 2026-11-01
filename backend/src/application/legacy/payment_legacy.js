@@ -52,7 +52,7 @@ export function createPaymentLegacyAdapter({ db, withTransaction, fundingJournal
           providerRef: `LOCAL-REF-${refundId}`, idempotencyKey, createdAt, updatedAt: createdAt,
         });
         payment.status = 'REFUNDED'; payment.updatedAt = createdAt;
-        job.status = job.providerId ? 'ASSIGNED' : 'PUBLISHED'; job.updatedAt = createdAt;
+        job.status = 'CANCELLED'; job.updatedAt = createdAt;
         const b = {
           baseAmount: payment.baseAmount || payment.amount,
           employerFee: payment.employerFee || 0, workerFee: payment.workerFee || 0,
