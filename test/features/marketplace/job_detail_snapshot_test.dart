@@ -38,6 +38,8 @@ class _DetailRepo implements JobDetailRepository {
   Future<Map<String, dynamic>> compareCandidates(String _, List<String> __) async => const {};
   @override
   Future<void> reportJob(String _, {required String reason, String details = ''}) async {}
+  @override
+  Future<Map<String, dynamic>> openDispute(String _) async => const {'dispute': {'id': 'd1', 'status': 'OPEN'}, 'payment': {'status': 'HELD'}};
 }
 
 class _TxRepo implements TransactionRepository {
