@@ -116,8 +116,7 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
   });
 }
 
-export async function holdPaymentForDispute({ jobId, paymentId }) {
-  return withSqlTransaction(async (client) => {
+export async function holdPaymentForDisputeWithClient(client, { jobId, paymentId }) {
     const { rows: jobs } = await client.query(
       `SELECT id FROM jobs WHERE id=$1 FOR UPDATE`,
       [jobId],
@@ -183,7 +182,10 @@ export async function holdPaymentForDispute({ jobId, paymentId }) {
       );
     }
     return { held:true, paymentStatus:'HELD', cancelledReleaseEvents:events.length };
-  });
+}
+
+export async function holdPaymentForDispute({ jobId, paymentId }) {
+  return withSqlTransaction((client) => holdPaymentForDisputeWithClient(client, { jobId, paymentId }));
 }
 
 export async function getOutboxEvent(id) {
