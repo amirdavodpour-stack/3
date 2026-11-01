@@ -77,7 +77,7 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
   });
 }
 
-export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeKey }) {
+export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeKey, disputeId = null }) {
   return withSqlTransaction(async (client) => {
     const { rows: jr } = await client.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
     const job = jr[0];
@@ -86,8 +86,17 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
     if (job.status !== 'COMPLETED') { const e=new Error('INVALID_STATE'); e.code='INVALID_STATE'; throw e; }
     const { rows: pr } = await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`, [paymentId, jobId]);
     const payment = pr[0];
-    if (!payment || !['RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) { const e=new Error('INVALID_PAYMENT_STATE'); e.code='INVALID_PAYMENT_STATE'; throw e; }
-    if (payment.status === 'RELEASE_FAILED') {
+    if (!payment || !['HELD','RELEASE_PENDING','RELEASE_FAILED'].includes(payment.status)) { const e=new Error('INVALID_PAYMENT_STATE'); e.code='INVALID_PAYMENT_STATE'; throw e; }
+    if (payment.status === 'HELD') {
+      const { rows: claims } = await client.query(
+        `SELECT id FROM job_disputes WHERE id=$1 AND job_id=$2 AND status='RESOLVING' AND resolution='RELEASE' FOR UPDATE`,
+        [disputeId,jobId],
+      );
+      if (!disputeId || !claims[0]) {
+        const e = new Error('DISPUTE_RELEASE_CLAIM_REQUIRED'); e.code = 'DISPUTE_RELEASE_CLAIM_REQUIRED'; throw e;
+      }
+      await client.query(`UPDATE payments SET status='RELEASE_PENDING',updated_at=NOW() WHERE id=$1`, [paymentId]);
+    } else if (payment.status === 'RELEASE_FAILED') {
       await client.query(`UPDATE payments SET status='RELEASE_PENDING',updated_at=NOW() WHERE id=$1`, [paymentId]);
     }
     const { rows } = await client.query(
