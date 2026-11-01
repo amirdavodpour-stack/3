@@ -75,9 +75,34 @@ test('fund is idempotent and cannot be refunded twice', async()=>{
   const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-1'},body:'{}'});assert.equal(refund.status,200);assert.equal(refund.body.data.status,'REFUNDED');
   assert.equal(db.collection.jobs.find((row)=>row.id===job.id)?.status,'CANCELLED',
     'a full pre-work refund must cancel the funded job rather than re-open assignment');
+  assert.equal(db.collection.jobs.find((row)=>row.id===job.id)?.status,'CANCELLED',
+    'a full pre-work refund must cancel the funded job rather than re-open assignment');
   const again=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-2'},body:'{}'});assert.equal(again.status,409);assert.equal(again.body.error.code,'INVALID_PAYMENT_STATE');
 });
 
+
+
+test('self-service refund after work has started requires dispute resolution', async () => {
+  const owner=await reg('refund-started-owner@example.com');
+  const provider=await reg('refund-started-provider@example.com');
+  const job=await createMission(owner);
+  const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
+  assert.equal(offer.status,201);
+  const accepted=await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
+  assert.equal(accepted.status,200);
+  const funded=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started-fund'},body:'{}'});
+  assert.equal(funded.status,201);
+
+  const storedJob=db.collection.jobs.find((row)=>row.id===job.id);
+  storedJob.status='IN_PROGRESS';
+  await db.save();
+
+  const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started'},body:'{}'});
+  assert.equal(refund.status,409);
+  assert.equal(refund.body.error.code,'REFUND_REQUIRES_DISPUTE');
+  assert.equal(db.collection.payments.find((row)=>row.jobId===job.id)?.status,'HELD');
+  assert.equal(db.collection.refunds.filter((row)=>row.paymentId===funded.body.data.id).length,0);
+});
 
 
 test('self-service refund after work has started requires dispute resolution', async () => {
