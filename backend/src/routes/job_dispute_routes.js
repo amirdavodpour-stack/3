@@ -97,7 +97,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
         try {
           await resolvePayment(dispute,resolution,me.id,reason);
         } catch (error) {
-          if (['PAYMENT_OR_JOB_NOT_FOUND','PAYMENT_NOT_FOUND','INVALID_PAYMENT_STATE'].includes(error?.code)) {
+          if (['PAYMENT_OR_JOB_NOT_FOUND','PAYMENT_NOT_FOUND','INVALID_PAYMENT_STATE','JOB_NOT_COMPLETED','PAYMENT_RELEASE_IN_PROGRESS'].includes(error?.code)) {
             await repo.abandonJobDisputeResolutionClaim(dispute.id,{resolution,token:claim.token});
           }
           throw error;
