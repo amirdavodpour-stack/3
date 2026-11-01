@@ -54,3 +54,24 @@ test('participants can open disputes during active work as well as after complet
     assert.match(routes, new RegExp(status));
   }
 });
+
+
+test('opening a dispute holds payment before creating the case and blocks later release', () => {
+  const route = read('backend/src/routes/job_dispute_routes.js');
+  const hold = route.indexOf('const held=await repo.holdPaymentForDispute');
+  const create = route.indexOf('repo.createJobDispute', hold);
+  assert.ok(hold >= 0 && create > hold,
+    'the payment must be held before a new dispute is persisted');
+  assert.match(route, /DISPUTE_PAYMENT_ALREADY_SETTLED/);
+  assert.match(route, /PAYMENT_RELEASE_IN_PROGRESS/);
+
+  const payments = read('backend/src/routes/payment_routes.js');
+  assert.match(payments, /JOB_DISPUTE_OPEN/);
+  const satisfaction = read('backend/src/routes/job_satisfaction_routes.js');
+  assert.match(satisfaction, /existingDispute && existingDispute.status !== 'RESOLVED'/);
+
+  const outbox = read('backend/src/repository/outbox.js');
+  assert.match(outbox, /DISPUTE_RELEASE_CLAIM_REQUIRED/);
+  const disputes = read('backend/src/repository/disputes.js');
+  assert.match(disputes, /CASE WHEN \$2='HOLD' THEN 'ADMIN_REVIEW' ELSE 'RESOLVED' END/);
+});
