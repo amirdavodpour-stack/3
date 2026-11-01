@@ -94,6 +94,12 @@ test('refresh-token reuse invalidates access sessions and admin-panel verificati
   );
   assert.match(reuseBranch, /r\.user_id/,
     'reuse invalidation must target the account owning the compromised token');
+  assert.match(reuseBranch, /INSERT INTO audit_logs/i,
+    'reuse detection must persist a durable audit event in the transaction');
+  assert.match(reuseBranch, /AUTH_REFRESH_REUSE_DETECTED/);
+  assert.match(reuseBranch, /tokenFamilyId/);
+  assert.doesNotMatch(reuseBranch, /oldHash|tokenHash|nextToken/,
+    'the durable audit payload must not include raw refresh-token material');
 });
 
 

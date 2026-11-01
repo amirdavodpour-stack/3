@@ -5203,6 +5203,20 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
   assert.equal(family.length, 2);
   assert.ok(family.every((token) => token.revoked_at),
     'all refresh tokens in the compromised family must be revoked');
+
+  const { rows: audit } = await pool.query(
+    `SELECT action,actor_id,entity_type,entity_id,meta
+       FROM audit_logs
+      WHERE action='AUTH_REFRESH_REUSE_DETECTED'
+        AND actor_id=$1 AND entity_id=$1
+        AND meta->>'tokenFamilyId'=$2`,
+    [userId,familyId],
+  );
+  assert.equal(audit.length,1,
+    'refresh-token reuse must create one durable security audit event');
+  assert.equal(audit[0].action,'AUTH_REFRESH_REUSE_DETECTED');
+  assert.equal(audit[0].entity_type,'user');
+  assert.equal(audit[0].meta?.tokenFamilyId,familyId);
 });
 
 
