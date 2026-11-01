@@ -14,7 +14,7 @@ test('dispute route is wired and satisfaction conflicts auto-open adjudication',
   assert.match(app, /createJobDisputeRoutes/);
   assert.match(app, /parts\[2\] === 'dispute'/);
   assert.match(satisfaction, /SATISFACTION_CONFLICT/);
-  assert.match(satisfaction, /createJobDispute/);
+  assert.match(satisfaction, /openJobDisputeWithHold/);
   assert.match(satisfaction, /analyzeDisputeWithAI/);
   assert.match(route, /PAYMENT_RELEASE:ADMIN_DISPUTE/);
   assert.match(route, /DISPUTE_REFUND/);
