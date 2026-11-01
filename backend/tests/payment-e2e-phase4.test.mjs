@@ -83,8 +83,9 @@ test('fund is idempotent and cannot be refunded twice', async()=>{
 
 
 test('self-service refund after work has started requires dispute resolution', async () => {
-  const owner=await reg('refund-started-owner@example.com');
-  const provider=await reg('refund-started-provider@example.com');
+  const suffix=Date.now();
+  const owner=await reg(`refund-started-owner-${suffix}@example.com`);
+  const provider=await reg(`refund-started-provider-${suffix}@example.com`);
   const job=await createMission(owner);
   const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
   assert.equal(offer.status,201);
