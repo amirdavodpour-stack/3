@@ -49,6 +49,7 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
         email: replacement.email,
         passwordHash: replacement.passwordHash,
         displayName: 'Deleted user',
+        googleSubject: null,
         status: 'DELETED',
         sessionVersion: Number(user.sessionVersion || 0) + 1,
         deletedAt,
