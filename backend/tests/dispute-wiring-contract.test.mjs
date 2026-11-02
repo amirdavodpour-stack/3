@@ -6,14 +6,16 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '../..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-test('dispute persistence exposes create, list, read and resolve operations', () => {
+test('dispute persistence exposes read operations and fenced resolution lifecycle', () => {
   const repo = read('backend/src/repository/disputes.js');
   assert.match(repo, /createJobDispute/);
   assert.match(repo, /listAdminDisputes/);
   assert.match(repo, /getAdminDispute/);
   assert.match(repo, /getJobDisputeContext/);
   assert.match(repo, /updateJobDisputeAnalysis/);
-  assert.match(repo, /resolveJobDispute/);
+  assert.match(repo, /claimJobDisputeResolution/);
+  assert.match(repo, /completeJobDisputeResolution/);
+  assert.match(repo, /abandonJobDisputeResolutionClaim/);
 });
 
 test('job routes expose user-triggered dispute and satisfaction conflict can invoke the analyzer', () => {
@@ -24,12 +26,17 @@ test('job routes expose user-triggered dispute and satisfaction conflict can inv
   assert.match(satisfaction, /analyzeDisputeWithAI/);
 });
 
-test('admin routes expose dispute report and explicit financial resolution', () => {
-  const routes = read('backend/src/routes/admin_routes.js');
-  assert.match(routes, /admin.*disputes/);
+test('admin dispute routes delegate to the claim-fenced handler, not the legacy resolver', () => {
+  const admin = read('backend/src/routes/admin_routes.js');
+  const routes = read('backend/src/routes/job_dispute_routes.js');
+  assert.match(admin, /jobDisputeRoutes/);
+  assert.match(admin, /parts\[0\] === 'admin' && parts\[1\] === 'disputes'/);
+  assert.doesNotMatch(admin, /repo\.resolveJobDispute/);
+  assert.match(routes, /repo\.claimJobDisputeResolution/);
+  assert.match(routes, /repo\.completeJobDisputeResolution/);
   assert.match(routes, /RELEASE/);
   assert.match(routes, /REFUND/);
-  assert.match(routes, /resolveJobDispute/);
+  assert.match(routes, /HOLD/);
 });
 test('admin dispute decisions claim a fenced resolution before financial side effects and HOLD cancels pending release', () => {
   const route = read('backend/src/routes/job_dispute_routes.js');
