@@ -129,7 +129,8 @@ const storageRoutes = createStorageRoutes({
 
 
 const adminRoutes = createAdminRoutes({
-  authUser, requireAdmin, readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases,
+  authUser, requireAdmin, jobDisputeRoutes: (...args) => jobDisputeRoutes(...args),
+  readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases,
   createAudit: (...args) => createAudit(...args), findUser, getJob: (...args) => getJob(...args),
   notifyApplicationCandidate: (...args) => notifyApplicationCandidate(...args), URL,
   listUnknownPayouts: repo.listUnknownPayouts,
