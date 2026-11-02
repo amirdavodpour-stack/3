@@ -20,11 +20,14 @@ test('dispute route is wired and satisfaction conflicts auto-open adjudication',
   assert.match(route, /DISPUTE_REFUND/);
 });
 
-test('admin dispute operations must remain behind the verified admin panel', () => {
+test('admin dispute operations remain behind panel verification and audit their fenced decision', () => {
   const admin = read('backend/src/routes/admin_routes.js');
+  const dispute = read('backend/src/routes/job_dispute_routes.js');
   assert.match(admin, /ADMIN_PANEL_LOCKED/);
-  assert.match(admin, /disputes/);
-  assert.match(admin, /ADMIN_DISPUTE_RESOLVE/);
+  assert.match(admin, /parts\[0\] === 'admin' && parts\[1\] === 'disputes'/);
+  assert.match(dispute, /repo\.claimJobDisputeResolution/);
+  assert.match(dispute, /ADMIN_DISPUTE_RESOLVE/);
+  assert.match(dispute, /repo\.completeJobDisputeResolution/);
 });
 test('admin panel exposes a verification state endpoint and UI checks it before loading admin data', () => {
   const route = read('backend/src/routes/admin_routes.js');
