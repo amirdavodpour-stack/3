@@ -1576,8 +1576,22 @@ void main() {
       height: 1600,
     );
     final action = find.byKey(const ValueKey('job-dispute-open-action'));
+    final detailList = find.byKey(
+      const ValueKey('opportunity-detail-content-list'),
+    );
     expect(action, findsOneWidget);
-    await tester.ensureVisible(action);
+    expect(detailList, findsOneWidget);
+    await tester.scrollUntilVisible(
+      action,
+      120,
+      scrollable: find.descendant(
+        of: detailList,
+        matching: find.byType(Scrollable),
+      ).first,
+      maxScrolls: 80,
+    );
+    await tester.pumpAndSettle();
+    expect(action.hitTestable(), findsOneWidget);
     await tester.tap(action);
     await tester.pumpAndSettle();
     expect(detail.calls, contains('dispute:j1'));
