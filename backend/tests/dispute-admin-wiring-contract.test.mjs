@@ -43,6 +43,11 @@ test('admin dispute gate honors the configured Admin Panel verification duration
 });
 
 test('admin dispute endpoint delegates to the claim-fenced dispute route', async () => {
+  const app = read('backend/src/app.js');
+  assert.match(
+    app,
+    /createAdminRoutes\(\{\s*authUser,\s*requireAdmin,\s*jobDisputeRoutes:\s*\(\.\.\.args\)\s*=>\s*jobDisputeRoutes\(\.\.\.args\)/s,
+  );
   const { createAdminRoutes } = await import('../src/routes/admin_routes.js');
   const admin = {
     id: 'admin-1',
