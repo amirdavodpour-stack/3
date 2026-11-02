@@ -70,8 +70,12 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
       if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
-      if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') return sendJson(res,200,await repo.listAdminDisputes());
+      if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') {
+        assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
+        return sendJson(res,200,await repo.listAdminDisputes());
+      }
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'GET') {
+        assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
         const dispute = await repo.getAdminDispute(parts[2]); if (!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found'); return sendJson(res,200,dispute);
       }
       if (parts.length === 3 && parts[1] === 'disputes' && req.method === 'POST' && parts[2]) {
