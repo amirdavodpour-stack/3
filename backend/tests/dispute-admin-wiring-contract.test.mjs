@@ -41,3 +41,52 @@ test('admin dispute gate honors the configured Admin Panel verification duration
   assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15\)/);
   assert.doesNotMatch(route, /repo\.isAdminPanelVerified\(me\.id,\s*15\)/);
 });
+
+test('admin dispute endpoint delegates to the claim-fenced dispute route', async () => {
+  const { createAdminRoutes } = await import('../src/routes/admin_routes.js');
+  const admin = {
+    id: 'admin-1',
+    role: 'ADMIN',
+    email: 'amir.davodpour@gmail.com',
+    googleSubject: 'verified-google-subject',
+    displayName: 'Primary Admin',
+    sessionVersion: 1,
+  };
+  const delegatedCalls = [];
+  const route = createAdminRoutes({
+    authUser: async () => admin,
+    requireAdmin: (user) => user,
+    readBody: async (req) => req.url.endsWith('/access')
+      ? { name: 'Primary Admin', username: 'admin-panel-secret' }
+      : { resolution: 'HOLD', reason: 'keep case open' },
+    sendJson: (_res, status, body) => ({ status, body }),
+    HttpError: class HttpError extends Error {
+      constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+    },
+    repo: {
+      isAdminPanelVerified: async () => true,
+      setAdminPanelVerified: async () => true,
+      getAdminDispute: async () => { throw new Error('legacy dispute resolver was reached'); },
+    },
+    config: { adminPanelUsername: 'admin-panel-secret', adminPanelVerificationMinutes: 15 },
+    createAudit: async () => {},
+    jobDisputeRoutes: async (_req, _res, parts) => {
+      delegatedCalls.push(parts.join('/'));
+      return { delegated: true };
+    },
+  });
+
+  await route(
+    { method: 'POST', url: '/api/v1/admin/access', headers: {} },
+    {},
+    ['admin', 'access'],
+  );
+  const response = await route(
+    { method: 'POST', url: '/api/v1/admin/disputes/dispute-1', headers: {} },
+    {},
+    ['admin', 'disputes', 'dispute-1'],
+  );
+
+  assert.deepEqual(delegatedCalls, ['admin/disputes/dispute-1']);
+  assert.deepEqual(response, { delegated: true });
+});
