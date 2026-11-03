@@ -62,6 +62,8 @@ export const config = {
   healthRateLimitMax: positiveIntegerEnv('HEALTH_RATE_LIMIT_MAX', 120, { min: 1, max: 1000 }),
   resetTokenTtlSeconds: positiveIntegerEnv('RESET_TOKEN_TTL', 900, { min: 60, max: 86400 }),
   exposeResetTokenInDevelopment: process.env.EXPOSE_RESET_TOKEN_IN_DEVELOPMENT === 'true',
+  emailVerificationTokenTtlSeconds: positiveIntegerEnv('EMAIL_VERIFICATION_TOKEN_TTL_SECONDS', 3600, { min: 300, max: 86400 }),
+  exposeEmailVerificationCodeInDevelopment: process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT === 'true',
   internalWalletUserTopUpEnabled: process.env.INTERNAL_WALLET_USER_TOPUP_ENABLED === 'true',
   internalWalletAdminCreditEnabled: process.env.INTERNAL_WALLET_ADMIN_CREDIT_ENABLED === 'true',
   googleAuthEnabled: process.env.GOOGLE_AUTH_ENABLED === 'true',

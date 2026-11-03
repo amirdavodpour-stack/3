@@ -5,9 +5,9 @@ import { runMigrations } from './db/migrations.js';
 import { pool, getPool, withSqlTransaction, databaseHealth, closePool } from './db/runtime.js';
 import { CATEGORY_CATALOG } from './db/categories.js';
 
-const collections = ['users','providers','refreshTokens','resetTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches','recommendationProfiles'];
+const collections = ['users','providers','refreshTokens','resetTokens','emailVerificationTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches','recommendationProfiles'];
 const tableMap = {
-  users: 'users', providers: 'providers', refreshTokens: 'refresh_tokens', resetTokens: 'reset_tokens',
+  users: 'users', providers: 'providers', refreshTokens: 'refresh_tokens', resetTokens: 'reset_tokens', emailVerificationTokens: 'email_verification_tokens',
   categories: 'categories', jobs: 'jobs', offers: 'offers', jobApplications: 'job_applications', payments: 'payments', evidence: 'evidence',
   uploads: 'uploads', uploadIntents: 'upload_intents', audit: 'audit_logs', ledgerEntries: 'ledger_entries', settlements: 'settlements', refunds: 'refunds', paymentWebhooks: 'payment_webhook_events',
   notifications: 'notifications', notificationPreferences: 'notification_preferences', notificationDevices: 'notification_devices',

@@ -1,12 +1,40 @@
 import { shouldBootstrapPrimaryAdmin } from '../application/admin_panel_access.js';
 
 export function createAuthRoutes({
-  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser,
+  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, deliverEmailVerification, findUser,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH,
-  logEvent, rateLimitAuthAccount, stringField, id, legacy, verifyGoogleIdToken,
+  logEvent, rateLimitAuth, rateLimitAuthAccount, stringField, id, legacy, verifyGoogleIdToken,
 }) {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  async function issueEmailVerification(user) {
+    const code = randomToken(16);
+    const tokenHash = sha256(code);
+    const token = {
+      id: id(),
+      userId: user.id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + config.emailVerificationTokenTtlSeconds * 1000).toISOString(),
+      usedAt: null,
+      createdAt: now(),
+    };
+    if (process.env.DATABASE_URL) await repo.insertEmailVerificationToken(token);
+    else legacy.insertEmailVerificationToken(token);
+
+    let delivered = false;
+    try {
+      if (typeof deliverEmailVerification !== 'function') throw new Error('EMAIL_VERIFICATION_DELIVERY_UNAVAILABLE');
+      await deliverEmailVerification({ user, code, expiresInSeconds: config.emailVerificationTokenTtlSeconds });
+      delivered = true;
+    } catch (error) {
+      if (process.env.DATABASE_URL) await repo.invalidateEmailVerificationToken(tokenHash);
+      else legacy.invalidateEmailVerificationToken(tokenHash);
+      logEvent({ level: 'error', action: 'EMAIL_VERIFICATION_DELIVERY_FAILED', userId: user.id, message: error?.message || 'delivery failed' });
+      await createAudit('AUTH_EMAIL_VERIFICATION_DELIVERY_FAILED', user.id, 'user', user.id);
+    }
+    return { delivered, code };
+  }
 
   return async function authRoutes(req, res, parts) {
     const route = parts.slice(1).join('/');
@@ -15,11 +43,17 @@ export function createAuthRoutes({
       requireFields(body, ['email', 'password', 'displayName']);
       const email = stringField(body.email, 'email', { min: 1, max: 254, required: true }).toLowerCase();
       if (email.length > 254 || !emailRe.test(email)) throw new HttpError(400, 'INVALID_EMAIL', 'Email is invalid');
+      if (rateLimitAuth && !(await rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs))) {
+        throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
+      }
+      if (rateLimitAuthAccount && !(await rateLimitAuthAccount(`register:${email}`, config.authRateLimitMax, config.rateLimitWindowMs))) {
+        throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
+      }
       const password = stringField(body.password, 'password', { min: 1, max: PASSWORD_MAX_LENGTH, required: true });
       if (password.length < 12 || password.length > PASSWORD_MAX_LENGTH) throw new HttpError(400, 'WEAK_PASSWORD', 'Password must be between 12 and 128 characters');
       const displayName = stringField(body.displayName, 'displayName', { min: 1, max: 120, required: true });
       if (await getUserByEmail(email)) throw new HttpError(409, 'EMAIL_IN_USE', 'An account with this email already exists');
-      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: 'USER', status: 'ACTIVE', sessionVersion: 0, createdAt: now() };
+      const userDraft = { id: id(), email, passwordHash: await hashPassword(password), displayName, role: 'USER', status: 'PENDING_EMAIL_VERIFICATION', sessionVersion: 0, createdAt: now() };
       const providerDraft = { id: id(), userId: userDraft.id, providerType: 'INDIVIDUAL', capacity: 'OPEN', verificationStatus: 'UNVERIFIED', createdAt: now(), updatedAt: now() };
       let user;
       try {
@@ -28,9 +62,53 @@ export function createAuthRoutes({
         if (error?.code === '23505' || error?.constraint === 'users_email_key') throw new HttpError(409, 'EMAIL_IN_USE', 'An account with this email already exists');
         throw error;
       }
+      const verification = await issueEmailVerification(user);
+      await createAudit('AUTH_REGISTER_PENDING_EMAIL_VERIFICATION', user.id, 'user', user.id);
+      const response = {
+        verificationRequired: true,
+        email: user.email,
+        message: 'Check your email for the verification code before signing in.',
+      };
+      if (verification.delivered && config.exposeEmailVerificationCodeInDevelopment && process.env.NODE_ENV !== 'production') {
+        response.verificationCode = verification.code;
+      }
+      return sendJson(res, 202, response);
+    }
+
+    if (req.method === 'POST' && route === 'email/verification/resend') {
+      const body = await readBody(req);
+      requireFields(body, ['email']);
+      const email = stringField(body.email, 'email', { min: 1, max: 254, required: true }).toLowerCase();
+      if (email.length > 254 || !emailRe.test(email)) throw new HttpError(400, 'INVALID_EMAIL', 'Email is invalid');
+      if (rateLimitAuth && !(await rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs))) {
+        throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
+      }
+      if (rateLimitAuthAccount && !(await rateLimitAuthAccount(`email-verification:${email}`, config.authRateLimitMax, config.rateLimitWindowMs))) {
+        throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
+      }
+      const user = await getUserByEmail(email);
+      const verification = user?.status === 'PENDING_EMAIL_VERIFICATION' ? await issueEmailVerification(user) : null;
+      const response = { ok: true, message: 'If the account exists and requires verification, a code has been sent.' };
+      if (verification?.delivered && config.exposeEmailVerificationCodeInDevelopment && process.env.NODE_ENV !== 'production') {
+        response.verificationCode = verification.code;
+      }
+      return sendJson(res, 202, response);
+    }
+
+    if (req.method === 'POST' && route === 'email/verify') {
+      const body = await readBody(req);
+      requireFields(body, ['code']);
+      const code = stringField(body.code, 'code', { min: 16, max: 64, required: true });
+      if (rateLimitAuth && !(await rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs))) {
+        throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
+      }
+      const user = process.env.DATABASE_URL
+        ? await repo.consumeEmailVerificationToken(sha256(code))
+        : legacy.consumeEmailVerificationToken(sha256(code));
+      if (!user) throw new HttpError(400, 'EMAIL_VERIFICATION_INVALID', 'Verification code is invalid or expired');
       const session = await issueSession(user);
-      await createAudit('AUTH_REGISTER', user.id, 'user', user.id);
-      return sendJson(res, 201, { ...session, user: authUserView(user) });
+      await createAudit('AUTH_EMAIL_VERIFIED', user.id, 'user', user.id);
+      return sendJson(res, 200, { ...session, user: authUserView(user), emailVerified: true });
     }
 
     if (req.method === 'POST' && route === 'google/link') {

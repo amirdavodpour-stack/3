@@ -51,6 +51,62 @@ export async function insertResetToken(token) {
   const {rows}=await requirePool().query(`INSERT INTO reset_tokens(id,user_id,token_hash,family_id,expires_at,used_at,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,[token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,null,token.createdAt]);
   return rows[0];
 }
+
+export async function insertEmailVerificationToken(token) {
+  return withSqlTransaction(async (client) => {
+    await client.query(
+      `UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW())
+        WHERE user_id=$1 AND used_at IS NULL`,
+      [token.userId],
+    );
+    const { rows } = await client.query(
+      `INSERT INTO email_verification_tokens(id,user_id,token_hash,expires_at,used_at,created_at)
+       VALUES($1,$2,$3,$4,NULL,$5) RETURNING id,user_id,token_hash,expires_at,used_at,created_at`,
+      [token.id,token.userId,token.tokenHash,token.expiresAt,token.createdAt],
+    );
+    const r = rows[0];
+    return r ? {
+      id:r.id,userId:r.user_id,tokenHash:r.token_hash,
+      expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,
+      usedAt:r.used_at ? (r.used_at.toISOString?.() ?? r.used_at) : null,
+      createdAt:r.created_at?.toISOString?.() ?? r.created_at,
+    } : null;
+  });
+}
+
+export async function invalidateEmailVerificationToken(tokenHash) {
+  const { rows } = await requirePool().query(
+    `UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW())
+      WHERE token_hash=$1 AND used_at IS NULL RETURNING id`,
+    [tokenHash],
+  );
+  return Boolean(rows[0]);
+}
+
+export async function consumeEmailVerificationToken(tokenHash) {
+  return withSqlTransaction(async (client) => {
+    const { rows: tokens } = await client.query(
+      `SELECT id,user_id,expires_at,used_at FROM email_verification_tokens
+        WHERE token_hash=$1 FOR UPDATE`,
+      [tokenHash],
+    );
+    const token = tokens[0];
+    if (!token || token.used_at || new Date(token.expires_at).getTime() <= Date.now()) return null;
+    const { rows: users } = await client.query(
+      `UPDATE users SET status='ACTIVE'
+        WHERE id=$1 AND status='PENDING_EMAIL_VERIFICATION'
+        RETURNING ${userSelect}`,
+      [token.user_id],
+    );
+    await client.query(
+      `UPDATE email_verification_tokens SET used_at=NOW()
+        WHERE user_id=$1 AND used_at IS NULL`,
+      [token.user_id],
+    );
+    return users[0] ? userFromRow(users[0]) : null;
+  });
+}
+
 export async function findResetTokenForUse(tokenHash) {
   return withSqlTransaction(async(client)=>{
     const {rows}=await client.query(`SELECT * FROM reset_tokens WHERE token_hash=$1 FOR UPDATE`,[tokenHash]);

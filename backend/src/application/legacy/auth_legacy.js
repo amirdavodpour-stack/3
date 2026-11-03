@@ -73,6 +73,35 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
     insertResetToken(token) {
       return db.insert('resetTokens', token);
     },
+    insertEmailVerificationToken(token) {
+      for (const existing of db.collection.emailVerificationTokens.filter((item) => item.userId === token.userId && !item.usedAt)) {
+        existing.usedAt = now();
+      }
+      db.touch('emailVerificationTokens');
+      return db.insert('emailVerificationTokens', token);
+    },
+    invalidateEmailVerificationToken(tokenHash) {
+      const token = db.collection.emailVerificationTokens.find((item) => item.tokenHash === tokenHash && !item.usedAt);
+      if (!token) return false;
+      token.usedAt = now();
+      db.touch('emailVerificationTokens');
+      return true;
+    },
+    consumeEmailVerificationToken(tokenHash) {
+      const token = db.collection.emailVerificationTokens.find((item) =>
+        item.tokenHash === tokenHash && !item.usedAt && new Date(item.expiresAt).getTime() > Date.now(),
+      );
+      if (!token) return null;
+      const user = findUser(token.userId);
+      if (!user || user.status !== 'PENDING_EMAIL_VERIFICATION') return null;
+      token.usedAt = now();
+      user.status = 'ACTIVE';
+      for (const existing of db.collection.emailVerificationTokens.filter((item) => item.userId === user.id && !item.usedAt)) {
+        existing.usedAt = now();
+      }
+      db.touch('users', 'emailVerificationTokens');
+      return user;
+    },
     async save() { await db.save(); },
     markResetDeliveryFailed(tokenHash) {
       const created = db.collection.resetTokens.find((t) => t.tokenHash === tokenHash);

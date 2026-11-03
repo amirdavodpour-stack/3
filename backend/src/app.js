@@ -75,7 +75,7 @@ const viewCategories = process.env.DATABASE_URL ? await repo.listCategories() : 
 
 const sessionLegacy = createSessionLegacyAdapter({ db });
 const sessionService = createSessionService({ config, repo, logEvent, now, legacy: sessionLegacy });
-const { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset } = sessionService;
+const { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset, deliverEmailVerification } = sessionService;
 
 const notificationLegacy = createNotificationLegacy({ db, now });
 const notificationRoutes = createNotificationRoutes({
@@ -189,7 +189,7 @@ const {
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
-  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount, verifyGoogleIdToken,
+  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, deliverEmailVerification, findUser, rateLimitAuth, rateLimitAuthAccount, verifyGoogleIdToken,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
   id: db.id, legacy: authLegacy,

@@ -39,7 +39,8 @@ test('password registration cannot claim the primary-admin email role without a 
     sendJson: async (_res, status, data) => ({ status, data }),
     HttpError,
     requireFields,
-    repo: { createUserWithProvider: saveUser },
+    repo: { createUserWithProvider: saveUser, insertEmailVerificationToken: async () => true, invalidateEmailVerificationToken: async () => true },
+    deliverEmailVerification: async () => {},
     config: {},
     now: () => '2026-10-26T00:00:00.000Z',
     hashPassword: async () => 'test-password-hash',
@@ -69,7 +70,10 @@ test('password registration cannot claim the primary-admin email role without a 
     else process.env.DATABASE_URL = originalDatabaseUrl;
   }
 
-  assert.equal(response.status, 201);
-  assert.equal(response.data.user.role, 'USER');
+  assert.equal(response.status, 202);
+  assert.equal(response.data.verificationRequired, true);
+  assert.equal(response.data.accessToken, undefined);
+  assert.equal(storedUsers[0].status, 'PENDING_EMAIL_VERIFICATION');
+  assert.equal(storedUsers[0].role, 'USER');
   assert.equal(storedUsers[0].role, 'USER');
 });
