@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-export const PRIVACY_VERSION = '1.3';
+export const PRIVACY_VERSION = '1.4';
 
 export const MAX_EXPORT_ARRAY_ITEMS = 500;
 export const MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS + 1;
@@ -81,10 +81,10 @@ export function sanitizeTelemetryProperties(input = {}) {
 export function anonymizedEmail(userId) { return `deleted+${String(userId).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,32)}@invalid.local`; }
 export function deletionCredential() { return crypto.randomBytes(48).toString('hex'); }
 
-export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], refunds = [], settlements = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
+export function buildDataExport({ user, provider, jobs = [], applications = [], offers = [], payments = [], refunds = [], settlements = [], walletAccounts = [], walletEntries = [], walletHolds = [], payouts = [], notifications = [], evidence = [], uploads = [], chatConversations = [], chatMessages = [], preferences = null, analyticsEvents = [], crashReports = [], trustReports = [], recommendationProfile = null, satisfactionHistory = [], savedSearches = [] }) {
   const exportCollections = {
     jobs, applications, offers, payments, refunds, settlements, walletAccounts, walletEntries, walletHolds, payouts,
-    notifications, evidence, uploads, analyticsEvents, crashReports, trustReports, satisfactionHistory, savedSearches,
+    notifications, evidence, uploads, chatConversations, chatMessages, analyticsEvents, crashReports, trustReports, satisfactionHistory, savedSearches,
   };
   const truncatedTopLevelCollections = Object.entries(exportCollections)
     .filter(([, records]) => Array.isArray(records) && records.length > MAX_EXPORT_ARRAY_ITEMS)
@@ -117,6 +117,8 @@ export function buildDataExport({ user, provider, jobs = [], applications = [], 
     crashReports: sanitizeExportObject(crashReports.map(sanitizeTelemetryExportRecord)),
     trustReports: sanitizeExportObject(trustReports),
     uploads: sanitizeExportObject(uploads),
+    chatConversations: sanitizeExportObject(chatConversations),
+    chatMessages: sanitizeExportObject(chatMessages),
     notificationPreferences: sanitizeExportObject(preferences),
     recommendationProfile: sanitizeExportObject(recommendationProfile),
     satisfactionHistory: sanitizeExportObject(satisfactionHistory),
