@@ -117,7 +117,7 @@ class _FakeAdminOperations implements AdminRepository {
         'primaryAdmin': true,
         'permissions': ['admin.resolve_payouts'],
       };
-  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken}) async => const {'verified': true};
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
   @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
