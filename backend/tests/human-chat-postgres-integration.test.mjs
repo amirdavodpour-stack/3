@@ -5582,82 +5582,114 @@ test('dispute creation and escrow hold roll back together when dispute persisten
 
 test('PostgreSQL privacy export includes participant job messages and safe attachment metadata, but excludes the ADMIN room', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
+  const ownerId = await createTransferTestUser(pool, 'privacy-chat-export-owner');
+  const workerId = await createTransferTestUser(pool, 'privacy-chat-export-worker');
+  const outsiderId = await createTransferTestUser(pool, 'privacy-chat-export-outsider');
+  const suffix = crypto.randomUUID();
   const uploadId = crypto.randomUUID();
-  const storageKey = `privacy-export/${crypto.randomUUID()}.pdf`;
-  const messageIds = [];
+  const storageKey = \`privacy-export/\${suffix}.pdf\`;
+  let jobId = null;
+  let conversationId = null;
+  let adminMessageId = null;
   try {
+    await pool.query(
+      "UPDATE users SET display_name='Privacy export admin fixture' WHERE id=$1",
+      [fixture.adminId],
+    );
+    const { rows: jobs } = await pool.query(\`
+      INSERT INTO jobs(
+        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+        budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+        created_at,updated_at
+      )
+      SELECT gen_random_uuid(),$1,$2,'Privacy chat export fixture','Isolated privacy export test',
+        c.id,'FIXED','FIXED',100,100,1,'Privacy export test','IN_PROGRESS',
+        'R05 test','MISSION','PUBLIC',NOW(),NOW()
+      FROM categories c WHERE c.is_active=TRUE
+      ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+      RETURNING id
+    \`,[ownerId,workerId]);
+    assert.ok(jobs[0],'privacy chat export test requires an active category');
+    jobId=jobs[0].id;
+
+    const { rows: conversations } = await pool.query(\`
+      INSERT INTO chat_conversations(id,kind,job_id,status,title)
+      VALUES(gen_random_uuid(),'JOB',$1,'OPEN','Privacy chat export fixture')
+      RETURNING id
+    \`,[jobId]);
+    conversationId=conversations[0].id;
+
     await insertUpload({
-      id: uploadId,
+      id:uploadId,
       storageKey,
-      uploadedBy: fixture.ownerId,
-      contentType: 'application/pdf',
-      size: 1234,
-      createdAt: new Date().toISOString(),
+      uploadedBy:ownerId,
+      contentType:'application/pdf',
+      size:1234,
+      createdAt:new Date().toISOString(),
     });
 
     const attachmentMessage = await postChatMessage(
-      fixture.conversationId,
-      fixture.ownerId,
+      conversationId,
+      ownerId,
       'USER',
       '',
-      { messageType:'ATTACHMENT', attachments:[{ key:storageKey, filename:'delivery.pdf' }] },
+      {messageType:'ATTACHMENT',attachments:[{key:storageKey,filename:'delivery.pdf'}]},
     );
-    messageIds.push(attachmentMessage.id);
-
     const workerMessage = await postChatMessage(
-      fixture.conversationId,
-      fixture.workerId,
+      conversationId,
+      workerId,
       'USER',
       'I have completed the delivery.',
     );
-    messageIds.push(workerMessage.id);
+    await markChatConversationRead(conversationId,workerId,'USER');
 
-    const adminMessage = await postChatMessage(
-      fixture.adminConversationId,
-      fixture.adminId,
-      'ADMIN',
-      'Internal admin-room message must not appear in the account export.',
+    const { rows: adminMessages } = await pool.query(
+      \`INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
+       VALUES(gen_random_uuid(),$1,$2,'Internal admin-room message must not appear in the account export.','TEXT')
+       RETURNING id\`,
+      [fixture.adminConversationId,fixture.adminId],
     );
-    messageIds.push(adminMessage.id);
+    adminMessageId=adminMessages[0].id;
 
-    await markChatConversationRead(fixture.conversationId, fixture.workerId, 'USER');
-
-    const ownerExport = await getUserPrivacyBundle(fixture.ownerId);
-    const workerExport = await getUserPrivacyBundle(fixture.workerId);
-    const outsiderExport = await getUserPrivacyBundle(fixture.outsiderId);
+    const ownerExport = await getUserPrivacyBundle(ownerId);
+    const workerExport = await getUserPrivacyBundle(workerId);
+    const outsiderExport = await getUserPrivacyBundle(outsiderId);
     const adminExport = await getUserPrivacyBundle(fixture.adminId);
 
-    assert.ok(ownerExport.chatConversations.some((conversation) => conversation.id === fixture.conversationId));
-    assert.ok(workerExport.chatConversations.some((conversation) => conversation.id === fixture.conversationId));
-    assert.equal(outsiderExport.chatConversations.some((conversation) => conversation.id === fixture.conversationId), false);
+    assert.ok(ownerExport.chatConversations.some((conversation) => conversation.id===conversationId));
+    assert.ok(workerExport.chatConversations.some((conversation) => conversation.id===conversationId));
+    assert.equal(outsiderExport.chatConversations.some((conversation) => conversation.id===conversationId),false);
 
-    const ownerAttachment = ownerExport.chatMessages.find((message) => message.id === attachmentMessage.id);
-    assert.ok(ownerAttachment, 'the employer export must include received job messages');
-    assert.equal(ownerAttachment.sentByAccount, true);
-    assert.equal(ownerAttachment.messageType, 'ATTACHMENT');
-    assert.deepEqual(ownerAttachment.attachments, [{
+    const ownerAttachment = ownerExport.chatMessages.find((message) => message.id===attachmentMessage.id);
+    assert.ok(ownerAttachment,'the employer export must include its own job messages');
+    assert.equal(ownerAttachment.sentByAccount,true);
+    assert.equal(ownerAttachment.messageType,'ATTACHMENT');
+    assert.deepEqual(ownerAttachment.attachments,[{
       filename:'delivery.pdf',
       contentType:'application/pdf',
       size:1234,
     }]);
-    assert.equal(JSON.stringify(ownerAttachment).includes(storageKey), false,
+    assert.equal(JSON.stringify(ownerAttachment).includes(storageKey),false,
       'storage keys must never be present in chat export metadata');
 
-    const workerAttachment = workerExport.chatMessages.find((message) => message.id === attachmentMessage.id);
-    assert.ok(workerAttachment, 'the worker export must include received job messages');
-    assert.equal(workerAttachment.sentByAccount, false);
-    assert.equal(workerAttachment.isReadByAccount, true);
+    const workerAttachment = workerExport.chatMessages.find((message) => message.id===attachmentMessage.id);
+    assert.ok(workerAttachment,'the worker export must include messages received in their job');
+    assert.equal(workerAttachment.sentByAccount,false);
+    assert.equal(workerAttachment.isReadByAccount,true);
     assert.ok(workerAttachment.readAt);
+    assert.ok(workerExport.chatMessages.some((message) => message.id===workerMessage.id));
 
-    const adminExportMessages = adminExport.chatMessages.filter((message) => message.id === adminMessage.id);
-    assert.deepEqual(adminExportMessages, [],
-      'the account export must not disclose messages from the shared privileged ADMIN room');
-    assert.equal(adminExport.chatConversations.some((conversation) => conversation.kind === 'ADMIN'), false);
+    assert.deepEqual(
+      adminExport.chatMessages.filter((message) => message.id===adminMessageId),
+      [],
+      'ordinary account export must not disclose messages from the shared ADMIN room',
+    );
+    assert.equal(adminExport.chatConversations.some((conversation) => conversation.kind==='ADMIN'),false);
   } finally {
-    if(messageIds.length) {
-      await pool.query('DELETE FROM chat_messages WHERE id=ANY($1::uuid[])',[messageIds]);
-    }
-    await pool.query('DELETE FROM uploads WHERE id=$1',[uploadId]);
+    if(adminMessageId) await pool.query('DELETE FROM chat_messages WHERE id=$1',[adminMessageId]);
+    if(conversationId) await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]);
+    if(uploadId) await pool.query('DELETE FROM uploads WHERE id=$1',[uploadId]);
+    if(jobId) await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
   }
 });
 
