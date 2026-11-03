@@ -608,7 +608,7 @@ test('PostgreSQL privacy export scopes chat data to participant job conversation
   );
   assert.match(bundle, /c\.kind='JOB'/);
   assert.match(bundle, /j\.owner_id=\$1 OR j\.provider_id=\$1/);
-  assert.match(bundle, /FROM chat_messages m\\s+JOIN chat_conversations c/);
+  assert.match(bundle, /FROM chat_messages m\s+JOIN chat_conversations c/);
   assert.match(bundle, /chat_message_attachments/);
   assert.match(bundle, /LIMIT \$\{MAX_EXPORT_QUERY_ROWS\}/);
   assert.doesNotMatch(bundle, /a\.storage_key/);
