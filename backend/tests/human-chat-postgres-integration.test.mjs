@@ -5694,6 +5694,10 @@ test('PostgreSQL Google linking promotes only an explicitly verified primary-adm
     const primarySubject = `google-primary-bootstrap-${crypto.randomUUID()}`;
     const ordinarySubject = `google-ordinary-link-${crypto.randomUUID()}`;
 
+    const previouslyLinked = await linkGoogleSubject(primaryUserId, primarySubject);
+    assert.equal(previouslyLinked?.googleSubject, primarySubject);
+    assert.equal(previouslyLinked?.role, 'USER');
+
     const promoted = await linkGoogleSubject(primaryUserId, primarySubject, {
       promoteToPrimaryAdmin: true,
     });

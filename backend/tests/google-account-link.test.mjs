@@ -132,6 +132,47 @@ test('verified primary-owner Google linking requests the narrowly scoped admin b
   assert.equal(auditEntry[4]?.primaryAdminBootstrap, true);
 });
 
+test('an already-linked primary owner with a stale USER role can complete bootstrap idempotently', async () => {
+  const user = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    displayName: 'Primary owner',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: 'verified-primary-owner-subject',
+  };
+  const identity = {
+    subject: 'verified-primary-owner-subject',
+    email: 'amir.davodpour@gmail.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Primary owner',
+  };
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    user,
+    identity,
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { ...user, role: args[2]?.promoteToPrimaryAdmin ? 'ADMIN' : user.role };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.equal(result.data.linked, true);
+  assert.equal(result.data.alreadyLinked, true);
+  assert.deepEqual(linkedArguments, [
+    'owner-1',
+    'verified-primary-owner-subject',
+    { promoteToPrimaryAdmin: true },
+  ]);
+  assert.equal(auditEntry[4]?.primaryAdminBootstrap, true);
+});
+
 test('Google linking by an ordinary account never requests primary-admin promotion', async () => {
   let linkedArguments;
   let auditEntry;
