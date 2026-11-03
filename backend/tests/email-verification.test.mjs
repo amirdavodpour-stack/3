@@ -1,8 +1,15 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createAuthRoutes } from '../src/routes/auth_routes.js';
 import { HttpError } from '../src/api/http_error.js';
 import { requireFields, stringField } from '../src/policies/validation.js';
+
+const originalDatabaseUrl = process.env.DATABASE_URL;
+delete process.env.DATABASE_URL;
+after(() => {
+  if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+  else process.env.DATABASE_URL = originalDatabaseUrl;
+});
 
 function createHarness() {
   const state = {
