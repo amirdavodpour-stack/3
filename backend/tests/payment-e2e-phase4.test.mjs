@@ -5,13 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hope-finance-'));
-process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.PAYMENT_PROVIDER='simulator'; process.env.PAYMENT_CURRENCY='TOMAN'; process.env.ADMIN_PANEL_USERNAME='hope-admin'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
+process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT='true'; process.env.PAYMENT_PROVIDER='simulator'; process.env.PAYMENT_CURRENCY='TOMAN'; process.env.ADMIN_PANEL_USERNAME='hope-admin'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
 const { createServer }=await import('../src/app.js');
 const { db }=await import('../src/db.js');
 const server=createServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}/api/v1`;
 const json=(u,o={})=>fetch(base+u,{...o,headers:{'content-type':'application/json',...(o.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
-const reg=async(email)=>{const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email})});assert.equal(r.status,201);return r.body.data;};
+const reg=async(email)=>{const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email})});assert.equal(r.status,202);assert.equal(r.body.data.verificationRequired,true);const verified=await json('/auth/email/verify',{method:'POST',body:JSON.stringify({code:r.body.data.verificationCode})});assert.equal(verified.status,200);return verified.body.data;};
 const category=async()=> (await json('/categories')).body.data[0].id;
 const createMission=async(owner)=>{const r=await json('/jobs',{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`},body:JSON.stringify({title:'Mission',description:'Valid mission',categoryId:await category(),jobType:'FIXED',budgetType:'FIXED',budgetMin:1000000,budgetMax:1000000,duration:2,acceptanceCriteria:'Done',city:'تهران',kind:'MISSION',visibility:'PUBLIC'})});assert.equal(r.status,201);const p=await json(`/jobs/${r.body.data.id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});assert.equal(p.status,200);return p.body.data;};
 
