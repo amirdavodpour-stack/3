@@ -62,7 +62,7 @@ test('resend locks the user before invalidating and replacing active verificatio
   try {
     await insertEmailVerificationToken(previous);
     await blocker.query('BEGIN');
-    await blocker.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [user.id]);
+    await blocker.query('SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE', [user.id]);
 
     let replacementSettled = false;
     const replacementWork = insertEmailVerificationToken(replacement).then((value) => {
