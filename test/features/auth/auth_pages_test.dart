@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _AuthRepo implements AuthRepository {
   bool failLogin = false;
   bool failRegister = false;
+  int verifyEmailCalls = 0;
   String? lastLoginEmail;
   String? lastLoginPassword;
   String? lastRegisteredEmail;
@@ -40,7 +41,7 @@ class _AuthRepo implements AuthRepository {
   }
 
   @override
-  Future<AuthSession> register(
+  Future<void> register(
     String email,
     String password,
     String displayName,
@@ -49,8 +50,17 @@ class _AuthRepo implements AuthRepository {
     lastRegisteredPassword = password;
     lastDisplayName = displayName;
     if (failRegister) throw StateError('registration rejected');
+  }
+
+  @override
+  Future<AuthSession> verifyEmail(String code) async {
+    verifyEmailCalls++;
+    if (code.isEmpty) throw StateError('verification code is required');
     return const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
   }
+
+  @override
+  Future<void> resendEmailVerification(String email) async {}
 
   @override
   Future<void> logout() async {}
@@ -436,6 +446,29 @@ void main() {
     final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
 
     expect(buttonWidth, greaterThanOrEqualTo(panelWidth - 40));
+  });
+
+  testWidgets('registration switches to email verification without signing in', (tester) async {
+    final repository = _AuthRepo();
+    await tester.pumpWidget(await _screen(
+      const RegisterPage(),
+      authRepository: repository,
+    ));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'New User');
+    await tester.enterText(fields.at(1), 'new@example.com');
+    await tester.enterText(fields.at(2), 'secure-password-123');
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(repository.lastRegisteredEmail, 'new@example.com');
+    expect(repository.verifyEmailCalls, 0);
+    expect(find.byKey(const ValueKey('auth-email-verification-code')), findsOneWidget);
+    expect(find.byKey(const ValueKey('auth-email-verification-submit')), findsOneWidget);
+    expect(find.byKey(const ValueKey('auth-email-verification-resend')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('password reset renders an email form', (tester) async {

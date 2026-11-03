@@ -23,7 +23,7 @@ class LoginUseCase {
 class RegisterUseCase {
   const RegisterUseCase(this.repository);
   final AuthRepository repository;
-  Future<AuthSession> call(String email, String password, String displayName) =>
+  Future<void> call(String email, String password, String displayName) =>
       repository.register(email, password, displayName);
 }
 

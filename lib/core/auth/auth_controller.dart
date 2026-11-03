@@ -94,9 +94,23 @@ class AuthController extends ChangeNotifier {
   Future<void> register(
       String email, String password, String displayName) async {
     await _auth(() async {
-      final session = await RegisterUseCase(repository)(email, password, displayName);
+      await RegisterUseCase(repository)(email, password, displayName);
+      await telemetry?.track('signup_verification_requested');
+    });
+  }
+
+  Future<void> verifyEmail(String code) async {
+    await _auth(() async {
+      final session = await repository.verifyEmail(code);
       await _applySession(session);
-      await telemetry?.track('signup_completed');
+      await telemetry?.track('email_verification_completed');
+    });
+  }
+
+  Future<void> resendEmailVerification(String email) async {
+    await _auth(() async {
+      await repository.resendEmailVerification(email);
+      await telemetry?.track('email_verification_resent');
     });
   }
 

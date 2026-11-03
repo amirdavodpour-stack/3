@@ -38,8 +38,9 @@ abstract interface class GoogleAccountLinkRepository {
 abstract interface class AuthRepository {
   Future<AuthSession> login(String email, String password);
   Future<AuthSession> loginWithGoogle(String idToken);
-  Future<AuthSession> register(
-      String email, String password, String displayName);
+  Future<void> register(String email, String password, String displayName);
+  Future<AuthSession> verifyEmail(String code);
+  Future<void> resendEmailVerification(String email);
   Future<void> logout();
   Future<void> requestPasswordReset(String email);
 }
@@ -58,14 +59,28 @@ class ApiAuthRepository implements AuthRepository, GoogleAccountLinkRepository {
   }
 
   @override
-  Future<AuthSession> register(
+  Future<void> register(
       String email, String password, String displayName) async {
-    final data = await _api.request('POST', '/auth/register', body: {
+    await _api.request('POST', '/auth/register', body: {
       'email': email,
       'password': password,
       'displayName': displayName,
     });
+  }
+
+  @override
+  Future<AuthSession> verifyEmail(String code) async {
+    final data = await _api.request('POST', '/auth/email/verify', body: {
+      'code': code,
+    });
     return AuthSession.fromResponse(data);
+  }
+
+  @override
+  Future<void> resendEmailVerification(String email) async {
+    await _api.request('POST', '/auth/email/verification/resend', body: {
+      'email': email,
+    });
   }
 
   @override

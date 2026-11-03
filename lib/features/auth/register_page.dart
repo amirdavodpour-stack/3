@@ -29,8 +29,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final name = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
+  final verificationCode = TextEditingController();
   bool obscure = true;
   bool loading = false;
+  bool _verificationPending = false;
   bool _capabilitiesLookupAttempted = false;
   bool _googleLogoPrecacheStarted = false;
   BackendCapabilities? _backendCapabilities;
@@ -122,7 +124,87 @@ class _RegisterPageState extends State<RegisterPage> {
     name.dispose();
     email.dispose();
     password.dispose();
+    verificationCode.dispose();
     super.dispose();
+  }
+
+  Future<void> _finishVerifiedRegistration() async {
+    if (!mounted) return;
+    if (widget.returnIntent != null) {
+      Navigator.of(context).pop(widget.returnIntent);
+      return;
+    }
+    await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(widget.returnIntent);
+    }
+  }
+
+  Future<void> verifyEmail() async {
+    final code = verificationCode.text.trim();
+    if (code.length < 16) {
+      HopeFeedback.show(
+        context,
+        Localizations.localeOf(context).languageCode == 'en'
+            ? 'Enter the verification code from your email.'
+            : 'کد تأیید ارسال‌شده به ایمیل را وارد کنید.',
+        tone: HopeFeedbackTone.warning,
+      );
+      return;
+    }
+    setState(() => loading = true);
+    try {
+      await context.read<AuthController>().verifyEmail(code);
+      if (mounted) await _finishVerifiedRegistration();
+    } catch (error) {
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(
+            error,
+            fallback: Localizations.localeOf(context).languageCode == 'en'
+                ? 'The verification code is invalid or expired.'
+                : 'کد تأیید نامعتبر است یا اعتبار آن پایان یافته است.',
+          ),
+          tone: HopeFeedbackTone.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> resendVerification() async {
+    final address = email.text.trim();
+    if (address.isEmpty) return;
+    setState(() => loading = true);
+    try {
+      await context.read<AuthController>().resendEmailVerification(address);
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          Localizations.localeOf(context).languageCode == 'en'
+              ? 'If the account needs verification, a new code has been sent.'
+              : 'در صورت نیاز حساب به تأیید، کد جدیدی ارسال شده است.',
+          tone: HopeFeedbackTone.success,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        HopeFeedback.show(
+          context,
+          apiErrorMessage(
+            error,
+            fallback: Localizations.localeOf(context).languageCode == 'en'
+                ? 'Could not resend the verification code.'
+                : 'ارسال مجدد کد تأیید انجام نشد.',
+          ),
+          tone: HopeFeedbackTone.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   Future<void> submit() async {
@@ -132,8 +214,14 @@ class _RegisterPageState extends State<RegisterPage> {
       HopeFeedback.show(context, HopeCopy.of(context).copy_please_complete_all_fields_55c07bb, tone: HopeFeedbackTone.warning);
       return;
     }
-    if (password.text.length < 8) {
-      HopeFeedback.show(context, HopeCopy.of(context).copy_password_must_be_at_least_8_characters_8ad17c6, tone: HopeFeedbackTone.warning);
+    if (password.text.length < 12) {
+      HopeFeedback.show(
+        context,
+        Localizations.localeOf(context).languageCode == 'en'
+            ? 'Password must be at least 12 characters.'
+            : 'گذرواژه باید حداقل ۱۲ نویسه داشته باشد.',
+        tone: HopeFeedbackTone.warning,
+      );
       return;
     }
     setState(() => loading = true);
@@ -142,14 +230,14 @@ class _RegisterPageState extends State<RegisterPage> {
           .read<AuthController>()
           .register(email.text.trim(), password.text, name.text.trim());
       if (mounted) {
-        if (widget.returnIntent != null) {
-          Navigator.of(context).pop(widget.returnIntent);
-        } else {
-          await Navigator.of(context).push(HopeRoutes.recommendationOnboarding());
-          if (mounted && Navigator.of(context).canPop()) {
-            Navigator.of(context).pop(widget.returnIntent);
-          }
-        }
+        setState(() => _verificationPending = true);
+        HopeFeedback.show(
+          context,
+          Localizations.localeOf(context).languageCode == 'en'
+              ? 'Check your email and enter the verification code to activate your account.'
+              : 'برای فعال‌سازی حساب، ایمیل خود را بررسی و کد تأیید را وارد کنید.',
+          tone: HopeFeedbackTone.success,
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -210,6 +298,74 @@ class _RegisterPageState extends State<RegisterPage> {
                     height: denseAuth ? 100 : 112,
                     compactHero: true,
                   ),
+                  if (_verificationPending) ...[
+                    PremiumPanel(
+                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Verify your email'
+                                : 'تأیید ایمیل',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'We sent a one-time code to ${email.text.trim()}. Your account is not active until you verify this address.'
+                                : 'کد یک‌بارمصرف به ${email.text.trim()} ارسال شد. تا زمان تأیید این نشانی، حساب شما فعال نمی‌شود.',
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            key: const ValueKey('auth-email-verification-code'),
+                            controller: verificationCode,
+                            keyboardType: TextInputType.text,
+                            textCapitalization: TextCapitalization.characters,
+                            textDirection: TextDirection.ltr,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => verifyEmail(),
+                            decoration: InputDecoration(
+                              labelText: Localizations.localeOf(context).languageCode == 'en'
+                                  ? 'Email verification code'
+                                  : 'کد تأیید ایمیل',
+                              prefixIcon: const Icon(HopeV2Icons.mail, size: 18),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton(
+                              key: const ValueKey('auth-email-verification-submit'),
+                              onPressed: loading ? null : verifyEmail,
+                              child: loading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : Text(Localizations.localeOf(context).languageCode == 'en'
+                                      ? 'Verify email and continue'
+                                      : 'تأیید ایمیل و ادامه'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              key: const ValueKey('auth-email-verification-resend'),
+                              onPressed: loading ? null : resendVerification,
+                              child: Text(Localizations.localeOf(context).languageCode == 'en'
+                                  ? 'Resend code'
+                                  : 'ارسال مجدد کد'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
                   SizedBox(height: denseAuth ? 6 : 8),
                   PremiumPanel(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -310,7 +466,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: Text(
-                            HopeCopy.of(context).copy_at_least_8_characters_eb24592,
+                            Localizations.localeOf(context).languageCode == 'en' ? 'At least 12 characters' : 'حداقل ۱۲ نویسه',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
@@ -332,6 +488,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ],
                     ),
                   ),
+                  ],
                   const SizedBox(height: 12),
                   Text(
                     HopeCopy.of(context).copy_your_account_data_is_kept_securely_by_hope_b91dd1f,
