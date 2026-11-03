@@ -117,6 +117,14 @@ class _Wave22AuthRepository implements AuthRepository {
       throw UnimplementedError();
 
   @override
+  Future<AuthSession> verifyEmail(String code) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> resendEmailVerification(String email) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> logout() async {}
 
   @override
