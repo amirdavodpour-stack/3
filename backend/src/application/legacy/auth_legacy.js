@@ -19,6 +19,8 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
     linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
       const user = db.collection.users.find((item) => item.id === userId);
       if (!user || user.status !== 'ACTIVE' || (user.googleSubject && user.googleSubject !== subject)) return null;
+      if (promoteToPrimaryAdmin && String(user.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') return null;
+      if (!String(subject || '').trim()) return null;
       const duplicate = db.collection.users.find((item) => item.id !== userId && item.googleSubject === subject);
       if (duplicate) {
         const error = new Error('GOOGLE_IDENTITY_ALREADY_LINKED');

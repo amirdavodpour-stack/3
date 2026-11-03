@@ -21,6 +21,8 @@ export async function linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin
       WHERE id=$1
         AND status='ACTIVE'
         AND (google_subject IS NULL OR google_subject=$2)
+        AND BTRIM($2) <> ''
+        AND (NOT $3::boolean OR LOWER(email)='amir.davodpour@gmail.com')
       RETURNING ${userSelect}`,
     [userId, subject, Boolean(promoteToPrimaryAdmin)],
   );
