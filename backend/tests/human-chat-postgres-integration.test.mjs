@@ -5663,6 +5663,9 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
     assert.deepEqual(ownerAttachment.attachments,[{filename:'delivery.pdf',contentType:'application/pdf',size:1234}]);
     assert.equal(JSON.stringify(ownerAttachment).includes(storageKey),false,
       'storage keys must never be present in chat export metadata');
+    assert.equal(ownerExport.uploads.length,1);
+    assert.equal(JSON.stringify(ownerExport.uploads).includes(storageKey),false,
+      'top-level upload export must not expose object-storage keys');
 
     const workerAttachment = workerExport.chatMessages.find((message) => message.id===attachmentMessage.id);
     assert.ok(workerAttachment,'the worker export must include messages received in their job');

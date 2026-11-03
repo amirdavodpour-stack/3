@@ -600,6 +600,34 @@ test('data export includes the account participant job conversations and message
   }]);
 });
 
+
+test('data export removes object-storage keys while retaining safe upload and evidence metadata', () => {
+  const out = buildDataExport({
+    user: { id:'u-storage', email:'storage@example.com', displayName:'Storage User', role:'USER', status:'ACTIVE', createdAt:'now' },
+    uploads: [{
+      id:'upload-1',
+      storageKey:'private-storage-key',
+      storage_key:'private-storage-key-snake',
+      contentType:'application/pdf',
+      size:1234,
+    }],
+    evidence: [{
+      id:'evidence-1',
+      uri:'storage://private-evidence-key',
+      type:'DELIVERY',
+      notes:'Safe evidence note',
+    }],
+  });
+
+  assert.equal(out.uploads[0].storageKey, undefined);
+  assert.equal(out.uploads[0].storage_key, undefined);
+  assert.equal(out.evidence[0].uri, undefined);
+  assert.equal(out.uploads[0].contentType, 'application/pdf');
+  assert.equal(out.evidence[0].notes, 'Safe evidence note');
+  assert.equal(JSON.stringify(out).includes('private-storage-key'), false);
+  assert.equal(JSON.stringify(out).includes('private-evidence-key'), false);
+});
+
 test('PostgreSQL privacy export scopes chat data to participant job conversations and never exports storage keys', () => {
   const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
   const bundle = repository.slice(
