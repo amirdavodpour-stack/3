@@ -68,8 +68,9 @@ test('password registration remains pending until email verification issues the 
     body: JSON.stringify({code: resend.body.data.verificationCode}),
   });
   assert.equal(verified.status, 200);
-  assert.equal(verified.body.data.user.status, 'ACTIVE');
+  assert.equal(verified.body.data.emailVerified, true);
   assert.ok(verified.body.data.accessToken);
+  assert.ok(verified.body.data.refreshToken);
 
   const replayedCode = await json('/auth/email/verify', {
     method: 'POST',
