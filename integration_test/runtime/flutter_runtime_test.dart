@@ -28,6 +28,11 @@ class _AuthRepository implements AuthRepository {
           refreshToken: 'runtime-refresh',
           user: {'id': 'runtime'});
   @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
+  @override
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String email) async {}
