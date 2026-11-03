@@ -28,6 +28,9 @@ test('password registration remains pending until email verification issues the 
   assert.equal(registration.body.data.verificationRequired, true);
   assert.equal(registration.body.data.accessToken, undefined);
   const pending = db.collection.users.find((u) => u.email === 'auth@example.com');
+  const pendingToken = db.collection.emailVerificationTokens.find((token) => token.userId === pending.id);
+  assert.ok(pendingToken);
+  assert.notEqual(pendingToken.tokenHash, registration.body.data.verificationCode);
   assert.equal(pending.status, 'PENDING_EMAIL_VERIFICATION');
 
   const pendingLogin = await json('/auth/login', {
@@ -36,13 +39,43 @@ test('password registration remains pending until email verification issues the 
   });
   assert.equal(pendingLogin.status, 401);
 
-  const verified = await json('/auth/email/verify', {
+  const invalidCode = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: 'unknown-verification-code'}),
+  });
+  assert.equal(invalidCode.status, 400);
+  assert.equal(invalidCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
+
+  const resend = await json('/auth/email/verification/resend', {
+    method: 'POST',
+    body: JSON.stringify({email: 'auth@example.com'}),
+  });
+  assert.equal(resend.status, 202);
+  assert.equal(resend.body.data.verificationRequired, undefined);
+  assert.ok(resend.body.data.verificationCode);
+  assert.notEqual(resend.body.data.verificationCode, registration.body.data.verificationCode);
+
+  const staleCode = await json('/auth/email/verify', {
     method: 'POST',
     body: JSON.stringify({code: registration.body.data.verificationCode}),
+  });
+  assert.equal(staleCode.status, 400);
+  assert.equal(staleCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
+
+  const verified = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: resend.body.data.verificationCode}),
   });
   assert.equal(verified.status, 200);
   assert.equal(verified.body.data.user.status, 'ACTIVE');
   assert.ok(verified.body.data.accessToken);
+
+  const replayedCode = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: resend.body.data.verificationCode}),
+  });
+  assert.equal(replayedCode.status, 400);
+  assert.equal(replayedCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
 
   const login = await json('/auth/login', {
     method: 'POST',
@@ -60,6 +93,13 @@ test('duplicate email is rejected without a second account', async () => {
   assert.equal(duplicate.status, 409);
   assert.equal(duplicate.body.error.code, 'EMAIL_IN_USE');
   assert.equal(db.collection.users.filter((u) => u.email === 'auth@example.com').length, 1);
+
+  const unknownResend = await json('/auth/email/verification/resend', {
+    method: 'POST',
+    body: JSON.stringify({email: 'unknown@example.com'}),
+  });
+  assert.equal(unknownResend.status, 202);
+  assert.equal(unknownResend.body.data.verificationCode, undefined);
 });
 
 

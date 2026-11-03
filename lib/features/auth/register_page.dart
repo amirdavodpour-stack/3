@@ -321,7 +321,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             key: const ValueKey('auth-email-verification-code'),
                             controller: verificationCode,
                             keyboardType: TextInputType.text,
-                            textCapitalization: TextCapitalization.characters,
+                            textCapitalization: TextCapitalization.none,
                             textDirection: TextDirection.ltr,
                             autocorrect: false,
                             enableSuggestions: false,
