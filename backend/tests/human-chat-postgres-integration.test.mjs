@@ -5691,6 +5691,10 @@ test('PostgreSQL Google linking promotes only an explicitly verified primary-adm
   const primaryUserId = await createTransferTestUser(pool, 'google-primary-bootstrap');
   const ordinaryUserId = await createTransferTestUser(pool, 'google-ordinary-link');
   try {
+    await pool.query(
+      'UPDATE users SET email=$2 WHERE id=$1',
+      [primaryUserId, 'amir.davodpour@gmail.com'],
+    );
     const primarySubject = `google-primary-bootstrap-${crypto.randomUUID()}`;
     const ordinarySubject = `google-ordinary-link-${crypto.randomUUID()}`;
 
@@ -5707,6 +5711,11 @@ test('PostgreSQL Google linking promotes only an explicitly verified primary-adm
     const ordinary = await linkGoogleSubject(ordinaryUserId, ordinarySubject);
     assert.equal(ordinary?.googleSubject, ordinarySubject);
     assert.equal(ordinary?.role, 'USER');
+
+    const forgedPromotion = await linkGoogleSubject(ordinaryUserId, ordinarySubject, {
+      promoteToPrimaryAdmin: true,
+    });
+    assert.equal(forgedPromotion, null);
 
     const { rows } = await pool.query(
       'SELECT id,role,google_subject FROM users WHERE id=ANY($1::uuid[]) ORDER BY id',

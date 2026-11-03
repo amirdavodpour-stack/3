@@ -228,9 +228,14 @@ test('legacy auth adapter mirrors the explicit primary-admin bootstrap option', 
   const ordinary = legacy.linkGoogleSubject(ordinaryUser.id, 'ordinary-google-subject', {
     promoteToPrimaryAdmin: false,
   });
+  const forgedPromotion = legacy.linkGoogleSubject(ordinaryUser.id, 'ordinary-google-subject', {
+    promoteToPrimaryAdmin: true,
+  });
 
   assert.equal(promoted.role, 'ADMIN');
   assert.equal(ordinary.role, 'USER');
+  assert.equal(forgedPromotion, null);
+  assert.equal(ordinaryUser.role, 'USER');
 });
 
 test('Google account linking rejects a verified Google identity whose email differs from the signed-in account', async () => {
