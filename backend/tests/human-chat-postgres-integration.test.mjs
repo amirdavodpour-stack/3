@@ -5685,6 +5685,36 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
   }
 });
 
+
+test('PostgreSQL Google linking promotes only an explicitly verified primary-admin bootstrap and preserves ordinary roles', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const primaryUserId = await createTransferTestUser(pool, 'google-primary-bootstrap');
+  const ordinaryUserId = await createTransferTestUser(pool, 'google-ordinary-link');
+  try {
+    const primarySubject = `google-primary-bootstrap-${crypto.randomUUID()}`;
+    const ordinarySubject = `google-ordinary-link-${crypto.randomUUID()}`;
+
+    const promoted = await linkGoogleSubject(primaryUserId, primarySubject, {
+      promoteToPrimaryAdmin: true,
+    });
+    assert.equal(promoted?.googleSubject, primarySubject);
+    assert.equal(promoted?.role, 'ADMIN');
+
+    const ordinary = await linkGoogleSubject(ordinaryUserId, ordinarySubject);
+    assert.equal(ordinary?.googleSubject, ordinarySubject);
+    assert.equal(ordinary?.role, 'USER');
+
+    const { rows } = await pool.query(
+      'SELECT id,role,google_subject FROM users WHERE id=ANY($1::uuid[]) ORDER BY id',
+      [[primaryUserId, ordinaryUserId]],
+    );
+    assert.equal(rows.find((row) => row.id === primaryUserId)?.role, 'ADMIN');
+    assert.equal(rows.find((row) => row.id === ordinaryUserId)?.role, 'USER');
+  } finally {
+    await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])', [[primaryUserId, ordinaryUserId]]).catch(() => {});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });

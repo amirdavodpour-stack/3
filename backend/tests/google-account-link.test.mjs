@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createAuthRoutes } from '../src/routes/auth_routes.js';
 import { HttpError } from '../src/api/http_error.js';
 import { requireFields, stringField } from '../src/policies/validation.js';
+import { createAuthLegacyAdapter } from '../src/application/legacy/auth_legacy.js';
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 process.env.DATABASE_URL = 'postgres://unit-test.invalid/hope';
@@ -76,8 +77,8 @@ test('explicit Google account link binds a verified Google identity to the authe
   let auditEntry;
   const { routes, repo } = makeRoutes({ audit: async (...args) => { auditEntry = args; } });
   let linked;
-  repo.linkGoogleSubject = async (userId, subject) => {
-    linked = { userId, subject };
+  repo.linkGoogleSubject = async (userId, subject, options) => {
+    linked = { userId, subject, options };
     return { id: userId, email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: subject };
   };
 
@@ -85,9 +86,110 @@ test('explicit Google account link binds a verified Google identity to the authe
 
   assert.equal(result.status, 200);
   assert.equal(result.data.linked, true);
-  assert.deepEqual(linked, { userId: 'user-1', subject: 'google-subject-1' });
+  assert.deepEqual(linked, { userId: 'user-1', subject: 'google-subject-1', options: { promoteToPrimaryAdmin: false } });
   assert.equal(auditEntry[0], 'AUTH_GOOGLE_LINK');
   assert.equal(auditEntry[1], 'user-1');
+});
+
+
+test('verified primary-owner Google linking requests the narrowly scoped admin bootstrap and audits it', async () => {
+  const user = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    displayName: 'Primary owner',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const identity = {
+    subject: 'verified-primary-owner-subject',
+    email: 'amir.davodpour@gmail.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Primary owner',
+  };
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    user,
+    identity,
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { ...user, googleSubject: args[1], role: args[2]?.promoteToPrimaryAdmin ? 'ADMIN' : user.role };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(linkedArguments, [
+    'owner-1',
+    'verified-primary-owner-subject',
+    { promoteToPrimaryAdmin: true },
+  ]);
+  assert.equal(auditEntry[0], 'AUTH_GOOGLE_LINK');
+  assert.equal(auditEntry[4]?.primaryAdminBootstrap, true);
+});
+
+test('Google linking by an ordinary account never requests primary-admin promotion', async () => {
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { id: args[0], email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: args[1] };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(linkedArguments, [
+    'user-1',
+    'google-subject-1',
+    { promoteToPrimaryAdmin: false },
+  ]);
+  assert.equal(auditEntry[4]?.primaryAdminBootstrap, false);
+});
+
+test('legacy auth adapter mirrors the explicit primary-admin bootstrap option', () => {
+  const primaryOwner = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const ordinaryUser = {
+    id: 'user-1',
+    email: 'member@example.com',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const db = {
+    collection: { users: [primaryOwner, ordinaryUser], refreshTokens: [], emailVerificationTokens: [] },
+    touch: () => {},
+  };
+  const legacy = createAuthLegacyAdapter({
+    db,
+    findUser: (id) => db.collection.users.find((user) => user.id === id),
+    issueSession: async () => ({}),
+    withTransaction: async (callback) => callback(),
+    now: () => '2026-11-04T00:00:00.000Z',
+  });
+
+  const promoted = legacy.linkGoogleSubject(primaryOwner.id, 'verified-primary-owner-subject', {
+    promoteToPrimaryAdmin: true,
+  });
+  const ordinary = legacy.linkGoogleSubject(ordinaryUser.id, 'ordinary-google-subject', {
+    promoteToPrimaryAdmin: false,
+  });
+
+  assert.equal(promoted.role, 'ADMIN');
+  assert.equal(ordinary.role, 'USER');
 });
 
 test('Google account linking rejects a verified Google identity whose email differs from the signed-in account', async () => {
