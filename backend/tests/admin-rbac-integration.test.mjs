@@ -23,6 +23,13 @@ test('owner and operational admin receive different backend capabilities',async(
   const wrongPassword=await api.json('/admin/access',{method:'POST',headers:auth(owner.accessToken),body:JSON.stringify({name:owner.user.displayName,username:'hope-admin',password:'incorrect-password'})});
   assert.equal(wrongPassword.status,401); assert.equal(wrongPassword.body.error.code,'ADMIN_REAUTH_FAILED');
   const ownerAccess=await unlock(owner); const opsAccess=await unlock(ops);
+  const ownerSecondSession=await login(ownerReg.user.email);
+  const secondSessionAccess=await api.json('/admin/access',{method:'GET',headers:auth(ownerSecondSession.accessToken)});
+  assert.equal(secondSessionAccess.status,200);
+  assert.equal(secondSessionAccess.body.data.verified,false);
+  const originalSessionAccess=await api.json('/admin/access',{method:'GET',headers:auth(owner.accessToken)});
+  assert.equal(originalSessionAccess.status,200);
+  assert.equal(originalSessionAccess.body.data.verified,true);
   const ownerOnly=['admin.manage_admins','admin.delete_jobs','admin.resolve_disputes','admin.resolve_payouts','admin.revoke_sessions','admin.sandbox_wallet_credit'];
   for(const p of ownerOnly) assert.equal(ownerAccess.permissions.includes(p),true,p); assert.equal(opsAccess.permissions.includes('admin.moderate_jobs'),true);
   for(const p of ownerOnly) assert.equal(opsAccess.permissions.includes(p),false,p);

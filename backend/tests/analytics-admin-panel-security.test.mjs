@@ -9,7 +9,7 @@ test('admin analytics endpoint refuses data access while the verified Admin Pane
   try {
     let panelCheckCalled = false;
     const routes = createAnalyticsRoutes({
-      authUser: async () => ({ id: 'admin-1', role: 'ADMIN' }),
+      authUser: async () => ({ id: 'admin-1', role: 'ADMIN', sessionJti: 'analytics-session-jti' }),
       requireAdmin: (user) => user,
       readBody: async () => ({}),
       sendJson: async (_res, status, data) => ({ status, data }),
@@ -20,10 +20,11 @@ test('admin analytics endpoint refuses data access while the verified Admin Pane
       logEvent: () => {},
       config: { adminPanelVerificationMinutes: 5 },
       repo: {
-        isAdminPanelVerified: async (userId, minutes) => {
+        isAdminPanelVerified: async (userId, minutes, sessionJti) => {
           panelCheckCalled = true;
           assert.equal(userId, 'admin-1');
           assert.equal(minutes, 5);
+          assert.equal(sessionJti, 'analytics-session-jti');
           return false;
         },
         getAnalyticsSummary: async () => ({ sensitive: true }),

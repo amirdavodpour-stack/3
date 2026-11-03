@@ -41,7 +41,7 @@ test('admin dispute gate honors the configured Admin Panel verification duration
   const app = read('backend/src/app.js');
   const route = read('backend/src/routes/job_dispute_routes.js');
   assert.match(app, /createJobDisputeRoutes\(\{[^\n]*config/);
-  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15\)/);
+  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
   assert.doesNotMatch(route, /repo\.isAdminPanelVerified\(me\.id,\s*15\)/);
 });
 
@@ -60,6 +60,7 @@ test('admin dispute endpoint delegates to the claim-fenced dispute route', async
     passwordHash: 'test-password-hash',
     displayName: 'Primary Admin',
     sessionVersion: 1,
+    sessionJti: 'dispute-route-session-jti',
   };
   const delegatedCalls = [];
   const route = createAdminRoutes({

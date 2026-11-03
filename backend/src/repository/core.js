@@ -12,7 +12,7 @@ export async function findUserByGoogleSubject(subject) {
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function linkGoogleSubject(userId, subject) {
-  const { rows } = await requirePool().query(`UPDATE users SET google_subject=$2,admin_panel_verified_at=NULL WHERE id=$1 AND google_subject IS NULL RETURNING ${userSelect}`, [userId, subject]);
+  const { rows } = await requirePool().query(`UPDATE users SET google_subject=$2,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 AND google_subject IS NULL RETURNING ${userSelect}`, [userId, subject]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function findUserById(id) {

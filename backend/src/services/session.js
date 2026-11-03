@@ -17,7 +17,14 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
       const user = await getUserById(payload.sub);
       if (!user || user.status !== 'ACTIVE') throw new Error('User not active');
       if (Number(payload.sv || 0) !== Number(user.sessionVersion || 0)) throw new Error('Session revoked');
-      return user;
+      const authenticatedUser = { ...user };
+      Object.defineProperty(authenticatedUser, 'sessionJti', {
+        value: payload.jti,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+      });
+      return authenticatedUser;
     } catch {
       throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required');
     }

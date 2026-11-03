@@ -2,17 +2,28 @@ import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminP
 
 const legacyVerifiedAdmins = new Map();
 
+function isLegacyAdminPanelVerified(userId, sessionJti) {
+  const verification = legacyVerifiedAdmins.get(userId);
+  if (!verification || verification.expiresAt <= Date.now()) {
+    legacyVerifiedAdmins.delete(userId);
+    return false;
+  }
+  return Boolean(sessionJti && verification.sessionJti === sessionJti);
+}
+
 export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const verified = process.env.DATABASE_URL
-        ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes)
-        : (legacyVerifiedAdmins.get(me.id) || 0) > Date.now();
+        ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes, me.sessionJti)
+        : isLegacyAdminPanelVerified(me.id, me.sessionJti);
       return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
+      const sessionJti = String(me.sessionJti || '').trim();
+      if (!sessionJti) throw new HttpError(401,'UNAUTHORIZED','Authentication required');
       if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function' ||
           typeof verifyPassword !== 'function' || typeof verifyGoogleIdToken !== 'function') {
         throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
@@ -80,8 +91,15 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         method = 'google';
       }
 
-      if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
-      else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
+      if (process.env.DATABASE_URL) {
+        const verified = await repo.setAdminPanelVerified(me.id, sessionJti);
+        if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      } else {
+        legacyVerifiedAdmins.set(me.id, {
+          expiresAt: Date.now() + config.adminPanelVerificationMinutes * 60000,
+          sessionJti,
+        });
+      }
       await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes,method});
       return sendJson(res,200,{verified:true,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelVerificationMinutes});
     }
@@ -92,10 +110,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       return sendJson(res,200,{verified:false});
     }
     if (process.env.DATABASE_URL) {
-      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes);
+      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes,me.sessionJti);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
-    } else if ((legacyVerifiedAdmins.get(me.id) || 0) <= Date.now()) {
-      legacyVerifiedAdmins.delete(me.id);
+    } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='admins' && parts.length===2){

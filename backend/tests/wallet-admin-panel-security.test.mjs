@@ -11,7 +11,7 @@ test('sandbox wallet credit refuses to mutate balances while Admin Panel verific
   try {
     let panelCheckCalled = false;
     const routes = createWalletRoutes({
-      authUser: async () => ({ id: 'primary-admin', email: 'amir.davodpour@gmail.com', role: 'ADMIN', googleSubject: 'verified-google-subject' }),
+      authUser: async () => ({ id: 'primary-admin', email: 'amir.davodpour@gmail.com', role: 'ADMIN', googleSubject: 'verified-google-subject', sessionJti: 'wallet-session-jti' }),
       adminGuard: (user) => user,
       readBody: async () => ({ userId: 'target-user', amount: '100', idempotencyKey: 'test-credit' }),
       sendJson: async (_res, status, data) => ({ status, data }),
@@ -22,10 +22,11 @@ test('sandbox wallet credit refuses to mutate balances while Admin Panel verific
         adminPanelVerificationMinutes: 5,
       },
       walletRepo: {
-        isAdminPanelVerified: async (userId, minutes) => {
+        isAdminPanelVerified: async (userId, minutes, sessionJti) => {
           panelCheckCalled = true;
           assert.equal(userId, 'primary-admin');
           assert.equal(minutes, 5);
+          assert.equal(sessionJti, 'wallet-session-jti');
           return false;
         },
       },

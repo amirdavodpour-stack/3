@@ -274,18 +274,46 @@ export async function getAdminPanelIdentity(userId) {
   };
 }
 
-export async function setAdminPanelVerified(userId) {
-  const { rows } = await requirePool().query(`UPDATE users SET admin_panel_verified_at=NOW() WHERE id=$1 AND role='ADMIN' AND status='ACTIVE' RETURNING id,admin_panel_verified_at`, [userId]);
+export async function setAdminPanelVerified(userId, sessionJti) {
+  const jti = String(sessionJti || '').trim();
+  if (!jti || jti.length > 128) return null;
+  const { rows } = await requirePool().query(
+    `UPDATE users
+       SET admin_panel_verified_at=NOW(), admin_panel_verified_session_jti=$2
+     WHERE id=$1 AND role='ADMIN' AND status='ACTIVE'
+     RETURNING id,admin_panel_verified_at`,
+    [userId, jti],
+  );
   return rows[0] ? { verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at } : null;
 }
 
-export async function isAdminPanelVerified(userId, ttlMinutes = 15) {
-  const { rows } = await requirePool().query(`SELECT role,status,admin_panel_verified_at FROM users WHERE id=$1`, [userId]);
-  const at = rows[0]?.admin_panel_verified_at;
-  return Boolean(rows[0]?.role === 'ADMIN' && rows[0]?.status === 'ACTIVE' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000);
+export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti) {
+  const jti = String(sessionJti || '').trim();
+  if (!jti || jti.length > 128) return false;
+  const { rows } = await requirePool().query(
+    `SELECT role,status,admin_panel_verified_at,admin_panel_verified_session_jti
+       FROM users WHERE id=$1`,
+    [userId],
+  );
+  const row = rows[0];
+  const at = row?.admin_panel_verified_at;
+  const ageMs = at ? Date.now() - new Date(at).getTime() : Number.NaN;
+  return Boolean(
+    row?.role === 'ADMIN' &&
+    row?.status === 'ACTIVE' &&
+    row?.admin_panel_verified_session_jti === jti &&
+    Number.isFinite(ageMs) &&
+    ageMs >= 0 &&
+    ageMs <= Math.max(1, Number(ttlMinutes) || 15) * 60000
+  );
 }
 
 export async function clearAdminPanelVerification(userId) {
-  await requirePool().query(`UPDATE users SET admin_panel_verified_at=NULL WHERE id=$1`, [userId]);
+  await requirePool().query(
+    `UPDATE users
+       SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL
+     WHERE id=$1`,
+    [userId],
+  );
   return true;
 }

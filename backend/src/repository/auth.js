@@ -19,7 +19,7 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
     if(!r) return {kind:'invalid'};
     if(r.revoked_at){
       await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[r.family_id]);
-      await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1`,[r.user_id]);
+      await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1`,[r.user_id]);
       await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,[r.user_id,JSON.stringify({tokenFamilyId:r.family_id})]);
       return {kind:'reuse'};
     }
@@ -40,7 +40,7 @@ export async function updatePasswordHash(userId, passwordHash) {
   return Boolean(rows[0]);
 }
 export async function bumpUserSessionVersion(userId) {
-  const { rows } = await requirePool().query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1 RETURNING session_version`, [userId]);
+  const { rows } = await requirePool().query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING session_version`, [userId]);
   return rows[0] ? Number(rows[0].session_version) : null;
 }
 
@@ -63,7 +63,7 @@ export async function consumeResetTokenAndChangePassword(tokenId,userId,password
   return withSqlTransaction(async(client)=>{
     const {rows}=await client.query(`UPDATE reset_tokens SET used_at=NOW() WHERE id=$1 AND user_id=$2 AND used_at IS NULL RETURNING id`,[tokenId,userId]);
     if(!rows[0]) return false;
-    await client.query(`UPDATE users SET password_hash=$2,session_version=session_version+1,admin_panel_verified_at=NULL WHERE id=$1`,[userId,passwordHash]);
+    await client.query(`UPDATE users SET password_hash=$2,session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1`,[userId,passwordHash]);
     await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`,[userId]);
     return true;
   });
