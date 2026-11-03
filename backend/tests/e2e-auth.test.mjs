@@ -8,6 +8,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-auth-'));
 if (!process.env.DATABASE_URL) process.env.DATA_FILE = path.join(tmp, 'hope.json');
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
+process.env.AUTH_RATE_LIMIT_MAX = '1000';
 process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
