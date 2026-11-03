@@ -569,3 +569,48 @@ test('account deletion releases the Google identity subject in PostgreSQL and le
   const legacyDeletion = legacy.slice(legacy.indexOf('async deleteUserPrivacyBundle'));
   assert.match(legacyDeletion, /googleSubject:\s*null/);
 });
+
+
+test('data export includes the account participant job conversations and message attachments metadata', () => {
+  const out = buildDataExport({
+    user: { id:'u-chat', email:'chat@example.com', displayName:'Chat User', role:'USER', status:'ACTIVE', createdAt:'now' },
+    chatConversations: [{
+      id:'conversation-1', kind:'JOB', jobId:'job-1', title:'Flutter task', status:'CLOSED',
+      createdAt:'2026-10-28T09:00:00.000Z', closedAt:'2026-10-29T09:00:00.000Z',
+    }],
+    chatMessages: [{
+      id:'message-1', conversationId:'conversation-1', jobId:'job-1', senderName:'Worker',
+      sentByAccount:false, body:'The completed work is attached.', messageType:'ATTACHMENT',
+      createdAt:'2026-10-28T09:30:00.000Z',
+      attachments:[{ filename:'delivery.pdf', contentType:'application/pdf', size:1234 }],
+      isReadByAccount:true, readAt:'2026-10-28T09:35:00.000Z',
+    }],
+  });
+
+  assert.deepEqual(out.chatConversations, [{
+    id:'conversation-1', kind:'JOB', jobId:'job-1', title:'Flutter task', status:'CLOSED',
+    createdAt:'2026-10-28T09:00:00.000Z', closedAt:'2026-10-29T09:00:00.000Z',
+  }]);
+  assert.deepEqual(out.chatMessages, [{
+    id:'message-1', conversationId:'conversation-1', jobId:'job-1', senderName:'Worker',
+    sentByAccount:false, body:'The completed work is attached.', messageType:'ATTACHMENT',
+    createdAt:'2026-10-28T09:30:00.000Z',
+    attachments:[{ filename:'delivery.pdf', contentType:'application/pdf', size:1234 }],
+    isReadByAccount:true, readAt:'2026-10-28T09:35:00.000Z',
+  }]);
+});
+
+test('PostgreSQL privacy export scopes chat data to participant job conversations and never exports storage keys', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const bundle = repository.slice(
+    repository.indexOf('export async function getUserPrivacyBundle'),
+    repository.indexOf('export async function deleteUserPrivacyBundle'),
+  );
+  assert.match(bundle, /c\.kind='JOB'/);
+  assert.match(bundle, /j\.owner_id=\$1 OR j\.provider_id=\$1/);
+  assert.match(bundle, /FROM chat_messages m JOIN chat_conversations c/);
+  assert.match(bundle, /chat_message_attachments/);
+  assert.match(bundle, /LIMIT \$\{MAX_EXPORT_QUERY_ROWS\}/);
+  assert.doesNotMatch(bundle, /a\.storage_key/);
+  assert.doesNotMatch(bundle, /c\.kind='ADMIN'/);
+});
