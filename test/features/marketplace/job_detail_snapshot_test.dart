@@ -21,6 +21,11 @@ class _AuthRepo implements AuthRepository {
   @override Future<AuthSession> loginWithGoogle(String _) => throw UnimplementedError();
   @override Future<AuthSession> login(String _, String __) => throw UnimplementedError();
   @override Future<AuthSession> register(String _, String __, String ___) => throw UnimplementedError();
+  @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
   @override Future<void> logout() async {}
   @override Future<void> requestPasswordReset(String _) async {}
 }
