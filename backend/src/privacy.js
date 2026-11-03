@@ -7,7 +7,11 @@ export const MAX_EXPORT_QUERY_ROWS = MAX_EXPORT_ARRAY_ITEMS + 1;
 
 const normalizeFieldKey = (key) => String(key).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
-const exportSensitiveKeys = new Set(['passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken','cvv','cardNumber','iban'].map(normalizeFieldKey));
+const exportSensitiveKeys = new Set([
+  'passwordHash','providerRef','idempotencyKey','dedupeKey','authorization','token','accessToken','refreshToken',
+  'cvv','cardNumber','iban','storageKey','objectKey','objectStorageKey','bucketKey','signedUrl','uploadUrl',
+  'downloadUrl','presignedUrl',
+].map(normalizeFieldKey));
 const telemetryExportSensitiveKeyPattern = /^(?:name|lat|lng|lon)$|(?:full|first|last|display|user|recipient|sender|owner|candidate|provider|worker|employer|contact|person|applicant|given|family|legal)name$|email|phone|mobile|address|location|coordinates?|latitude|longitude|resume|document|token|password|authorization|cookie|national|iban|card|cvv/i;
 
 function sanitizeExportObject(value, depth = 0) {
@@ -19,7 +23,10 @@ function sanitizeExportObject(value, depth = 0) {
   const out = {};
   for (const [key, val] of Object.entries(value)) {
     const normalizedKey = normalizeFieldKey(key);
-    if (exportSensitiveKeys.has(normalizedKey)) continue;
+    if (
+      exportSensitiveKeys.has(normalizedKey) ||
+      (normalizedKey === 'uri' && typeof val === 'string' && /^storage:\/\//i.test(val))
+    ) continue;
     if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
       out[key] = val.slice(0, 4000);
     } else {
@@ -36,7 +43,11 @@ function sanitizeTelemetryExportObject(value, depth = 0) {
   const out = {};
   for (const [key, val] of Object.entries(value)) {
     const normalizedKey = normalizeFieldKey(key);
-    if (exportSensitiveKeys.has(normalizedKey) || telemetryExportSensitiveKeyPattern.test(normalizedKey)) continue;
+    if (
+      exportSensitiveKeys.has(normalizedKey) ||
+      telemetryExportSensitiveKeyPattern.test(normalizedKey) ||
+      (normalizedKey === 'uri' && typeof val === 'string' && /^storage:\/\//i.test(val))
+    ) continue;
     if ((key === 'stack' || key === 'message' || key === 'details' || key === 'notes') && typeof val === 'string') {
       out[key] = val.slice(0, 4000);
     } else {
