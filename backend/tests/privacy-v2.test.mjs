@@ -20,7 +20,7 @@ test('deleted email is non-routable and deterministic per user', () => {
 
 test('data export omits payment credentials', () => {
   const out=buildDataExport({user:{id:'u1',email:'a@b.c',displayName:'A',role:'USER',status:'ACTIVE',createdAt:'now'}});
-  assert.equal(out.exportVersion,'1.3');
+  assert.equal(out.exportVersion,'1.4');
   assert.deepEqual(out.evidence,[]);
   assert.deepEqual(out.uploads,[]);
   assert.ok(!('providerRef' in (out.payments[0] || {})));
