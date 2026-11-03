@@ -1,3 +1,4 @@
+import { buildDataExport } from '../src/privacy.js';
 import test, { after } from 'node:test';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -5647,10 +5648,10 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
     );
     adminMessageId=adminMessages[0].id;
 
-    const ownerExport = await getUserPrivacyBundle(ownerId);
-    const workerExport = await getUserPrivacyBundle(workerId);
-    const outsiderExport = await getUserPrivacyBundle(outsiderId);
-    const adminExport = await getUserPrivacyBundle(fixture.adminId);
+    const ownerExport = buildDataExport(await getUserPrivacyBundle(ownerId));
+    const workerExport = buildDataExport(await getUserPrivacyBundle(workerId));
+    const outsiderExport = buildDataExport(await getUserPrivacyBundle(outsiderId));
+    const adminExport = buildDataExport(await getUserPrivacyBundle(fixture.adminId));
 
     assert.ok(ownerExport.chatConversations.some((conversation) => conversation.id===conversationId));
     assert.ok(workerExport.chatConversations.some((conversation) => conversation.id===conversationId));
