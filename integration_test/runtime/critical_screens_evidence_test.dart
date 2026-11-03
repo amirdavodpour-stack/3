@@ -94,6 +94,11 @@ class _EvidenceAuthRepository implements AuthRepository {
         refreshToken: 'runtime-refresh',
         user: {'id': 'runtime-user', 'displayName': _evidenceDisplayName},
       );
+  @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
 
   @override
   Future<void> logout() async {}
