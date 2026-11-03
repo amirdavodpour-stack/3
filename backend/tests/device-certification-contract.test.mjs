@@ -51,6 +51,8 @@ test('Android Gradle workflows pin Temurin JDK 17 before Flutter and emulator bu
     'staging-certification.yml',
     'release-validation.yml',
     'production-release.yml',
+    'one-shot-current-head-validation.yml',
+    'hope-home-visual-preview.yml',
     'hope-maestro-first-real.yml',
   ];
   for (const name of workflows) {
