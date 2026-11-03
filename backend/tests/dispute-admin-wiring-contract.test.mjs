@@ -57,6 +57,7 @@ test('admin dispute endpoint delegates to the claim-fenced dispute route', async
     role: 'ADMIN',
     email: 'amir.davodpour@gmail.com',
     googleSubject: 'verified-google-subject',
+    passwordHash: 'test-password-hash',
     displayName: 'Primary Admin',
     sessionVersion: 1,
   };
@@ -65,7 +66,7 @@ test('admin dispute endpoint delegates to the claim-fenced dispute route', async
     authUser: async () => admin,
     requireAdmin: (user) => user,
     readBody: async (req) => req.url.endsWith('/access')
-      ? { name: 'Primary Admin', username: 'admin-panel-secret' }
+      ? { name: 'Primary Admin', username: 'admin-panel-secret', password: 'admin-current-password' }
       : { resolution: 'HOLD', reason: 'keep case open' },
     sendJson: (_res, status, body) => ({ status, body }),
     HttpError: class HttpError extends Error {
@@ -76,7 +77,13 @@ test('admin dispute endpoint delegates to the claim-fenced dispute route', async
       setAdminPanelVerified: async () => true,
       getAdminDispute: async () => { throw new Error('legacy dispute resolver was reached'); },
     },
-    config: { adminPanelUsername: 'admin-panel-secret', adminPanelVerificationMinutes: 15 },
+    config: { adminPanelUsername: 'admin-panel-secret', adminPanelAllowedEmail: 'amir.davodpour@gmail.com', adminPanelVerificationMinutes: 15 },
+    verifyPassword: async (password, encoded) => password === 'admin-current-password' && encoded === 'test-password-hash',
+    verifyGoogleIdToken: async () => { throw new Error('Google proof not used in this test'); },
+    rateLimitAuth: async () => true,
+    rateLimitAuthAccount: async () => true,
+    DUMMY_PASSWORD_HASH: 'dummy-password-hash',
+    PASSWORD_MAX_LENGTH: 1024,
     createAudit: async () => {},
     jobDisputeRoutes: async (_req, _res, parts) => {
       delegatedCalls.push(parts.join('/'));

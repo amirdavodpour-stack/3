@@ -60,7 +60,7 @@ test('admin panel unlock requires one recent step-up proof and independent accou
   assert.ok(route.includes('verifyPassword(password, me.passwordHash || DUMMY_PASSWORD_HASH)'));
   assert.ok(route.includes('verifyGoogleIdToken(idToken, config.googleOAuthClientId)'));
   assert.ok(route.includes('identity.subject !== me.googleSubject'));
-  assert.ok(route.includes('identity.email') && route.includes('me.email'));
+  assert.ok(route.includes('identity?.email') && route.includes('me.email'));
   assert.ok(route.includes('identity.issuedAt'));
   assert.ok(route.includes("createAudit('ADMIN_PANEL_UNLOCK'") && route.includes('method'));
   assert.ok(app.includes('verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH'));

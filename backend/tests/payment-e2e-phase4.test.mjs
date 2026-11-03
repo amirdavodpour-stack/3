@@ -172,7 +172,7 @@ test('admin financial summary totals fees, charges and payouts', async()=>{
   const admin=await reg('finance-admin@example.com');
   db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN';
   await db.save();
-  const unlocked=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin'})});
+  const unlocked=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin',password:'pass123456789'})});
   assert.equal(unlocked.status,200);
   const summary=await json('/admin/finance/summary',{headers:{Authorization:`Bearer ${admin.accessToken}`}});
   assert.equal(summary.status,200); assert.ok(summary.body.data.payments>=1); assert.ok(summary.body.data.platformFees>=0); assert.ok(summary.body.data.ledgerEntries>=1);
