@@ -37,3 +37,11 @@ test('primary-admin privileges require a linked verified Google identity at ever
   assert.equal((repo.match(/!String\(actors\[0\]\.google_subject \|\| ''\)\.trim\(\)/g) || []).length, 2);
   assert.equal((legacy.match(/!String\(actor\.googleSubject \|\| ''\)\.trim\(\)/g) || []).length, 2);
 });
+
+test('primary administrator panel unlock enforces the configured allowed email', () => {
+  const route = read('backend/src/routes/admin_routes.js');
+  assert.match(
+    route,
+    /expectedEmail:\s*isPrimaryAdminEmail\(me\.email\)\s*\?\s*config\.adminPanelAllowedEmail\s*:\s*undefined/,
+  );
+});
