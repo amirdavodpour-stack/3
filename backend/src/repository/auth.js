@@ -54,6 +54,15 @@ export async function insertResetToken(token) {
 
 export async function insertEmailVerificationToken(token) {
   return withSqlTransaction(async (client) => {
+    // Serialize resend/verify on the user row before taking token-row locks.
+    // FOR NO KEY UPDATE is sufficient because verification never changes the
+    // user's key; it also remains compatible with the token table's FK check.
+    const { rows: users } = await client.query(
+      `SELECT id,status FROM users WHERE id=$1 FOR NO KEY UPDATE`,
+      [token.userId],
+    );
+    if (!users[0] || users[0].status !== 'PENDING_EMAIL_VERIFICATION') return null;
+
     await client.query(
       `UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW())
         WHERE user_id=$1 AND used_at IS NULL`,
@@ -85,23 +94,45 @@ export async function invalidateEmailVerificationToken(tokenHash) {
 
 export async function consumeEmailVerificationToken(tokenHash) {
   return withSqlTransaction(async (client) => {
+    // Use the same lock order as resend: user first, then verification token.
+    // The initial lookup is intentionally unlocked; the token is re-read and
+    // locked after the account lock has been acquired.
+    const { rows: owners } = await client.query(
+      `SELECT user_id FROM email_verification_tokens WHERE token_hash=$1`,
+      [tokenHash],
+    );
+    const userId = owners[0]?.user_id;
+    if (!userId) return null;
+
+    const { rows: lockedUsers } = await client.query(
+      `SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE`,
+      [userId],
+    );
+    if (!lockedUsers[0]) return null;
+
     const { rows: tokens } = await client.query(
       `SELECT id,user_id,expires_at,used_at FROM email_verification_tokens
         WHERE token_hash=$1 FOR UPDATE`,
       [tokenHash],
     );
     const token = tokens[0];
-    if (!token || token.used_at || new Date(token.expires_at).getTime() <= Date.now()) return null;
+    if (
+      !token ||
+      String(token.user_id) !== String(userId) ||
+      token.used_at ||
+      new Date(token.expires_at).getTime() <= Date.now()
+    ) return null;
+
     const { rows: users } = await client.query(
       `UPDATE users SET status='ACTIVE'
         WHERE id=$1 AND status='PENDING_EMAIL_VERIFICATION'
         RETURNING ${userSelect}`,
-      [token.user_id],
+      [userId],
     );
     await client.query(
       `UPDATE email_verification_tokens SET used_at=NOW()
         WHERE user_id=$1 AND used_at IS NULL`,
-      [token.user_id],
+      [userId],
     );
     return users[0] ? userFromRow(users[0]) : null;
   });

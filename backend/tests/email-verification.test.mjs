@@ -53,8 +53,11 @@ test('verification tokens are single-use, expiry-checked and row-locked in Postg
     repository,
     'export async function consumeEmailVerificationToken',
   );
+  assert.match(insert, /FOR NO KEY UPDATE/);
   assert.match(insert, /UPDATE email_verification_tokens/);
   assert.match(insert, /token_hash/);
+  assert.match(consume, /SELECT user_id FROM email_verification_tokens/);
+  assert.match(consume, /FOR NO KEY UPDATE/);
   assert.match(consume, /FOR UPDATE/);
   assert.match(consume, /expires_at/);
   assert.match(consume, /status='PENDING_EMAIL_VERIFICATION'/);

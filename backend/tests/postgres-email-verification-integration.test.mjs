@@ -153,6 +153,35 @@ test('expired verification token cannot activate a pending account', {
   }
 });
 
+test('verification completed before a stale resend cannot leave another active token', {
+  skip: !enabled,
+}, async () => {
+  const user = await createPendingUser('verified-before-resend');
+  const first = tokenDraft(user.id, crypto.randomBytes(32).toString('hex'));
+  const staleResend = tokenDraft(user.id, crypto.randomBytes(32).toString('hex'));
+
+  try {
+    await insertEmailVerificationToken(first);
+    const verified = await consumeEmailVerificationToken(first.tokenHash);
+    assert.ok(verified);
+    assert.equal(verified.status, 'ACTIVE');
+
+    assert.equal(
+      await insertEmailVerificationToken(staleResend),
+      null,
+      'repository must not persist a verification token after the account is already active',
+    );
+    const { rows } = await pool.query(
+      `SELECT COUNT(*)::int AS active_count FROM email_verification_tokens
+        WHERE user_id=$1 AND used_at IS NULL`,
+      [user.id],
+    );
+    assert.equal(rows[0]?.active_count, 0);
+  } finally {
+    await pool.query('DELETE FROM users WHERE id=$1', [user.id]).catch(() => {});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });

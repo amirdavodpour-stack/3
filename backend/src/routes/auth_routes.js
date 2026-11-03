@@ -19,8 +19,10 @@ export function createAuthRoutes({
       usedAt: null,
       createdAt: now(),
     };
-    if (process.env.DATABASE_URL) await repo.insertEmailVerificationToken(token);
-    else legacy.insertEmailVerificationToken(token);
+    const storedToken = process.env.DATABASE_URL
+      ? await repo.insertEmailVerificationToken(token)
+      : legacy.insertEmailVerificationToken(token);
+    if (!storedToken) return { delivered: false, code: null };
 
     let delivered = false;
     try {
