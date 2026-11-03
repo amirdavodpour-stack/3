@@ -16,9 +16,9 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
     findUserByGoogleSubject(subject) {
       return db.collection.users.find((user) => user.googleSubject === subject) || null;
     },
-    linkGoogleSubject(userId, subject) {
+    linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
       const user = db.collection.users.find((item) => item.id === userId);
-      if (!user || user.googleSubject) return null;
+      if (!user || user.status !== 'ACTIVE' || (user.googleSubject && user.googleSubject !== subject)) return null;
       const duplicate = db.collection.users.find((item) => item.id !== userId && item.googleSubject === subject);
       if (duplicate) {
         const error = new Error('GOOGLE_IDENTITY_ALREADY_LINKED');
@@ -26,6 +26,9 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
         throw error;
       }
       user.googleSubject = subject;
+      if (promoteToPrimaryAdmin) user.role = 'ADMIN';
+      user.adminPanelVerifiedAt = null;
+      user.adminPanelVerifiedSessionJti = null;
       db.touch('users');
       return user;
     },

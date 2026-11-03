@@ -139,28 +139,46 @@ export function createAuthRoutes({
         throw new HttpError(403, 'GOOGLE_LINK_EMAIL_MISMATCH', 'The verified Google email must match the signed-in HOPE account');
       }
 
-      if (user.googleSubject) {
-        if (user.googleSubject === identity.subject) {
-          return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(user) });
-        }
+      const primaryAdminBootstrap = shouldBootstrapPrimaryAdmin({
+        email: user.email,
+        verifiedIdentity: identity.authoritativeEmail === true,
+        googleSubject: identity.subject,
+      });
+      const needsPrimaryAdminBootstrap = primaryAdminBootstrap && user.role !== 'ADMIN';
+      let alreadyLinked = user.googleSubject === identity.subject;
+
+      if (user.googleSubject && !alreadyLinked) {
         throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
       }
 
-      const existingSubject = process.env.DATABASE_URL
-        ? await repo.findUserByGoogleSubject(identity.subject)
-        : await legacy.findUserByGoogleSubject(identity.subject);
-      if (existingSubject && existingSubject.id !== user.id) {
-        throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
-      }
-      if (existingSubject?.id === user.id) {
-        return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(existingSubject) });
+      if (!alreadyLinked) {
+        const existingSubject = process.env.DATABASE_URL
+          ? await repo.findUserByGoogleSubject(identity.subject)
+          : await legacy.findUserByGoogleSubject(identity.subject);
+        if (existingSubject && existingSubject.id !== user.id) {
+          throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
+        }
+        alreadyLinked = existingSubject?.id === user.id;
       }
 
+      // A same-subject retry is normally a no-op. The one exception is a verified
+      // primary-owner identity whose earlier link predates role bootstrap: recover
+      // that account through the same guarded repository write.
+      if (alreadyLinked && !needsPrimaryAdminBootstrap) {
+        const current = user.googleSubject === identity.subject
+          ? user
+          : (process.env.DATABASE_URL
+            ? await repo.findUserByGoogleSubject(identity.subject)
+            : await legacy.findUserByGoogleSubject(identity.subject));
+        return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(current || user) });
+      }
+
+      const linkOptions = { promoteToPrimaryAdmin: primaryAdminBootstrap };
       let linked;
       try {
         linked = process.env.DATABASE_URL
-          ? await repo.linkGoogleSubject(user.id, identity.subject)
-          : await legacy.linkGoogleSubject(user.id, identity.subject);
+          ? await repo.linkGoogleSubject(user.id, identity.subject, linkOptions)
+          : await legacy.linkGoogleSubject(user.id, identity.subject, linkOptions);
       } catch (error) {
         if (error?.code === '23505') {
           throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
@@ -171,14 +189,17 @@ export function createAuthRoutes({
         const currentSubject = process.env.DATABASE_URL
           ? await repo.findUserByGoogleSubject(identity.subject)
           : await legacy.findUserByGoogleSubject(identity.subject);
-        if (currentSubject?.id === user.id) {
+        if (currentSubject?.id === user.id && (!needsPrimaryAdminBootstrap || currentSubject.role === 'ADMIN')) {
           return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(currentSubject) });
         }
         throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
       }
       if (!process.env.DATABASE_URL) await legacy.save();
-      await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, { provider: 'google' });
-      return sendJson(res, 200, { linked: true, alreadyLinked: false, user: authUserView(linked) });
+      await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, {
+        provider: 'google',
+        primaryAdminBootstrap,
+      });
+      return sendJson(res, 200, { linked: true, alreadyLinked, user: authUserView(linked) });
     }
 
     if (req.method === 'POST' && route === 'google') {

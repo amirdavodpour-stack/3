@@ -11,8 +11,19 @@ export async function findUserByGoogleSubject(subject) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE google_subject=$1`, [subject]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
-export async function linkGoogleSubject(userId, subject) {
-  const { rows } = await requirePool().query(`UPDATE users SET google_subject=$2,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 AND google_subject IS NULL RETURNING ${userSelect}`, [userId, subject]);
+export async function linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
+  const { rows } = await requirePool().query(
+    `UPDATE users
+        SET google_subject=$2,
+            role=CASE WHEN $3::boolean THEN 'ADMIN' ELSE role END,
+            admin_panel_verified_at=NULL,
+            admin_panel_verified_session_jti=NULL
+      WHERE id=$1
+        AND status='ACTIVE'
+        AND (google_subject IS NULL OR google_subject=$2)
+      RETURNING ${userSelect}`,
+    [userId, subject, Boolean(promoteToPrimaryAdmin)],
+  );
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function findUserById(id) {
