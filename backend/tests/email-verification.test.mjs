@@ -75,6 +75,15 @@ function createHarness() {
     stringField,
     id: () => `test-id-${++id}`,
     legacy: {
+      consumeEmailVerificationToken: async (tokenHash) => {
+        const token = state.tokens.find((item) => item.tokenHash === tokenHash && !item.usedAt);
+        if (!token || new Date(token.expiresAt).getTime() <= Date.now()) return null;
+        const user = state.users.find((item) => item.id === token.userId);
+        if (!user || user.status !== 'PENDING_EMAIL_VERIFICATION') return null;
+        token.usedAt = new Date().toISOString();
+        user.status = 'ACTIVE';
+        return user;
+      },
       createUserWithProvider: async (user, provider) => {
         state.users.push(user);
         state.providers = [...(state.providers || []), provider];
