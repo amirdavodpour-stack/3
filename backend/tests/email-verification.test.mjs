@@ -131,12 +131,13 @@ test('email verification activates the pending account and issues the first sess
 
 test('email verification rejects expired, unknown and already-consumed codes without issuing a session', async () => {
   const { routes, state } = createHarness();
-  const response = await routes({
-    method: 'POST',
-    body: { code: 'unknown-code' },
-  }, {}, ['auth', 'email', 'verify']);
-
-  assert.equal(response.status, undefined);
+  await assert.rejects(
+    routes({
+      method: 'POST',
+      body: { code: 'unknown-code' },
+    }, {}, ['auth', 'email', 'verify']),
+    (error) => error?.status === 400 && error?.code === 'EMAIL_VERIFICATION_INVALID',
+  );
   assert.equal(state.issuedSessions, 0);
 });
 
