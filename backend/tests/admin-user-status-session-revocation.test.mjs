@@ -132,3 +132,112 @@ test('admin-panel verification can only be set or read for active administrator 
   assert.match(readVerification, /rows\[0\]\?\.status\s*===\s*'ACTIVE'/);
 });
 
+
+
+import { createSessionService } from '../src/services/session.js';
+import { signAccessToken, verifyAccessToken } from '../src/security.js';
+
+const sessionServiceSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/services/session.js'),
+  'utf8',
+);
+const adminRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/routes/admin_routes.js'),
+  'utf8',
+);
+const disputeRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/routes/job_dispute_routes.js'),
+  'utf8',
+);
+const analyticsRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/routes/analytics_routes.js'),
+  'utf8',
+);
+const humanChatRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/routes/human_chat_routes.js'),
+  'utf8',
+);
+const walletRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/application/wallet_routes.js'),
+  'utf8',
+);
+
+test('authUser binds a non-enumerable session JTI to each validated access-token user', async () => {
+  const secret = 'session-jti-contract-secret-with-enough-entropy';
+  const user = {
+    id: 'admin-session-jti',
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    sessionVersion: 4,
+    email: 'admin-session-jti@example.test',
+  };
+  const config = {
+    accessSecret: secret,
+    accessIssuer: 'hope-api',
+    accessAudience: 'hope-mobile',
+  };
+  const service = createSessionService({
+    config,
+    repo: {},
+    legacy: { findUserById: async () => ({ ...user }) },
+    logEvent: () => {},
+    now: () => new Date().toISOString(),
+  });
+  const firstToken = signAccessToken({ sub: user.id, sv: 4 }, secret, 300, {
+    issuer: config.accessIssuer,
+    audience: config.accessAudience,
+  });
+  const secondToken = signAccessToken({ sub: user.id, sv: 4 }, secret, 300, {
+    issuer: config.accessIssuer,
+    audience: config.accessAudience,
+  });
+  const firstPayload = verifyAccessToken(firstToken, secret, {
+    issuer: config.accessIssuer,
+    audience: config.accessAudience,
+  });
+  const secondPayload = verifyAccessToken(secondToken, secret, {
+    issuer: config.accessIssuer,
+    audience: config.accessAudience,
+  });
+
+  const firstUser = await service.authUser({ headers: { authorization: `Bearer ${firstToken}` } });
+  const secondUser = await service.authUser({ headers: { authorization: `Bearer ${secondToken}` } });
+
+  assert.equal(firstUser.sessionJti, firstPayload.jti);
+  assert.equal(secondUser.sessionJti, secondPayload.jti);
+  assert.notEqual(firstUser.sessionJti, secondUser.sessionJti);
+  assert.equal(Object.keys(firstUser).includes('sessionJti'), false);
+  assert.equal(JSON.stringify(firstUser).includes(firstPayload.jti), false);
+});
+
+test('admin-panel repository persists and checks the exact bound session JTI', () => {
+  const setVerification = functionSource(disputeRepositorySource, 'setAdminPanelVerified', 'isAdminPanelVerified');
+  const readVerification = functionSource(disputeRepositorySource, 'isAdminPanelVerified', 'clearAdminPanelVerification');
+  const clearVerification = functionSource(disputeRepositorySource, 'clearAdminPanelVerification');
+  const migration = fs.readFileSync(
+    path.resolve(import.meta.dirname, '../src/db/migrations/041_admin_panel_session_binding.js'),
+    'utf8',
+  );
+
+  assert.match(setVerification, /admin_panel_verified_session_jti/);
+  assert.match(setVerification, /sessionJti/);
+  assert.match(readVerification, /admin_panel_verified_session_jti/);
+  assert.match(readVerification, /sessionJti/);
+  assert.match(clearVerification, /admin_panel_verified_session_jti\s*=\s*NULL/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS admin_panel_verified_session_jti TEXT/);
+  assert.match(migration, /DROP COLUMN IF EXISTS admin_panel_verified_session_jti/);
+});
+
+test('every protected admin route supplies the authenticated session JTI to the verification guard', () => {
+  assert.match(adminRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\.adminPanelVerificationMinutes,\s*me\.sessionJti\)/);
+  assert.match(disputeRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
+  assert.match(analyticsRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
+  assert.match(humanChatRoutesSource, /repo\.isAdminPanelVerified\(admin\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*admin\.sessionJti\)/);
+  assert.match(walletRoutesSource, /walletRepo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
+});
+
+test('legacy admin-panel verification is bound to the active session JTI', () => {
+  assert.match(adminRoutesSource, /sessionJti/);
+  assert.match(adminRoutesSource, /legacyVerifiedAdmins\.set\(me\.id,\s*\{[^}]*sessionJti/);
+  assert.match(adminRoutesSource, /legacyVerifiedAdmins\.get\(me\.id\)[\s\S]*sessionJti\s*===\s*me\.sessionJti/);
+});
