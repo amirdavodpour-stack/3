@@ -1,4 +1,4 @@
-name: HOPE chat PostgreSQL integration
+name: HOPE PostgreSQL integration
 
 on:
   pull_request:
@@ -11,10 +11,13 @@ on:
       - "backend/src/db/migrations.js"
       - "backend/src/db/runtime.js"
       - "backend/src/db/migrations/03*.js"
+      - "backend/src/db/migrations/04*.js"
       - "backend/src/repository/human_chat.js"
       - "backend/src/repository/storage.js"
+      - "backend/src/repository/auth.js"
       - "backend/src/routes/human_chat_routes.js"
       - "backend/src/routes/storage_routes.js"
+      - "backend/src/routes/auth_routes.js"
       - "backend/src/services/human_chat.js"
       - "backend/openapi/openapi.yaml"
       - "backend/tests/human-chat*.test.mjs"
@@ -34,7 +37,7 @@ concurrency:
 
 jobs:
   postgres-chat:
-    name: PostgreSQL migration 035 and human-chat regression gate
+    name: PostgreSQL migrations 035–042, chat and email-verification gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:

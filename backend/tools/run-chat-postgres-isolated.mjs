@@ -38,6 +38,7 @@ try {
     '--test',
     '--test-concurrency=1',
     'tests/human-chat-postgres-integration.test.mjs',
+    'tests/postgres-email-verification-integration.test.mjs',
   ], {
     cwd: process.cwd(),
     env,
