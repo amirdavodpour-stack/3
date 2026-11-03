@@ -5,6 +5,7 @@ import { once } from 'node:events';
 import { Readable, Writable } from 'node:stream';
 import { createHumanChatRoutes } from '../src/routes/human_chat_routes.js';
 
+const PANEL_TEST_SESSION_JTI = 'postgres-admin-panel-test-session-jti';
 const enabled = Boolean(process.env.DATABASE_URL);
 if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
   throw new Error('REQUIRE_INTEGRATION=1 but DATABASE_URL is missing');
@@ -5197,6 +5198,8 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
     'refresh-token reuse must revoke previously issued access-token sessions');
   assert.equal(users[0]?.admin_panel_verified_at ?? null, null,
     'refresh-token reuse must clear any prior admin-panel unlock');
+  assert.equal(users[0]?.admin_panel_verified_session_jti ?? null, null,
+    'refresh-token reuse must clear the session binding as well');
   assert.equal(users[0]?.admin_panel_verified_session_jti ?? null, null,
     'refresh-token reuse must clear the session binding as well');
   assert.equal(await isAdminPanelVerified(userId, 15, `admin-panel-test-jti:${userId}`), false);
