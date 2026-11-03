@@ -13,8 +13,8 @@ export async function findUserByGoogleSubject(subject) {
 }
 export async function linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
   const { rows } = await requirePool().query(
-    `UPDATE users
-        SET google_subject=$2,
+    `UPDATE users SET
+        google_subject=$2,
             role=CASE WHEN $3::boolean THEN 'ADMIN' ELSE role END,
             admin_panel_verified_at=NULL,
             admin_panel_verified_session_jti=NULL
