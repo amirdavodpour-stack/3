@@ -13,7 +13,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
-      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername });
+      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername, expectedEmail: isPrimaryAdminEmail(me.email) ? config.adminPanelAllowedEmail : undefined });
       if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
       else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
       await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
