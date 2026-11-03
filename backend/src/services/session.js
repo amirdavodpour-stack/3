@@ -51,10 +51,14 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
     };
   }
 
-  async function deliverAuthCode({ user, code, type, expiresInSeconds, logAction }) {
+  async function deliverAuthCode({ user, code, type, expiresInSeconds }) {
     const mode = config.resetDeliveryMode;
     if (mode === 'console') {
-      logEvent({ level: 'info', action: logAction, userId: user.id, delivery: 'console' });
+      if (type === 'password_reset') {
+        logEvent({ level: 'info', action: 'PASSWORD_RESET_DELIVERY', userId: user.id, delivery: 'console' });
+      } else {
+        logEvent({ level: 'info', action: 'EMAIL_VERIFICATION_DELIVERY', userId: user.id, delivery: 'console' });
+      }
       return;
     }
     if (mode === 'webhook') {
@@ -85,7 +89,6 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
     return deliverAuthCode({
       user, code: token, type: 'password_reset',
       expiresInSeconds: config.resetTokenTtlSeconds,
-      logAction: 'PASSWORD_RESET_DELIVERY',
     });
   }
 
@@ -93,7 +96,6 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
     return deliverAuthCode({
       user, code, type: 'email_verification',
       expiresInSeconds: config.emailVerificationTokenTtlSeconds,
-      logAction: 'EMAIL_VERIFICATION_DELIVERY',
     });
   }
 

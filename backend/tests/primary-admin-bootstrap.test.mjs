@@ -41,7 +41,7 @@ test('password registration cannot claim the primary-admin email role without a 
     requireFields,
     repo: { createUserWithProvider: saveUser, insertEmailVerificationToken: async () => true, invalidateEmailVerificationToken: async () => true },
     deliverEmailVerification: async () => {},
-    config: {},
+    config: { emailVerificationTokenTtlSeconds: 3600 },
     now: () => '2026-10-26T00:00:00.000Z',
     hashPassword: async () => 'test-password-hash',
     verifyPassword: async () => true,

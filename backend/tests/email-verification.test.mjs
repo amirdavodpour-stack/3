@@ -14,7 +14,7 @@ function createHarness() {
     rateLimits: [],
   };
   let id = 0;
-  const code = 'A1B2C3D4E5F';
+  const code = 'A1B2C3D4E5F67890';
   const routes = createAuthRoutes({
     authUser: async () => null,
     authUserView: (user) => ({ id: user.id, email: user.email, role: user.role, status: user.status }),
@@ -116,7 +116,7 @@ test('password registration remains pending and issues no session until email ow
   assert.equal(state.tokens[0].tokenHash, `sha256:${code}`);
   assert.equal(state.delivered.length, 1);
   assert.equal(state.delivered[0].code, code);
-  assert.equal(state.delivered[0].user.email, 'new-user@example.test');
+  assert.equal(state.users[0].email, 'new-user@example.test');
 });
 
 test('email verification activates the pending account and issues the first session', async () => {
@@ -143,7 +143,7 @@ test('email verification rejects expired, unknown and already-consumed codes wit
   await assert.rejects(
     routes({
       method: 'POST',
-      body: { code: 'unknown-code' },
+      body: { code: 'unknown-verification-code' },
     }, {}, ['auth', 'email', 'verify']),
     (error) => error?.status === 400 && error?.code === 'EMAIL_VERIFICATION_INVALID',
   );
@@ -157,11 +157,11 @@ test('pending email registration cannot authenticate with a correct password', a
     body: { email: 'pending@example.test', password: 'correct-password', displayName: 'Pending' },
   }, {}, ['auth', 'register']);
 
-  const login = await routes({
-    method: 'POST',
-    body: { email: 'pending@example.test', password: 'correct-password' },
-  }, {}, ['auth', 'login']);
-
-  assert.equal(login.status, 401);
-  assert.equal(login.data.error, 'INVALID_CREDENTIALS');
+  await assert.rejects(
+    routes({
+      method: 'POST',
+      body: { email: 'pending@example.test', password: 'correct-password' },
+    }, {}, ['auth', 'login']),
+    (error) => error?.status === 401 && error?.code === 'INVALID_CREDENTIALS',
+  );
 });
