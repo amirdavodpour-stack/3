@@ -21,7 +21,11 @@ class _LinkingRepository implements AuthRepository, GoogleAccountLinkRepository 
   @override
   Future<AuthSession> loginWithGoogle(String idToken) => throw UnimplementedError();
   @override
-  Future<AuthSession> register(String email, String password, String displayName) => throw UnimplementedError();
+  Future<void> register(String email, String password, String displayName) => throw UnimplementedError();
+  @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
   @override
   Future<void> logout() async {}
   @override

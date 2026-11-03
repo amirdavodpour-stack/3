@@ -90,7 +90,6 @@ function createHarness() {
         return user;
       },
       insertEmailVerificationToken: async (token) => { state.tokens.push(token); return token; },
-      consumeEmailVerificationToken: async () => null,
       invalidateEmailVerificationToken: async () => false,
     },
     verifyGoogleIdToken: async () => {},
@@ -129,7 +128,7 @@ test('email verification activates the pending account and issues the first sess
   const verified = await routes({
     method: 'POST',
     body: { code },
-  }, {}, ['auth', 'email', 'verify']);
+  }, {}, ['auth', 'email/verify']);
 
   assert.equal(verified.status, 200);
   assert.equal(verified.data.user.status, 'ACTIVE');
@@ -144,7 +143,7 @@ test('email verification rejects expired, unknown and already-consumed codes wit
     routes({
       method: 'POST',
       body: { code: 'unknown-verification-code' },
-    }, {}, ['auth', 'email', 'verify']),
+    }, {}, ['auth', 'email/verify']),
     (error) => error?.status === 400 && error?.code === 'EMAIL_VERIFICATION_INVALID',
   );
   assert.equal(state.issuedSessions, 0);
