@@ -2,7 +2,7 @@ import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminP
 
 const legacyVerifiedAdmins = new Map();
 
-export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES }) {
+export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
@@ -13,10 +13,76 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
-      verifyAdminPanelCredentials({ user: me, name: body?.name, username: body?.username, expectedUsername: config.adminPanelUsername, expectedEmail: isPrimaryAdminEmail(me.email) ? config.adminPanelAllowedEmail : undefined });
+      if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function' ||
+          typeof verifyPassword !== 'function' || typeof verifyGoogleIdToken !== 'function') {
+        throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
+      }
+      const [ipAllowed,accountAllowed] = await Promise.all([
+        rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs),
+        rateLimitAuthAccount(`admin-panel:${me.id}`, config.authRateLimitMax, config.rateLimitWindowMs),
+      ]);
+      if (!ipAllowed || !accountAllowed) {
+        throw new HttpError(429,'RATE_LIMITED','Too many authentication requests');
+      }
+
+      verifyAdminPanelCredentials({
+        user: me,
+        name: body?.name,
+        username: body?.username,
+        expectedUsername: config.adminPanelUsername,
+        expectedEmail: isPrimaryAdminEmail(me.email) ? config.adminPanelAllowedEmail : undefined,
+      });
+
+      const password = typeof body?.password === 'string' ? body.password : '';
+      const idToken = typeof body?.idToken === 'string' ? body.idToken : '';
+      const hasPassword = password.length > 0;
+      const hasGoogle = idToken.length > 0;
+      if (hasPassword === hasGoogle) {
+        throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+      }
+
+      let method;
+      if (hasPassword) {
+        if (password.length > PASSWORD_MAX_LENGTH) {
+          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+        }
+        const passwordOk = await verifyPassword(password, me.passwordHash || DUMMY_PASSWORD_HASH);
+        if (!me.passwordHash || !passwordOk) {
+          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+        }
+        method = 'password';
+      } else {
+        if (!config.googleAuthEnabled || !config.googleOAuthClientId || !String(me.googleSubject || '').trim()) {
+          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+        }
+        let identity;
+        try {
+          identity = await verifyGoogleIdToken(idToken, config.googleOAuthClientId);
+        } catch {
+          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+        }
+        const issuedAt = Number(identity?.issuedAt);
+        const tokenAgeMs = Date.now() - issuedAt * 1000;
+        const identityEmail = String(identity?.email || '').trim().toLowerCase();
+        const accountEmail = String(me.email || '').trim().toLowerCase();
+        if (
+          !identity?.subject ||
+          identity.subject !== me.googleSubject ||
+          !identityEmail ||
+          identityEmail !== accountEmail ||
+          !Number.isSafeInteger(issuedAt) ||
+          issuedAt <= 0 ||
+          tokenAgeMs < -30_000 ||
+          tokenAgeMs > 5 * 60 * 1000
+        ) {
+          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+        }
+        method = 'google';
+      }
+
       if (process.env.DATABASE_URL) await repo.setAdminPanelVerified(me.id);
       else legacyVerifiedAdmins.set(me.id, Date.now() + config.adminPanelVerificationMinutes * 60000);
-      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes});
+      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes,method});
       return sendJson(res,200,{verified:true,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {

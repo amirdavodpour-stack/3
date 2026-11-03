@@ -80,7 +80,7 @@ abstract interface class AdminRepository {
   Future<Map<String, dynamic>> getFunnel({int days = 30});
   Future<Map<String, dynamic>> getCrashSummary({int days = 30});
   Future<Map<String, dynamic>> getPanelAccess();
-  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username);
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken});
   Future<void> lockPanel();
   Future<List<Map<String, dynamic>>> listDisputes();
   Future<Map<String, dynamic>> getDispute(String id);
@@ -185,8 +185,13 @@ class ApiAdminRepository implements AdminRepository {
       Map<String, dynamic>.from(await _api.request('GET', '/admin/access', auth: true) as Map);
 
   @override
-  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async =>
-      Map<String, dynamic>.from(await _api.request('POST', '/admin/access', auth: true, body: {'name': name, 'username': username}) as Map);
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken}) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access', auth: true, body: {
+        'name': name,
+        'username': username,
+        if (password != null) 'password': password,
+        if (idToken != null) 'idToken': idToken,
+      }) as Map);
 
   @override
   Future<void> lockPanel() => _api.request('POST', '/admin/access/lock', auth: true).then((_) {});

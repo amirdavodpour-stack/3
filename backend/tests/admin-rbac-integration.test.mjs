@@ -8,7 +8,7 @@ const api=await startApiServer();
 
 const auth=(token)=>({Authorization:'Bearer '+token});
 async function login(email){const r=await api.json('/auth/login',{method:'POST',body:JSON.stringify({email,password:'pass123456789'})});assert.equal(r.status,200);return r.body.data;}
-async function unlock(s){const r=await api.json('/admin/access',{method:'POST',headers:auth(s.accessToken),body:JSON.stringify({name:s.user.displayName,username:'hope-admin'})});assert.equal(r.status,200);return r.body.data;}
+async function unlock(s){const r=await api.json('/admin/access',{method:'POST',headers:auth(s.accessToken),body:JSON.stringify({name:s.user.displayName,username:'hope-admin',password:'pass123456789'})});assert.equal(r.status,200);return r.body.data;}
 
 test('owner and operational admin receive different backend capabilities',async()=>{
   const ownerReg=await register(api.json,'amir.davodpour@gmail.com','Owner'); const opsReg=await register(api.json,'ops-rbac@example.com','Ops Admin'); const regular=await register(api.json,'rbac-user@example.com','Regular User');
@@ -17,7 +17,12 @@ test('owner and operational admin receive different backend capabilities',async(
   const unlinkedUnlock=await api.json('/admin/access',{method:'POST',headers:auth(unlinkedOwner.accessToken),body:JSON.stringify({name:unlinkedOwner.user.displayName,username:'hope-admin'})});
   assert.equal(unlinkedUnlock.status,403); assert.equal(unlinkedUnlock.body.error.code,'PRIMARY_ADMIN_IDENTITY_REQUIRED');
   ownerRow.googleSubject='verified-google-subject'; await api.db.save();
-  const owner=await login(ownerReg.user.email); const ops=await login(opsReg.user.email); const ownerAccess=await unlock(owner); const opsAccess=await unlock(ops);
+  const owner=await login(ownerReg.user.email); const ops=await login(opsReg.user.email);
+  const missingProof=await api.json('/admin/access',{method:'POST',headers:auth(owner.accessToken),body:JSON.stringify({name:owner.user.displayName,username:'hope-admin'})});
+  assert.equal(missingProof.status,401); assert.equal(missingProof.body.error.code,'ADMIN_REAUTH_FAILED');
+  const wrongPassword=await api.json('/admin/access',{method:'POST',headers:auth(owner.accessToken),body:JSON.stringify({name:owner.user.displayName,username:'hope-admin',password:'incorrect-password'})});
+  assert.equal(wrongPassword.status,401); assert.equal(wrongPassword.body.error.code,'ADMIN_REAUTH_FAILED');
+  const ownerAccess=await unlock(owner); const opsAccess=await unlock(ops);
   const ownerOnly=['admin.manage_admins','admin.delete_jobs','admin.resolve_disputes','admin.resolve_payouts','admin.revoke_sessions','admin.sandbox_wallet_credit'];
   for(const p of ownerOnly) assert.equal(ownerAccess.permissions.includes(p),true,p); assert.equal(opsAccess.permissions.includes('admin.moderate_jobs'),true);
   for(const p of ownerOnly) assert.equal(opsAccess.permissions.includes(p),false,p);
