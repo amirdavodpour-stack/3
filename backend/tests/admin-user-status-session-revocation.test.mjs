@@ -129,7 +129,7 @@ test('admin-panel verification can only be set or read for active administrator 
 
   assert.match(setVerification, /role\s*=\s*'ADMIN'\s+AND\s+status\s*=\s*'ACTIVE'/i);
   assert.match(readVerification, /SELECT[^\`]*role[^\`]*status[^\`]*admin_panel_verified_at/is);
-  assert.match(readVerification, /rows\[0\]\?\.status\s*===\s*'ACTIVE'/);
+  assert.match(readVerification, /row\?\.status\s*===\s*'ACTIVE'/);
 });
 
 
@@ -239,5 +239,5 @@ test('every protected admin route supplies the authenticated session JTI to the 
 test('legacy admin-panel verification is bound to the active session JTI', () => {
   assert.match(adminRoutesSource, /sessionJti/);
   assert.match(adminRoutesSource, /legacyVerifiedAdmins\.set\(me\.id,\s*\{[^}]*sessionJti/);
-  assert.match(adminRoutesSource, /legacyVerifiedAdmins\.get\(me\.id\)[\s\S]*sessionJti\s*===\s*me\.sessionJti/);
+  assert.match(adminRoutesSource, /legacyVerifiedAdmins\.get\(userId\)[\s\S]*verification\.sessionJti\s*===\s*sessionJti/);
 });
