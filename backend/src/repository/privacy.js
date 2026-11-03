@@ -82,7 +82,7 @@ export async function getUserPrivacyBundle(userId) {
   requirePool();
   return withSqlTransaction(async (client) => {
     await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-    const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts,refunds,settlements] = await Promise.all([
+    const [u,p,j,a,o,pay,n,prefs,savedSearches,ev,up,chatConversations,chatMessages,analytics,crashes,trust,recommendationProfile,satisfaction,walletAccounts,walletEntries,walletHolds,payouts,refunds,settlements] = await Promise.all([
     client.query(`SELECT ${userSelect} FROM users WHERE id=$1`, [userId]),
     client.query(`SELECT id,user_id,provider_type,capacity,verification_status,created_at,updated_at FROM providers WHERE user_id=$1`, [userId]),
     client.query(`SELECT * FROM jobs WHERE owner_id=$1 OR provider_id=$1 ORDER BY created_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
@@ -94,6 +94,27 @@ export async function getUserPrivacyBundle(userId) {
     client.query(`SELECT * FROM saved_searches WHERE user_id=$1 ORDER BY updated_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT * FROM evidence WHERE submitted_by=$1 ORDER BY created_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT * FROM uploads WHERE uploaded_by=$1 ORDER BY created_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    // Export only JOB conversations for which this account is the owner or assigned worker.
+    // The shared ADMIN room is intentionally excluded from ordinary account export.
+    client.query(`SELECT c.id,c.kind,c.job_id AS "jobId",c.title,c.status,c.created_at AS "createdAt",c.closed_at AS "closedAt"
+      FROM chat_conversations c JOIN jobs j ON j.id=c.job_id
+      WHERE c.kind='JOB' AND (j.owner_id=$1 OR j.provider_id=$1)
+      ORDER BY c.created_at DESC,c.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
+    client.query(`SELECT m.id,m.conversation_id AS "conversationId",c.job_id AS "jobId",
+        COALESCE(sender.display_name,'') AS "senderName",(m.sender_id=$1) AS "sentByAccount",
+        m.body,m.message_type AS "messageType",m.created_at AS "createdAt",
+        COALESCE((SELECT jsonb_agg(jsonb_build_object(
+          'filename',a.filename,'contentType',a.content_type,'size',a.size
+        ) ORDER BY a.created_at,a.id)
+          FROM chat_message_attachments a WHERE a.message_id=m.id),'[]'::jsonb) AS attachments,
+        EXISTS(SELECT 1 FROM chat_message_reads r WHERE r.message_id=m.id AND r.user_id=$1) AS "isReadByAccount",
+        (SELECT r.read_at FROM chat_message_reads r WHERE r.message_id=m.id AND r.user_id=$1) AS "readAt"
+      FROM chat_messages m
+      JOIN chat_conversations c ON c.id=m.conversation_id
+      JOIN jobs j ON j.id=c.job_id
+      LEFT JOIN users sender ON sender.id=m.sender_id
+      WHERE c.kind='JOB' AND (j.owner_id=$1 OR j.provider_id=$1)
+      ORDER BY m.created_at DESC,m.id DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT * FROM analytics_events WHERE user_id=$1 ORDER BY occurred_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT * FROM crash_reports WHERE user_id=$1 ORDER BY occurred_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
     client.query(`SELECT * FROM trust_reports WHERE reporter_id=$1 ORDER BY created_at DESC LIMIT ${MAX_EXPORT_QUERY_ROWS}`, [userId]),
@@ -119,6 +140,8 @@ export async function getUserPrivacyBundle(userId) {
     preferences:prefs.rows[0]||null,
     savedSearches: savedSearches.rows.map(r=>({id:r.id,name:r.name,query:r.query,kind:r.kind,visibility:r.visibility,city:r.city,category:r.category,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
     evidence:ev.rows.map(r=>({id:r.id,jobId:r.job_id,submittedBy:r.submitted_by,uri:r.uri,notes:r.notes,type:r.type,createdAt:r.created_at?.toISOString?.()??r.created_at})), uploads:up.rows.map(r=>({id:r.id,storageKey:r.storage_key,uploadedBy:r.uploaded_by,contentType:r.content_type,size:r.size,createdAt:r.created_at?.toISOString?.()??r.created_at})),
+    chatConversations: chatConversations.rows.reverse(),
+    chatMessages: chatMessages.rows.reverse().map(r=>({...r,attachments:Array.isArray(r.attachments)?r.attachments:[]})),
     analyticsEvents:analytics.rows.map(r=>({id:r.id,eventName:r.event_name,userId:r.user_id,anonymousId:r.anonymous_id,sessionId:r.session_id,appVersion:r.app_version,platform:r.platform,properties:r.properties||{},dedupeKey:r.dedupe_key,occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     crashReports:crashes.rows.map(r=>({id:r.id,userId:r.user_id,anonymousId:r.anonymous_id,appVersion:r.app_version,platform:r.platform,releaseChannel:r.release_channel,fingerprint:r.fingerprint,message:r.message,stack:r.stack,context:r.context||{},occurredAt:r.occurred_at?.toISOString?.()??r.occurred_at,createdAt:r.created_at?.toISOString?.()??r.created_at})),
     trustReports:trust.rows.map(r=>({id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.()??r.created_at,updatedAt:r.updated_at?.toISOString?.()??r.updated_at})),
