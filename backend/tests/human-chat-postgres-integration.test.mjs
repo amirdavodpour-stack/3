@@ -5587,16 +5587,12 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
   const outsiderId = await createTransferTestUser(pool, 'privacy-chat-export-outsider');
   const suffix = crypto.randomUUID();
   const uploadId = crypto.randomUUID();
-  const storageKey = \`privacy-export/\${suffix}.pdf\`;
+  const storageKey = 'privacy-export/' + suffix + '.pdf';
   let jobId = null;
   let conversationId = null;
   let adminMessageId = null;
   try {
-    await pool.query(
-      "UPDATE users SET display_name='Privacy export admin fixture' WHERE id=$1",
-      [fixture.adminId],
-    );
-    const { rows: jobs } = await pool.query(\`
+    const { rows: jobs } = await pool.query(`
       INSERT INTO jobs(
         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
@@ -5608,15 +5604,15 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
       FROM categories c WHERE c.is_active=TRUE
       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
       RETURNING id
-    \`,[ownerId,workerId]);
+    `,[ownerId,workerId]);
     assert.ok(jobs[0],'privacy chat export test requires an active category');
     jobId=jobs[0].id;
 
-    const { rows: conversations } = await pool.query(\`
+    const { rows: conversations } = await pool.query(`
       INSERT INTO chat_conversations(id,kind,job_id,status,title)
       VALUES(gen_random_uuid(),'JOB',$1,'OPEN','Privacy chat export fixture')
       RETURNING id
-    \`,[jobId]);
+    `,[jobId]);
     conversationId=conversations[0].id;
 
     await insertUpload({
@@ -5629,24 +5625,18 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
     });
 
     const attachmentMessage = await postChatMessage(
-      conversationId,
-      ownerId,
-      'USER',
-      '',
+      conversationId,ownerId,'USER','',
       {messageType:'ATTACHMENT',attachments:[{key:storageKey,filename:'delivery.pdf'}]},
     );
     const workerMessage = await postChatMessage(
-      conversationId,
-      workerId,
-      'USER',
-      'I have completed the delivery.',
+      conversationId,workerId,'USER','I have completed the delivery.',
     );
     await markChatConversationRead(conversationId,workerId,'USER');
 
     const { rows: adminMessages } = await pool.query(
-      \`INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
+      `INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
        VALUES(gen_random_uuid(),$1,$2,'Internal admin-room message must not appear in the account export.','TEXT')
-       RETURNING id\`,
+       RETURNING id`,
       [fixture.adminConversationId,fixture.adminId],
     );
     adminMessageId=adminMessages[0].id;
@@ -5664,11 +5654,7 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
     assert.ok(ownerAttachment,'the employer export must include its own job messages');
     assert.equal(ownerAttachment.sentByAccount,true);
     assert.equal(ownerAttachment.messageType,'ATTACHMENT');
-    assert.deepEqual(ownerAttachment.attachments,[{
-      filename:'delivery.pdf',
-      contentType:'application/pdf',
-      size:1234,
-    }]);
+    assert.deepEqual(ownerAttachment.attachments,[{filename:'delivery.pdf',contentType:'application/pdf',size:1234}]);
     assert.equal(JSON.stringify(ownerAttachment).includes(storageKey),false,
       'storage keys must never be present in chat export metadata');
 
