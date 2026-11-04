@@ -238,6 +238,145 @@ test('legacy auth adapter mirrors the explicit primary-admin bootstrap option', 
   assert.equal(ordinaryUser.role, 'USER');
 });
 
+
+test('Google-only account can establish a password through verified email reset without losing its Google identity', async () => {
+  const users = [];
+  let resetToken = null;
+  let requestBody = {};
+  let deliveredResetToken = null;
+  const auditActions = [];
+  const identity = {
+    subject: 'google-password-recovery-subject',
+    email: 'google-only@example.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Google Only',
+  };
+  const repo = {
+    findUserByGoogleSubject: async (subject) => users.find((user) => user.googleSubject === subject) || null,
+    createUserWithProvider: async (userDraft) => {
+      const user = { ...userDraft };
+      users.push(user);
+      return user;
+    },
+    insertResetToken: async (token) => {
+      resetToken = { ...token };
+      return resetToken;
+    },
+    findResetTokenForUse: async (tokenHash) => {
+      if (!resetToken || resetToken.tokenHash !== tokenHash || resetToken.usedAt) return null;
+      if (new Date(resetToken.expiresAt).getTime() <= Date.now()) return null;
+      return { token: resetToken, user: users.find((user) => user.id === resetToken.userId) || null };
+    },
+    consumeResetTokenAndChangePassword: async (tokenId, userId, passwordHash) => {
+      const user = users.find((candidate) => candidate.id === userId);
+      if (!user || !resetToken || resetToken.id !== tokenId || resetToken.usedAt) return false;
+      user.passwordHash = passwordHash;
+      user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+      resetToken.usedAt = '2026-11-04T00:00:00.000Z';
+      return true;
+    },
+  };
+  const routes = createAuthRoutes({
+    authUser: async () => null,
+    authUserView: (user) => ({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      googleSubject: user.googleSubject || null,
+    }),
+    getUserByEmail: async (email) => users.find((user) => user.email === String(email).toLowerCase()) || null,
+    issueSession: async (user) => ({
+      accessToken: 'session-for-' + user.id,
+      refreshToken: 'refresh-for-' + user.id,
+    }),
+    deliverPasswordReset: async ({ token }) => { deliveredResetToken = token; },
+    deliverEmailVerification: async () => {},
+    findUser: async () => null,
+    readBody: async () => requestBody,
+    sendJson: async (_res, status, data) => ({ status, data }),
+    HttpError,
+    requireFields,
+    repo,
+    config: {
+      googleAuthEnabled: true,
+      googleOAuthClientId: 'test-client',
+      resetTokenTtlSeconds: 3600,
+      emailVerificationTokenTtlSeconds: 3600,
+      authRateLimitMax: 20,
+      rateLimitWindowMs: 60_000,
+      exposeResetTokenInDevelopment: false,
+    },
+    now: () => '2026-11-04T00:00:00.000Z',
+    hashPassword: async (password) => 'hash:' + password,
+    verifyPassword: async (password, hash) => hash === 'hash:' + password,
+    passwordNeedsRehash: () => false,
+    PASSWORD_MAX_LENGTH: 128,
+    randomToken: (length) => length === 48 ? 'g'.repeat(length) : 'r'.repeat(length),
+    sha256: (value) => 'sha256:' + value,
+    signAccessToken: () => 'unused',
+    createAudit: async (action) => { auditActions.push(action); },
+    DUMMY_PASSWORD_HASH: 'hash:dummy-password',
+    logEvent: () => {},
+    rateLimitAuth: async () => true,
+    rateLimitAuthAccount: async () => true,
+    stringField,
+    id: () => 'generated-user-id',
+    legacy: {},
+    verifyGoogleIdToken: async (idToken, audience) => {
+      assert.equal(idToken, 'google-id-token');
+      assert.equal(audience, 'test-client');
+      return identity;
+    },
+  });
+
+  requestBody = { idToken: 'google-id-token' };
+  const registered = await routes({ method: 'POST' }, {}, ['auth', 'google']);
+  assert.equal(registered.status, 201);
+  assert.equal(registered.data.user.email, identity.email);
+  assert.equal(registered.data.user.role, 'USER');
+  assert.equal(users.length, 1);
+  const user = users[0];
+  assert.equal(user.status, 'ACTIVE');
+  assert.equal(user.googleSubject, identity.subject);
+  assert.notEqual(user.passwordHash, 'hash:NewSecurePassword123');
+
+  requestBody = { email: identity.email };
+  const resetRequested = await routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'request']);
+  assert.equal(resetRequested.status, 202);
+  assert.equal(resetRequested.data.ok, true);
+  assert.ok(deliveredResetToken);
+  assert.equal(resetRequested.data.resetToken, undefined);
+  assert.equal(resetToken?.userId, user.id);
+
+  requestBody = { token: deliveredResetToken, password: 'NewSecurePassword123' };
+  const resetConfirmed = await routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'confirm']);
+  assert.equal(resetConfirmed.status, 200);
+  assert.equal(resetConfirmed.data.ok, true);
+  assert.equal(user.passwordHash, 'hash:NewSecurePassword123');
+  assert.equal(user.googleSubject, identity.subject, 'password recovery must preserve the linked Google subject');
+  assert.equal(user.sessionVersion, 1);
+
+  await assert.rejects(
+    routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'confirm']),
+    (error) => error?.status === 400 && error?.code === 'INVALID_RESET_TOKEN',
+  );
+
+  requestBody = { email: identity.email, password: 'NewSecurePassword123' };
+  const passwordLogin = await routes({ method: 'POST' }, {}, ['auth', 'login']);
+  assert.equal(passwordLogin.status, 200);
+  assert.equal(passwordLogin.data.user.googleSubject, identity.subject);
+  assert.equal(passwordLogin.data.accessToken, 'session-for-' + user.id);
+
+  requestBody = { idToken: 'google-id-token' };
+  const googleLogin = await routes({ method: 'POST' }, {}, ['auth', 'google']);
+  assert.equal(googleLogin.status, 200);
+  assert.equal(googleLogin.data.user.googleSubject, identity.subject);
+  assert.equal(googleLogin.data.accessToken, 'session-for-' + user.id);
+  assert.equal(auditActions.includes('AUTH_GOOGLE_REGISTER'), true);
+  assert.equal(auditActions.includes('AUTH_PASSWORD_RESET'), true);
+});
+
 test('Google account linking rejects a verified Google identity whose email differs from the signed-in account', async () => {
   let linked = false;
   const { routes, repo } = makeRoutes({
