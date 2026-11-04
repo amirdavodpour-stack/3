@@ -40,6 +40,7 @@ try {
     'tests/human-chat-postgres-integration.test.mjs',
     'tests/postgres-email-verification-integration.test.mjs',
     'tests/postgres-auth-security-integration.test.mjs',
+    'tests/postgres-storage-cleanup-integration.test.mjs',
   ], {
     cwd: process.cwd(),
     env,
