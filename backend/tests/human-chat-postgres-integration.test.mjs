@@ -1,4 +1,8 @@
 import { buildDataExport } from '../src/privacy.js';
+import { getAdminPermissions } from '../src/application/admin_panel_access.js';
+import { requireAdmin } from '../src/policies/validation.js';
+import { migration as primaryAdminIdentityMigration } from '../src/db/migrations/032_primary_admin_identity.js';
+import { migrationStatus } from '../src/db/migrations.js';
 import test, { after } from 'node:test';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -5689,6 +5693,114 @@ test('PostgreSQL privacy export includes participant job messages and safe attac
   }
 });
 
+
+
+test('migration 032 email-only bootstrap is fenced until the verified owner identity migration runs', { skip: !enabled, timeout: 30000 }, async () => {
+  const pool = dbModule.getPool();
+  const client = await pool.connect();
+  const schema = `hope_m032_${crypto.randomUUID().replaceAll('-', '')}`;
+  try {
+    await client.query(`CREATE SCHEMA "${schema}"`);
+    await client.query(`SET search_path TO "${schema}"`);
+    await client.query(`
+      CREATE TABLE users (
+        id UUID PRIMARY KEY,
+        email TEXT NOT NULL,
+        role TEXT NOT NULL,
+        google_subject TEXT NULL,
+        admin_panel_verified_at TIMESTAMPTZ NULL,
+        admin_panel_verified_session_jti TEXT NULL
+      )
+    `);
+
+    const unlinkedOwnerId = crypto.randomUUID();
+    const linkedOwnerId = crypto.randomUUID();
+    const operationalAdminId = crypto.randomUUID();
+    await client.query(
+      `INSERT INTO users(id,email,role,google_subject,admin_panel_verified_at,admin_panel_verified_session_jti)
+       VALUES
+         ($1,'amir.davodpour@gmail.com','USER',NULL,NOW(),'stale-owner-jti'),
+         ($2,'amir.davodpour@gmail.com','USER','verified-google-subject',NOW(),'linked-owner-jti'),
+         ($3,'ops-migration@example.test','ADMIN',NULL,NOW(),'ops-jti')`,
+      [unlinkedOwnerId, linkedOwnerId, operationalAdminId],
+    );
+
+    await primaryAdminIdentityMigration.up(client);
+    const beforeRepair = await client.query(
+      'SELECT id,role,google_subject,admin_panel_verified_at,admin_panel_verified_session_jti FROM users ORDER BY id',
+    );
+    const unlinkedBefore = beforeRepair.rows.find((row) => row.id === unlinkedOwnerId);
+    const linkedBefore = beforeRepair.rows.find((row) => row.id === linkedOwnerId);
+    assert.equal(unlinkedBefore.role, 'ADMIN', 'historical migration 032 must be represented faithfully');
+    assert.equal(linkedBefore.role, 'ADMIN');
+
+    const unlinkedUser = {
+      id: unlinkedOwnerId,
+      email: 'amir.davodpour@gmail.com',
+      role: unlinkedBefore.role,
+      googleSubject: unlinkedBefore.google_subject,
+    };
+    assert.deepEqual(getAdminPermissions(unlinkedUser), []);
+    assert.throws(
+      () => requireAdmin(unlinkedUser),
+      (error) => error?.status === 403 && error?.code === 'PRIMARY_ADMIN_IDENTITY_REQUIRED',
+    );
+
+    const { migration: verifiedOwnerMigration } = await import('../src/db/migrations/043_verified_primary_admin_identity.js')
+      .catch(() => ({ migration: null }));
+    assert.equal(
+      typeof verifiedOwnerMigration?.up,
+      'function',
+      'a forward-only migration 043 must retire email-only ADMIN grants from migration 032',
+    );
+    await verifiedOwnerMigration.up(client);
+
+    const afterRepair = await client.query(
+      'SELECT id,role,google_subject,admin_panel_verified_at,admin_panel_verified_session_jti FROM users ORDER BY id',
+    );
+    const unlinkedAfter = afterRepair.rows.find((row) => row.id === unlinkedOwnerId);
+    const linkedAfter = afterRepair.rows.find((row) => row.id === linkedOwnerId);
+    const operationalAdminAfter = afterRepair.rows.find((row) => row.id === operationalAdminId);
+
+    assert.equal(unlinkedAfter.role, 'USER');
+    assert.equal(unlinkedAfter.admin_panel_verified_at, null);
+    assert.equal(unlinkedAfter.admin_panel_verified_session_jti, null);
+    assert.deepEqual(getAdminPermissions({
+      id: unlinkedOwnerId,
+      email: 'amir.davodpour@gmail.com',
+      role: unlinkedAfter.role,
+      googleSubject: unlinkedAfter.google_subject,
+    }), []);
+
+    assert.equal(linkedAfter.role, 'ADMIN', 'an already linked owner must retain ADMIN');
+    assert.equal(linkedAfter.google_subject, 'verified-google-subject');
+    assert.ok(getAdminPermissions({
+      id: linkedOwnerId,
+      email: 'amir.davodpour@gmail.com',
+      role: linkedAfter.role,
+      googleSubject: linkedAfter.google_subject,
+    }).length > 0);
+
+    assert.equal(operationalAdminAfter.role, 'ADMIN', 'operational admins are not changed by owner bootstrap repair');
+    assert.ok(getAdminPermissions({
+      id: operationalAdminId,
+      email: 'ops-migration@example.test',
+      role: operationalAdminAfter.role,
+      googleSubject: operationalAdminAfter.google_subject,
+    }).length > 0);
+  } finally {
+    await client.query('RESET search_path').catch(() => {});
+    await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`).catch(() => {});
+    client.release();
+  }
+
+  const status = await migrationStatus(pool);
+  assert.equal(
+    status.find((item) => item.version === 43)?.state,
+    'applied',
+    'migration 043 must be recorded with its current checksum by the normal migration runner',
+  );
+});
 
 test('PostgreSQL Google linking promotes only an explicitly verified primary-admin bootstrap and preserves ordinary roles', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
