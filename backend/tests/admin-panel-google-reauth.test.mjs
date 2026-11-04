@@ -74,6 +74,17 @@ function makeRoute({
   return { routes, auditEntries, verificationWrites, rateLimitCalls };
 }
 
+async function withPostgresEnvironment(callback) {
+  const previous = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://unit-test.invalid/hope';
+  try {
+    return await callback();
+  } finally {
+    if (previous === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = previous;
+  }
+}
+
 const invokeUnlock = (routes) => routes(
   { method: 'POST', headers: { 'x-forwarded-for': '127.0.0.1' } },
   {},
@@ -82,7 +93,7 @@ const invokeUnlock = (routes) => routes(
 
 test('Google reauthentication unlocks the admin panel only for the same recent provider identity and current session', async () => {
   const { routes, auditEntries, verificationWrites, rateLimitCalls } = makeRoute();
-  const result = await invokeUnlock(routes);
+  const result = await withPostgresEnvironment(() => invokeUnlock(routes));
 
   assert.equal(result.status, 200);
   assert.equal(result.data.verified, true);
