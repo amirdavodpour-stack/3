@@ -25,17 +25,69 @@ export async function getAdminSummary() {
 }
 
 export async function listAdminUsers(limit=100, offset=0) {
-  const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
-  return rows.map(userFromRow);
+  const { rows } = await requirePool().query(`
+    SELECT ${userSelect},
+           r.id AS "statusReviewCaseId",
+           r.reason AS "statusReviewReason",
+           r.review_due_at AS "statusReviewDueAt"
+      FROM users
+      LEFT JOIN LATERAL (
+        SELECT id,reason,review_due_at
+          FROM admin_user_status_review_cases
+         WHERE user_id=users.id AND status='OPEN'
+         ORDER BY created_at DESC,id DESC
+         LIMIT 1
+      ) r ON TRUE
+     ORDER BY created_at DESC
+     LIMIT $1 OFFSET $2
+  `, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
+  return rows.map((row) => ({
+    ...userFromRow(row),
+    statusReviewCaseId: row.statusReviewCaseId || null,
+    statusReviewReason: row.statusReviewReason || null,
+    statusReviewDueAt: row.statusReviewDueAt?.toISOString?.() ?? row.statusReviewDueAt ?? null,
+  }));
 }
 export async function getAdminUser(id) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE id=$1`, [id]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
-export async function setUserStatus(id,status) {
+export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
+  const targetStatus=String(status || '').trim().toUpperCase();
+  if(!['ACTIVE','SUSPENDED'].includes(targetStatus)) {
+    const error=new Error('INVALID_STATUS'); error.code='INVALID_STATUS'; error.status=400; throw error;
+  }
+  const why=String(reason || '').trim();
+  if(why.length<3 || why.length>1000) {
+    const error=new Error('ADMIN_USER_STATUS_REASON_REQUIRED'); error.code='ADMIN_USER_STATUS_REASON_REQUIRED'; error.status=400; throw error;
+  }
+  let due=null;
+  if(targetStatus==='SUSPENDED') {
+    due=new Date(reviewDueAt);
+    const delta=due.getTime()-Date.now();
+    if(!Number.isFinite(due.getTime()) || delta<60*60*1000 || delta>7*24*60*60*1000) {
+      const error=new Error('INVALID_REVIEW_DEADLINE'); error.code='INVALID_REVIEW_DEADLINE'; error.status=400; throw error;
+    }
+  }
+  const actor=String(actorId || '').trim();
+  if(!actor) {
+    const error=new Error('ADMIN_ACTOR_REQUIRED'); error.code='ADMIN_ACTOR_REQUIRED'; error.status=401; throw error;
+  }
+
   return withSqlTransaction(async (client) => {
+    const { rows: actors } = await client.query(
+      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
+      [actor],
+    );
+    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
+      const error=new Error('ADMIN_REQUIRED'); error.code='ADMIN_REQUIRED'; error.status=403; throw error;
+    }
+    if(actor===String(id) && targetStatus==='SUSPENDED') {
+      const error=new Error('SELF_SUSPEND_FORBIDDEN'); error.code='SELF_SUSPEND_FORBIDDEN'; error.status=400; throw error;
+    }
+
     const { rows: current } = await client.query(
-      `SELECT status FROM users WHERE id=$1 FOR UPDATE`,
+      `SELECT id,email,role,status FROM users WHERE id=$1 FOR UPDATE`,
       [id],
     );
     if (!current[0]) return null;
@@ -45,6 +97,10 @@ export async function setUserStatus(id,status) {
       error.status = 409;
       throw error;
     }
+    if(current[0].status===targetStatus) {
+      const error=new Error('USER_STATUS_UNCHANGED'); error.code='USER_STATUS_UNCHANGED'; error.status=409; throw error;
+    }
+
     const { rows } = await client.query(
       `UPDATE users
           SET status=$2,
@@ -54,14 +110,54 @@ export async function setUserStatus(id,status) {
               admin_panel_verified_scope=NULL
         WHERE id=$1 AND status <> 'DELETED'
         RETURNING ${userSelect}`,
-      [id,status],
+      [id,targetStatus],
     );
     if (!rows[0]) return null;
     await client.query(
       `UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`,
       [id],
     );
-    return userFromRow(rows[0]);
+
+    let reviewCaseId=null;
+    let reviewDeadline=null;
+    if(targetStatus==='SUSPENDED') {
+      const { rows: cases } = await client.query(
+        `INSERT INTO admin_user_status_review_cases(
+           id,user_id,status,reason,created_by,created_at,review_due_at
+         ) VALUES(gen_random_uuid(),$1,'OPEN',$2,$3,NOW(),$4)
+         RETURNING id,review_due_at`,
+        [id,why,actor,due],
+      );
+      reviewCaseId=cases[0].id;
+      reviewDeadline=cases[0].review_due_at?.toISOString?.() ?? cases[0].review_due_at;
+    } else {
+      const { rows: cases } = await client.query(
+        `UPDATE admin_user_status_review_cases
+            SET status='RESOLVED',resolved_by=$2,resolved_at=NOW(),resolution_reason=$3
+          WHERE user_id=$1 AND status='OPEN'
+          RETURNING id`,
+        [id,actor,why],
+      );
+      reviewCaseId=cases[0]?.id || null;
+    }
+
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'ADMIN_USER_STATUS',$1,'user',$2,$3::jsonb,NOW())`,
+      [actor,id,JSON.stringify({
+        status:targetStatus,
+        reason:why,
+        reviewCaseId,
+        reviewDueAt:reviewDeadline,
+        manualReviewRequired:targetStatus==='SUSPENDED',
+        reviewAction:targetStatus==='SUSPENDED'?'OPENED':'HUMAN_RESOLUTION',
+      })],
+    );
+    return {
+      ...userFromRow(rows[0]),
+      reviewCaseId,
+      reviewDueAt:reviewDeadline,
+    };
   });
 }
 export async function revokeAdminById(id, actorId) {

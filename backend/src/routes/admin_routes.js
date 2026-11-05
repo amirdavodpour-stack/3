@@ -372,11 +372,24 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='users'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_USERS);
       const u=process.env.DATABASE_URL ? await adminUseCases.users() : legacyAdmin.users();
-      return sendJson(res,200,u.map(x=>({id:x.id,email:x.email,displayName:x.displayName,role:x.role,status:x.status,createdAt:x.createdAt})));
+      return sendJson(res,200,u.map(x=>({id:x.id,email:x.email,displayName:x.displayName,role:x.role,status:x.status,createdAt:x.createdAt,statusReviewCaseId:x.statusReviewCaseId || null,statusReviewReason:x.statusReviewReason || null,statusReviewDueAt:x.statusReviewDueAt || null})));
     }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='users' && parts[3]==='status'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_USERS);
-      const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['ACTIVE','SUSPENDED']),'status');
+      const id=parts[2];
+      const body=await readBody(req);
+      const status=enumField(body?.status,new Set(['ACTIVE','SUSPENDED']),'status');
+      const reason=String(body?.reason || '').trim();
+      if(reason.length<3 || reason.length>1000) throw new HttpError(400,'ADMIN_USER_STATUS_REASON_REQUIRED','A reason between 3 and 1000 characters is required');
+      let reviewDueAt=null;
+      if(status==='SUSPENDED'){
+        const requested=body?.reviewDueAt ? new Date(body.reviewDueAt) : new Date(Date.now()+72*60*60*1000);
+        const delta=requested.getTime()-Date.now();
+        if(!Number.isFinite(requested.getTime()) || delta<60*60*1000 || delta>7*24*60*60*1000) {
+          throw new HttpError(400,'INVALID_REVIEW_DEADLINE','Review deadline must be between one hour and seven days from now');
+        }
+        reviewDueAt=requested.toISOString();
+      }
       const target=process.env.DATABASE_URL ? await adminUseCases.getAdminUser(id) : legacyAdmin.getAdminUser(id);
       if(!target) throw new HttpError(404,'USER_NOT_FOUND','User not found');
       if(target.status==='DELETED') throw new HttpError(409,'ACCOUNT_DELETION_TERMINAL','Deleted accounts cannot be reactivated or changed');
@@ -387,15 +400,29 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       if(id===me.id && status==='SUSPENDED') throw new HttpError(400,'SELF_SUSPEND_FORBIDDEN','An admin cannot suspend their own account');
       let updated;
       try {
-        updated=process.env.DATABASE_URL ? await adminUseCases.setUserStatus(id,status) : legacyAdmin.setUserStatus(id,status);
+        const options={actorId:me.id,reason,reviewDueAt};
+        updated=process.env.DATABASE_URL
+          ? await adminUseCases.setUserStatus(id,status,options)
+          : legacyAdmin.setUserStatus(id,status,options);
       } catch(error) {
-        if(error?.code==='ACCOUNT_DELETION_TERMINAL') throw new HttpError(409,'ACCOUNT_DELETION_TERMINAL','Deleted accounts cannot be reactivated or changed');
+        if(['ACCOUNT_DELETION_TERMINAL','USER_STATUS_UNCHANGED'].includes(error?.code)) throw new HttpError(409,error.code,'The requested user status cannot be applied');
+        if(error?.code==='INVALID_REVIEW_DEADLINE') throw new HttpError(400,error.code,'Review deadline must be between one hour and seven days from now');
         throw error;
       }
       if(!updated) throw new HttpError(404,'USER_NOT_FOUND','User not found');
-      if(!process.env.DATABASE_URL) await legacyAdmin.save();
-      await createAudit('ADMIN_USER_STATUS',me.id,'user',id,{status});
-      return sendJson(res,200,{id,status:updated.status});
+      if(!process.env.DATABASE_URL) {
+        await legacyAdmin.save();
+        await createAudit('ADMIN_USER_STATUS',me.id,'user',id,{
+          status,
+          reason,
+          reviewCaseId:updated.reviewCaseId || null,
+          reviewDueAt:updated.reviewDueAt || reviewDueAt,
+          manualReviewRequired:status==='SUSPENDED',
+          reviewAction:status==='SUSPENDED'?'OPENED':'HUMAN_RESOLUTION',
+        });
+      }
+      return sendJson(res,200,{id,status:updated.status,reviewCaseId:updated.reviewCaseId || null,reviewDueAt:updated.reviewDueAt || reviewDueAt});
+
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='trust-reports'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.TRUST_SAFETY);
