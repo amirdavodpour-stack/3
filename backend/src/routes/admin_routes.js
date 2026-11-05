@@ -67,7 +67,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       identityEmail !== accountEmail ||
       !Number.isSafeInteger(issuedAt) ||
       issuedAt <= 0 ||
-      tokenAgeMs < -30_000 ||
+      tokenAgeMs < -5_000 ||
       tokenAgeMs > 5 * 60 * 1000
     ) throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
     return 'google';
