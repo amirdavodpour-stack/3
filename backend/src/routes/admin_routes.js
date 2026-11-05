@@ -379,12 +379,23 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['ACTIVE','SUSPENDED']),'status');
       const target=process.env.DATABASE_URL ? await adminUseCases.getAdminUser(id) : legacyAdmin.getAdminUser(id);
       if(!target) throw new HttpError(404,'USER_NOT_FOUND','User not found');
+      if(target.status==='DELETED') throw new HttpError(409,'ACCOUNT_DELETION_TERMINAL','Deleted accounts cannot be reactivated or changed');
       if(target.role==='ADMIN'){
         if(isPrimaryAdminEmail(target.email)) throw new HttpError(403,'PRIMARY_ADMIN_PROTECTED','The primary administrator account cannot be changed by the user-status control');
         assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
       }
       if(id===me.id && status==='SUSPENDED') throw new HttpError(400,'SELF_SUSPEND_FORBIDDEN','An admin cannot suspend their own account');
-      const updated=process.env.DATABASE_URL ? await adminUseCases.setUserStatus(id,status) : legacyAdmin.setUserStatus(id,status); if(!updated) throw new HttpError(404,'USER_NOT_FOUND','User not found'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await createAudit('ADMIN_USER_STATUS',me.id,'user',id,{status}); return sendJson(res,200,{id,status:updated.status});
+      let updated;
+      try {
+        updated=process.env.DATABASE_URL ? await adminUseCases.setUserStatus(id,status) : legacyAdmin.setUserStatus(id,status);
+      } catch(error) {
+        if(error?.code==='ACCOUNT_DELETION_TERMINAL') throw new HttpError(409,'ACCOUNT_DELETION_TERMINAL','Deleted accounts cannot be reactivated or changed');
+        throw error;
+      }
+      if(!updated) throw new HttpError(404,'USER_NOT_FOUND','User not found');
+      if(!process.env.DATABASE_URL) await legacyAdmin.save();
+      await createAudit('ADMIN_USER_STATUS',me.id,'user',id,{status});
+      return sendJson(res,200,{id,status:updated.status});
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='trust-reports'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.TRUST_SAFETY);
