@@ -101,7 +101,7 @@ test('Google reauthentication unlocks the admin panel only for the same recent p
   assert.equal(auditEntries.length, 1);
   assert.equal(auditEntries[0][0], 'ADMIN_PANEL_UNLOCK');
   assert.equal(auditEntries[0][1], 'admin-1');
-  assert.deepEqual(auditEntries[0][4], { expiresInMinutes: 15, method: 'google' });
+  assert.deepEqual(auditEntries[0][4], { scope: 'WRITE', expiresInMinutes: 5, method: 'google', mfaMethod: 'not_required' });
   assert.equal(rateLimitCalls.length, 2);
   assert.equal(rateLimitCalls[1][1], 'admin-panel:admin-1');
 });
