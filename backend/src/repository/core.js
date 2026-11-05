@@ -12,21 +12,37 @@ export async function findUserByGoogleSubject(subject) {
   return rows[0] ? userFromRow(rows[0]) : null;
 }
 export async function linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
-  const { rows } = await requirePool().query(
-    `UPDATE users SET
-        google_subject=$2,
-            role=CASE WHEN $3::boolean THEN 'ADMIN' ELSE role END,
-            admin_panel_verified_at=NULL,
-            admin_panel_verified_session_jti=NULL
-      WHERE id=$1
-        AND status='ACTIVE'
-        AND (google_subject IS NULL OR google_subject=$2)
-        AND BTRIM($2) <> ''
-        AND (NOT $3::boolean OR LOWER(email)='amir.davodpour@gmail.com')
-      RETURNING ${userSelect}`,
-    [userId, subject, Boolean(promoteToPrimaryAdmin)],
-  );
-  return rows[0] ? userFromRow(rows[0]) : null;
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `UPDATE users SET
+          google_subject=$2,
+          role=CASE WHEN $3::boolean THEN 'ADMIN' ELSE role END,
+          admin_panel_verified_at=NULL,
+          admin_panel_verified_session_jti=NULL,
+          admin_panel_verified_scope=NULL
+        WHERE id=$1
+          AND status='ACTIVE'
+          AND (google_subject IS NULL OR google_subject=$2)
+          AND BTRIM($2) <> ''
+          AND (NOT $3::boolean OR LOWER(email)='amir.davodpour@gmail.com')
+        RETURNING ${userSelect}`,
+      [userId, subject, Boolean(promoteToPrimaryAdmin)],
+    );
+    if (!rows[0]) return null;
+
+    // The provider-subject / owner-role mutation and its audit record are a
+    // single commit. An audit write failure must roll the identity mutation back.
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(gen_random_uuid(),'AUTH_GOOGLE_LINK',$1,'user',$1,$2::jsonb,NOW())`,
+      [userId,JSON.stringify({
+        provider:'google',
+        primaryAdminBootstrap:Boolean(promoteToPrimaryAdmin),
+      })],
+    );
+    return userFromRow(rows[0]);
+  });
 }
 export async function findUserById(id) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE id=$1`, [id]);
