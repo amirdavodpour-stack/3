@@ -565,7 +565,7 @@ test('account deletion preserves shared trust and satisfaction records while ano
   const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
   assert.match(deletion, /UPDATE trust_reports\s+SET reporter_id=NULL,reporter_deleted_at=NOW\(\)\s+WHERE reporter_id=\$1/);
   assert.doesNotMatch(deletion, /DELETE FROM trust_reports WHERE reporter_id=\$1/);
-  assert.match(deletion, /UPDATE job_satisfaction_feedback SET user_id=NULL, author_deleted_at=NOW\(\)/);
+  assert.match(deletion, /UPDATE job_satisfaction_feedback\s+SET user_id=NULL,\s*author_deleted_at=NOW\(\)/);
   assert.match(deletion, /report_text='',\s*ai_summary='',\s*ai_satisfaction_score=0/);
   assert.doesNotMatch(deletion, /DELETE FROM job_satisfaction_feedback WHERE user_id=\$1/);
 
