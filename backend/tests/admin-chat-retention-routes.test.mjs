@@ -168,7 +168,7 @@ test('primary admin can create and release legal holds with WRITE step-up and au
   assert.equal(h.audit[0][0],'ADMIN_CHAT_LEGAL_HOLD_CREATED');
   assert.equal(h.audit[0][5].reason,'Preserve evidence for an open dispute');
 
-  const released=await h.invoke('POST',['admin','privacy','chat-retention','holds','hold-1','release'],{
+  const released=await h.invoke('POST',['admin','privacy','chat-retention','holds',HOLD_ID,'release'],{
     reason:'Dispute finally resolved; legal preservation no longer required',
   });
   assert.equal(released.status,200);
