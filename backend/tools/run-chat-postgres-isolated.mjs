@@ -41,6 +41,7 @@ try {
     'tests/postgres-email-verification-integration.test.mjs',
     'tests/postgres-auth-security-integration.test.mjs',
     'tests/postgres-storage-cleanup-integration.test.mjs',
+    'tests/postgres-admin-mfa-integration.test.mjs',
   ], {
     cwd: process.cwd(),
     env,
