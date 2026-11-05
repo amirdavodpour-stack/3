@@ -6310,6 +6310,23 @@ test('confirmed refund cancellation records terminal time but keeps shared chat 
     VALUES($1,'JOB',$2,'OPEN','R05 refund terminal fixture')
   `, [conversationId,jobId]);
 
+  const suffix=crypto.randomBytes(6).toString('hex');
+  const paymentId=crypto.randomUUID();
+  const refundId=crypto.randomUUID();
+  await pool.query(
+    'INSERT INTO payments(' +
+      'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+      'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+      'fee_policy_version,currency,created_at,updated_at) ' +
+      "VALUES($1,$2,$3,$4,100,'REFUNDED',$5,$6,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
+    [paymentId,jobId,fixture.ownerId,fixture.workerId,'r05-refund-payment-'+suffix,'r05-refund-key-'+suffix],
+  );
+  await pool.query(
+    "INSERT INTO refunds(id,payment_id,amount,status,provider_ref,idempotency_key,created_at,updated_at) " +
+      "VALUES($1,$2,100,'REFUNDED',$3,$4,NOW(),NOW())",
+    [refundId,paymentId,'r05-refund-confirmed-'+suffix,'r05-refund-record-'+suffix],
+  );
+
   const client=await pool.connect();
   try {
     await client.query('BEGIN');
@@ -6343,6 +6360,8 @@ test('confirmed refund cancellation records terminal time but keeps shared chat 
     assert.equal(item?.action,'SUPPORT_WINDOW_ACTIVE');
   } finally {
     await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
+    await pool.query('DELETE FROM refunds WHERE payment_id=$1',[paymentId]).catch(()=>{});
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]).catch(()=>{});
     await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
   }
 });
