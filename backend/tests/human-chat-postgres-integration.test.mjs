@@ -6163,6 +6163,71 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
   }
 });
 
+
+test('PostgreSQL job completion records the exact terminal event time on its existing shared chat', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const { transitionJobWithPayment } = await import('../src/repository/payment_lifecycle.js');
+  const jobId = crypto.randomUUID();
+  const conversationId = crypto.randomUUID();
+  const paymentId = crypto.randomUUID();
+  const suffix = crypto.randomBytes(6).toString('hex');
+  const terminalAt = new Date('2026-11-01T12:34:56.000Z');
+
+  try {
+    const { rows: jobs } = await pool.query(`
+      INSERT INTO jobs(
+        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+        budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+        created_at,updated_at
+      )
+      SELECT $1,owner_id,provider_id,'R05 terminal timestamp fixture',
+        'PostgreSQL terminal timestamp fixture',category_id,job_type,budget_type,
+        budget_min,budget_max,duration,'R05 terminal timestamp fixture','DELIVERED',
+        city,kind,visibility,NOW(),NOW()
+      FROM jobs WHERE id=$2 RETURNING id
+    `, [jobId,fixture.jobId]);
+    assert.equal(jobs.length,1);
+
+    await pool.query(`
+      INSERT INTO chat_conversations(
+        id,kind,job_id,status,title
+      ) VALUES($1,'JOB',$2,'OPEN','R05 terminal timestamp fixture')
+    `, [conversationId,jobId]);
+
+    await pool.query(
+      'INSERT INTO payments(' +
+        'id,job_id,payer_id,payee_id,amount,status,provider_ref,idempotency_key,' +
+        'base_amount,employer_fee,worker_fee,platform_fee,employer_charge,provider_payout,' +
+        'fee_policy_version,currency,created_at,updated_at) ' +
+        "VALUES($1,$2,$3,$4,100,'HELD',$5,$6,100,30,0,30,130,100,'R05-test','TOMAN',NOW(),NOW())",
+      [paymentId,jobId,fixture.ownerId,fixture.workerId,'terminal-ref-'+suffix,'terminal-key-'+suffix],
+    );
+
+    const result = await transitionJobWithPayment(
+      jobId,
+      ['DELIVERED'],
+      {status:'COMPLETED',updatedAt:terminalAt},
+      'HELD',
+    );
+    assert.equal(result?.job?.status,'COMPLETED');
+
+    const { rows: conversations } = await pool.query(
+      'SELECT status,terminal_at,terminal_event FROM chat_conversations WHERE id=$1',
+      [conversationId],
+    );
+    assert.equal(conversations[0]?.status,'OPEN');
+    assert.equal(conversations[0]?.terminal_event,'COMPLETED');
+    assert.equal(new Date(conversations[0]?.terminal_at).toISOString(),terminalAt.toISOString());
+  } finally {
+    await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
+    await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
