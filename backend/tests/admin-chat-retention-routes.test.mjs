@@ -25,6 +25,8 @@ const PRIMARY_ADMIN = Object.freeze({
   sessionJti:'retention-primary-session-jti',
 });
 
+const HOLD_ID = '00000000-0000-4000-8000-000000000002';
+
 const EMPTY_PLAN = Object.freeze({
   mode:'DRY_RUN',
   asOf:'2026-11-06T00:00:00.000Z',
@@ -55,7 +57,7 @@ function makeHarness({user=OPS_ADMIN,verified=true,plan=EMPTY_PLAN}={}) {
       calls.push(['create-hold',input]);
       holdId+=1;
       return {
-        id:'hold-'+holdId,
+        id:HOLD_ID,
         conversationId:input.conversationId,
         holdKind:input.holdKind,
         reason:input.reason,
@@ -135,7 +137,7 @@ test('operational administrators cannot create or release privacy holds',async()
     (error)=>error?.status===403&&error?.code==='ADMIN_PERMISSION_DENIED',
   );
   await assert.rejects(
-    h.invoke('POST',['admin','privacy','chat-retention','holds','hold-1','release'],{
+    h.invoke('POST',['admin','privacy','chat-retention','holds',HOLD_ID,'release'],{
       reason:'Hold no longer required',
     }),
     (error)=>error?.status===403&&error?.code==='ADMIN_PERMISSION_DENIED',
@@ -152,7 +154,7 @@ test('primary admin can create and release legal holds with WRITE step-up and au
     reason:'Preserve evidence for an open dispute',
   });
   assert.equal(created.status,201);
-  assert.equal(created.data.id,'hold-1');
+  assert.equal(created.data.id,HOLD_ID);
   assert.deepEqual(h.calls[0],['create-hold',{
     conversationId:'conversation-1',
     holdKind:'LEGAL',
@@ -169,9 +171,9 @@ test('primary admin can create and release legal holds with WRITE step-up and au
     reason:'Dispute finally resolved; legal preservation no longer required',
   });
   assert.equal(released.status,200);
-  assert.equal(released.data.id,'hold-1');
+  assert.equal(released.data.id,HOLD_ID);
   assert.deepEqual(h.calls[1],['release-hold',{
-    holdId:'hold-1',
+    holdId:HOLD_ID,
     releasedBy:PRIMARY_ADMIN.id,
     releaseReason:'Dispute finally resolved; legal preservation no longer required',
   }]);
