@@ -6,7 +6,6 @@ import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClie
 import { config } from '../config.js';
 import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient, postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 import { operationProviderRefMismatch } from '../domain/payment_webhook_policy.js';
-import { closeJobChatForJob } from './human_chat.js';
 
 const RELEASE_STATES = new Set(['RELEASE_PENDING', 'RELEASE_FAILED']);
 
@@ -166,7 +165,6 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       }
       await client.query(`UPDATE payments SET status='RELEASED',updated_at=NOW() WHERE id=$1`,[paymentId]);
       await client.query(`UPDATE jobs SET status='SETTLED',updated_at=NOW() WHERE id=$1 AND status='COMPLETED'`,[p.job_id]);
-      if (p.job_id) await closeJobChatForJob(p.job_id, client);
       await client.query(
         `INSERT INTO settlements(id,payment_id,provider_ref,amount,currency,status,created_at,updated_at)
          VALUES($1,$2,$3,$4,$5,'RELEASED',NOW(),NOW())
@@ -194,7 +192,6 @@ export async function applyPaymentWebhookAtomic({eventId,eventType,paymentId,pro
       await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=COALESCE($2,provider_ref),updated_at=NOW() WHERE id=$1`,[refund.id,providerRef||null]);
       await client.query(`UPDATE payments SET status='REFUNDED',updated_at=NOW() WHERE id=$1`,[paymentId]);
       await client.query(`UPDATE jobs SET status='CANCELLED',updated_at=NOW() WHERE id=$1`,[p.job_id]);
-      await closeJobChatForJob(p.job_id, client);
       transitionApplied = true;
     }
     if (!transitionApplied) {
