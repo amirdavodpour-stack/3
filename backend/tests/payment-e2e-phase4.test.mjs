@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createPaymentRoutes } from '../src/routes/payment_routes.js';
+import { HttpError } from '../src/api/http_error.js';
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hope-finance-'));
 process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT='true'; process.env.PAYMENT_PROVIDER='simulator'; process.env.PAYMENT_CURRENCY='TOMAN'; process.env.ADMIN_PANEL_USERNAME='hope-admin'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
@@ -188,4 +190,61 @@ test('webhook requires signature and replays are harmless', async()=>{
   const headers={'x-hope-signature':sig,'x-hope-timestamp':String(timestamp),'x-hope-event-id':eventId};
   const good=await json('/payments/webhook',{method:'POST',headers,body});assert.equal(good.status,200);
   const replay=await json('/payments/webhook',{method:'POST',headers,body});assert.equal(replay.status,200);assert.equal(replay.body.data.duplicate,true);
+});
+
+
+test('admin financials require current session-bound Admin Panel verification', async () => {
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+  const sessionJti = 'payment-financials-session-jti';
+  process.env.DATABASE_URL = 'postgres://unit-test.invalid/hope';
+  try {
+    let panelCheckCalls = 0;
+    const routes = createPaymentRoutes({
+      authUser: async () => ({
+        id: 'ops-admin',
+        email: 'ops-admin@example.com',
+        role: 'ADMIN',
+        sessionJti,
+      }),
+      readBody: async () => ({}),
+      readRawBody: async () => Buffer.from('{}'),
+      sendJson: async (_res, status, data) => ({ status, data }),
+      HttpError,
+      config: { adminPanelVerificationMinutes: 7 },
+      db: {},
+      repo: {
+        isAdminPanelVerified: async (userId, minutes, actualSessionJti) => {
+          panelCheckCalls += 1;
+          assert.equal(userId, 'ops-admin');
+          assert.equal(minutes, 7);
+          assert.equal(actualSessionJti, sessionJti);
+          return true;
+        },
+        listLedgerEntriesForPayment: async () => [],
+      },
+      getJob: async () => ({ id: 'job-1', ownerId: 'owner-1', providerId: 'worker-1' }),
+      relatedJob: () => false,
+      paymentUseCases: {
+        findByJob: async () => ({ id: 'payment-1', status: 'HELD' }),
+      },
+      paymentLegacy: {},
+      paymentView: async (payment, job) => ({ paymentId: payment?.id || null, jobId: job.id }),
+    });
+
+    const response = await routes(
+      { method: 'GET', url: '/api/v1/payments/financials/job-1', headers: { host: 'localhost' } },
+      {},
+      ['payments', 'financials', 'job-1'],
+    );
+
+    assert.equal(panelCheckCalls, 1);
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.data, {
+      payment: { paymentId: 'payment-1', jobId: 'job-1' },
+      ledger: [],
+    });
+  } finally {
+    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalDatabaseUrl;
+  }
 });
