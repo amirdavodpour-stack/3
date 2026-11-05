@@ -46,6 +46,24 @@ export async function closeJobChatForJob(jobId,client=requirePool()){
   const {rowCount}=await client.query("UPDATE chat_conversations SET status='CLOSED',closed_at=COALESCE(closed_at,NOW()) WHERE kind='JOB' AND job_id=$1 AND status='OPEN'",[jobId]);
   return rowCount>0;
 }
+
+/**
+ * Record an explicit terminal job event using the caller's active transaction.
+ * Callers must pass the same transaction client that changed jobs.status.
+ * This records metadata only; it never closes a conversation or erases content.
+ */
+export async function recordJobChatTerminalEventWithClient(client,jobId,terminalEvent,terminalAt=new Date()){
+  const event=String(terminalEvent||'').trim().toUpperCase();
+  if(!['COMPLETED','CANCELLED'].includes(event))return 0;
+  const {rowCount}=await client.query(
+    `UPDATE chat_conversations
+        SET terminal_at=COALESCE(terminal_at,$2),
+            terminal_event=COALESCE(terminal_event,$3)
+      WHERE kind='JOB' AND job_id=$1`,
+    [jobId,terminalAt,event],
+  );
+  return Number(rowCount||0);
+}
 export async function ensureAdminChat(){
   const {rows}=await requirePool().query("INSERT INTO chat_conversations(id,kind,job_id,status,title) VALUES(gen_random_uuid(),'ADMIN',NULL,'OPEN','HOPE Admin Room') ON CONFLICT DO NOTHING RETURNING *");
   if(rows[0])return conversationFromRow(rows[0]);
