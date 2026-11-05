@@ -1,4 +1,4 @@
-import { closeJobChatForJob } from './human_chat.js';
+
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
@@ -239,7 +239,8 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
     const breakdown = { baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount || payment.amount), employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee || 0), workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee || 0), platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee || 0), employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge || payment.amount), providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout || payment.amount), currency:payment.currency || config.paymentCurrency, policyVersion:payment.fee_policy_version || 'legacy', kind:'JOB' };
     await client.query(`UPDATE payments SET status='RELEASED',updated_at=NOW() WHERE id=$1`, [paymentId]);
     await client.query(`UPDATE jobs SET status='SETTLED',updated_at=NOW() WHERE id=$1`, [jobId]);
-    await closeJobChatForJob(jobId, client);
+    // Keep JOB chat open during the post-completion support window.
+    // The retention dry-run/scheduler closes it only after 30 days and hold checks.
     if (config.paymentProvider === 'internal') {
       if (breakdown.currency !== 'TOMAN') {
         const e = new Error('INTERNAL_CURRENCY_MISMATCH'); e.code = 'INTERNAL_CURRENCY_MISMATCH'; throw e;
