@@ -25,6 +25,7 @@ const PRIMARY_ADMIN = Object.freeze({
   sessionJti:'retention-primary-session-jti',
 });
 
+const CONVERSATION_ID = '00000000-0000-4000-8000-000000000001';
 const HOLD_ID = '00000000-0000-4000-8000-000000000002';
 
 const EMPTY_PLAN = Object.freeze({
@@ -69,7 +70,7 @@ function makeHarness({user=OPS_ADMIN,verified=true,plan=EMPTY_PLAN}={}) {
       calls.push(['release-hold',input]);
       return {
         id:input.holdId,
-        conversationId:'conversation-1',
+        conversationId:'00000000-0000-4000-8000-000000000001',
         releasedBy:input.releasedBy,
         releaseReason:input.releaseReason,
         releasedAt:'2026-11-06T00:00:00.000Z',
@@ -132,7 +133,7 @@ test('operational administrators cannot create or release privacy holds',async()
   const h=makeHarness();
   await assert.rejects(
     h.invoke('POST',['admin','privacy','chat-retention','holds'],{
-      conversationId:'conversation-1',holdKind:'LEGAL',reason:'Preserve dispute evidence',
+      conversationId:'00000000-0000-4000-8000-000000000001',holdKind:'LEGAL',reason:'Preserve dispute evidence',
     }),
     (error)=>error?.status===403&&error?.code==='ADMIN_PERMISSION_DENIED',
   );
@@ -149,14 +150,14 @@ test('operational administrators cannot create or release privacy holds',async()
 test('primary admin can create and release legal holds with WRITE step-up and audited reasons',async()=>{
   const h=makeHarness({user:PRIMARY_ADMIN});
   const created=await h.invoke('POST',['admin','privacy','chat-retention','holds'],{
-    conversationId:'conversation-1',
+    conversationId:'00000000-0000-4000-8000-000000000001',
     holdKind:'LEGAL',
     reason:'Preserve evidence for an open dispute',
   });
   assert.equal(created.status,201);
   assert.equal(created.data.id,HOLD_ID);
   assert.deepEqual(h.calls[0],['create-hold',{
-    conversationId:'conversation-1',
+    conversationId:'00000000-0000-4000-8000-000000000001',
     holdKind:'LEGAL',
     reason:'Preserve evidence for an open dispute',
     createdBy:PRIMARY_ADMIN.id,
