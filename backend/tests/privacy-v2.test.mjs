@@ -570,8 +570,8 @@ test('account deletion preserves shared trust and satisfaction records while ano
   assert.doesNotMatch(deletion, /DELETE FROM job_satisfaction_feedback WHERE user_id=\$1/);
 
   const migration = readFileSync(path.join(ROOT, 'src/db/migrations/047_privacy_shared_record_anonymization.js'), 'utf8');
-  assert.match(migration, /ALTER TABLE trust_reports\\s+ALTER COLUMN reporter_id DROP NOT NULL/);
-  assert.match(migration, /ALTER TABLE job_satisfaction_feedback\\s+ALTER COLUMN user_id DROP NOT NULL/);
+  assert.match(migration, /ALTER TABLE trust_reports\s+ALTER COLUMN reporter_id DROP NOT NULL/);
+  assert.match(migration, /ALTER TABLE job_satisfaction_feedback\s+ALTER COLUMN user_id DROP NOT NULL/);
 
   const legacy = readFileSync(path.join(ROOT, 'src/application/legacy/account_legacy.js'), 'utf8');
   const legacyDeletion = legacy.slice(legacy.indexOf('async deleteUserPrivacyBundle'));
