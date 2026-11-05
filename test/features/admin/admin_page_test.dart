@@ -27,6 +27,7 @@ class _FakeAdmin implements AdminRepository {
   Completer<List<HopeAdminUser>>? usersGate;
   final bool primaryAdmin;
   bool mfaEnabled;
+  bool failMfaStatus = false;
   final List<Map<String, dynamic>> verificationRequests = [];
 
   /// When true the next state-mutating action throws (error-path coverage).
@@ -139,11 +140,14 @@ class _FakeAdmin implements AdminRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> getAdminMfaStatus() async => {
+  Future<Map<String, dynamic>> getAdminMfaStatus() async {
+    if (failMfaStatus) throw Exception('MFA status unavailable');
+    return {
         'enabled': mfaEnabled,
         'enrollmentPending': false,
         'recoveryCodesRemaining': mfaEnabled ? 10 : 0,
       };
+  }
 
   @override
   Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async => {
@@ -356,10 +360,8 @@ void main() {
   });
 
   testWidgets('admin access fails closed when MFA status cannot be fetched', (tester) async {
-    final repo = _FakeAdmin()..failSummary = true;
-    // Override only the MFA status operation for this scenario.
-    final failing = _MfaStatusFailureAdmin(repo);
-    await _pumpAdminAccess(tester, failing);
+    final repo = _FakeAdmin()..failMfaStatus = true;
+    await _pumpAdminAccess(tester, repo);
     expect(find.textContaining('Two-factor status could not be verified'), findsOneWidget);
     expect(find.text('Verify password and second factor'), findsNothing);
   });
