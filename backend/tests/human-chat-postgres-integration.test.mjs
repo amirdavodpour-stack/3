@@ -1454,7 +1454,7 @@ test('duplicate state callback after the transition is already reflected is igno
   assert.equal(cases.length, 0);
 });
 
-test('direct payment-release webhook closes job chat in the same settlement transaction', { skip: !enabled }, async () => {
+test('direct payment-release webhook preserves job chat until explicit closure', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const { paymentId, providerRef } = await createWebhookMismatchPayment('RELEASE_PENDING', 'release-closes-chat');
   const { rows: payments } = await pool.query(
@@ -1503,8 +1503,8 @@ test('direct payment-release webhook closes job chat in the same settlement tran
     const { rows: settledPayments } = await pool.query('SELECT status FROM payments WHERE id=$1', [paymentId]);
     assert.equal(settledPayments[0].status, 'RELEASED');
     const { rows: chats } = await pool.query('SELECT status FROM chat_conversations WHERE id=$1', [conversations[0].id]);
-    assert.equal(chats[0].status, 'CLOSED',
-      'direct webhook settlement must preserve the same close-chat invariant as the outbox path');
+    assert.equal(chats[0].status, 'OPEN',
+      'payment settlement must not close a shared job chat without an explicit policy or authorized action');
   } finally {
     appConfig.paymentProvider = previousProvider;
   }
@@ -1778,8 +1778,9 @@ test('external payment-refund webhook preserves fractional USD in one canonical 
       [jobId],
     );
     assert.equal(conversations.length, 1);
-    assert.equal(conversations[0].status, 'CLOSED');
-    assert.ok(conversations[0].closed_at, 'webhook refund must close the active job chat atomically');
+    assert.equal(conversations[0].status, 'OPEN');
+    assert.equal(conversations[0].closed_at, null,
+      'payment refund must preserve the shared job chat until an explicit policy or authorized action closes it');
 
     const { rows: journals } = await pool.query(
       `SELECT journal_id,COUNT(*)::int AS entries,
