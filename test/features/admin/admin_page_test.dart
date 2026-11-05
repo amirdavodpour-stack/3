@@ -28,6 +28,7 @@ class _FakeAdmin implements AdminRepository {
   final bool primaryAdmin;
   bool mfaEnabled;
   bool failMfaStatus = false;
+  bool failVerificationAfterCapture = false;
   final List<Map<String, dynamic>> verificationRequests = [];
 
   /// When true the next state-mutating action throws (error-path coverage).
@@ -209,6 +210,7 @@ class _FakeAdmin implements AdminRepository {
       'name': name, 'username': username, 'password': password, 'idToken': idToken,
       'totpCode': totpCode, 'recoveryCode': recoveryCode, 'scope': scope,
     });
+    if (failVerificationAfterCapture) throw Exception('test stops before navigation');
     return {'verified': true, 'scope': scope};
   }
   @override Future<void> lockPanel() async {}
@@ -343,7 +345,7 @@ void main() {
   });
 
   testWidgets('admin unlock sends the chosen MFA factor and selected READ scope', (tester) async {
-    final repo = _FakeAdmin(mfaEnabled: true);
+    final repo = _FakeAdmin(mfaEnabled: true)..failVerificationAfterCapture = true;
     await _pumpAdminAccess(tester, repo);
     await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin name'), 'Operations Admin');
     await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin username'), 'hope-admin');
