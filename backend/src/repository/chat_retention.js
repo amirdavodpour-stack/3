@@ -1,4 +1,5 @@
 import { requirePool } from './context.js';
+import { withSqlTransaction } from '../db.js';
 
 const SUPPORT_WINDOW_DAYS = 30;
 const CONTENT_RETENTION_MONTHS = 24;
@@ -222,4 +223,124 @@ export async function buildChatRetentionDryRun({
   } finally {
     client.release();
   }
+}
+
+
+const CHAT_RETENTION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function legalHoldView(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    holdKind: row.hold_kind,
+    reason: row.reason,
+    createdBy: row.created_by,
+    createdAt: iso(row.created_at),
+    releasedBy: row.released_by,
+    releasedAt: iso(row.released_at),
+    releaseReason: row.release_reason,
+  };
+}
+
+/**
+ * Create a durable preservation hold on a JOB conversation.
+ * Lock order is conversation first, then its hold rows; future close/purge
+ * workers must use the same order before making any retention transition.
+ */
+export async function createChatConversationLegalHold({
+  conversationId,
+  holdKind,
+  reason,
+  createdBy,
+} = {}) {
+  const id = String(conversationId ?? '').trim();
+  const kind = String(holdKind ?? '').trim().toUpperCase();
+  const why = String(reason ?? '').trim();
+  const actor = String(createdBy ?? '').trim();
+  if (!CHAT_RETENTION_UUID.test(id)) throw new TypeError('conversationId must be a UUID');
+  if (!['LEGAL','ADMIN'].includes(kind)) throw new TypeError('holdKind must be LEGAL or ADMIN');
+  if (!why || why.length > 1000) throw new TypeError('reason must contain between 1 and 1000 characters');
+  if (!CHAT_RETENTION_UUID.test(actor)) throw new TypeError('createdBy must be a UUID');
+
+  return withSqlTransaction(async (client) => {
+    const { rows: conversations } = await client.query(
+      `SELECT id FROM chat_conversations
+        WHERE id=$1 AND kind='JOB'
+        FOR UPDATE`,
+      [id],
+    );
+    if (!conversations[0]) return null;
+
+    const { rows } = await client.query(
+      `INSERT INTO chat_conversation_legal_holds(
+         id,conversation_id,hold_kind,reason,created_by
+       )
+       VALUES(gen_random_uuid(),$1,$2,$3,$4)
+       RETURNING *`,
+      [id,kind,why,actor],
+    );
+    return legalHoldView(rows[0]);
+  });
+}
+
+/**
+ * Release a preservation hold with an auditable actor and reason.
+ * The initial lookup is deliberately unlocked; the transaction then locks
+ * conversation -> hold, matching creation and future lifecycle workers.
+ */
+export async function releaseChatConversationLegalHold({
+  holdId,
+  releasedBy,
+  releaseReason,
+} = {}) {
+  const id = String(holdId ?? '').trim();
+  const actor = String(releasedBy ?? '').trim();
+  const why = String(releaseReason ?? '').trim();
+  if (!CHAT_RETENTION_UUID.test(id)) throw new TypeError('holdId must be a UUID');
+  if (!CHAT_RETENTION_UUID.test(actor)) throw new TypeError('releasedBy must be a UUID');
+  if (!why || why.length > 1000) throw new TypeError('releaseReason must contain between 1 and 1000 characters');
+
+  return withSqlTransaction(async (client) => {
+    const { rows: references } = await client.query(
+      'SELECT conversation_id FROM chat_conversation_legal_holds WHERE id=$1',
+      [id],
+    );
+    const conversationId = references[0]?.conversation_id;
+    if (!conversationId) return null;
+
+    const { rows: conversations } = await client.query(
+      `SELECT id FROM chat_conversations
+        WHERE id=$1 AND kind='JOB'
+        FOR UPDATE`,
+      [conversationId],
+    );
+    if (!conversations[0]) return null;
+
+    const { rows: holds } = await client.query(
+      `SELECT * FROM chat_conversation_legal_holds
+        WHERE id=$1 AND conversation_id=$2
+        FOR UPDATE`,
+      [id,conversationId],
+    );
+    const hold = holds[0];
+    if (!hold) return null;
+    if (hold.released_at) {
+      const error = new Error('CHAT_LEGAL_HOLD_ALREADY_RELEASED');
+      error.code = 'CHAT_LEGAL_HOLD_ALREADY_RELEASED';
+      error.status = 409;
+      throw error;
+    }
+
+    const { rows } = await client.query(
+      `UPDATE chat_conversation_legal_holds
+          SET released_by=$2,
+              released_at=NOW(),
+              release_reason=$3
+        WHERE id=$1 AND released_at IS NULL
+        RETURNING *`,
+      [id,actor,why],
+    );
+    return legalHoldView(rows[0]);
+  });
 }
