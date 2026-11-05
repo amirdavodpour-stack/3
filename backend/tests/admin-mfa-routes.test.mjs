@@ -94,7 +94,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
       },
       setAdminPanelVerified: async (...args) => {
         accessVerification = args;
-        return { verifiedAt: new Date(now).toISOString() };
+        return { verifiedAt: new Date(clock).toISOString() };
       },
       isAdminPanelVerified: async () => true,
       clearAdminPanelVerification: async () => true,
