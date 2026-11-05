@@ -34,8 +34,26 @@ export async function getAdminUser(id) {
 }
 export async function setUserStatus(id,status) {
   return withSqlTransaction(async (client) => {
+    const { rows: current } = await client.query(
+      `SELECT status FROM users WHERE id=$1 FOR UPDATE`,
+      [id],
+    );
+    if (!current[0]) return null;
+    if (current[0].status === 'DELETED') {
+      const error = new Error('ACCOUNT_DELETION_TERMINAL');
+      error.code = 'ACCOUNT_DELETION_TERMINAL';
+      error.status = 409;
+      throw error;
+    }
     const { rows } = await client.query(
-      `UPDATE users SET status=$2, session_version=session_version+1, admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING ${userSelect}`,
+      `UPDATE users
+          SET status=$2,
+              session_version=session_version+1,
+              admin_panel_verified_at=NULL,
+              admin_panel_verified_session_jti=NULL,
+              admin_panel_verified_scope=NULL
+        WHERE id=$1 AND status <> 'DELETED'
+        RETURNING ${userSelect}`,
       [id,status],
     );
     if (!rows[0]) return null;
