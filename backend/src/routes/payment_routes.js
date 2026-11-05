@@ -53,7 +53,9 @@ export function createPaymentRoutes({
     if (!relatedJob(me.id, job)) {
       const admin = requireAdmin(me);
       assertAdminPermission(admin, ADMIN_PERMISSIONS.VIEW_FINANCE);
-      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(admin.id, config?.adminPanelVerificationMinutes ?? 15, admin.sessionJti))) {
+      if ((process.env.DATABASE_URL || config?.adminMfaRequired) && !(await (config?.adminMfaRequired
+        ? repo.isAdminPanelVerified(admin.id, config?.adminPanelReadVerificationMinutes ?? 15, admin.sessionJti, 'READ')
+        : repo.isAdminPanelVerified(admin.id, config?.adminPanelVerificationMinutes ?? 15, admin.sessionJti)))) {
         throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
       }
     }
