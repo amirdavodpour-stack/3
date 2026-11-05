@@ -80,7 +80,10 @@ abstract interface class AdminRepository {
   Future<Map<String, dynamic>> getFunnel({int days = 30});
   Future<Map<String, dynamic>> getCrashSummary({int days = 30});
   Future<Map<String, dynamic>> getPanelAccess();
-  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken});
+  Future<Map<String, dynamic>> getAdminMfaStatus();
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken});
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code);
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'});
   Future<void> lockPanel();
   Future<List<Map<String, dynamic>>> listDisputes();
   Future<Map<String, dynamic>> getDispute(String id);
@@ -185,7 +188,27 @@ class ApiAdminRepository implements AdminRepository {
       Map<String, dynamic>.from(await _api.request('GET', '/admin/access', auth: true) as Map);
 
   @override
-  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken}) async =>
+  Future<Map<String, dynamic>> getAdminMfaStatus() async =>
+      Map<String, dynamic>.from(await _api.request('GET', '/admin/access/mfa', auth: true) as Map);
+
+  @override
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access/mfa/setup', auth: true, body: {
+        'name': name,
+        'username': username,
+        if (password != null) 'password': password,
+        if (idToken != null) 'idToken': idToken,
+        if (totpCode != null) 'totpCode': totpCode.trim(),
+        if (recoveryCode != null) 'recoveryCode': recoveryCode.trim(),
+        'scope': scope,
+      }) as Map);
+
+  @override
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access/mfa/confirm', auth: true, body: {'code': code.trim()}) as Map);
+
+  @override
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async =>
       Map<String, dynamic>.from(await _api.request('POST', '/admin/access', auth: true, body: {
         'name': name,
         'username': username,
