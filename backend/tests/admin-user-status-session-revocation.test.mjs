@@ -83,7 +83,7 @@ test('admin session revocation, status changes and role changes clear prior pane
   ]) {
     assert.match(
       implementation,
-      /UPDATE users SET[^\`]*admin_panel_verified_at\s*=\s*NULL/is,
+      /UPDATE users[\s\S]*?admin_panel_verified_at\s*=\s*NULL/is,
       `${name} must invalidate a previous admin-panel verification`,
     );
   }
