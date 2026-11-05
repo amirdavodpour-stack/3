@@ -68,5 +68,5 @@ test('admin panel unlock requires one recent step-up proof and independent accou
   assert.ok(page.includes('obscureText: true'));
   assert.ok(page.includes('GoogleSignInService'));
   assert.ok(page.includes('.authenticate()'));
-  assert.ok(repository.includes('verifyPanelAccess(String name, String username, {String? password, String? idToken})'));
+  assert.ok(repository.includes('verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = \'WRITE\'})'));
 });
