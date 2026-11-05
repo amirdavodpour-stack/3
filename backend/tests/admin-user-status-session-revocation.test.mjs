@@ -43,10 +43,6 @@ const legacyAccountRepositorySource = fs.readFileSync(
   path.resolve(import.meta.dirname, '../src/application/legacy/account_legacy.js'),
   'utf8',
 );
-const adminRoutesSource = fs.readFileSync(
-  path.resolve(import.meta.dirname, '../src/routes/admin_routes.js'),
-  'utf8',
-);
 
 function functionSource(source, name, nextName) {
   const start = source.indexOf(`export async function ${name}(`);
