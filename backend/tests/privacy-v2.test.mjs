@@ -560,6 +560,25 @@ test('PostgreSQL privacy export bounds every high-volume financial query to the 
 });
 
 
+test('account deletion preserves shared trust and satisfaction records while anonymizing their authors', () => {
+  const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
+  const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion, /UPDATE trust_reports SET reporter_id=NULL, reporter_deleted_at=NOW\(\) WHERE reporter_id=\$1/);
+  assert.doesNotMatch(deletion, /DELETE FROM trust_reports WHERE reporter_id=\$1/);
+  assert.match(deletion, /UPDATE job_satisfaction_feedback SET user_id=NULL, author_deleted_at=NOW\(\)/);
+  assert.match(deletion, /report_text='',\s*ai_summary='',\s*ai_satisfaction_score=0/);
+  assert.doesNotMatch(deletion, /DELETE FROM job_satisfaction_feedback WHERE user_id=\$1/);
+
+  const migration = readFileSync(path.join(ROOT, 'src/db/migrations/047_privacy_shared_record_anonymization.js'), 'utf8');
+  assert.match(migration, /ALTER TABLE trust_reports ALTER COLUMN reporter_id DROP NOT NULL/);
+  assert.match(migration, /ALTER TABLE job_satisfaction_feedback ALTER COLUMN user_id DROP NOT NULL/);
+
+  const legacy = readFileSync(path.join(ROOT, 'src/application/legacy/account_legacy.js'), 'utf8');
+  const legacyDeletion = legacy.slice(legacy.indexOf('async deleteUserPrivacyBundle'));
+  assert.match(legacyDeletion, /reporterId\s*=\s*null/);
+  assert.match(legacyDeletion, /'trustReports'/);
+});
+
 test('account deletion releases the Google identity subject in PostgreSQL and legacy adapters', () => {
   const repository = readFileSync(path.join(ROOT, 'src/repository/privacy.js'), 'utf8');
   const deletion = repository.slice(repository.indexOf('export async function deleteUserPrivacyBundle'));
