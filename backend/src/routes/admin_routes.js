@@ -15,13 +15,13 @@ function isLegacyAdminPanelVerified(userId, sessionJti, requiredScope = 'READ') 
 }
 
 export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
-  async function enforceAuthRateLimits(req, userId) {
+  async function enforceAuthRateLimits(req, me) {
     if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function') {
       throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
     }
     const [ipAllowed,accountAllowed] = await Promise.all([
       rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs),
-      rateLimitAuthAccount(`admin-panel:${userId}`, config.authRateLimitMax, config.rateLimitWindowMs),
+      rateLimitAuthAccount(`admin-panel:${me.id}`, config.authRateLimitMax, config.rateLimitWindowMs),
     ]);
     if (!ipAllowed || !accountAllowed) throw new HttpError(429,'RATE_LIMITED','Too many authentication requests');
   }
@@ -29,7 +29,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
   async function verifyPrimaryFactor(me, body, req) {
     const sessionJti = String(me.sessionJti || '').trim();
     if (!sessionJti) throw new HttpError(401,'UNAUTHORIZED','Authentication required');
-    await enforceAuthRateLimits(req, me.id);
+    await enforceAuthRateLimits(req, me);
     verifyAdminPanelCredentials({
       user: me,
       name: body?.name,
@@ -135,7 +135,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='confirm' && parts.length===4) {
       const body=await readBody(req);
-      await enforceAuthRateLimits(req,me.id);
+      await enforceAuthRateLimits(req,me);
       const credential=await repo.getAdminMfaCredential(me.id);
       const expiresAt=credential?.pendingExpiresAt ? new Date(credential.pendingExpiresAt).getTime() : Number.NaN;
       if (!credential?.pendingSecretCiphertext || !Number.isFinite(expiresAt) || expiresAt<=Date.now()) {
@@ -161,7 +161,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified = config.adminMfaRequired
         ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes, me.sessionJti, 'READ')
         : process.env.DATABASE_URL
-          ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes ?? 15, me.sessionJti)
+          ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes, me.sessionJti)
           : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
       return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes});
     }
