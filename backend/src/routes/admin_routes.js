@@ -1,118 +1,209 @@
 import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminPermissions, isPrimaryAdmin, isPrimaryAdminEmail, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
+import { buildTotpUri, decryptTotpSecret, encryptTotpSecret, generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, verifyTotpCode } from '../security/admin_mfa.js';
 
 const legacyVerifiedAdmins = new Map();
 
-function isLegacyAdminPanelVerified(userId, sessionJti) {
+function isLegacyAdminPanelVerified(userId, sessionJti, requiredScope = 'READ') {
   const verification = legacyVerifiedAdmins.get(userId);
   if (!verification || verification.expiresAt <= Date.now()) {
     legacyVerifiedAdmins.delete(userId);
     return false;
   }
-  return Boolean(sessionJti && verification.sessionJti === sessionJti);
+  const required = String(requiredScope || 'READ').toUpperCase();
+  const stored = String(verification.scope || 'READ').toUpperCase();
+  return Boolean(sessionJti && verification.sessionJti === sessionJti && (required === 'READ' ? ['READ','WRITE'].includes(stored) : required === 'WRITE' && stored === 'WRITE'));
 }
 
 export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
+export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
+  async function enforceAuthRateLimits(req, userId) {
+    if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function') {
+      throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
+    }
+    const [ipAllowed,accountAllowed] = await Promise.all([
+      rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs),
+      rateLimitAuthAccount(`admin-panel:${userId}`, config.authRateLimitMax, config.rateLimitWindowMs),
+    ]);
+    if (!ipAllowed || !accountAllowed) throw new HttpError(429,'RATE_LIMITED','Too many authentication requests');
+  }
+
+  async function verifyPrimaryFactor(me, body, req) {
+    const sessionJti = String(me.sessionJti || '').trim();
+    if (!sessionJti) throw new HttpError(401,'UNAUTHORIZED','Authentication required');
+    await enforceAuthRateLimits(req, me.id);
+    verifyAdminPanelCredentials({
+      user: me,
+      name: body?.name,
+      username: body?.username,
+      expectedUsername: config.adminPanelUsername,
+      expectedEmail: isPrimaryAdminEmail(me.email) ? config.adminPanelAllowedEmail : undefined,
+    });
+    const password = typeof body?.password === 'string' ? body.password : '';
+    const idToken = typeof body?.idToken === 'string' ? body.idToken : '';
+    const hasPassword = password.length > 0;
+    const hasGoogle = idToken.length > 0;
+    if (hasPassword === hasGoogle) throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+
+    if (hasPassword) {
+      if (password.length > PASSWORD_MAX_LENGTH) throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+      const passwordOk = await verifyPassword(password, me.passwordHash || DUMMY_PASSWORD_HASH);
+      if (!me.passwordHash || !passwordOk) throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+      return 'password';
+    }
+
+    if (!config.googleAuthEnabled || !config.googleOAuthClientId || !String(me.googleSubject || '').trim()) {
+      throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+    }
+    let identity;
+    try { identity = await verifyGoogleIdToken(idToken, config.googleOAuthClientId); }
+    catch { throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed'); }
+    const issuedAt = Number(identity?.issuedAt);
+    const tokenAgeMs = Date.now() - issuedAt * 1000;
+    const identityEmail = String(identity?.email || '').trim().toLowerCase();
+    const accountEmail = String(me.email || '').trim().toLowerCase();
+    if (
+      !identity?.subject ||
+      identity.subject !== me.googleSubject ||
+      !identityEmail ||
+      identityEmail !== accountEmail ||
+      !Number.isSafeInteger(issuedAt) ||
+      issuedAt <= 0 ||
+      tokenAgeMs < -30_000 ||
+      tokenAgeMs > 5 * 60 * 1000
+    ) throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
+    return 'google';
+  }
+
+  async function verifyAdminMfa(me, body) {
+    if (!config.adminMfaRequired) return { method:'not_required' };
+    if (typeof repo.getAdminMfaCredential !== 'function') {
+      throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA is unavailable');
+    }
+    const credential = await repo.getAdminMfaCredential(me.id);
+    if (!credential?.enrolledAt || !credential.secretCiphertext) {
+      throw new HttpError(403,'ADMIN_MFA_ENROLLMENT_REQUIRED','Enroll an authenticator before opening the administrator panel');
+    }
+    const totpCode = typeof body?.totpCode === 'string' ? body.totpCode.trim() : '';
+    const recoveryCode = typeof body?.recoveryCode === 'string' ? body.recoveryCode.trim() : '';
+    if (Boolean(totpCode) === Boolean(recoveryCode)) {
+      throw new HttpError(401,'ADMIN_MFA_REQUIRED','Enter exactly one authenticator code or recovery code');
+    }
+    if (totpCode) {
+      let secret;
+      try { secret = decryptTotpSecret(credential.secretCiphertext, config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA secret could not be opened'); }
+      const nowMs = Date.parse(typeof now === 'function' ? now() : new Date().toISOString());
+      const verified = verifyTotpCode(secret, totpCode, Number.isFinite(nowMs) ? nowMs : Date.now(), {
+        lastAcceptedCounter: Number(credential.lastTotpCounter ?? -1),
+      });
+      if (!verified.valid || !(await repo.consumeAdminTotpCounter(me.id, verified.counter))) {
+        throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
+      }
+      return { method:'totp' };
+    }
+    let recoveryHash;
+    try { recoveryHash = hashRecoveryCode(recoveryCode); }
+    catch { throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used'); }
+    const consumed = await repo.consumeAdminRecoveryCode(me.id, recoveryHash);
+    if (!consumed) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used');
+    return { method:'recovery_code' };
+  }
+
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
+    if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts.length===3) {
+      const status = config.adminMfaRequired && typeof repo.getAdminMfaStatus === 'function'
+        ? await repo.getAdminMfaStatus(me.id)
+        : { enabled:false, enrollmentPending:false, recoveryCodesRemaining:0 };
+      return sendJson(res,200,status);
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='setup' && parts.length===4) {
+      const body=await readBody(req);
+      await verifyPrimaryFactor(me,body,req);
+      if (!config.adminMfaEncryptionKey || Buffer.byteLength(config.adminMfaEncryptionKey,'utf8') < 32) {
+        throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA encryption is not configured');
+      }
+      const existing = await repo.getAdminMfaStatus(me.id);
+      if (existing?.enabled) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
+      const secret = generateTotpSecret();
+      const encrypted = encryptTotpSecret(secret,config.adminMfaEncryptionKey);
+      const minutes = config.adminMfaEnrollmentMinutes ?? 10;
+      const expiresAt = new Date(Date.now()+minutes*60000).toISOString();
+      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt);
+      if (!created) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
+      await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
+      return sendJson(res,200,{pending:true,secret,otpauthUri:buildTotpUri({secret,email:me.email}),expiresInMinutes:minutes});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='confirm' && parts.length===4) {
+      const body=await readBody(req);
+      await enforceAuthRateLimits(req,me.id);
+      const credential=await repo.getAdminMfaCredential(me.id);
+      const expiresAt=credential?.pendingExpiresAt ? new Date(credential.pendingExpiresAt).getTime() : Number.NaN;
+      if (!credential?.pendingSecretCiphertext || !Number.isFinite(expiresAt) || expiresAt<=Date.now()) {
+        throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
+      }
+      let secret;
+      try { secret=decryptTotpSecret(credential.pendingSecretCiphertext,config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA secret could not be opened'); }
+      const nowMs=Date.parse(typeof now==='function'?now():new Date().toISOString());
+      const verified=verifyTotpCode(secret,body?.code,Number.isFinite(nowMs)?nowMs:Date.now());
+      if (!verified.valid) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid');
+      const recovery=generateRecoveryCodes(10);
+      const completed=await repo.completeAdminMfaEnrollment(me.id,{
+        secretCiphertext:credential.pendingSecretCiphertext,
+        recoveryCodeHashes:recovery.hashes,
+        lastTotpCounter:verified.counter,
+      });
+      if (!completed) throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
+      await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
+      return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes});
+    }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
-      const verified = process.env.DATABASE_URL
-        ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes, me.sessionJti)
-        : isLegacyAdminPanelVerified(me.id, me.sessionJti);
-      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelVerificationMinutes});
+      const verified = config.adminMfaRequired || process.env.DATABASE_URL
+        ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes, me.sessionJti, 'READ')
+        : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
+      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
-      const sessionJti = String(me.sessionJti || '').trim();
+      const sessionJti=String(me.sessionJti||'').trim();
       if (!sessionJti) throw new HttpError(401,'UNAUTHORIZED','Authentication required');
-      if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function' ||
-          typeof verifyPassword !== 'function' || typeof verifyGoogleIdToken !== 'function') {
-        throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
-      }
-      const [ipAllowed,accountAllowed] = await Promise.all([
-        rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs),
-        rateLimitAuthAccount(`admin-panel:${me.id}`, config.authRateLimitMax, config.rateLimitWindowMs),
-      ]);
-      if (!ipAllowed || !accountAllowed) {
-        throw new HttpError(429,'RATE_LIMITED','Too many authentication requests');
-      }
-
-      verifyAdminPanelCredentials({
-        user: me,
-        name: body?.name,
-        username: body?.username,
-        expectedUsername: config.adminPanelUsername,
-        expectedEmail: isPrimaryAdminEmail(me.email) ? config.adminPanelAllowedEmail : undefined,
-      });
-
-      const password = typeof body?.password === 'string' ? body.password : '';
-      const idToken = typeof body?.idToken === 'string' ? body.idToken : '';
-      const hasPassword = password.length > 0;
-      const hasGoogle = idToken.length > 0;
-      if (hasPassword === hasGoogle) {
-        throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-      }
-
-      let method;
-      if (hasPassword) {
-        if (password.length > PASSWORD_MAX_LENGTH) {
-          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-        }
-        const passwordOk = await verifyPassword(password, me.passwordHash || DUMMY_PASSWORD_HASH);
-        if (!me.passwordHash || !passwordOk) {
-          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-        }
-        method = 'password';
-      } else {
-        if (!config.googleAuthEnabled || !config.googleOAuthClientId || !String(me.googleSubject || '').trim()) {
-          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-        }
-        let identity;
-        try {
-          identity = await verifyGoogleIdToken(idToken, config.googleOAuthClientId);
-        } catch {
-          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-        }
-        const issuedAt = Number(identity?.issuedAt);
-        const tokenAgeMs = Date.now() - issuedAt * 1000;
-        const identityEmail = String(identity?.email || '').trim().toLowerCase();
-        const accountEmail = String(me.email || '').trim().toLowerCase();
-        if (
-          !identity?.subject ||
-          identity.subject !== me.googleSubject ||
-          !identityEmail ||
-          identityEmail !== accountEmail ||
-          !Number.isSafeInteger(issuedAt) ||
-          issuedAt <= 0 ||
-          tokenAgeMs < -30_000 ||
-          tokenAgeMs > 5 * 60 * 1000
-        ) {
-          throw new HttpError(401,'ADMIN_REAUTH_FAILED','Admin panel reauthentication failed');
-        }
-        method = 'google';
-      }
-
-      if (process.env.DATABASE_URL) {
-        const verified = await repo.setAdminPanelVerified(me.id, sessionJti);
+      const primaryMethod=await verifyPrimaryFactor(me,body,req);
+      const mfa=await verifyAdminMfa(me,body);
+      const scope=String(body?.scope||'WRITE').trim().toUpperCase();
+      if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
+      if (process.env.DATABASE_URL || config.adminMfaRequired) {
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else {
-        legacyVerifiedAdmins.set(me.id, {
-          expiresAt: Date.now() + config.adminPanelVerificationMinutes * 60000,
+        legacyVerifiedAdmins.set(me.id,{
+          expiresAt:Date.now()+(scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15))*60000,
           sessionJti,
+          scope,
         });
       }
-      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{expiresInMinutes:config.adminPanelVerificationMinutes,method});
-      return sendJson(res,200,{verified:true,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelVerificationMinutes});
+      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{
+        scope,
+        expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),
+        method:primaryMethod,
+        mfaMethod:mfa.method,
+      });
+      return sendJson(res,200,{verified:true,scope,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15)});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
-      if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id);
+      if (process.env.DATABASE_URL || config.adminMfaRequired) await repo.clearAdminPanelVerification(me.id);
       else legacyVerifiedAdmins.delete(me.id);
       await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
       return sendJson(res,200,{verified:false});
     }
-    if (process.env.DATABASE_URL) {
-      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes,me.sessionJti);
-      if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
-    } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti)) {
+    const requiredScope=req.method==='GET'?'READ':'WRITE';
+    const ttlMinutes=requiredScope==='WRITE'
+      ? (config.adminPanelWriteVerificationMinutes??5)
+      : (config.adminPanelReadVerificationMinutes??15);
+    if (process.env.DATABASE_URL || config.adminMfaRequired) {
+      const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
+      if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
+    } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='admins' && parts.length===2){
