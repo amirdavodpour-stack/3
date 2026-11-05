@@ -136,6 +136,25 @@ class _FakeAdmin implements AdminRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> getAdminMfaStatus() async => {
+        'enabled': true,
+        'recoveryCodesRemaining': 10,
+      };
+
+  @override
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async => {
+        'pending': true,
+        'secret': 'ABCDEFGHIJKLMNOPQRSTUV234567ABCD',
+        'otpauthUri': 'otpauth://totp/HOPEv2%3Aadmin%40example.test?secret=ABCDEFGHIJKLMNOPQRSTUV234567ABCD&issuer=HOPEv2',
+      };
+
+  @override
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async => {
+        'enabled': true,
+        'recoveryCodes': List<String>.generate(10, (index) => 'A' * 31 + index.toString()),
+      };
+
+  @override
   Future<Map<String, dynamic>> getPanelAccess() async => {
         'verified': true,
         'primaryAdmin': primaryAdmin,
@@ -174,7 +193,7 @@ class _FakeAdmin implements AdminRepository {
 
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async => const {};
-  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken}) async => const {'verified': true};
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async => const {'verified': true, 'scope': 'WRITE'};
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
   @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
