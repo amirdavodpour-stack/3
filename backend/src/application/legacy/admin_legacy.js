@@ -1,4 +1,5 @@
 import { config } from '../../config.js';
+import { randomUUID } from 'node:crypto';
 /** Explicit test-only admin adapter over the legacy in-memory DB facade. */
 export function createAdminLegacyAdapter({ db, findUser, now }) {
   return Object.freeze({
@@ -40,7 +41,17 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
         audit_events: db.collection.audit.length,
       };
     },
-    users: () => db.collection.users.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
+    users: () => db.collection.users.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).map((user) => {
+      const review = (db.collection.adminUserStatusReviewCases || [])
+        .filter((item) => item.userId === user.id && item.status === 'OPEN')
+        .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+      return {
+        ...user,
+        statusReviewCaseId: review?.id || null,
+        statusReviewReason: review?.reason || null,
+        statusReviewDueAt: review?.reviewDueAt || null,
+      };
+    }),
     getAdminUser(id) { return db.collection.users.find((x) => x.id === id) || null; },
     grantAdminByEmail(email, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);
@@ -57,7 +68,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
       db.touch('users');
       return target;
     },
-    setUserStatus(id, status) {
+    setUserStatus(id, status, { actorId, reason, reviewDueAt } = {}) {
       const user = db.collection.users.find((x) => x.id === id);
       if (!user) return null;
       if (user.status === 'DELETED') {
@@ -66,10 +77,48 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
         error.status = 409;
         throw error;
       }
+      if (String(reason || '').trim().length < 3 || String(reason || '').trim().length > 1000) {
+        const error = new Error('ADMIN_USER_STATUS_REASON_REQUIRED');
+        error.code = 'ADMIN_USER_STATUS_REASON_REQUIRED';
+        error.status = 400;
+        throw error;
+      }
+      const why = String(reason).trim();
+      const cases = db.collection.adminUserStatusReviewCases ||= [];
+      let reviewCaseId = null;
+      let due = null;
+      if (status === 'SUSPENDED') {
+        due = new Date(reviewDueAt);
+        const delta = due.getTime() - Date.now();
+        if (!Number.isFinite(due.getTime()) || delta < 60*60*1000 || delta > 7*24*60*60*1000) {
+          const error = new Error('INVALID_REVIEW_DEADLINE');
+          error.code = 'INVALID_REVIEW_DEADLINE';
+          error.status = 400;
+          throw error;
+        }
+        const review = {
+          id: randomUUID(), userId: id, status: 'OPEN', reason: why,
+          createdBy: actorId, createdAt: new Date().toISOString(),
+          reviewDueAt: due.toISOString(), resolvedBy: null,
+          resolvedAt: null, resolutionReason: null,
+        };
+        cases.push(review);
+        reviewCaseId = review.id;
+      } else {
+        const review = cases.find((item) => item.userId === id && item.status === 'OPEN');
+        if (review) {
+          review.status = 'RESOLVED';
+          review.resolvedBy = actorId;
+          review.resolvedAt = new Date().toISOString();
+          review.resolutionReason = why;
+          reviewCaseId = review.id;
+        }
+      }
       user.status = status;
       user.sessionVersion = Number(user.sessionVersion || 0) + 1;
       db.touch('users');
-      return user;
+      db.touch('adminUserStatusReviewCases');
+      return { ...user, reviewCaseId, reviewDueAt: due?.toISOString() || null };
     },
     revokeAdminById(id, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);

@@ -763,6 +763,10 @@ class _AdminPageState extends State<AdminPage>
             padding: const EdgeInsets.only(top: 14),
             children: list.take(100).map<Widget>((u) {
               final status = u.status;
+              final isEn = Localizations.localeOf(context).languageCode == 'en';
+              final reviewDetail = status == 'SUSPENDED' && u.statusReviewDueAt != null
+                  ? '\\n${isEn ? 'Human review due' : 'موعد بازبینی انسانی'}: ${u.statusReviewDueAt}\\n${u.statusReviewReason ?? ''}'
+                  : '';
               return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: PremiumPanel(
@@ -773,7 +777,7 @@ class _AdminPageState extends State<AdminPage>
                               child: Text(_initial(u.displayName))),
                           title: Text(u.displayName),
                           subtitle: Text(
-                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}'),
+                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}$reviewDetail'),
                           trailing: u.role == 'ADMIN'
                               ? null
                               : IconButton(
@@ -841,8 +845,72 @@ class _AdminPageState extends State<AdminPage>
   Future<void> _moderateJob(String id, String status) =>
       _runAction(() => _applicationRegistry(context).adminCommands.moderateJob(id, status));
 
-  Future<void> _setUserStatus(String id, String status) => _runAction(
-      () => _applicationRegistry(context).adminCommands.setUserStatus(id, status));
+  Future<void> _setUserStatus(String id, String status) async {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final isSuspending = status == 'SUSPENDED';
+    final reasonController = TextEditingController();
+    var canSubmit = false;
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(isSuspending
+              ? (isEn ? 'Temporarily suspend user?' : 'تعلیق موقت کاربر؟')
+              : (isEn ? 'Reactivate user?' : 'رفع تعلیق کاربر؟')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isSuspending
+                  ? (isEn
+                      ? 'A human review is due within 72 hours. The account will not be reactivated automatically.'
+                      : 'موعد بازبینی انسانی ۷۲ ساعت دیگر است. حساب به‌صورت خودکار فعال نمی‌شود.')
+                  : (isEn
+                      ? 'Enter the human review outcome and reason for lifting the suspension.'
+                      : 'نتیجه بازبینی انسانی و علت رفع تعلیق را وارد کنید.')),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 1000,
+                onChanged: (value) => setDialogState(() => canSubmit = value.trim().length >= 3),
+                decoration: InputDecoration(
+                  labelText: isEn ? 'Reason (required)' : 'علت (الزامی)',
+                  hintText: isEn
+                      ? 'Describe the risk or review decision'
+                      : 'ریسک یا تصمیم بازبینی را توضیح دهید',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(isEn ? 'Cancel' : 'انصراف'),
+            ),
+            FilledButton(
+              onPressed: canSubmit
+                  ? () => Navigator.pop(dialogContext, reasonController.text.trim())
+                  : null,
+              child: Text(isEn ? 'Confirm' : 'تأیید'),
+            ),
+          ],
+        ),
+      ),
+    );
+    reasonController.dispose();
+    if (!mounted || reason == null || reason.trim().length < 3) return;
+    final dueAt = isSuspending
+        ? DateTime.now().add(const Duration(hours: 72))
+        : null;
+    await _runAction(() => _applicationRegistry(context).adminCommands.setUserStatus(
+          id,
+          status,
+          reason: reason,
+          reviewDueAt: dueAt,
+        ));
+  }
 
   Future<void> _removeJob(String id) async {
     final isEn = Localizations.localeOf(context).languageCode == 'en';

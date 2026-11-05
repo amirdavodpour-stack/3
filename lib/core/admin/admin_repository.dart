@@ -20,13 +20,19 @@ class HopeAdminUser {
       required this.email,
       required this.role,
       required this.status,
-      this.primaryAdmin = false});
+      this.primaryAdmin = false,
+      this.statusReviewCaseId,
+      this.statusReviewReason,
+      this.statusReviewDueAt});
   final String id;
   final String displayName;
   final String email;
   final String role;
   final String status;
   final bool primaryAdmin;
+  final String? statusReviewCaseId;
+  final String? statusReviewReason;
+  final String? statusReviewDueAt;
   factory HopeAdminUser.fromMap(Map<String, dynamic> map) => HopeAdminUser(
         id: '${map['id'] ?? ''}',
         displayName: '${map['displayName'] ?? ''}',
@@ -34,6 +40,9 @@ class HopeAdminUser {
         role: '${map['role'] ?? 'USER'}',
         status: '${map['status'] ?? 'ACTIVE'}',
         primaryAdmin: map['primaryAdmin'] == true,
+        statusReviewCaseId: map['statusReviewCaseId']?.toString(),
+        statusReviewReason: map['statusReviewReason']?.toString(),
+        statusReviewDueAt: map['statusReviewDueAt']?.toString(),
       );
 }
 
@@ -66,7 +75,7 @@ abstract interface class AdminRepository {
   Future<void> forwardApplication(String id);
   Future<void> rejectApplication(String id);
   Future<void> moderateJob(String id, String status);
-  Future<void> setUserStatus(String id, String status);
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt});
   Future<Map<String, dynamic>> grantAdminByEmail(String email);
   Future<void> revokeAdministrator(String id);
   Future<void> revokeUserSessions(String id);
@@ -124,8 +133,12 @@ class ApiAdminRepository implements AdminRepository {
   Future<void> moderateJob(String id, String status) =>
       _post('/admin/jobs/$id/moderate', body: {'status': status});
   @override
-  Future<void> setUserStatus(String id, String status) =>
-      _post('/admin/users/$id/status', body: {'status': status});
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) =>
+      _post('/admin/users/$id/status', body: {
+        'status': status,
+        'reason': reason.trim(),
+        if (reviewDueAt != null) 'reviewDueAt': reviewDueAt.toUtc().toIso8601String(),
+      });
 
   @override
   Future<Map<String, dynamic>> grantAdminByEmail(String email) async =>
