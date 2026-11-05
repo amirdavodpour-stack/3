@@ -213,6 +213,106 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
+    if (req.method==='GET' && parts[0]==='admin' && parts[1]==='privacy' && parts[2]==='chat-retention' && parts[3]==='dry-run' && parts.length===4) {
+      assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_AUDIT);
+      if (typeof repo.buildChatRetentionDryRun !== 'function') {
+        throw new HttpError(503,'CHAT_RETENTION_UNAVAILABLE','Chat-retention assessment is unavailable');
+      }
+      const plan = await repo.buildChatRetentionDryRun({limit:200});
+      await createAudit(
+        'ADMIN_CHAT_RETENTION_DRY_RUN',
+        me.id,
+        'chat_retention',
+        'dry-run',
+        'Read-only retention eligibility assessment',
+        {
+          wouldMutate:plan?.wouldMutate === false,
+          scanned:Number(plan?.scanned || 0),
+          limit:Number(plan?.limit || 200),
+        },
+      );
+      return sendJson(res,200,plan);
+    }
+
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='privacy' && parts[2]==='chat-retention' && parts[3]==='holds' && parts.length===4) {
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
+      assertPrimaryAdmin(me);
+      const body=await readBody(req);
+      const conversationId=String(body?.conversationId || '').trim();
+      const holdKind=String(body?.holdKind || '').trim().toUpperCase();
+      const reason=String(body?.reason || '').trim();
+      const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(conversationId)) {
+        throw new HttpError(400,'INVALID_CONVERSATION_ID','conversationId must be a UUID');
+      }
+      if (!['LEGAL','ADMIN'].includes(holdKind)) {
+        throw new HttpError(400,'INVALID_HOLD_KIND','holdKind must be LEGAL or ADMIN');
+      }
+      if (!reason || reason.length>1000) {
+        throw new HttpError(400,'INVALID_HOLD_REASON','reason must contain between 1 and 1000 characters');
+      }
+      if (typeof repo.createChatConversationLegalHold !== 'function') {
+        throw new HttpError(503,'CHAT_RETENTION_UNAVAILABLE','Chat-retention legal holds are unavailable');
+      }
+      const hold=await repo.createChatConversationLegalHold({
+        conversationId,
+        holdKind,
+        reason,
+        createdBy:me.id,
+      });
+      if (!hold) throw new HttpError(404,'CHAT_CONVERSATION_NOT_FOUND','Job conversation not found');
+      await createAudit(
+        'ADMIN_CHAT_LEGAL_HOLD_CREATED',
+        me.id,
+        'chat_retention',
+        hold.id,
+        reason,
+        {conversationId,holdKind,reason},
+      );
+      return sendJson(res,201,hold);
+    }
+
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='privacy' && parts[2]==='chat-retention' && parts[3]==='holds' && parts[5]==='release' && parts.length===6) {
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
+      assertPrimaryAdmin(me);
+      const holdId=String(parts[4] || '').trim();
+      const body=await readBody(req);
+      const reason=String(body?.reason || '').trim();
+      const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(holdId)) {
+        throw new HttpError(400,'INVALID_HOLD_ID','holdId must be a UUID');
+      }
+      if (!reason || reason.length>1000) {
+        throw new HttpError(400,'INVALID_HOLD_RELEASE_REASON','release reason must contain between 1 and 1000 characters');
+      }
+      if (typeof repo.releaseChatConversationLegalHold !== 'function') {
+        throw new HttpError(503,'CHAT_RETENTION_UNAVAILABLE','Chat-retention legal holds are unavailable');
+      }
+      let hold;
+      try {
+        hold=await repo.releaseChatConversationLegalHold({
+          holdId,
+          releasedBy:me.id,
+          releaseReason:reason,
+        });
+      } catch (error) {
+        if (error?.code==='CHAT_LEGAL_HOLD_ALREADY_RELEASED') {
+          throw new HttpError(409,'CHAT_LEGAL_HOLD_ALREADY_RELEASED','Legal hold has already been released');
+        }
+        throw error;
+      }
+      if (!hold) throw new HttpError(404,'CHAT_LEGAL_HOLD_NOT_FOUND','Active legal hold not found');
+      await createAudit(
+        'ADMIN_CHAT_LEGAL_HOLD_RELEASED',
+        me.id,
+        'chat_retention',
+        hold.id,
+        reason,
+        {reason,conversationId:hold.conversationId},
+      );
+      return sendJson(res,200,hold);
+    }
+
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='admins' && parts.length===2){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
       const u=process.env.DATABASE_URL ? await adminUseCases.users() : legacyAdmin.users();
