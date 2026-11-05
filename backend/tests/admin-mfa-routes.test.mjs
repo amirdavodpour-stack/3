@@ -75,6 +75,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
           secretCiphertext,
           recoveryCodeHashes,
           lastTotpCounter,
+          enrolledAt: new Date().toISOString(),
         };
         return true;
       },
@@ -215,8 +216,10 @@ test('admin MFA unlock consumes a recovery code exactly once', async () => {
     name:USER.displayName, username:'hope-admin', password:'current-password', recoveryCode:recovery,
   });
   assert.equal(first.status, 200);
-  const second = await invoke(h.route, 'POST', ['admin','access'], {
-    name:USER.displayName, username:'hope-admin', password:'current-password', recoveryCode:recovery,
-  });
-  assert.equal(second.status, 401);
+  await assert.rejects(
+    invoke(h.route, 'POST', ['admin','access'], {
+      name:USER.displayName, username:'hope-admin', password:'current-password', recoveryCode:recovery,
+    }),
+    (error) => error?.status === 401 && error?.code === 'ADMIN_MFA_CODE_INVALID',
+  );
 });
