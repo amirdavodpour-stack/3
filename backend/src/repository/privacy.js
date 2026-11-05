@@ -205,12 +205,34 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     await client.query(`UPDATE jobs SET provider_id=NULL WHERE provider_id=$1 AND status IN ('DRAFT','PUBLISHED')`, [userId]);
     await client.query(`UPDATE users SET email=$2,password_hash=$3,display_name='Deleted user',role='USER',google_subject=NULL,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL,admin_panel_verified_scope=NULL,status='DELETED',session_version=session_version+1 WHERE id=$1`, [userId,replacement.email,replacement.passwordHash]);
     await client.query(`UPDATE audit_logs SET actor_id=NULL WHERE actor_id=$1`, [userId]);
-    await client.query(`DELETE FROM trust_reports WHERE reporter_id=$1`, [userId]);
+    // Trust and Safety evidence is shared with the reported party/platform. Preserve the
+    // report body and workflow state, but sever the reporter's account identity.
+    await client.query(
+      `UPDATE trust_reports
+          SET reporter_id=NULL,reporter_deleted_at=NOW()
+        WHERE reporter_id=$1 AND reporter_deleted_at IS NULL`,
+      [userId],
+    );
     await client.query(`DELETE FROM recommendation_profiles WHERE user_id=$1`, [userId]);
     await client.query(`DELETE FROM saved_searches WHERE user_id=$1`, [userId]);
     // Keep application lifecycle history for marketplace integrity, but erase the applicant's personal resume/skills content.
     await client.query(`UPDATE job_applications SET resume_text='', skills='' WHERE candidate_id=$1`, [userId]);
-    await client.query(`DELETE FROM job_satisfaction_feedback WHERE user_id=$1`, [userId]);
+    // Keep the counterpart-facing quality history and structured ratings. Remove
+    // author linkage and all free-form / AI-derived narrative that may identify them.
+    await client.query(
+      `UPDATE job_satisfaction_feedback
+          SET user_id=NULL,
+              author_deleted_at=NOW(),
+              report_text='',
+              ai_summary='',
+              ai_satisfaction_score=0,
+              ai_sentiment='NEEDS_REVIEW',
+              ai_tags='[]'::jsonb,
+              ai_risk_flags='[]'::jsonb,
+              updated_at=NOW()
+        WHERE user_id=$1 AND author_deleted_at IS NULL`,
+      [userId],
+    );
     return { deleted: true, deletableUploadKeys, pendingUploadIntentKeys };
   });
 }
