@@ -6085,6 +6085,34 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
       terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
       closedAt:new Date('2024-01-01T00:00:00Z'),
     });
+
+    await createScenario('purge-evidence-reference', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+    });
+    const evidenceScenario=scenarios.find((entry)=>entry.name==='purge-evidence-reference');
+    const evidenceMessageId=crypto.randomUUID();
+    const evidenceUploadId=crypto.randomUUID();
+    const evidenceAttachmentId=crypto.randomUUID();
+    const evidenceId=crypto.randomUUID();
+    const evidenceStorageKey='r05-retention-evidence/'+crypto.randomUUID()+'.pdf';
+    await pool.query(
+      "INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type,created_at) VALUES($1,$2,$3,'Evidence-backed chat attachment','ATTACHMENT',NOW())",
+      [evidenceMessageId,evidenceScenario.conversationId,fixture.workerId],
+    );
+    await pool.query(
+      "INSERT INTO uploads(id,storage_key,uploaded_by,content_type,size,created_at) VALUES($1,$2,$3,'application/pdf',128,NOW())",
+      [evidenceUploadId,evidenceStorageKey,fixture.workerId],
+    );
+    await pool.query(
+      "INSERT INTO chat_message_attachments(id,message_id,upload_id,storage_key,filename,content_type,size,created_at) VALUES($1,$2,$3,$4,'evidence.pdf','application/pdf',128,NOW())",
+      [evidenceAttachmentId,evidenceMessageId,evidenceUploadId,evidenceStorageKey],
+    );
+    await pool.query(
+      "INSERT INTO evidence(id,job_id,submitted_by,uri,notes,type,created_at) VALUES($1,$2,$3,$4,'R05 linked evidence','DOCUMENT',NOW())",
+      [evidenceId,evidenceScenario.jobId,fixture.workerId,'storage://'+evidenceStorageKey],
+    );
     await createScenario('resolved-dispute-retention', {
       jobStatus:'COMPLETED',conversationStatus:'CLOSED',
       terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
@@ -6136,6 +6164,13 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
     assert.equal(item('open-dispute').action,'BLOCKED_OPEN_DISPUTE');
     assert.equal(item('active-legal-hold').action,'BLOCKED_LEGAL_HOLD');
     assert.equal(item('purge-ready').action,'WOULD_PURGE_CONTENT');
+    assert.equal(item('purge-ready').purgeableChatAttachmentCount,0);
+    assert.equal(item('purge-ready').evidenceReferencedAttachmentCount,0);
+    assert.equal(item('purge-evidence-reference').action,'WOULD_PURGE_CONTENT');
+    assert.equal(item('purge-evidence-reference').evidenceReferencedAttachmentCount,1);
+    assert.equal(item('purge-evidence-reference').purgeableChatAttachmentCount,0);
+    assert.equal(item('purge-evidence-reference').evidenceObjectPurgeBlocked,true);
+    assert.equal(item('purge-evidence-reference').unreferencedChatAttachmentsWouldBePurged,0);
     assert.equal(item('resolved-dispute-retention').action,'CONTENT_RETENTION_ACTIVE');
     assert.equal(item('released-hold-retention').action,'CONTENT_RETENTION_ACTIVE');
     assert.equal(item('closed-active-hold').action,'BLOCKED_LEGAL_HOLD');
@@ -6160,6 +6195,19 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
   } finally {
     const ids=scenarios.map((item)=>item.conversationId);
     const jobIds=scenarios.map((item)=>item.jobId);
+    const evidenceScenario=scenarios.find((item)=>item.name==='purge-evidence-reference');
+    if(evidenceScenario){
+      const evidenceMessages=await pool.query('SELECT id FROM chat_messages WHERE conversation_id=$1',[evidenceScenario.conversationId]).catch(()=>({rows:[]}));
+      const messageIds=evidenceMessages.rows.map((row)=>row.id);
+      const evidenceAttachments=messageIds.length
+        ? await pool.query('SELECT upload_id FROM chat_message_attachments WHERE message_id=ANY($1::uuid[])',[messageIds]).catch(()=>({rows:[]}))
+        : {rows:[]};
+      await pool.query("DELETE FROM evidence WHERE job_id=$1",[evidenceScenario.jobId]).catch(()=>{});
+      if(messageIds.length)await pool.query('DELETE FROM chat_message_attachments WHERE message_id=ANY($1::uuid[])',[messageIds]).catch(()=>{});
+      if(messageIds.length)await pool.query('DELETE FROM chat_messages WHERE id=ANY($1::uuid[])',[messageIds]).catch(()=>{});
+      const uploadIds=evidenceAttachments.rows.map((row)=>row.upload_id);
+      if(uploadIds.length)await pool.query('DELETE FROM uploads WHERE id=ANY($1::uuid[])',[uploadIds]).catch(()=>{});
+    }
     await pool.query('DELETE FROM chat_conversation_legal_holds WHERE conversation_id=ANY($1::uuid[])',[ids]).catch(()=>{});
     await pool.query('DELETE FROM job_disputes WHERE job_id=ANY($1::uuid[])',[jobIds]).catch(()=>{});
     await pool.query('DELETE FROM chat_conversations WHERE id=ANY($1::uuid[])',[ids]).catch(()=>{});
