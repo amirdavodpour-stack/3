@@ -386,6 +386,75 @@ test('PostgreSQL privacy export reads financial collections from a repeatable-re
   assert.ok(Array.isArray(bundle.settlements));
 });
 
+test('PostgreSQL privacy export gives both job participants shared messages and safe attachment metadata only', {
+  skip: !enabled,
+  timeout: 30_000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const suffix = crypto.randomUUID();
+  const privateStorageKey = `r05-private-export-${suffix}.pdf`;
+  const ownerMessageBody = `R05 owner export message ${suffix}`;
+  const workerMessageBody = `R05 worker export message ${suffix}`;
+  const ownerMessageId = crypto.randomUUID();
+  const workerMessageId = crypto.randomUUID();
+  const uploadId = crypto.randomUUID();
+
+  await pool.query(
+    `INSERT INTO chat_messages(id,conversation_id,sender_id,body,message_type)
+     VALUES($1,$2,$3,$4,'TEXT'),($5,$2,$6,'Attachment','ATTACHMENT')`,
+    [ownerMessageId,fixture.conversationId,fixture.ownerId,ownerMessageBody,workerMessageId,fixture.workerId],
+  );
+  await insertUpload({
+    id: uploadId,
+    storageKey: privateStorageKey,
+    uploadedBy: fixture.workerId,
+    contentType: 'application/pdf',
+    size: 321,
+    createdAt: new Date().toISOString(),
+  });
+  await pool.query(
+    `INSERT INTO chat_message_attachments(
+       id,message_id,upload_id,storage_key,filename,content_type,size
+     ) VALUES(gen_random_uuid(),$1,$2,$3,'delivery.pdf','application/pdf',321)`,
+    [workerMessageId,uploadId,privateStorageKey],
+  );
+
+  try {
+    const ownerExport = buildDataExport(await getUserPrivacyBundle(fixture.ownerId));
+    const workerExport = buildDataExport(await getUserPrivacyBundle(fixture.workerId));
+
+    for (const exported of [ownerExport,workerExport]) {
+      assert.ok(exported.chatConversations.some((item) => item.id === fixture.conversationId));
+      assert.equal(exported.chatConversations.some((item) => item.kind === 'ADMIN'),false,
+        'an ordinary account export must not include the shared ADMIN room');
+      assert.ok(exported.chatMessages.some((item) => item.id === ownerMessageId));
+      assert.ok(exported.chatMessages.some((item) => item.id === workerMessageId));
+      const attachmentMessage = exported.chatMessages.find((item) => item.id === workerMessageId);
+      assert.deepEqual(attachmentMessage.attachments, [{
+        filename: 'delivery.pdf',
+        contentType: 'application/pdf',
+        size: 321,
+      }]);
+      const serialized = JSON.stringify(exported);
+      assert.equal(serialized.includes(privateStorageKey),false,
+        'the private object-storage key must not be disclosed in the account export');
+      assert.equal(serialized.includes('storageKey'),false);
+      assert.equal(serialized.includes('storage_key'),false);
+    }
+
+    const ownerMessages = new Map(ownerExport.chatMessages.map((item) => [item.id,item]));
+    const workerMessages = new Map(workerExport.chatMessages.map((item) => [item.id,item]));
+    assert.equal(ownerMessages.get(ownerMessageId).sentByAccount,true);
+    assert.equal(ownerMessages.get(workerMessageId).sentByAccount,false);
+    assert.equal(workerMessages.get(ownerMessageId).sentByAccount,false);
+    assert.equal(workerMessages.get(workerMessageId).sentByAccount,true);
+  } finally {
+    await pool.query('DELETE FROM chat_message_attachments WHERE upload_id=$1',[uploadId]).catch(() => {});
+    await pool.query('DELETE FROM chat_messages WHERE id=ANY($1::uuid[])',[[ownerMessageId,workerMessageId]]).catch(() => {});
+    await pool.query('DELETE FROM uploads WHERE id=$1',[uploadId]).catch(() => {});
+  }
+});
+
 test('migration 034 up is idempotent against real PostgreSQL', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const client = await pool.connect();
