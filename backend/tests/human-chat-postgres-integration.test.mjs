@@ -5970,6 +5970,15 @@ test('PostgreSQL chat retention migration stores only explicit terminal events a
       'only COMPLETED and CANCELLED can be persisted as terminal job events',
     );
 
+    await assert.rejects(
+      pool.query(
+        'UPDATE chat_conversations SET terminal_event=NULL WHERE id=$1',
+        [conversationId],
+      ),
+      (error) => error?.code === '23514',
+      'a non-null terminal_at must never exist without its corresponding terminal_event',
+    );
+
     const holdId = crypto.randomUUID();
     await pool.query(`
       INSERT INTO chat_conversation_legal_holds(
