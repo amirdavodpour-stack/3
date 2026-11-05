@@ -60,6 +60,12 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
     setUserStatus(id, status) {
       const user = db.collection.users.find((x) => x.id === id);
       if (!user) return null;
+      if (user.status === 'DELETED') {
+        const error = new Error('ACCOUNT_DELETION_TERMINAL');
+        error.code = 'ACCOUNT_DELETION_TERMINAL';
+        error.status = 409;
+        throw error;
+      }
       user.status = status;
       user.sessionVersion = Number(user.sessionVersion || 0) + 1;
       db.touch('users');
