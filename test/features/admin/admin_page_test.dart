@@ -364,7 +364,7 @@ void main() {
   testWidgets('admin access fails closed when MFA status cannot be fetched', (tester) async {
     final repo = _FakeAdmin()..failMfaStatus = true;
     await _pumpAdminAccess(tester, repo);
-    expect(find.textContaining('Two-factor status could not be verified'), findsOneWidget);
+    expect(find.textContaining('MFA status is unavailable. Admin access remains locked.'), findsOneWidget);
     expect(find.text('Verify password and second factor'), findsNothing);
   });
 
