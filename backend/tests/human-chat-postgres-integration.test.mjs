@@ -5994,6 +5994,17 @@ test('PostgreSQL chat retention migration stores only explicit terminal events a
     assert.equal(activeHolds.length,1);
     assert.equal(activeHolds[0].released_at,null);
     assert.equal(activeHolds[0].hold_kind,'LEGAL');
+
+    await assert.rejects(
+      pool.query(
+        `UPDATE chat_conversation_legal_holds
+            SET released_at=NOW(),release_reason='R05 release test'
+          WHERE id=$1`,
+        [holdId],
+      ),
+      (error) => error?.code === '23514',
+      'a released legal hold must record the administrator who released it',
+    );
   } finally {
     await pool.query('DELETE FROM chat_conversation_legal_holds WHERE conversation_id=$1',[conversationId]).catch(()=>{});
     await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
