@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   postgres-chat:
-    name: PostgreSQL migrations 035–043, chat and email-verification gate
+    name: PostgreSQL migrations 035–045, chat and email-verification gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
