@@ -44,6 +44,13 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       db.collection.jobApplications.forEach((x) => { if (x.candidateId === userId) { x.resumeText = ''; x.skills = ''; } });
       db.collection.analyticsEvents = db.collection.analyticsEvents.filter((x) => x.userId !== userId);
       db.collection.crashReports = db.collection.crashReports.filter((x) => x.userId !== userId);
+      // Keep shared Trust and Safety reports while unlinking the deleted reporter.
+      db.collection.trustReports.forEach((report) => {
+        if (report.reporterId === userId) {
+          report.reporterId = null;
+          report.reporterDeletedAt = deletedAt;
+        }
+      });
       const user = findUser(userId);
       if (user) Object.assign(user, {
         email: replacement.email,
@@ -61,7 +68,7 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       for (const job of db.collection.jobs) {
         if (job.providerId === userId && ['DRAFT', 'PUBLISHED'].includes(job.status)) job.providerId = null;
       }
-      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'savedSearches', 'jobApplications', 'analyticsEvents', 'crashReports', 'users', 'jobs');
+      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'savedSearches', 'jobApplications', 'analyticsEvents', 'crashReports', 'trustReports', 'users', 'jobs');
       await db.save();
       return true;
     },
