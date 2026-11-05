@@ -274,34 +274,46 @@ export async function getAdminPanelIdentity(userId) {
   };
 }
 
-export async function setAdminPanelVerified(userId, sessionJti) {
+export async function setAdminPanelVerified(userId, sessionJti, scope = 'READ') {
   const jti = String(sessionJti || '').trim();
-  if (!jti || jti.length > 128) return null;
+  const verificationScope = String(scope || 'READ').trim().toUpperCase();
+  if (!jti || jti.length > 128 || !['READ','WRITE'].includes(verificationScope)) return null;
   const { rows } = await requirePool().query(
     `UPDATE users
-       SET admin_panel_verified_at=NOW(), admin_panel_verified_session_jti=$2
+       SET admin_panel_verified_at=NOW(),
+           admin_panel_verified_session_jti=$2,
+           admin_panel_verified_scope=$3
      WHERE id=$1 AND role='ADMIN' AND status='ACTIVE'
-     RETURNING id,admin_panel_verified_at`,
-    [userId, jti],
+     RETURNING id,admin_panel_verified_at,admin_panel_verified_scope`,
+    [userId, jti, verificationScope],
   );
-  return rows[0] ? { verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at } : null;
+  return rows[0] ? {
+    verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at,
+    scope: rows[0].admin_panel_verified_scope,
+  } : null;
 }
 
-export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti) {
+export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti, requiredScope = 'READ') {
   const jti = String(sessionJti || '').trim();
-  if (!jti || jti.length > 128) return false;
+  const scope = String(requiredScope || 'READ').trim().toUpperCase();
+  if (!jti || jti.length > 128 || !['READ','WRITE'].includes(scope)) return false;
   const { rows } = await requirePool().query(
-    `SELECT role,status,admin_panel_verified_at,admin_panel_verified_session_jti
+    `SELECT role,status,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope
        FROM users WHERE id=$1`,
     [userId],
   );
   const row = rows[0];
   const at = row?.admin_panel_verified_at;
   const ageMs = at ? Date.now() - new Date(at).getTime() : Number.NaN;
+  const storedScope = String(row?.admin_panel_verified_scope || '').toUpperCase();
+  const scopeAllowed = scope === 'READ'
+    ? ['READ','WRITE'].includes(storedScope)
+    : storedScope === 'WRITE';
   return Boolean(
     row?.role === 'ADMIN' &&
     row?.status === 'ACTIVE' &&
     row?.admin_panel_verified_session_jti === jti &&
+    scopeAllowed &&
     Number.isFinite(ageMs) &&
     ageMs >= 0 &&
     ageMs <= Math.max(1, Number(ttlMinutes) || 15) * 60000
