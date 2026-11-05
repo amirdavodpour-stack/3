@@ -11,15 +11,21 @@ test('human messaging wiring separates human chat from AI chat',()=>{
   assert.match(app,/parts\[0\] === 'messaging'/);
 });
 
-test('job chat is provisioned on agreement and closed with financial settlement',()=>{
+test('job chat is provisioned on agreement and terminal timestamps preserve the post-terminal support window',()=>{
   const offer=read('backend/src/routes/offer_routes.js');
   const handlers=read('backend/src/routes/job_handlers.js');
-  const release=read('backend/src/repository/outbox.js');
+  const lifecycle=read('backend/src/repository/payment_lifecycle.js');
   const refund=read('backend/src/repository/payment_refunds.js');
+  const release=read('backend/src/repository/outbox.js');
+  const humanChat=read('backend/src/repository/human_chat.js');
   assert.match(offer,/ensureJobChat/);
   assert.match(handlers,/ensureJobChat/);
-  assert.match(release,/closeJobChatForJob/);
-  assert.match(refund,/closeJobChatForJob/);
+  assert.match(lifecycle,/recordJobChatTerminalEventWithClient/);
+  assert.match(refund,/cancelJobAfterConfirmedRefundWithClient/);
+  assert.match(refund,/recordJobChatTerminalEventWithClient/);
+  assert.match(humanChat,/terminal_at=COALESCE\(terminal_at,\$2\)/);
+  assert.doesNotMatch(refund,/closeJobChatForJob/);
+  assert.doesNotMatch(release,/closeJobChatForJob/);
 });
 
 test('AI chat endpoint remains blocked while human messaging has separate endpoints',()=>{
