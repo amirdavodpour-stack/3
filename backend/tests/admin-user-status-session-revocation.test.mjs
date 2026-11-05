@@ -35,6 +35,18 @@ const coreRepositorySource = fs.readFileSync(
   path.resolve(import.meta.dirname, '../src/repository/core.js'),
   'utf8',
 );
+const legacyAdminRepositorySource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/application/legacy/admin_legacy.js'),
+  'utf8',
+);
+const legacyAccountRepositorySource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/application/legacy/account_legacy.js'),
+  'utf8',
+);
+const adminRoutesSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/routes/admin_routes.js'),
+  'utf8',
+);
 
 function functionSource(source, name, nextName) {
   const start = source.indexOf(`export async function ${name}(`);
@@ -121,6 +133,30 @@ test('account deletion clears admin-panel verification with the privacy tombston
     deletion,
     /UPDATE users SET[^\`]*admin_panel_verified_at\s*=\s*NULL[^\`]*status\s*=\s*'DELETED'/is,
   );
+});
+
+test('deleted account tombstones are terminal and lose administrator privileges', () => {
+  const statusChange = functionSource(adminRepositorySource, 'setUserStatus', 'revokeAdminById');
+  const deletion = privacyRepositorySource.slice(
+    privacyRepositorySource.indexOf('export async function deleteUserPrivacyBundle('),
+  );
+  const legacyStatusStart = legacyAdminRepositorySource.indexOf('setUserStatus(id, status)');
+  const legacyStatusEnd = legacyAdminRepositorySource.indexOf('revokeAdminById(id, actorId)', legacyStatusStart);
+  const legacyStatusChange = legacyAdminRepositorySource.slice(legacyStatusStart, legacyStatusEnd);
+  const legacyDeletion = legacyAccountRepositorySource.slice(
+    legacyAccountRepositorySource.indexOf('async deleteUserPrivacyBundle'),
+  );
+
+  assert.match(statusChange, /status\s*===\s*'DELETED'/,
+    'PostgreSQL status changes must reject deleted account tombstones');
+  assert.match(adminRoutesSource, /target\.status\s*===\s*'DELETED'/,
+    'the admin API must reject reactivation before attempting a status update');
+  assert.match(deletion, /role\s*=\s*'USER'/,
+    'PostgreSQL deletion must strip any administrator role from the tombstone');
+  assert.match(legacyStatusChange, /status\s*===\s*'DELETED'/,
+    'legacy status changes must reject deleted account tombstones');
+  assert.match(legacyDeletion, /role:\s*'USER'/,
+    'legacy deletion must strip any administrator role from the tombstone');
 });
 
 test('admin-panel verification can only be set or read for active administrator accounts', () => {
