@@ -194,11 +194,13 @@ export function createAuthRoutes({
         }
         throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
       }
-      if (!process.env.DATABASE_URL) await legacy.save();
-      await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, {
-        provider: 'google',
-        primaryAdminBootstrap,
-      });
+      if (!process.env.DATABASE_URL) {
+        await legacy.save();
+        await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, {
+          provider: 'google',
+          primaryAdminBootstrap,
+        });
+      }
       return sendJson(res, 200, { linked: true, alreadyLinked, user: authUserView(linked) });
     }
 
