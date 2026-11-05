@@ -6454,6 +6454,108 @@ test('PostgreSQL legal holds are created and released transactionally with an im
   }
 });
 
+test('PostgreSQL account deletion anonymizes trust reports and shared satisfaction feedback without deleting them', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `shared-privacy-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: users } = await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES(gen_random_uuid(),$1,'r05-integration-only','R05 shared privacy author','USER','ACTIVE',0,NOW())
+     RETURNING id`,
+    [`r05-${suffix}@example.test`],
+  );
+  const userId = users[0].id;
+  let jobId = null;
+  const trustReportId = crypto.randomUUID();
+  try {
+    const { rows: jobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT gen_random_uuid(),$1,$2,$3,'Shared privacy retention integration fixture',
+         c.id,'FIXED','FIXED',100,100,1,'Shared privacy retention fixture','COMPLETED',
+         'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+      [userId,fixture.workerId,`R05 shared privacy ${suffix}`],
+    );
+    assert.ok(jobs[0], 'shared privacy fixture requires an active category');
+    jobId = jobs[0].id;
+
+    await pool.query(
+      `INSERT INTO trust_reports(id,reporter_id,entity_type,entity_id,reason,details,status)
+       VALUES($1,$2,'JOB',$3,'HARASSMENT','Detailed report retained for Trust and Safety review','REVIEWING')`,
+      [trustReportId,userId,jobId],
+    );
+    const { rows: feedback } = await pool.query(
+      `INSERT INTO job_satisfaction_feedback(
+         id,job_id,user_id,role,overall_rating,completed_as_agreed,communication_rating,
+         report_text,ai_summary,ai_satisfaction_score,ai_sentiment,ai_tags,ai_risk_flags,status
+       ) VALUES(
+         gen_random_uuid(),$1,$2,'EMPLOYER',2,FALSE,3,
+         'Personal report text identifying the author',
+         'AI narrative about the author and interaction',21,'UNSATISFIED',
+         '["late","communication"]'::jsonb,'["personal-risk-context"]'::jsonb,'ANALYZED'
+       ) RETURNING id`,
+      [jobId,userId],
+    );
+    const feedbackId = feedback[0].id;
+
+    const result = await deleteUserPrivacyBundle(userId,{
+      email:`deleted+${userId}@invalid.local`,
+      passwordHash:'integration-only-deleted-account',
+    });
+    assert.equal(result.deleted,true);
+
+    const { rows: trust } = await pool.query(
+      `SELECT reporter_id,reporter_deleted_at,reason,details,status
+         FROM trust_reports WHERE id=$1`,
+      [trustReportId],
+    );
+    assert.equal(trust.length,1,'trust/safety evidence must remain available after reporter deletion');
+    assert.equal(trust[0].reporter_id,null);
+    assert.ok(trust[0].reporter_deleted_at);
+    assert.equal(trust[0].reason,'HARASSMENT');
+    assert.equal(trust[0].details,'Detailed report retained for Trust and Safety review');
+    assert.equal(trust[0].status,'REVIEWING');
+
+    const { rows: sharedFeedback } = await pool.query(
+      `SELECT user_id,author_deleted_at,role,overall_rating,completed_as_agreed,
+              communication_rating,report_text,ai_summary,ai_satisfaction_score,
+              ai_sentiment,ai_tags,ai_risk_flags,status
+         FROM job_satisfaction_feedback WHERE id=$1`,
+      [feedbackId],
+    );
+    assert.equal(sharedFeedback.length,1,'counterparty satisfaction history must remain available');
+    assert.equal(sharedFeedback[0].user_id,null);
+    assert.ok(sharedFeedback[0].author_deleted_at);
+    assert.equal(sharedFeedback[0].role,'EMPLOYER');
+    assert.equal(Number(sharedFeedback[0].overall_rating),2);
+    assert.equal(sharedFeedback[0].completed_as_agreed,false);
+    assert.equal(Number(sharedFeedback[0].communication_rating),3);
+    assert.equal(sharedFeedback[0].report_text,'');
+    assert.equal(sharedFeedback[0].ai_summary,'');
+    assert.equal(Number(sharedFeedback[0].ai_satisfaction_score),0);
+    assert.equal(sharedFeedback[0].ai_sentiment,'NEEDS_REVIEW');
+    assert.deepEqual(sharedFeedback[0].ai_tags,[]);
+    assert.deepEqual(sharedFeedback[0].ai_risk_flags,[]);
+    assert.equal(sharedFeedback[0].status,'ANALYZED');
+  } finally {
+    if(jobId){
+      await pool.query('DELETE FROM job_satisfaction_feedback WHERE job_id=$1',[jobId]).catch(()=>{});
+      await pool.query('DELETE FROM trust_reports WHERE entity_id=$1',[jobId]).catch(()=>{});
+      await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+    }
+    await pool.query('DELETE FROM trust_reports WHERE id=$1',[trustReportId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
