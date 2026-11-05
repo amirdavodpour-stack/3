@@ -5913,6 +5913,256 @@ test('PostgreSQL Google linking promotes only an explicitly verified primary-adm
   }
 });
 
+
+test('PostgreSQL chat retention migration stores only explicit terminal events and durable legal holds', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const { rows: columns } = await pool.query(`
+    SELECT column_name
+      FROM information_schema.columns
+     WHERE table_schema=current_schema()
+       AND table_name='chat_conversations'
+  `);
+  const columnNames = new Set(columns.map((row) => row.column_name));
+  assert.ok(columnNames.has('terminal_at'),
+    'chat conversations need an explicit terminal timestamp; updated_at is not a substitute');
+  assert.ok(columnNames.has('terminal_event'),
+    'terminal timestamp must be tied to an explicit COMPLETED or CANCELLED event');
+
+  const { rows: holdTable } = await pool.query(`
+    SELECT to_regclass('chat_conversation_legal_holds') AS name
+  `);
+  assert.ok(holdTable[0]?.name, 'durable conversation legal holds table must exist');
+
+  const conversationId = crypto.randomUUID();
+  const jobId = crypto.randomUUID();
+  try {
+    const { rows: jobs } = await pool.query(`
+      INSERT INTO jobs(
+        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+        budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+        created_at,updated_at
+      )
+      SELECT $1,owner_id,provider_id,'R05 retention schema fixture',
+        'PostgreSQL retention schema fixture',category_id,job_type,budget_type,
+        budget_min,budget_max,duration,'R05 retention schema fixture','COMPLETED',
+        city,kind,visibility,NOW(),NOW()
+      FROM jobs WHERE id=$2 RETURNING id
+    `, [jobId, fixture.jobId]);
+    assert.equal(jobs.length, 1);
+
+    await pool.query(`
+      INSERT INTO chat_conversations(
+        id,kind,job_id,status,title,terminal_at,terminal_event
+      ) VALUES($1,'JOB',$2,'OPEN','R05 retention schema fixture',$3,$4)
+    `, [conversationId,jobId,new Date('2026-10-01T00:00:00Z'),'COMPLETED']);
+
+    await assert.rejects(
+      pool.query(
+        `UPDATE chat_conversations SET terminal_event='PUBLISHED' WHERE id=$1`,
+        [conversationId],
+      ),
+      (error) => error?.code === '23514',
+      'only COMPLETED and CANCELLED can be persisted as terminal job events',
+    );
+
+    const holdId = crypto.randomUUID();
+    await pool.query(`
+      INSERT INTO chat_conversation_legal_holds(
+        id,conversation_id,hold_kind,reason,created_at
+      ) VALUES($1,$2,'LEGAL','R05 preservation test',NOW())
+    `, [holdId,conversationId]);
+
+    const { rows: activeHolds } = await pool.query(`
+      SELECT id,hold_kind,reason,released_at
+        FROM chat_conversation_legal_holds
+       WHERE conversation_id=$1
+    `, [conversationId]);
+    assert.equal(activeHolds.length,1);
+    assert.equal(activeHolds[0].released_at,null);
+    assert.equal(activeHolds[0].hold_kind,'LEGAL');
+  } finally {
+    await pool.query('DELETE FROM chat_conversation_legal_holds WHERE conversation_id=$1',[conversationId]).catch(()=>{});
+    await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+  }
+});
+
+test('PostgreSQL chat retention dry-run is read-only and explains support, dispute, hold and purge eligibility', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const { buildChatRetentionDryRun } = await import('../src/repository/chat_retention.js');
+  const asOf = new Date('2026-11-06T00:00:00.000Z');
+  const asOfMs = asOf.getTime();
+  const daysAgo = (days) => new Date(asOfMs - days * 24 * 60 * 60 * 1000);
+  const scenarios = [];
+  const suffix = crypto.randomUUID();
+
+  async function createScenario(name, {
+    jobStatus,
+    conversationStatus = 'OPEN',
+    terminalAt = null,
+    terminalEvent = null,
+    closedAt = null,
+    disputeStatus = null,
+    disputeResolvedAt = null,
+    holdReleasedAt = undefined,
+  }) {
+    const jobId = crypto.randomUUID();
+    const conversationId = crypto.randomUUID();
+    const disputeId = disputeStatus ? crypto.randomUUID() : null;
+    const holdId = holdReleasedAt !== undefined ? crypto.randomUUID() : null;
+
+    await pool.query(`
+      INSERT INTO jobs(
+        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+        budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+        created_at,updated_at
+      )
+      SELECT $1,owner_id,provider_id,$3,'R05 retention planner fixture',
+        category_id,job_type,budget_type,budget_min,budget_max,duration,
+        'R05 retention planner fixture',$4,city,kind,visibility,NOW(),NOW()
+      FROM jobs WHERE id=$2
+    `, [jobId,fixture.jobId,'R05 retention '+name+' '+suffix,jobStatus]);
+
+    await pool.query(`
+      INSERT INTO chat_conversations(
+        id,kind,job_id,status,title,terminal_at,terminal_event,closed_at
+      ) VALUES($1,'JOB',$2,$3,$4,$5,$6,$7)
+    `, [
+      conversationId,jobId,conversationStatus,'R05 retention '+name,
+      terminalAt,terminalEvent,closedAt,
+    ]);
+
+    if (disputeStatus) {
+      await pool.query(`
+        INSERT INTO job_disputes(
+          id,job_id,opened_by,trigger_type,status,resolved_at,created_at,updated_at
+        ) VALUES($1,$2,$3,'ADMIN',$4,$5,NOW(),NOW())
+      `, [disputeId,jobId,fixture.adminId,disputeStatus,disputeResolvedAt]);
+    }
+
+    if (holdId) {
+      await pool.query(`
+        INSERT INTO chat_conversation_legal_holds(
+          id,conversation_id,hold_kind,reason,created_at,released_at,release_reason
+        ) VALUES($1,$2,'LEGAL',$3,NOW(),$4,$5)
+      `, [
+        holdId,conversationId,'R05 legal hold '+name,
+        holdReleasedAt ?? null,
+        holdReleasedAt ? 'R05 release fixture' : null,
+      ]);
+    }
+
+    scenarios.push({name,jobId,conversationId,disputeId,holdId});
+  }
+
+  try {
+    await createScenario('close-ready', {
+      jobStatus:'COMPLETED',terminalAt:daysAgo(45),terminalEvent:'COMPLETED',
+    });
+    await createScenario('support-window', {
+      jobStatus:'COMPLETED',terminalAt:daysAgo(5),terminalEvent:'COMPLETED',
+    });
+    await createScenario('missing-terminal', {
+      jobStatus:'COMPLETED',
+    });
+    await createScenario('open-dispute', {
+      jobStatus:'COMPLETED',terminalAt:daysAgo(45),terminalEvent:'COMPLETED',
+      disputeStatus:'ADMIN_REVIEW',
+    });
+    await createScenario('active-legal-hold', {
+      jobStatus:'COMPLETED',terminalAt:daysAgo(45),terminalEvent:'COMPLETED',
+      holdReleasedAt:null,
+    });
+    await createScenario('purge-ready', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+    });
+    await createScenario('resolved-dispute-retention', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+      disputeStatus:'RESOLVED',disputeResolvedAt:new Date('2026-06-01T00:00:00Z'),
+    });
+    await createScenario('released-hold-retention', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+      holdReleasedAt:new Date('2026-05-01T00:00:00Z'),
+    });
+    await createScenario('closed-active-hold', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+      holdReleasedAt:null,
+    });
+    await createScenario('closed-open-dispute', {
+      jobStatus:'COMPLETED',conversationStatus:'CLOSED',
+      terminalAt:new Date('2024-01-01T00:00:00Z'),terminalEvent:'COMPLETED',
+      closedAt:new Date('2024-01-01T00:00:00Z'),
+      disputeStatus:'ADMIN_REVIEW',
+    });
+
+    const ids = scenarios.map((item)=>item.conversationId);
+    const before = await pool.query(`
+      SELECT c.id,c.status,c.terminal_at,c.terminal_event,c.closed_at,
+        (SELECT COUNT(*)::int FROM chat_conversation_legal_holds h WHERE h.conversation_id=c.id) AS hold_count,
+        (SELECT COUNT(*)::int FROM job_disputes d WHERE d.job_id=c.job_id) AS dispute_count
+      FROM chat_conversations c
+      WHERE c.id=ANY($1::uuid[])
+      ORDER BY c.id
+    `, [ids]);
+
+    const plan = await buildChatRetentionDryRun({asOf,limit:1000});
+    const byId = new Map(plan.items.map((item)=>[item.conversationId,item]));
+    const item = (name) => {
+      const scenario=scenarios.find((entry)=>entry.name===name);
+      assert.ok(byId.has(scenario.conversationId),'dry-run must include '+name);
+      return byId.get(scenario.conversationId);
+    };
+
+    assert.equal(plan.wouldMutate,false);
+    assert.equal(plan.mutationCount,0);
+    assert.equal(item('close-ready').action,'WOULD_CLOSE');
+    assert.equal(item('support-window').action,'SUPPORT_WINDOW_ACTIVE');
+    assert.equal(item('missing-terminal').action,'BLOCKED_MISSING_TERMINAL_TIMESTAMP');
+    assert.equal(item('open-dispute').action,'BLOCKED_OPEN_DISPUTE');
+    assert.equal(item('active-legal-hold').action,'BLOCKED_LEGAL_HOLD');
+    assert.equal(item('purge-ready').action,'WOULD_PURGE_CONTENT');
+    assert.equal(item('resolved-dispute-retention').action,'CONTENT_RETENTION_ACTIVE');
+    assert.equal(item('released-hold-retention').action,'CONTENT_RETENTION_ACTIVE');
+    assert.equal(item('closed-active-hold').action,'BLOCKED_LEGAL_HOLD');
+    assert.equal(item('closed-open-dispute').action,'BLOCKED_OPEN_DISPUTE');
+    assert.equal(item('purge-ready').contentPurgeAfter.toISOString(),'2026-01-01T00:00:00.000Z');
+    assert.ok(item('resolved-dispute-retention').contentPurgeAfter > asOf);
+    assert.ok(item('released-hold-retention').contentPurgeAfter > asOf);
+
+    const after = await pool.query(`
+      SELECT c.id,c.status,c.terminal_at,c.terminal_event,c.closed_at,
+        (SELECT COUNT(*)::int FROM chat_conversation_legal_holds h WHERE h.conversation_id=c.id) AS hold_count,
+        (SELECT COUNT(*)::int FROM job_disputes d WHERE d.job_id=c.job_id) AS dispute_count
+      FROM chat_conversations c
+      WHERE c.id=ANY($1::uuid[])
+      ORDER BY c.id
+    `, [ids]);
+    assert.deepEqual(after.rows,before.rows,
+      'dry-run must not close chats, modify timestamps, or mutate hold/dispute records');
+  } finally {
+    const ids=scenarios.map((item)=>item.conversationId);
+    const jobIds=scenarios.map((item)=>item.jobId);
+    await pool.query('DELETE FROM chat_conversation_legal_holds WHERE conversation_id=ANY($1::uuid[])',[ids]).catch(()=>{});
+    await pool.query('DELETE FROM job_disputes WHERE job_id=ANY($1::uuid[])',[jobIds]).catch(()=>{});
+    await pool.query('DELETE FROM chat_conversations WHERE id=ANY($1::uuid[])',[ids]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=ANY($1::uuid[])',[jobIds]).catch(()=>{});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
