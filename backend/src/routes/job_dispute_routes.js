@@ -69,7 +69,11 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
   return async function route(req,res,parts) {
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
-      if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti))) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      const requiredScope = req.method === 'GET' ? 'READ' : 'WRITE';
+      const verified = (process.env.DATABASE_URL || config?.adminMfaRequired) && await (config?.adminMfaRequired
+        ? repo.isAdminPanelVerified(me.id, requiredScope === 'WRITE' ? (config.adminPanelWriteVerificationMinutes ?? 5) : (config.adminPanelReadVerificationMinutes ?? 15), me.sessionJti, requiredScope)
+        : repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti));
+      if ((process.env.DATABASE_URL || config?.adminMfaRequired) && !verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
       if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') {
         assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
         return sendJson(res,200,await repo.listAdminDisputes());
