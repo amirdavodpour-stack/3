@@ -24,7 +24,9 @@ export function createAnalyticsRoutes({ authUser, requireAdmin, readBody, sendJs
 
   async function analyticsAdminRoutes(req, res, parts) {
     const me = requireAdmin(await authUser(req));
-    if (process.env.DATABASE_URL && !(await repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti))) {
+    if ((process.env.DATABASE_URL || config?.adminMfaRequired) && !(await (config?.adminMfaRequired
+      ? repo.isAdminPanelVerified(me.id, config?.adminPanelReadVerificationMinutes ?? 15, me.sessionJti, 'READ')
+      : repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti)))) {
       throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
     }
     if (req.method !== 'GET') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'GET required');
