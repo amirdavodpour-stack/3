@@ -1,4 +1,4 @@
-import { closeJobChatForJob } from './human_chat.js';
+import { recordJobChatTerminalEventWithClient } from './human_chat.js';
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
@@ -137,6 +137,22 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     return {refund:refundRow,payment:{...payment,status:'REFUND_PENDING'},outboxEvent:{id:ev[0].id}};
   });
 }
+export async function cancelJobAfterConfirmedRefundWithClient(client,jobId) {
+  const {rows}=await client.query(
+    `UPDATE jobs SET status='CANCELLED',updated_at=NOW()
+      WHERE id=$1 RETURNING updated_at`,
+    [jobId],
+  );
+  if(!rows[0])return false;
+  await recordJobChatTerminalEventWithClient(
+    client,
+    jobId,
+    'CANCELLED',
+    rows[0].updated_at,
+  );
+  return true;
+}
+
 export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refundId,providerRef,actorId,leaseToken}) {
   return withSqlTransaction(async(client)=>{
     // Match request/webhook lock ordering: serialize the job aggregate before
@@ -154,8 +170,8 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     const breakdown={baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount||payment.amount),employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee||0),workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee||0),platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee||0),employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge||payment.amount),providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout||payment.amount),currency:payment.currency||config.paymentCurrency,policyVersion:payment.fee_policy_version||'legacy',kind:'JOB'};
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
     await client.query(`UPDATE payments SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[paymentId,payment.provider_ref]);
-    await client.query(`UPDATE jobs SET status='CANCELLED',updated_at=NOW() WHERE id=$1`,[jobId]);
-    await closeJobChatForJob(jobId, client);
+    const cancelled=await cancelJobAfterConfirmedRefundWithClient(client,jobId);
+    if(!cancelled)return {completed:false,reason:'JOB_NOT_FOUND'};
     if (config.paymentProvider === 'internal') {
       if (breakdown.currency !== 'TOMAN') {
         const e = new Error('INTERNAL_CURRENCY_MISMATCH'); e.code = 'INTERNAL_CURRENCY_MISMATCH'; throw e;
