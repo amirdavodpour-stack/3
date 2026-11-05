@@ -24,3 +24,4 @@ export * from './repository/payouts.js';
 export * from './repository/reconciliation.js';
 
 export * from './repository/human_chat.js';
+export * from './repository/admin_mfa.js';
