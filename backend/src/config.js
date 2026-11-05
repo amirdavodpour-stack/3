@@ -73,7 +73,7 @@ export const config = {
   adminPanelVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
   adminPanelReadVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_READ_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
   adminPanelWriteVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_WRITE_VERIFICATION_MINUTES', 5, { min: 1, max: 15 }),
-  adminMfaRequired: process.env.ADMIN_MFA_REQUIRED !== 'false',
+  adminMfaRequired: process.env.ADMIN_MFA_REQUIRED === 'true' || process.env.NODE_ENV === 'production',
   adminMfaEncryptionKey: process.env.ADMIN_MFA_ENCRYPTION_KEY || '',
   adminMfaEnrollmentMinutes: positiveIntegerEnv('ADMIN_MFA_ENROLLMENT_MINUTES', 10, { min: 5, max: 30 }),
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
