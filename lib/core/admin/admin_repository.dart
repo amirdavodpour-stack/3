@@ -198,9 +198,6 @@ class ApiAdminRepository implements AdminRepository {
         'username': username,
         if (password != null) 'password': password,
         if (idToken != null) 'idToken': idToken,
-        if (totpCode != null) 'totpCode': totpCode.trim(),
-        if (recoveryCode != null) 'recoveryCode': recoveryCode.trim(),
-        'scope': scope,
       }) as Map);
 
   @override
@@ -214,6 +211,9 @@ class ApiAdminRepository implements AdminRepository {
         'username': username,
         if (password != null) 'password': password,
         if (idToken != null) 'idToken': idToken,
+        if (totpCode != null) 'totpCode': totpCode.trim(),
+        if (recoveryCode != null) 'recoveryCode': recoveryCode.trim(),
+        'scope': scope,
       }) as Map);
 
   @override
