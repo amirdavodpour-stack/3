@@ -73,7 +73,7 @@ function makeRoutes({
 const request = { method: 'POST' };
 const response = {};
 
-test('explicit Google account link binds a verified Google identity to the authenticated same-email user', async () => {
+test('explicit Google account link binds the verified identity and delegates its audit to the repository', async () => {
   let auditEntry;
   const { routes, repo } = makeRoutes({ audit: async (...args) => { auditEntry = args; } });
   let linked;
@@ -87,12 +87,11 @@ test('explicit Google account link binds a verified Google identity to the authe
   assert.equal(result.status, 200);
   assert.equal(result.data.linked, true);
   assert.deepEqual(linked, { userId: 'user-1', subject: 'google-subject-1', options: { promoteToPrimaryAdmin: false } });
-  assert.equal(auditEntry[0], 'AUTH_GOOGLE_LINK');
-  assert.equal(auditEntry[1], 'user-1');
+  assert.equal(auditEntry, undefined, 'PostgreSQL route must not write the same audit after the repository transaction');
 });
 
 
-test('verified primary-owner Google linking requests the narrowly scoped admin bootstrap and audits it', async () => {
+test('verified primary-owner Google linking requests the narrowly scoped bootstrap without a post-commit route audit', async () => {
   const user = {
     id: 'owner-1',
     email: 'amir.davodpour@gmail.com',
@@ -128,8 +127,7 @@ test('verified primary-owner Google linking requests the narrowly scoped admin b
     'verified-primary-owner-subject',
     { promoteToPrimaryAdmin: true },
   ]);
-  assert.equal(auditEntry[0], 'AUTH_GOOGLE_LINK');
-  assert.equal(auditEntry[4]?.primaryAdminBootstrap, true);
+  assert.equal(auditEntry, undefined, 'primary-owner link audit is committed inside the repository transaction');
 });
 
 test('an already-linked primary owner with a stale USER role can complete bootstrap idempotently', async () => {
@@ -170,7 +168,7 @@ test('an already-linked primary owner with a stale USER role can complete bootst
     'verified-primary-owner-subject',
     { promoteToPrimaryAdmin: true },
   ]);
-  assert.equal(auditEntry[4]?.primaryAdminBootstrap, true);
+  assert.equal(auditEntry, undefined);
 });
 
 test('Google linking by an ordinary account never requests primary-admin promotion', async () => {
@@ -192,7 +190,7 @@ test('Google linking by an ordinary account never requests primary-admin promoti
     'google-subject-1',
     { promoteToPrimaryAdmin: false },
   ]);
-  assert.equal(auditEntry[4]?.primaryAdminBootstrap, false);
+  assert.equal(auditEntry, undefined);
 });
 
 test('legacy auth adapter mirrors the explicit primary-admin bootstrap option', () => {
