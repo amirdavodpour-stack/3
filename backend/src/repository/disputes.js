@@ -323,7 +323,7 @@ export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti, 
 export async function clearAdminPanelVerification(userId) {
   await requirePool().query(
     `UPDATE users
-       SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL
+       SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL, admin_panel_verified_scope=NULL
      WHERE id=$1`,
     [userId],
   );
