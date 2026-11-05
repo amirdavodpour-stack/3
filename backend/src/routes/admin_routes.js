@@ -15,7 +15,6 @@ function isLegacyAdminPanelVerified(userId, sessionJti, requiredScope = 'READ') 
 }
 
 export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
-export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
   async function enforceAuthRateLimits(req, userId) {
     if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function') {
       throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
@@ -159,9 +158,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes});
     }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
-      const verified = config.adminMfaRequired || process.env.DATABASE_URL
+      const verified = config.adminMfaRequired
         ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes, me.sessionJti, 'READ')
-        : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
+        : process.env.DATABASE_URL
+          ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes ?? 15, me.sessionJti)
+          : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
       return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
@@ -172,8 +173,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const mfa=await verifyAdminMfa(me,body);
       const scope=String(body?.scope||'WRITE').trim().toUpperCase();
       if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
-      if (process.env.DATABASE_URL || config.adminMfaRequired) {
+      if (config.adminMfaRequired) {
         const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope);
+        if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+      } else if (process.env.DATABASE_URL) {
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else {
         legacyVerifiedAdmins.set(me.id,{
@@ -200,9 +204,12 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     const ttlMinutes=requiredScope==='WRITE'
       ? (config.adminPanelWriteVerificationMinutes??5)
       : (config.adminPanelReadVerificationMinutes??15);
-    if (process.env.DATABASE_URL || config.adminMfaRequired) {
+    if (config.adminMfaRequired) {
       const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
+    } else if (process.env.DATABASE_URL) {
+      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes ?? 15,me.sessionJti);
+      if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
