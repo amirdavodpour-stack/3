@@ -26,7 +26,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
   const calls = [];
   let stored = credential;
   let accessVerification = null;
-  const now = Date.now();
+  let clock = Date.now();
   const route = createAdminRoutes({
     authUser: async () => USER,
     requireAdmin: (user) => user,
@@ -53,7 +53,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
       googleAuthEnabled: false,
       googleOAuthClientId: '',
     },
-    now: () => new Date(now).toISOString(),
+    now: () => new Date(clock).toISOString(),
     createAudit: async (...args) => audit.push(args),
     repo: {
       getAdminMfaStatus: async () => ({ enabled: alreadyEnabled || Boolean(stored?.enabled) }),
@@ -105,7 +105,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
     DUMMY_PASSWORD_HASH: 'dummy-hash',
     PASSWORD_MAX_LENGTH: 128,
   });
-  return { route, audit, calls, getStored: () => stored, getAccessVerification: () => accessVerification, now };
+  return { route, audit, calls, getStored: () => stored, getAccessVerification: () => accessVerification, get now() { return clock; }, advance(ms) { clock += ms; } };
 }
 
 function invoke(route, method, parts, body = {}) {
@@ -165,12 +165,16 @@ test('admin MFA enrollment rejects invalid TOTP without activating the account',
 
 test('admin panel unlock requires primary reauthentication and a valid TOTP factor', async () => {
   const h = makeHarness();
-  const secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
-  h.getStored = () => ({ enabled:true, secretCiphertext: (awaitlessEncrypt(secret)), recoveryCodeHashes:[], lastTotpCounter:-1 });
+  const setup = await invoke(h.route, 'POST', ['admin','access','mfa','setup'], {
+    name: USER.displayName, username:'hope-admin', password:'current-password',
+  });
+  const firstCode = generateTotpCode(setup.data.secret, h.now);
+  await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:firstCode });
+  h.advance(30000);
   const counter = Math.floor(h.now / 30000);
-  const code = generateTotpCode(secret, h.now);
+  const code = generateTotpCode(setup.data.secret, h.now);
   const unlocked = await invoke(h.route, 'POST', ['admin','access'], {
-    name: USER.displayName, username: 'hope-admin', password:'current-password', totpCode:code,
+    name: USER.displayName, username:'hope-admin', password:'current-password', totpCode:code,
   });
   assert.equal(unlocked.status, 200);
   assert.equal(unlocked.data.verified, true);
@@ -178,29 +182,25 @@ test('admin panel unlock requires primary reauthentication and a valid TOTP fact
   assert.ok(h.calls.some((call) => call[0] === 'totp' && call[2] === counter));
 });
 
-function awaitlessEncrypt(secret) {
-  // A test-only ciphertext fixture is supplied by the real setup helper below.
-  return secret;
-}
-
 test('admin MFA unlock rejects replayed counters and does not set panel verification', async () => {
   const h = makeHarness();
   const setup = await invoke(h.route, 'POST', ['admin','access','mfa','setup'], {
     name: USER.displayName, username:'hope-admin', password:'current-password',
   });
+  const enrollmentCode = generateTotpCode(setup.data.secret, h.now);
+  await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:enrollmentCode });
+  h.advance(30000);
   const code = generateTotpCode(setup.data.secret, h.now);
-  await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code });
   const next = await invoke(h.route, 'POST', ['admin','access'], {
-    name: USER.displayName, username:'hope-admin', password:'current-password',
-    totpCode:code,
+    name: USER.displayName, username:'hope-admin', password:'current-password', totpCode:code,
   });
   assert.equal(next.status, 200);
-  const replay = await invoke(h.route, 'POST', ['admin','access'], {
-    name: USER.displayName, username:'hope-admin', password:'current-password',
-    totpCode:code,
-  });
-  assert.equal(replay.status, 401);
-  assert.equal(replay.data?.error?.code || replay.error?.code, 'ADMIN_MFA_CODE_INVALID');
+  await assert.rejects(
+    invoke(h.route, 'POST', ['admin','access'], {
+      name: USER.displayName, username:'hope-admin', password:'current-password', totpCode:code,
+    }),
+    (error) => error?.status === 401 && error?.code === 'ADMIN_MFA_CODE_INVALID',
+  );
 });
 
 test('admin MFA unlock consumes a recovery code exactly once', async () => {
