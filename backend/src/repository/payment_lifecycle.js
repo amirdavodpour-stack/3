@@ -5,20 +5,7 @@ import { config } from '../config.js';
 import { fundingJournal, releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown } from '../financial.js';
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { findOfferById } from './core.js';
-
-async function recordJobChatTerminalEvent(client, jobId, patch) {
-  const terminalEvent = String(patch?.status || '').toUpperCase();
-  if (!['COMPLETED','CANCELLED'].includes(terminalEvent)) return 0;
-  const terminalAt = patch?.updatedAt || new Date();
-  const { rowCount } = await client.query(
-    `UPDATE chat_conversations
-        SET terminal_at=COALESCE(terminal_at,$2),
-            terminal_event=COALESCE(terminal_event,$3)
-      WHERE kind='JOB' AND job_id=$1`,
-    [jobId,terminalAt,terminalEvent],
-  );
-  return Number(rowCount || 0);
-}
+import { recordJobChatTerminalEventWithClient } from './human_chat.js';
 
 export async function updateJobSimple(id,expectedStatuses,patch) {
   return withSqlTransaction(async(client)=>{
@@ -28,7 +15,7 @@ export async function updateJobSimple(id,expectedStatuses,patch) {
     if(!fields.length) return job;
     const values=[id,...fields.map(k=>patch[k])]; const sets=fields.map((k,i)=>`${allowed[k]}=$${i+2}`);
     const {rows:updated}=await client.query(`UPDATE jobs SET ${sets.join(',')} WHERE id=$1 RETURNING *`,values);
-    await recordJobChatTerminalEvent(client,id,patch);
+    await recordJobChatTerminalEventWithClient(client,id,patch?.status,patch?.updatedAt);
     return jobFromRow(updated[0]);
   });
 }
@@ -40,7 +27,7 @@ export async function transitionJobWithPayment(id,expectedStatuses,jobPatch,paym
     if(!payment || (paymentStatus && payment.status!==paymentStatus)){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
     const allowed={status:'status',updatedAt:'updated_at'}; const fields=Object.keys(jobPatch).filter(k=>allowed[k]); const vals=[id,...fields.map(k=>jobPatch[k])]; const sets=fields.map((k,i)=>`${allowed[k]}=$${i+2}`);
     const {rows:uj}=await client.query(`UPDATE jobs SET ${sets.join(',')} WHERE id=$1 RETURNING *`,vals);
-    await recordJobChatTerminalEvent(client,id,jobPatch);
+    await recordJobChatTerminalEventWithClient(client,id,jobPatch?.status,jobPatch?.updatedAt);
     const {rows:up}=await client.query(`UPDATE payments SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *`,[payment.id,paymentStatus==='HELD'?'RELEASE_PENDING':paymentStatus]);
     return {job:jobFromRow(uj[0]),payment:paymentFromRow(up[0])};
   });
