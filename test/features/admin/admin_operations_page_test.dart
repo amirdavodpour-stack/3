@@ -117,7 +117,35 @@ class _FakeAdminOperations implements AdminRepository {
         'primaryAdmin': true,
         'permissions': ['admin.resolve_payouts'],
       };
-  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken}) async => const {'verified': true};
+  @override
+  Future<Map<String, dynamic>> getAdminMfaStatus() async => const {
+        'enabled': true,
+        'recoveryCodesRemaining': 10,
+      };
+  @override
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async => const {
+        'pending': true,
+        'secret': 'ABCDEFGHIJKLMNOPQRSTUV234567ABCD',
+        'otpauthUri': 'otpauth://totp/HOPEv2%3Aadmin%40example.test?secret=ABCDEFGHIJKLMNOPQRSTUV234567ABCD&issuer=HOPEv2',
+      };
+  @override
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async => const {
+        'enabled': true,
+        'recoveryCodes': [
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9',
+        ],
+      };
+  @override
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async => const {'verified': true, 'scope': 'WRITE'};
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
   @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
