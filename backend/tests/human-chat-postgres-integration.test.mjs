@@ -39,6 +39,7 @@ const modules = enabled
       import('../src/repository/admin.js'),
       import('../src/repository/core.js'),
       import('../src/repository/payment_refunds.js'),
+      import('../src/repository/chat_retention.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -59,6 +60,7 @@ const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePass
 const { setUserStatus, revokeUserSessions } = modules[15] || {};
 const { linkGoogleSubject } = modules[16] || {};
 const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
+const { createChatConversationLegalHold, releaseChatConversationLegalHold } = modules[18] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -6383,6 +6385,70 @@ test('confirmed refund cancellation records terminal time but keeps shared chat 
     await pool.query('DELETE FROM refunds WHERE payment_id=$1',[paymentId]).catch(()=>{});
     await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]).catch(()=>{});
     await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+  }
+});
+
+test('PostgreSQL legal holds are created and released transactionally with an immutable actor and reason', {
+  skip:!enabled,
+  timeout:30000,
+}, async () => {
+  let holdId=null;
+  try {
+    const created=await createChatConversationLegalHold({
+      conversationId:fixture.conversationId,
+      holdKind:'LEGAL',
+      reason:'Preserve the shared job chat while the dispute is reviewed',
+      createdBy:fixture.adminId,
+    });
+    assert.ok(created?.id);
+    holdId=created.id;
+    assert.equal(created.conversationId,fixture.conversationId);
+    assert.equal(created.holdKind,'LEGAL');
+    assert.equal(created.reason,'Preserve the shared job chat while the dispute is reviewed');
+    assert.equal(created.createdBy,fixture.adminId);
+    assert.equal(created.releasedAt,null);
+
+    const released=await releaseChatConversationLegalHold({
+      holdId,
+      releasedBy:fixture.adminId,
+      releaseReason:'Dispute resolved and preservation obligation formally released',
+    });
+    assert.equal(released.id,holdId);
+    assert.equal(released.releasedBy,fixture.adminId);
+    assert.equal(released.releaseReason,'Dispute resolved and preservation obligation formally released');
+    assert.ok(released.releasedAt);
+
+    const { rows }=await dbModule.getPool().query(
+      'SELECT released_by,released_at,release_reason FROM chat_conversation_legal_holds WHERE id=$1',
+      [holdId],
+    );
+    assert.equal(rows.length,1);
+    assert.equal(rows[0].released_by,fixture.adminId);
+    assert.ok(rows[0].released_at);
+    assert.equal(rows[0].release_reason,'Dispute resolved and preservation obligation formally released');
+
+    await assert.rejects(
+      releaseChatConversationLegalHold({
+        holdId,
+        releasedBy:fixture.adminId,
+        releaseReason:'Duplicate release attempt',
+      }),
+      (error)=>error?.code==='CHAT_LEGAL_HOLD_ALREADY_RELEASED',
+    );
+
+    assert.equal(await createChatConversationLegalHold({
+      conversationId:fixture.adminConversationId,
+      holdKind:'ADMIN',
+      reason:'ADMIN room is not a job-retention target',
+      createdBy:fixture.adminId,
+    }),null);
+  } finally {
+    if(holdId) {
+      await dbModule.getPool().query(
+        'DELETE FROM chat_conversation_legal_holds WHERE id=$1',
+        [holdId],
+      ).catch(()=>{});
+    }
   }
 });
 
