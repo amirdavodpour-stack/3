@@ -226,7 +226,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         'dry-run',
         'Read-only retention eligibility assessment',
         {
-          wouldMutate:plan?.wouldMutate === false,
+          wouldMutate:plan?.wouldMutate === true,
           scanned:Number(plan?.scanned || 0),
           limit:Number(plan?.limit || 200),
         },
