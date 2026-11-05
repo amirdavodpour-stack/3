@@ -5214,9 +5214,17 @@ test('PostgreSQL admin status changes clear admin-panel verification', { skip: !
   const userId = await createPanelTestAdmin(pool, 'admin-panel-status-invalidation');
   assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
 
-  const updated = await setUserStatus(userId, 'DISABLED');
-  assert.equal(updated?.status, 'DISABLED');
+  const updated = await setUserStatus(userId, 'SUSPENDED', {
+    actorId: fixture.adminId,
+    reason: 'Temporary administrative access restriction for panel-verification test',
+    reviewDueAt: new Date(Date.now()+72*60*60*1000).toISOString(),
+  });
+  assert.equal(updated?.status, 'SUSPENDED');
+  assert.ok(updated?.reviewCaseId);
   await assertPanelVerificationCleared(pool, userId);
+  await pool.query('DELETE FROM audit_logs WHERE entity_id=$1 AND action=$2',[userId,'ADMIN_USER_STATUS']);
+  await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=$1',[userId]);
+  await pool.query('DELETE FROM users WHERE id=$1',[userId]);
 });
 
 test('PostgreSQL privacy deletion clears admin-panel verification from the account tombstone', { skip: !enabled }, async () => {
@@ -6626,62 +6634,74 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
   timeout: 30000,
 }, async () => {
   const pool = dbModule.getPool();
-  const userId = fixture.outsiderId;
+  const userId = crypto.randomUUID();
   const actorId = fixture.adminId;
+  const email = `r05-status-review-${userId}@example.test`;
   const reviewDueAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
   const reason = 'Temporary restriction pending manual Trust and Safety review';
-  const before = await pool.query('SELECT status,session_version FROM users WHERE id=$1',[userId]);
-
-  const suspended = await setUserStatus(userId,'SUSPENDED',{actorId,reason,reviewDueAt});
-  assert.equal(suspended.status,'SUSPENDED');
-  assert.ok(suspended.reviewCaseId);
-  assert.equal(new Date(suspended.reviewDueAt).toISOString(),new Date(reviewDueAt).toISOString());
-
-  const { rows: openCases } = await pool.query(
-    `SELECT status,reason,created_by,review_due_at,resolved_by,resolved_at,resolution_reason
-       FROM admin_user_status_review_cases
-      WHERE user_id=$1 AND status='OPEN'`,
-    [userId],
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES($1,$2,'r05-integration-only','R05 status review user','USER','ACTIVE',0,NOW())`,
+    [userId,email],
   );
-  assert.equal(openCases.length,1);
-  assert.equal(openCases[0].reason,reason);
-  assert.equal(openCases[0].created_by,actorId);
-  assert.equal(new Date(openCases[0].review_due_at).toISOString(),new Date(reviewDueAt).toISOString());
-  assert.equal(openCases[0].resolved_by,null);
-  assert.equal(openCases[0].resolved_at,null);
-  const afterSuspend=await pool.query('SELECT session_version FROM users WHERE id=$1',[userId]);
-  assert.equal(Number(afterSuspend.rows[0].session_version),Number(before.rows[0].session_version)+1);
+  try {
+    const before = await pool.query('SELECT status,session_version FROM users WHERE id=$1',[userId]);
+    const suspended = await setUserStatus(userId,'SUSPENDED',{actorId,reason,reviewDueAt});
+    assert.equal(suspended.status,'SUSPENDED');
+    assert.ok(suspended.reviewCaseId);
+    assert.equal(new Date(suspended.reviewDueAt).toISOString(),new Date(reviewDueAt).toISOString());
 
-  const resolutionReason = 'Manual review completed; restriction lifted after evidence review';
-  const activated = await setUserStatus(userId,'ACTIVE',{actorId,reason:resolutionReason});
-  assert.equal(activated.status,'ACTIVE');
+    const { rows: openCases } = await pool.query(
+      `SELECT status,reason,created_by,review_due_at,resolved_by,resolved_at,resolution_reason
+         FROM admin_user_status_review_cases
+        WHERE user_id=$1 AND status='OPEN'`,
+      [userId],
+    );
+    assert.equal(openCases.length,1);
+    assert.equal(openCases[0].reason,reason);
+    assert.equal(openCases[0].created_by,actorId);
+    assert.equal(new Date(openCases[0].review_due_at).toISOString(),new Date(reviewDueAt).toISOString());
+    assert.equal(openCases[0].resolved_by,null);
+    assert.equal(openCases[0].resolved_at,null);
+    const afterSuspend=await pool.query('SELECT session_version FROM users WHERE id=$1',[userId]);
+    assert.equal(Number(afterSuspend.rows[0].session_version),Number(before.rows[0].session_version)+1);
 
-  const { rows: resolvedCases } = await pool.query(
-    `SELECT status,reason,created_by,review_due_at,resolved_by,resolved_at,resolution_reason
-       FROM admin_user_status_review_cases
-      WHERE user_id=$1`,
-    [userId],
-  );
-  assert.equal(resolvedCases.length,1);
-  assert.equal(resolvedCases[0].status,'RESOLVED');
-  assert.equal(resolvedCases[0].reason,reason);
-  assert.equal(resolvedCases[0].resolved_by,actorId);
-  assert.ok(resolvedCases[0].resolved_at);
-  assert.equal(resolvedCases[0].resolution_reason,resolutionReason);
+    const resolutionReason = 'Manual review completed; restriction lifted after evidence review';
+    const activated = await setUserStatus(userId,'ACTIVE',{actorId,reason:resolutionReason});
+    assert.equal(activated.status,'ACTIVE');
 
-  const { rows: audits } = await pool.query(
-    `SELECT action,actor_id,meta FROM audit_logs
-      WHERE action='ADMIN_USER_STATUS' AND actor_id=$1 AND entity_id=$2
-      ORDER BY created_at ASC`,
-    [actorId,userId],
-  );
-  assert.equal(audits.length,2);
-  assert.equal(audits[0].meta.status,'SUSPENDED');
-  assert.equal(audits[0].meta.reason,reason);
-  assert.equal(audits[0].meta.reviewCaseId,suspended.reviewCaseId);
-  assert.equal(audits[1].meta.status,'ACTIVE');
-  assert.equal(audits[1].meta.reason,resolutionReason);
+    const { rows: resolvedCases } = await pool.query(
+      `SELECT status,reason,created_by,review_due_at,resolved_by,resolved_at,resolution_reason
+         FROM admin_user_status_review_cases
+        WHERE user_id=$1`,
+      [userId],
+    );
+    assert.equal(resolvedCases.length,1);
+    assert.equal(resolvedCases[0].status,'RESOLVED');
+    assert.equal(resolvedCases[0].reason,reason);
+    assert.equal(resolvedCases[0].resolved_by,actorId);
+    assert.ok(resolvedCases[0].resolved_at);
+    assert.equal(resolvedCases[0].resolution_reason,resolutionReason);
+
+    const { rows: audits } = await pool.query(
+      `SELECT action,actor_id,meta FROM audit_logs
+        WHERE action='ADMIN_USER_STATUS' AND actor_id=$1 AND entity_id=$2
+        ORDER BY created_at ASC`,
+      [actorId,userId],
+    );
+    assert.equal(audits.length,2);
+    assert.equal(audits[0].meta.status,'SUSPENDED');
+    assert.equal(audits[0].meta.reason,reason);
+    assert.equal(audits[0].meta.reviewCaseId,suspended.reviewCaseId);
+    assert.equal(audits[1].meta.status,'ACTIVE');
+    assert.equal(audits[1].meta.reason,resolutionReason);
+  } finally {
+    await pool.query("DELETE FROM audit_logs WHERE entity_id=$1 AND action='ADMIN_USER_STATUS'",[userId]).catch(()=>{});
+    await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=$1',[userId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
 });
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
