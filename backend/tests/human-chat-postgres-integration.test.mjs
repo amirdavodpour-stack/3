@@ -38,6 +38,7 @@ const modules = enabled
       import('../src/repository/auth.js'),
       import('../src/repository/admin.js'),
       import('../src/repository/core.js'),
+      import('../src/repository/payment_refunds.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -57,6 +58,7 @@ const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
 const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
 const { setUserStatus, revokeUserSessions } = modules[15] || {};
 const { linkGoogleSubject } = modules[16] || {};
+const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -6276,6 +6278,71 @@ test('PostgreSQL job completion records the exact terminal event time on its exi
   } finally {
     await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
     await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+  }
+});
+
+
+test('confirmed refund cancellation records terminal time but keeps shared chat open through the support window', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const { buildChatRetentionDryRun } = await import('../src/repository/chat_retention.js');
+  const jobId = crypto.randomUUID();
+  const conversationId = crypto.randomUUID();
+  const { rows: jobs } = await pool.query(`
+    INSERT INTO jobs(
+      id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+      budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+      created_at,updated_at
+    )
+    SELECT $1,owner_id,provider_id,'R05 refund terminal fixture',
+      'Confirmed refund terminal fixture',category_id,job_type,budget_type,
+      budget_min,budget_max,duration,'R05 refund terminal fixture','FUNDED',
+      city,kind,visibility,NOW(),NOW()
+    FROM jobs WHERE id=$2 RETURNING id
+  `, [jobId,fixture.jobId]);
+  assert.equal(jobs.length,1);
+
+  await pool.query(`
+    INSERT INTO chat_conversations(id,kind,job_id,status,title)
+    VALUES($1,'JOB',$2,'OPEN','R05 refund terminal fixture')
+  `, [conversationId,jobId]);
+
+  const client=await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const cancelled=await cancelJobAfterConfirmedRefundWithClient(client,jobId);
+    assert.equal(cancelled,true);
+    await client.query('COMMIT');
+  } catch(error) {
+    await client.query('ROLLBACK').catch(()=>{});
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  try {
+    const { rows } = await pool.query(`
+      SELECT j.status,c.status AS conversation_status,c.terminal_at,c.terminal_event
+      FROM jobs j JOIN chat_conversations c ON c.job_id=j.id
+      WHERE j.id=$1 AND c.id=$2
+    `, [jobId,conversationId]);
+    assert.equal(rows[0]?.status,'CANCELLED');
+    assert.equal(rows[0]?.conversation_status,'OPEN',
+      'confirmed refund must not immediately close the shared support conversation');
+    assert.equal(rows[0]?.terminal_event,'CANCELLED');
+    assert.ok(rows[0]?.terminal_at);
+
+    const plan=await buildChatRetentionDryRun({
+      asOf:new Date(new Date(rows[0].terminal_at).getTime()+24*60*60*1000),
+      limit:1000,
+    });
+    const item=plan.items.find((entry)=>entry.conversationId===conversationId);
+    assert.equal(item?.action,'SUPPORT_WINDOW_ACTIVE');
+  } finally {
+    await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
     await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
   }
 });
