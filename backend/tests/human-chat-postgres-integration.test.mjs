@@ -6140,9 +6140,12 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
     assert.equal(item('released-hold-retention').action,'CONTENT_RETENTION_ACTIVE');
     assert.equal(item('closed-active-hold').action,'BLOCKED_LEGAL_HOLD');
     assert.equal(item('closed-open-dispute').action,'BLOCKED_OPEN_DISPUTE');
-    assert.equal(item('purge-ready').contentPurgeAfter.toISOString(),'2026-01-01T00:00:00.000Z');
-    assert.ok(item('resolved-dispute-retention').contentPurgeAfter > asOf);
-    assert.ok(item('released-hold-retention').contentPurgeAfter > asOf);
+    assert.equal(
+      new Date(item('purge-ready').contentPurgeAfter).toISOString(),
+      '2026-01-01T00:00:00.000Z',
+    );
+    assert.ok(new Date(item('resolved-dispute-retention').contentPurgeAfter) > asOf);
+    assert.ok(new Date(item('released-hold-retention').contentPurgeAfter) > asOf);
 
     const after = await pool.query(`
       SELECT c.id,c.status,c.terminal_at,c.terminal_event,c.closed_at,
