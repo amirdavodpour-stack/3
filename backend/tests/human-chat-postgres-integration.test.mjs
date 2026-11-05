@@ -6556,6 +6556,71 @@ test('PostgreSQL account deletion anonymizes trust reports and shared satisfacti
   }
 });
 
+test('Google identity linking and its security audit commit or roll back atomically', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const userId = crypto.randomUUID();
+  const suffix = `google-link-audit-${userId}`;
+  const functionName = `r05_fail_google_link_audit_${userId.replaceAll('-', '')}`;
+  const triggerName = `r05_fail_google_link_audit_trigger_${userId.replaceAll('-', '')}`;
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES($1,$2,'r05-integration-only','R05 Google Link Audit','USER','ACTIVE',0,NOW())`,
+    [userId,`r05-${suffix}@example.test`],
+  );
+  try {
+    await pool.query(`CREATE FUNCTION ${functionName}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='AUTH_GOOGLE_LINK' AND NEW.actor_id::text = TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced Google-link audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${triggerName}
+       BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${functionName}('${userId}')`,
+    );
+
+    await assert.rejects(
+      linkGoogleSubject(userId,'r05-google-subject-atomic',{promoteToPrimaryAdmin:false}),
+      /R05 forced Google-link audit failure/,
+    );
+    const { rows: rolledBack } = await pool.query(
+      'SELECT google_subject,role FROM users WHERE id=$1',
+      [userId],
+    );
+    assert.equal(rolledBack[0]?.google_subject,null,
+      'provider-subject assignment must roll back when its audit insert fails');
+    assert.equal(rolledBack[0]?.role,'USER');
+
+    await pool.query(`DROP TRIGGER ${triggerName} ON audit_logs`);
+    await pool.query(`DROP FUNCTION ${functionName}()`);
+
+    const linked=await linkGoogleSubject(userId,'r05-google-subject-atomic',{promoteToPrimaryAdmin:false});
+    assert.equal(linked?.googleSubject,'r05-google-subject-atomic');
+    assert.equal(linked?.role,'USER');
+    const { rows: audits } = await pool.query(
+      `SELECT action,actor_id,entity_type,entity_id,meta
+         FROM audit_logs
+        WHERE action='AUTH_GOOGLE_LINK' AND actor_id=$1 AND entity_id=$1`,
+      [userId],
+    );
+    assert.equal(audits.length,1,'a successful provider identity link must commit exactly one audit event');
+    assert.equal(audits[0].entity_type,'user');
+    assert.equal(audits[0].meta?.provider,'google');
+    assert.equal(audits[0].meta?.primaryAdminBootstrap,false);
+  } finally {
+    await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON audit_logs`).catch(()=>{});
+    await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(()=>{});
+    await pool.query("DELETE FROM audit_logs WHERE actor_id=$1 OR entity_id=$1",[userId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
