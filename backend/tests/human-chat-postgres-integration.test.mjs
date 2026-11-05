@@ -6050,9 +6050,10 @@ test('PostgreSQL chat retention dry-run is read-only and explains support, dispu
       await pool.query(`
         INSERT INTO chat_conversation_legal_holds(
           id,conversation_id,hold_kind,reason,created_at,released_at,release_reason
-        ) VALUES($1,$2,'LEGAL',$3,NOW(),$4,$5)
+        ) VALUES($1,$2,'LEGAL',$3,$4,$5,$6)
       `, [
         holdId,conversationId,'R05 legal hold '+name,
+        holdReleasedAt ? new Date('2025-01-01T00:00:00Z') : new Date('2026-01-01T00:00:00Z'),
         holdReleasedAt ?? null,
         holdReleasedAt ? 'R05 release fixture' : null,
       ]);
