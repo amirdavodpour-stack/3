@@ -113,7 +113,9 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
     if (req.method === 'POST' && parts[1] === 'sandbox-credit') {
       const me = await authUser(req);
       await adminGuard(me);
-      if (process.env.DATABASE_URL && !(await walletRepo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti))) {
+      if ((process.env.DATABASE_URL || config?.adminMfaRequired) && !(await (config?.adminMfaRequired
+        ? walletRepo.isAdminPanelVerified(me.id, config?.adminPanelWriteVerificationMinutes ?? 5, me.sessionJti, 'WRITE')
+        : walletRepo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti)))) {
         throw new HttpError(403, 'ADMIN_PANEL_LOCKED', 'Admin panel requires identity verification');
       }
       assertAdminPermission(me, ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT);
