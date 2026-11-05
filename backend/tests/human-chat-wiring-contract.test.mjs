@@ -18,6 +18,7 @@ test('job chat is provisioned on agreement and terminal timestamps preserve the 
   const refund=read('backend/src/repository/payment_refunds.js');
   const release=read('backend/src/repository/outbox.js');
   const humanChat=read('backend/src/repository/human_chat.js');
+  const paymentWebhook=read('backend/src/repository/payment_webhooks.js');
   assert.match(offer,/ensureJobChat/);
   assert.match(handlers,/ensureJobChat/);
   assert.match(lifecycle,/recordJobChatTerminalEventWithClient/);
@@ -26,6 +27,8 @@ test('job chat is provisioned on agreement and terminal timestamps preserve the 
   assert.match(humanChat,/terminal_at=COALESCE\(terminal_at,\$2\)/);
   assert.doesNotMatch(refund,/closeJobChatForJob/);
   assert.doesNotMatch(release,/closeJobChatForJob/);
+  assert.doesNotMatch(paymentWebhook,/closeJobChatForJob/,
+    'payment settlement/refund webhooks must not close shared chat without an explicit owner policy');
 });
 
 test('AI chat endpoint remains blocked while human messaging has separate endpoints',()=>{
