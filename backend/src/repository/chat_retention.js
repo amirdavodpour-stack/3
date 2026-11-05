@@ -23,6 +23,7 @@ function classifyConversation(row, asOf) {
   const activeDisputeCount = Number(row.active_dispute_count || 0);
   const activeLegalHoldCount = Number(row.active_legal_hold_count || 0);
   const chatAttachmentCount = Number(row.chat_attachment_count || 0);
+  const purgeableChatAttachmentCount = Number(row.purgeable_chat_attachment_count || 0);
   const evidenceReferencedAttachmentCount = Number(row.evidence_referenced_attachment_count || 0);
 
   let action;
@@ -69,7 +70,7 @@ function classifyConversation(row, asOf) {
       reason = 'The 24-month content-retention period after the latest closure, final dispute resolution or legal-hold release event has not elapsed.';
     } else {
       action = 'WOULD_PURGE_CONTENT';
-      reason = 'The 24-month content-retention period elapsed and no unresolved dispute or active legal hold blocks review.';
+      reason = 'The 24-month content-retention period elapsed. Message bodies and unreferenced chat attachments are candidates; evidence-linked attachment objects remain protected.';
     }
   } else {
     action = 'BLOCKED_UNSUPPORTED_CONVERSATION_STATE';
@@ -91,8 +92,13 @@ function classifyConversation(row, asOf) {
     activeLegalHoldCount,
     latestLegalHoldReleasedAt: iso(row.latest_legal_hold_released_at),
     chatAttachmentCount,
+    purgeableChatAttachmentCount,
     evidenceReferencedAttachmentCount,
     evidenceObjectPurgeBlocked: evidenceReferencedAttachmentCount > 0,
+    messageBodiesWouldBePurged: action === 'WOULD_PURGE_CONTENT',
+    unreferencedChatAttachmentsWouldBePurged: action === 'WOULD_PURGE_CONTENT'
+      ? purgeableChatAttachmentCount
+      : 0,
     action,
     reason,
   };
@@ -147,6 +153,8 @@ export async function buildChatRetentionDryRun({
         COALESCE(holds.active_legal_hold_count,0)::int AS active_legal_hold_count,
         holds.latest_released_at AS latest_legal_hold_released_at,
         COALESCE(attachments.chat_attachment_count,0)::int AS chat_attachment_count,
+        COALESCE(attachments.purgeable_chat_attachment_count,0)::int
+          AS purgeable_chat_attachment_count,
         COALESCE(attachments.evidence_referenced_attachment_count,0)::int
           AS evidence_referenced_attachment_count
       FROM chat_conversations c
@@ -172,7 +180,10 @@ export async function buildChatRetentionDryRun({
       LEFT JOIN LATERAL (
         SELECT
           COUNT(DISTINCT a.id) AS chat_attachment_count,
-          COUNT(DISTINCT e.id) AS evidence_referenced_attachment_count
+          COUNT(DISTINCT a.id) FILTER (WHERE e.id IS NULL)
+            AS purgeable_chat_attachment_count,
+          COUNT(DISTINCT a.id) FILTER (WHERE e.id IS NOT NULL)
+            AS evidence_referenced_attachment_count
         FROM chat_messages m
         JOIN chat_message_attachments a ON a.message_id=m.id
         LEFT JOIN evidence e ON e.uri=('storage://' || a.storage_key)
