@@ -78,7 +78,8 @@ test('recovery codes are unique, high entropy and stored only as one-way hashes'
     assert.equal(hashes[i], hashRecoveryCode(codes[i]));
     assert.notEqual(hashes[i], codes[i]);
   }
-  assert.notEqual(hashRecoveryCode(codes[0]), hashRecoveryCode(codes[0].toLowerCase() + 'x'));
+  assert.equal(hashRecoveryCode(codes[0].toLowerCase()), hashes[0]);
+  assert.notEqual(hashRecoveryCode(codes[1]), hashes[0]);
 });
 
 test('TOTP URI labels the HOPEv2 administrator and encodes issuer/account values', () => {
