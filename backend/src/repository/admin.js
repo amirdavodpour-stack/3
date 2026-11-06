@@ -81,12 +81,15 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
 
   return withSqlTransaction(async (client) => {
     const { rows: actors } = await client.query(
-      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
+      `SELECT id,email,google_subject,role,status FROM users WHERE id=$1 FOR UPDATE`,
       [actor],
     );
     if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
       const error=new Error('ADMIN_REQUIRED'); error.code='ADMIN_REQUIRED'; error.status=403; throw error;
     }
+    const actorIsPrimaryAdmin =
+      String(actors[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com'
+      && Boolean(String(actors[0].google_subject || '').trim());
     if(actor===String(id) && targetStatus==='SUSPENDED') {
       const error=new Error('SELF_SUSPEND_FORBIDDEN'); error.code='SELF_SUSPEND_FORBIDDEN'; error.status=400; throw error;
     }
@@ -96,6 +99,18 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
       [id],
     );
     if (!current[0]) return null;
+    if (String(current[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
+      const error = new Error('PRIMARY_ADMIN_PROTECTED');
+      error.code = 'PRIMARY_ADMIN_PROTECTED';
+      error.status = 403;
+      throw error;
+    }
+    if (current[0].role === 'ADMIN' && !actorIsPrimaryAdmin) {
+      const error = new Error('MANAGE_ADMINS_REQUIRED');
+      error.code = 'MANAGE_ADMINS_REQUIRED';
+      error.status = 403;
+      throw error;
+    }
     if (current[0].status === 'DELETED') {
       const error = new Error('ACCOUNT_DELETION_TERMINAL');
       error.code = 'ACCOUNT_DELETION_TERMINAL';

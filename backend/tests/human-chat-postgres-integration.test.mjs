@@ -6629,6 +6629,61 @@ test('Google identity linking and its security audit commit or roll back atomica
   }
 });
 
+test('PostgreSQL status mutation rechecks administrator and reserved-owner protections under target row lock', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const actorId = crypto.randomUUID();
+  const adminTargetId = crypto.randomUUID();
+  const ownerTargetId = crypto.randomUUID();
+  const suffix = `status-toctou-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,google_subject,created_at)
+     VALUES($1,$2,'r05-test','Operational status actor','ADMIN','ACTIVE',0,$3,NOW())`,
+    [actorId,`r05-operational-${suffix}@example.test`,`r05-google-${suffix}`],
+  );
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,google_subject,created_at)
+     VALUES($1,$2,'r05-test','Concurrent administrator target','ADMIN','ACTIVE',0,$3,NOW())`,
+    [adminTargetId,`r05-target-admin-${suffix}@example.test`,`r05-target-google-${suffix}`],
+  );
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES($1,'amir.davodpour@gmail.com','r05-test','Reserved primary owner email','USER','ACTIVE',0,NOW())`,
+    [ownerTargetId],
+  );
+  const reviewDueAt = new Date(Date.now()+72*60*60*1000).toISOString();
+  try {
+    await assert.rejects(
+      setUserStatus(adminTargetId,'SUSPENDED',{
+        actorId,reason:'Operational admin cannot suspend another admin',reviewDueAt,
+      }),
+      (error)=>error?.code==='MANAGE_ADMINS_REQUIRED',
+    );
+    await assert.rejects(
+      setUserStatus(ownerTargetId,'SUSPENDED',{
+        actorId,reason:'Operational admin cannot suspend reserved owner identity',reviewDueAt,
+      }),
+      (error)=>error?.code==='PRIMARY_ADMIN_PROTECTED',
+    );
+    const { rows } = await pool.query(
+      `SELECT id,status FROM users WHERE id=ANY($1::uuid[]) ORDER BY id`,
+      [[adminTargetId,ownerTargetId]],
+    );
+    assert.equal(rows.length,2);
+    assert.ok(rows.every((row)=>row.status==='ACTIVE'));
+    const { rows: cases } = await pool.query(
+      `SELECT id FROM admin_user_status_review_cases WHERE user_id=ANY($1::uuid[])`,
+      [[adminTargetId,ownerTargetId]],
+    );
+    assert.equal(cases.length,0,'rejected role/race changes must not create review cases');
+  } finally {
+    await pool.query('DELETE FROM audit_logs WHERE entity_id=ANY($1::uuid[]) OR actor_id=$2',[ [actorId,adminTargetId,ownerTargetId],actorId ]).catch(()=>{});
+    await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=ANY($1::uuid[])',[ [adminTargetId,ownerTargetId] ]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[ [actorId,adminTargetId,ownerTargetId] ]).catch(()=>{});
+  }
+});
 test('PostgreSQL user suspension opens a reasoned human review case and explicit activation resolves it', {
   skip: !enabled,
   timeout: 30000,

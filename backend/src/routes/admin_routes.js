@@ -428,6 +428,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           : legacyAdmin.setUserStatus(id,status,options);
       } catch(error) {
         if(['ACCOUNT_DELETION_TERMINAL','USER_STATUS_UNCHANGED'].includes(error?.code)) throw new HttpError(409,error.code,'The requested user status cannot be applied');
+        if(['MANAGE_ADMINS_REQUIRED','PRIMARY_ADMIN_PROTECTED'].includes(error?.code)) throw new HttpError(403,error.code,'Only the verified primary administrator can change administrator or reserved-owner accounts');
         if(error?.code==='INVALID_REVIEW_DEADLINE') throw new HttpError(400,error.code,'Review deadline must be between one hour and seven days from now');
         throw error;
       }
