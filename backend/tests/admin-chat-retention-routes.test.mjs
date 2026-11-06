@@ -217,7 +217,7 @@ test('legal hold mutations reject invalid identifiers, kinds and empty reasons',
 });
 
 test('admin chat-retention dry-run paginates with a stable cursor and reports inventory completeness',async()=>{
-  const plan={...EMPTY_PLAN,limit:1,scanned:1,totalCount:7,hasMore:true,nextCursor:'eyJjdXJzb3IiOiIxIn0',pageComplete:false,inventoryComplete:false};
+  const plan={...EMPTY_PLAN,limit:1,scanned:1,totalCount:7,hasMore:true,nextCursor:'eyJjdXJzb3IiOiIxIn0',pageComplete:false,inventoryComplete:false,cursorProvided:true};
   const h=makeHarness({plan});
   const response=await h.invoke('GET',['admin','privacy','chat-retention','dry-run'],{},'?limit=1&cursor=eyJjdXJzb3IiOiIxIn0');
   assert.equal(response.status,200);
