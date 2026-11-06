@@ -65,8 +65,24 @@ export async function openJobDisputeWithHold({
       INSERT INTO job_disputes(id,job_id,opened_by,trigger_type,status)
       VALUES(gen_random_uuid(),$1,$2,$3,'OPEN')
       ON CONFLICT(job_id) DO UPDATE SET updated_at=NOW()
-      RETURNING *
+      RETURNING *, (xmax='0'::xid) AS inserted
     `, [jobId, openedBy, triggerType]);
+
+    if (rows[0]?.inserted === true) {
+      await client.query(
+        `INSERT INTO audit_logs(
+           id,action,actor_id,entity_type,entity_id,meta,created_at
+         ) VALUES(
+           gen_random_uuid(),'JOB_DISPUTE_OPEN',$1,'job',$2,$3::jsonb,NOW()
+         )`,
+        [openedBy,jobId,JSON.stringify({
+          disputeId:rows[0].id,
+          triggerType,
+          paymentHeld:true,
+          cancelledReleaseEvents:Number(held.cancelledReleaseEvents || 0),
+        })],
+      );
+    }
 
     return { opened:true, dispute:disputeView(rows[0]), ...held };
   });
@@ -197,9 +213,24 @@ export async function completeJobDisputeResolution(id, { resolution, token }) {
         RETURNING *`,
       [id,resolution,token],
     );
-    return updated[0]
-      ? disputeView(updated[0])
-      : { stale:true, dispute:disputeView(current) };
+    if (!updated[0]) return { stale:true, dispute:disputeView(current) };
+
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_DISPUTE_RESOLVE',$1,'job_dispute',$2,$3::jsonb,NOW()
+       )`,
+      [current.resolved_by,id,JSON.stringify({
+        jobId:current.job_id,
+        resolution,
+        reason:current.resolution_reason || '',
+        aiDecision:current.ai_decision || null,
+        aiConfidence:current.ai_confidence == null ? null : Number(current.ai_confidence),
+        outcomeStatus:updated[0].status,
+      })],
+    );
+    return disputeView(updated[0]);
   });
 }
 

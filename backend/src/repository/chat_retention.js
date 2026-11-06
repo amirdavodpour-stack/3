@@ -381,6 +381,18 @@ export async function createChatConversationLegalHold({
        RETURNING *`,
       [id,kind,why,actor],
     );
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_CHAT_LEGAL_HOLD_CREATED',$1,'chat_retention',$2,$3::jsonb,NOW()
+       )`,
+      [actor,rows[0].id,JSON.stringify({
+        conversationId:id,
+        holdKind:kind,
+        reason:why,
+      })],
+    );
     return legalHoldView(rows[0]);
   });
 }
@@ -441,6 +453,17 @@ export async function releaseChatConversationLegalHold({
         WHERE id=$1 AND released_at IS NULL
         RETURNING *`,
       [id,actor,why],
+    );
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_CHAT_LEGAL_HOLD_RELEASED',$1,'chat_retention',$2,$3::jsonb,NOW()
+       )`,
+      [actor,id,JSON.stringify({
+        reason:why,
+        conversationId,
+      })],
     );
     return legalHoldView(rows[0]);
   });

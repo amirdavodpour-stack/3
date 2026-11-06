@@ -288,6 +288,8 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   assert.equal(resolutionAudits.length,1);
   assert.equal(resolutionAudits[0].actor_id,rows[0]?.resolved_by || fixture.adminId);
   assert.equal(resolutionAudits[0].meta.resolution,winner.resolution);
+  assert.equal(resolutionAudits[0].meta.reason,'resume the same decision after lease expiry');
+  assert.equal(resolutionAudits[0].meta.outcomeStatus,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
   await pool.query("DELETE FROM audit_logs WHERE action='ADMIN_DISPUTE_RESOLVE' AND entity_id=$1",[disputeId]);
   await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
 });
@@ -5749,10 +5751,18 @@ test('dispute creation and escrow hold roll back together when dispute persisten
     assert.equal(committed[0]?.payment_status,'HELD');
     assert.equal(committed[0]?.release_status,'DONE');
     assert.equal(committed[0]?.dispute_status,'OPEN');
+    const { rows: openingAudits } = await pool.query(
+      "SELECT action,actor_id,meta FROM audit_logs WHERE action='JOB_DISPUTE_OPEN' AND entity_id=$1",
+      [jobId],
+    );
+    assert.equal(openingAudits.length,1);
+    assert.equal(openingAudits[0].actor_id,fixture.ownerId);
+    assert.equal(openingAudits[0].meta.disputeId,opened.dispute.id);
   } finally {
     await pool.query('ALTER TABLE job_disputes DROP CONSTRAINT IF EXISTS ' + constraintName);
     await pool.query('DROP TRIGGER IF EXISTS r05_fail_dispute_open_audit_trigger_' + suffix + ' ON audit_logs').catch(()=>{});
     await pool.query('DROP FUNCTION IF EXISTS r05_fail_dispute_open_audit_' + suffix + '()').catch(()=>{});
+    await pool.query("DELETE FROM audit_logs WHERE action='JOB_DISPUTE_OPEN' AND entity_id=$1",[jobId]).catch(()=>{});
     await pool.query("DELETE FROM audit_logs WHERE action='JOB_DISPUTE_OPEN' AND entity_id=$1",[jobId]).catch(()=>{});
     await pool.query('DELETE FROM job_disputes WHERE job_id=$1',[jobId]);
     await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
@@ -6538,6 +6548,13 @@ test('PostgreSQL legal holds are created and released transactionally with an im
     assert.equal(created.reason,'Preserve the shared job chat while the dispute is reviewed');
     assert.equal(created.createdBy,fixture.adminId);
     assert.equal(created.releasedAt,null);
+    const { rows: createdAudits } = await pool.query(
+      "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_CHAT_LEGAL_HOLD_CREATED' AND entity_id=$1",
+      [holdId],
+    );
+    assert.equal(createdAudits.length,1);
+    assert.equal(createdAudits[0].actor_id,fixture.adminId);
+    assert.equal(createdAudits[0].meta.conversationId,fixture.conversationId);
 
     await pool.query(`CREATE FUNCTION ${releaseFunction}() RETURNS trigger AS $body$
       BEGIN
@@ -6583,6 +6600,13 @@ test('PostgreSQL legal holds are created and released transactionally with an im
     assert.equal(rows[0].released_by,fixture.adminId);
     assert.ok(rows[0].released_at);
     assert.equal(rows[0].release_reason,'Dispute resolved and preservation obligation formally released');
+    const { rows: releasedAudits } = await pool.query(
+      "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_CHAT_LEGAL_HOLD_RELEASED' AND entity_id=$1",
+      [holdId],
+    );
+    assert.equal(releasedAudits.length,1);
+    assert.equal(releasedAudits[0].actor_id,fixture.adminId);
+    assert.equal(releasedAudits[0].meta.reason,'Dispute resolved and preservation obligation formally released');
 
     await assert.rejects(
       releaseChatConversationLegalHold({

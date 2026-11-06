@@ -112,7 +112,9 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
         }
         const resolved=await repo.completeJobDisputeResolution(dispute.id,{resolution,token:claim.token});
         if(!resolved || resolved.stale) throw new HttpError(409,'DISPUTE_RESOLUTION_CLAIM_STALE','This administrator resolution claim expired or was superseded; retry the same decision');
-        await createAudit('ADMIN_DISPUTE_RESOLVE',me.id,'job_dispute',dispute.id,{jobId:dispute.jobId,resolution,aiDecision:dispute.aiDecision,aiConfidence:dispute.aiConfidence});
+        if (!process.env.DATABASE_URL) {
+          await createAudit('ADMIN_DISPUTE_RESOLVE',me.id,'job_dispute',dispute.id,{jobId:dispute.jobId,resolution,aiDecision:dispute.aiDecision,aiConfidence:dispute.aiConfidence});
+        }
         const heldPendingReview = resolution === 'HOLD';
         await notifyUser({userId:dispute.worker.id,type:NOTIFICATION_TYPES.PAYMENT_UPDATE,title:heldPendingReview?'وجه تا بررسی بعدی نگه داشته شد':'نتیجه بررسی اختلاف همکاری',body:heldPendingReview?`وجه مربوط به «${dispute.jobTitle}» در escrow باقی ماند و پرونده برای تصمیم بعدی در بررسی ادمین است.`:`اختلاف مربوط به «${dispute.jobTitle}» تعیین تکلیف شد.`,data:{jobId:dispute.jobId,disputeId:dispute.id,resolution},dedupeKey:`dispute:${dispute.id}:${resolution.toLowerCase()}:${resolved.updatedAt||now()}`,channels:['IN_APP','PUSH','EMAIL']}).catch(()=>{});
         return sendJson(res,200,resolved);
@@ -157,7 +159,9 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
       }
       const dispute=opened.dispute;
       const analyzed=await analyzeCase(dispute);
-      await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:'USER',paymentHeld:true,cancelledReleaseEvents:opened.cancelledReleaseEvents||0});
+      if (!process.env.DATABASE_URL) {
+        await createAudit('JOB_DISPUTE_OPEN',me.id,'job',job.id,{disputeId:dispute.id,triggerType:'USER',paymentHeld:true,cancelledReleaseEvents:opened.cancelledReleaseEvents||0});
+      }
       return sendJson(res,200,{dispute:analyzed,payment:{status:'HELD'}});
     }
     throw new HttpError(405,'METHOD_NOT_ALLOWED','Method not allowed');

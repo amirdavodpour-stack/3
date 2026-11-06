@@ -283,14 +283,16 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         createdBy:me.id,
       });
       if (!hold) throw new HttpError(404,'CHAT_CONVERSATION_NOT_FOUND','Job conversation not found');
-      await createAudit(
-        'ADMIN_CHAT_LEGAL_HOLD_CREATED',
-        me.id,
-        'chat_retention',
-        hold.id,
-        reason,
-        {conversationId,holdKind,reason},
-      );
+      if (!process.env.DATABASE_URL) {
+        await createAudit(
+          'ADMIN_CHAT_LEGAL_HOLD_CREATED',
+          me.id,
+          'chat_retention',
+          hold.id,
+          reason,
+          {conversationId,holdKind,reason},
+        );
+      }
       return sendJson(res,201,hold);
     }
 
@@ -324,14 +326,16 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         throw error;
       }
       if (!hold) throw new HttpError(404,'CHAT_LEGAL_HOLD_NOT_FOUND','Active legal hold not found');
-      await createAudit(
-        'ADMIN_CHAT_LEGAL_HOLD_RELEASED',
-        me.id,
-        'chat_retention',
-        hold.id,
-        reason,
-        {reason,conversationId:hold.conversationId},
-      );
+      if (!process.env.DATABASE_URL) {
+        await createAudit(
+          'ADMIN_CHAT_LEGAL_HOLD_RELEASED',
+          me.id,
+          'chat_retention',
+          hold.id,
+          reason,
+          {reason,conversationId:hold.conversationId},
+        );
+      }
       return sendJson(res,200,hold);
     }
 
