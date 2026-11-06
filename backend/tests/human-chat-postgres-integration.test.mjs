@@ -6723,7 +6723,7 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
      SELECT gen_random_uuid(),$1,$2,$3 || ' ' || seq::text,'R05 retention pagination fixture',c.id,
             'FIXED','FIXED',100,100,1,'Retention pagination fixture','IN_PROGRESS',
             'R05 test','MISSION','PUBLIC',NOW(),NOW()
-       FROM generate_series(1,3) AS seq
+       FROM generate_series(1,3) AS g(seq)
        CROSS JOIN LATERAL (
          SELECT id FROM categories WHERE is_active=TRUE ORDER BY created_at NULLS FIRST,id LIMIT 1
        ) c
