@@ -6774,6 +6774,56 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
   }
 });
 
+test('PostgreSQL retention dry-run recognizes SETTLED jobs with an original COMPLETED terminal event', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `settled-retention-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT gen_random_uuid(),$1,$2,$3,'Settled retention lifecycle fixture',c.id,
+            'FIXED','FIXED',100,100,1,'Completed and provider-released','SETTLED',
+            'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+     RETURNING id`,
+    [fixture.ownerId,fixture.workerId,`R05 settled retention ${suffix}`],
+  );
+  const jobId = jobs[0]?.id;
+  assert.ok(jobId);
+  let conversationId = null;
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO chat_conversations(
+         id,kind,job_id,status,title,created_at,terminal_at,terminal_event
+       ) VALUES(
+         gen_random_uuid(),'JOB',$1,'OPEN','Settled retention fixture',
+         NOW(),$2,'COMPLETED'
+       ) RETURNING id`,
+      [jobId,new Date('2026-10-01T00:00:00.000Z')],
+    );
+    conversationId = rows[0]?.id;
+    assert.ok(conversationId);
+
+    const plan = await buildChatRetentionDryRun({
+      limit:1000,
+      asOf:new Date('2026-11-06T00:00:00.000Z'),
+    });
+    const item = plan.items.find((candidate) => candidate.conversationId === conversationId);
+    assert.ok(item,'settled job conversation should appear in the retention inventory');
+    assert.equal(item.jobStatus,'SETTLED');
+    assert.equal(item.terminalEvent,'COMPLETED');
+    assert.equal(item.action,'WOULD_CLOSE');
+  } finally {
+    if (conversationId) await pool.query('DELETE FROM chat_conversations WHERE id=$1',[conversationId]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
+  }
+});
+
 test('PostgreSQL retention dry-run cursor traverses the complete inventory without duplicates', {
   skip: !enabled,
   timeout: 30000,
