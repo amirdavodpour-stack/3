@@ -6491,6 +6491,7 @@ test('PostgreSQL legal holds are created and released transactionally with an im
   skip:!enabled,
   timeout:30000,
 }, async () => {
+  const pool=dbModule.getPool();
   let holdId=null;
   const suffix=crypto.randomBytes(6).toString('hex');
   const createFunction='r05_fail_chat_hold_create_audit_'+suffix;
