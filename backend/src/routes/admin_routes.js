@@ -517,9 +517,15 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='trust-reports' && parts[3]==='status'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.TRUST_SAFETY);
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['OPEN','REVIEWING','RESOLVED','DISMISSED']),'status');
-      const updated=process.env.DATABASE_URL ? await adminUseCases.updateTrustReportStatus(id,status) : legacyAdmin.updateTrustReportStatus(id,status);
-      if(!updated) throw new HttpError(404,'REPORT_NOT_FOUND','Trust report not found'); if(!process.env.DATABASE_URL) await legacyAdmin.save();
-      await createAudit('TRUST_REPORT_STATUS',me.id,'trust_report',id,{status}); return sendJson(res,200,{id,status:updated.status});
+      const updated=process.env.DATABASE_URL
+        ? await adminUseCases.updateTrustReportStatus(id,status,{actorId:me.id})
+        : legacyAdmin.updateTrustReportStatus(id,status);
+      if(!updated) throw new HttpError(404,'REPORT_NOT_FOUND','Trust report not found');
+      if(!process.env.DATABASE_URL) {
+        await legacyAdmin.save();
+        await createAudit('TRUST_REPORT_STATUS',me.id,'trust_report',id,{status});
+      }
+      return sendJson(res,200,{id,status:updated.status});
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='payouts' && parts[2]==='unknown'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);

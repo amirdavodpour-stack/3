@@ -41,6 +41,7 @@ const modules = enabled
       import('../src/repository/core.js'),
       import('../src/repository/payment_refunds.js'),
       import('../src/repository/chat_retention.js'),
+      import('../src/repository/trust.js'),
     ])
   : [];
 const dbModule = modules[0];
@@ -62,6 +63,7 @@ const { setUserStatus, revokeUserSessions, listAdminUsers, grantAdminByEmail, re
 const { linkGoogleSubject } = modules[16] || {};
 const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
 const { createChatConversationLegalHold, releaseChatConversationLegalHold, buildChatRetentionDryRun } = modules[18] || {};
+const { updateTrustReportStatus } = modules[19] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -7386,6 +7388,62 @@ test('Migration 050 invalidates unlinked primary-owner sessions and writes one i
     client.release();
   }
 });
+
+test('PostgreSQL trust-report status and its audit commit or roll back atomically', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool=dbModule.getPool();
+  const reportId=crypto.randomUUID();
+  const suffix=reportId.replaceAll('-','');
+  const fn='r05_fail_trust_report_audit_'+suffix;
+  const trigger='r05_fail_trust_report_audit_trigger_'+suffix;
+  await pool.query(
+    `INSERT INTO trust_reports(id,reporter_id,entity_type,entity_id,reason,details,status,created_at,updated_at)
+     VALUES($1,$2,'JOB',$3,'HARASSMENT','Trust report status atomicity fixture','OPEN',NOW(),NOW())`,
+    [reportId,fixture.ownerId,fixture.jobId],
+  );
+  try {
+    await pool.query(`CREATE FUNCTION ${fn}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='TRUST_REPORT_STATUS' AND NEW.entity_id::text=TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced TRUST_REPORT_STATUS audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${trigger} BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${fn}('${reportId}')`,
+    );
+    await assert.rejects(
+      updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId}),
+      /R05 forced TRUST_REPORT_STATUS audit failure/,
+    );
+    const { rows: rolledBack }=await pool.query('SELECT status FROM trust_reports WHERE id=$1',[reportId]);
+    assert.equal(rolledBack[0]?.status,'OPEN','report status must roll back if audit insertion fails');
+    await pool.query('DROP TRIGGER IF EXISTS '+trigger+' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS '+fn+'()');
+
+    const updated=await updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId});
+    assert.equal(updated.status,'RESOLVED');
+    const { rows: audits }=await pool.query(
+      `SELECT action,actor_id,meta FROM audit_logs
+        WHERE action='TRUST_REPORT_STATUS' AND entity_id=$1`,
+      [reportId],
+    );
+    assert.equal(audits.length,1);
+    assert.equal(audits[0].actor_id,fixture.adminId);
+    assert.equal(audits[0].meta.status,'RESOLVED');
+    assert.equal(audits[0].meta.previousStatus,'OPEN');
+  } finally {
+    await pool.query('DROP TRIGGER IF EXISTS '+trigger+' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS '+fn+'()').catch(()=>{});
+    await pool.query(`DELETE FROM audit_logs WHERE action='TRUST_REPORT_STATUS' AND entity_id=$1`,[reportId]).catch(()=>{});
+    await pool.query('DELETE FROM trust_reports WHERE id=$1',[reportId]).catch(()=>{});
+  }
+});
+
 
 after(async () => {
   if (enabled) await dbModule.db.close();
