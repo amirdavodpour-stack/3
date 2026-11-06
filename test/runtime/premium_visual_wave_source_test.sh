@@ -373,8 +373,16 @@ grep -Fq "test/features/marketplace/employer_candidate_matches_page_test.dart" "
 grep -Fq "Wave 23 vertical transaction timeline" "test/features/transactions/transaction_page_test.dart"
 # Wave 24 compact flow, discovery controls, chart labels and accessibility gates.
 grep -Fq 'radius: MediaQuery.sizeOf(context).width < 500 ? 24 : 32' lib/features/profile/profile_page.dart
-grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-wave-1-static.yml
-grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml
+if grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-wave-1-static.yml; then
+  echo "FAIL: PR title must not bypass the consolidated Flutter regression gate." >&2
+  exit 1
+fi
+if grep -Fq "contains(github.event.pull_request.title, '[flutter-preverified]')" .github/workflows/hope-ui-runtime-evidence.yml; then
+  echo "FAIL: Runtime title must not independently bypass Flutter visual tests." >&2
+  exit 1
+fi
+grep -Fq "HOPE Superwave — one consolidated Flutter regression gate" .github/workflows/hope-ui-wave-1-static.yml
+grep -Fq "Flutter visual wave focused gate" .github/workflows/hope-ui-runtime-evidence.yml
 grep -Fq 'static const scrollEndGap = 12.0;' lib/core/theme/hope_v2_design.dart
 grep -Fq 'height: HopeV2Navigation.barHeight +' lib/core/ui/premium_components.dart
 grep -Fq 'maxLines: textScale >= 1.5 ? 1 : (compact ? 3 : 1),' lib/core/ui/premium_components.dart
