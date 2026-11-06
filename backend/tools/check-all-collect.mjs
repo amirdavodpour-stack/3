@@ -68,7 +68,7 @@ const summary = {
   failed: failed.length,
   results: summaries,
 };
-fs.writeFileSync('check-all-summary.json', JSON.stringify(summary, null, 2) + '\\n', { mode: 0o644 });
+fs.writeFileSync('check-all-summary.json', JSON.stringify(summary, null, 2) + '\n', { mode: 0o644 });
 
 if (failed.length) {
   console.error('\\n[check:all] BLOCKED — failed suites:');

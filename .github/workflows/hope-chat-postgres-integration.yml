@@ -1,0 +1,88 @@
+name: HOPE PostgreSQL integration
+
+on:
+  pull_request:
+    branches:
+      - feat/ui-v2-wave-1-execution-2026-10-07
+    paths:
+      - "backend/src/app.js"
+      - "backend/src/config.js"
+      - "backend/src/db.js"
+      - "backend/src/db/migrations.js"
+      - "backend/src/db/runtime.js"
+      - "backend/src/db/migrations/03*.js"
+      - "backend/src/db/migrations/04*.js"
+      - "backend/src/db/migrations/05*.js"
+      - "backend/src/repository/admin.js"
+      - "backend/src/repository/disputes.js"
+      - "backend/src/repository/chat_retention.js"
+      - "backend/src/repository/privacy.js"
+      - "backend/src/repository/payment_webhooks.js"
+      - "backend/src/application/use_cases/admin_use_cases.js"
+      - "backend/src/application/legacy/admin_legacy.js"
+      - "backend/src/application/legacy/account_legacy.js"
+      - "backend/src/routes/admin_routes.js"
+      - "backend/src/routes/job_dispute_routes.js"
+      - "backend/tests/admin-*.test.mjs"
+      - "backend/tests/privacy-v2.test.mjs"
+      - "backend/src/repository/human_chat.js"
+      - "backend/src/repository/storage.js"
+      - "backend/src/repository/auth.js"
+      - "backend/src/routes/human_chat_routes.js"
+      - "backend/src/routes/storage_routes.js"
+      - "backend/src/routes/auth_routes.js"
+      - "backend/src/services/human_chat.js"
+      - "backend/openapi/openapi.yaml"
+      - "backend/tests/human-chat*.test.mjs"
+      - "backend/tests/postgres-*.test.mjs"
+      - "backend/tools/run-chat-postgres-isolated.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - ".github/workflows/hope-chat-postgres-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hope-chat-postgres-integration-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-chat:
+    name: PostgreSQL migrations, identity, finance, disputes, privacy and chat gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      REQUIRE_INTEGRATION: "1"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Run isolated real-PostgreSQL integration tests
+        working-directory: backend
+        run: npm run test:chat-postgres:isolated

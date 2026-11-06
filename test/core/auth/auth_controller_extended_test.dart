@@ -9,9 +9,10 @@ class _Repository implements AuthRepository {
   @override
   Future<AuthSession> loginWithGoogle(String _) =>
       throw UnimplementedError();
-  _Repository({this.failLogin = false, this.failRegister = false});
+  _Repository({this.failLogin = false, this.failRegister = false, this.failVerify = false});
   bool failLogin;
   bool failRegister;
+  bool failVerify;
 
   @override
   Future<AuthSession> login(String email, String password) async {
@@ -26,17 +27,25 @@ class _Repository implements AuthRepository {
   }
 
   @override
-  Future<AuthSession> register(
+  Future<void> register(
       String email, String password, String displayName) async {
     if (failRegister) {
       throw ApiException('VALIDATION_ERROR', 'invalid');
     }
+  }
+
+  @override
+  Future<AuthSession> verifyEmail(String code) async {
+    if (failVerify) throw ApiException('EMAIL_VERIFICATION_INVALID', 'invalid code');
     return const AuthSession(
       accessToken: 'a2',
       refreshToken: 'r2',
       user: {'id': 'u2'},
     );
   }
+
+  @override
+  Future<void> resendEmailVerification(String email) async {}
 
   @override
   Future<void> logout() async {}
@@ -90,13 +99,37 @@ void main() {
     expect(auth.loading, isFalse);
   });
 
-  test('register stores the returned session', () async {
+  test('register does not authenticate or persist tokens before email verification', () async {
     final auth = AuthController(_Repository(), SecureStore());
     await auth.register('new@example.com', 'pw', 'New User');
+
+    expect(auth.isAuthenticated, isFalse);
+    expect(auth.isGuest, isTrue);
+    expect(await auth.store.accessToken, isNull);
+    expect(await auth.store.refreshToken, isNull);
+  });
+
+  test('email verification persists the first authenticated session', () async {
+    final auth = AuthController(_Repository(), SecureStore());
+    await auth.register('new@example.com', 'pw', 'New User');
+    await auth.verifyEmail('verification-code');
 
     expect(auth.isAuthenticated, isTrue);
     expect(auth.user?['id'], 'u2');
     expect(await auth.store.accessToken, 'a2');
+    expect(await auth.store.refreshToken, 'r2');
+  });
+
+  test('invalid email verification leaves registration unauthenticated', () async {
+    final auth = AuthController(_Repository(failVerify: true), SecureStore());
+    await auth.register('new@example.com', 'pw', 'New User');
+
+    await expectLater(
+      auth.verifyEmail('invalid-code'),
+      throwsA(isA<ApiException>()),
+    );
+    expect(auth.isGuest, isTrue);
+    expect(await auth.store.accessToken, isNull);
   });
 
   test('failed registration restores idle state and exposes validation message',

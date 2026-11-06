@@ -31,7 +31,7 @@ HopePayment _payment({String currency = 'IRR', String status = 'HELD'}) => HopeP
         baseAmount: '1000000',
         employerFee: '100000',
         workerFee: '100000',
-        platformFee: '0',
+        platformFee: '200000',
         employerCharge: '1100000',
         providerPayout: '900000',
         policyVersion: 'v1',
@@ -86,7 +86,16 @@ void main() {
       amount: '2000000.0',
       providerRef: payment.providerRef,
       job: payment.job,
-      fees: payment.fees,
+      fees: HopePaymentFees(
+        baseAmount: '2000000.0',
+        employerFee: payment.fees!.employerFee,
+        workerFee: payment.fees!.workerFee,
+        platformFee: payment.fees!.platformFee,
+        employerCharge: payment.fees!.employerCharge,
+        providerPayout: payment.fees!.providerPayout,
+        policyVersion: payment.fees!.policyVersion,
+        currency: payment.fees!.currency,
+      ),
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
     );
@@ -113,6 +122,132 @@ void main() {
 
 
   testWidgets(
+      'PremiumPaymentSummary prefers canonical baseAmount over the legacy amount field',
+      (tester) async {
+    final original = _payment(currency: 'TOMAN');
+    final payment = HopePayment(
+      id: original.id,
+      status: original.status,
+      amount: '2500000',
+      providerRef: original.providerRef,
+      job: original.job,
+      fees: original.fees,
+      createdAt: original.createdAt,
+      updatedAt: original.updatedAt,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(body: PremiumPaymentSummary(payment: payment)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Base amount'), findsOneWidget);
+    expect(find.text('1,000,000 Toman'), findsOneWidget);
+    expect(find.text('2,500,000 Toman'), findsNothing);
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer fee 100,000 Toman, Worker fee 100,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman, Platform fee 200,000 Toman',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+      'PremiumPaymentSummary displays employer and worker fee amounts separately',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: PremiumPaymentSummary(payment: _payment(currency: 'TOMAN')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Base amount'), findsOneWidget);
+    expect(find.text('Employer charge'), findsOneWidget);
+    expect(find.text('Worker payout'), findsOneWidget);
+    expect(find.text('Employer fee'), findsOneWidget);
+    expect(find.text('Worker fee'), findsOneWidget);
+    expect(find.text('100,000 Toman'), findsNWidgets(2));
+    expect(find.text('Platform fee'), findsOneWidget);
+    expect(find.text('200,000 Toman'), findsOneWidget);
+    expect(find.text('1,100,000 Toman'), findsOneWidget);
+    expect(find.text('900,000 Toman'), findsOneWidget);
+  });
+
+  testWidgets(
+      'PremiumPaymentSummary preserves the JOB fee contract with zero worker fee',
+      (tester) async {
+    final payment = HopePayment.fromMap({
+      'id': 'job-payment',
+      'status': 'HELD',
+      'amount': '30000000',
+      'job': {
+        'id': 'job-1',
+        'title': 'Monthly job',
+        'description': 'First month salary',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+      },
+      'fees': {
+        'baseAmount': '30000000',
+        'employerFee': '9000000',
+        'workerFee': '0',
+        'platformFee': '9000000',
+        'employerCharge': '39000000',
+        'providerPayout': '30000000',
+        'policyVersion': '2026-08-v1',
+        'currency': 'TOMAN',
+      },
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en'), Locale('fa')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(body: PremiumPaymentSummary(payment: payment)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Employer fee'), findsOneWidget);
+    expect(find.text('Worker fee'), findsOneWidget);
+    expect(find.text('9,000,000 Toman'), findsNWidgets(2));
+    expect(find.text('0 Toman'), findsOneWidget);
+    expect(find.text('39,000,000 Toman'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Payment status: Funds held, Base amount 30,000,000 Toman, Employer fee 9,000,000 Toman, Worker fee 0 Toman, Employer charge 39,000,000 Toman, Worker payout 30,000,000 Toman, Platform fee 9,000,000 Toman',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
       'PremiumPaymentSummary formats Persian Toman with Persian digits',
       (tester) async {
     await tester.pumpWidget(
@@ -137,7 +272,7 @@ void main() {
   });
 
   testWidgets(
-      'PremiumPaymentSummary always presents the current internal ledger as Toman',
+      'PremiumPaymentSummary always formats monetary amounts as Toman',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -205,7 +340,7 @@ void main() {
     await tester.pump();
     expect(
       find.bySemanticsLabel(
-        'Payment status: Funds held, amount 1,000,000 Toman',
+        'Payment status: Funds held, Base amount 1,000,000 Toman, Employer fee 100,000 Toman, Worker fee 100,000 Toman, Employer charge 1,100,000 Toman, Worker payout 900,000 Toman, Platform fee 200,000 Toman',
       ),
       findsOneWidget,
     );

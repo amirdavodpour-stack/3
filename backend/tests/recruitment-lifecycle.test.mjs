@@ -4,20 +4,21 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hope-recruitment-'));
-process.env.AUTH_RATE_LIMIT_MAX='500'; process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test';
+process.env.AUTH_RATE_LIMIT_MAX='500'; process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.ADMIN_PANEL_USERNAME='hope-admin';
 const {createServer}=await import('../src/app.js'); const {db}=await import('../src/db.js');
 const server=createServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r)); const base=`http://127.0.0.1:${server.address().port}/api/v1`;
 const json=(u,o={})=>fetch(base+u,{...o,headers:{'Content-Type':'application/json',...(o.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
 let seq=0; const register=async(role='USER')=>{const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email:`r${Date.now()}-${++seq}@example.com`,password:'pass123456789',displayName:role+' user'})}); assert.equal(r.status,201); const user=r.body.data; if(role!=='USER'){db.collection.users.find(x=>x.id===user.user.id).role=role; await db.save();} return user;};
+const unlockAdminPanel=async(admin)=>{const r=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin'})}); assert.equal(r.status,200,JSON.stringify(r.body));};
 const cat=async()=>{const r=await json('/categories'); assert.equal(r.status,200); return r.body.data[0].id;};
 const createJob=async(owner)=>{const r=await json('/jobs',{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`},body:JSON.stringify({title:'Recruitment lifecycle',description:'A sufficiently detailed job description for lifecycle tests.',categoryId:await cat(),jobType:'HOURLY',budgetType:'FIXED',budgetMin:100,budgetMax:100,duration:30,acceptanceCriteria:'criteria',kind:'JOB',visibility:'PUBLIC',schedule:'FULL_TIME',monthlySalary:10000,applicationDeadline:'2099-12-31'})}); assert.equal(r.status,201); const p=await json(`/jobs/${r.body.data.id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}}); assert.equal(p.status,200); return p.body.data;};
 const apply=async(candidate,job,resume)=>{const r=await json('/applications',{method:'POST',headers:{Authorization:`Bearer ${candidate.accessToken}`},body:JSON.stringify({jobId:job.id,resumeText:resume,skills:'research,design'})}); assert.equal(r.status,201); return r.body.data.id;};
 
 test('application lifecycle: shortlist -> forward -> interview -> offer -> hire',async()=>{
  const owner=await register('EMPLOYER'), candidate=await register(); const job=await createJob(owner); const id=await apply(candidate,job,'A professional resume with enough content for the recruitment pipeline.');
- let r=await json(`/admin/applications/${id}/shortlist`,{method:'POST',headers:{Authorization:`Bearer ${(await register('ADMIN')).accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.status,'SHORTLISTED');
- const admins=await json('/admin/applications',{headers:{Authorization:`Bearer ${(await register('ADMIN')).accessToken}`}}); assert.equal(admins.status,200);
- const admin=await register('ADMIN'); db.collection.users.find(x=>x.id===admin.user.id).role='ADMIN'; await db.save();
+ const admin=await register('ADMIN'); await unlockAdminPanel(admin);
+ let r=await json(`/admin/applications/${id}/shortlist`,{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.status,'SHORTLISTED');
+ const admins=await json('/admin/applications',{headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(admins.status,200);
  r=await json(`/admin/applications/${id}/select`,{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.status,'FORWARDED');
  r=await json(`/jobs/${job.id}/candidates` ,{headers:{Authorization:`Bearer ${owner.accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.length,1); assert.equal(r.body.data[0].id,id); assert.equal(r.body.data[0].candidateId,undefined); assert.equal(r.body.data[0].email,undefined);
  r=await json(`/jobs/${job.id}/candidates/${id}/interview`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}}); assert.equal(r.status,200); assert.equal(r.body.data.status,'INTERVIEW');

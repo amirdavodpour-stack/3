@@ -1,4 +1,5 @@
 import { requirePool } from './context.js';
+import { withSqlTransaction } from '../db.js';
 
 export async function insertTrustReport(report) {
   const {rows}=await requirePool().query(`INSERT INTO trust_reports(id,reporter_id,entity_type,entity_id,reason,details,status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,[report.id,report.reporterId,report.entityType,report.entityId,report.reason,report.details||'',report.status||'OPEN',report.createdAt,report.updatedAt]);
@@ -9,9 +10,31 @@ export async function listTrustReports(status=null) {
   const {rows}=await requirePool().query(`SELECT r.*,u.display_name AS reporter_name FROM trust_reports r LEFT JOIN users u ON u.id=r.reporter_id ${where} ORDER BY r.created_at DESC LIMIT 500`,params);
   return rows.map(r=>({id:r.id,reporterId:r.reporter_id,reporterName:r.reporter_name||null,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at}));
 }
-export async function updateTrustReportStatus(id,status) {
-  const {rows}=await requirePool().query(`UPDATE trust_reports SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *`,[id,status]);
-  const r=rows[0]; return r?{id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,reason:r.reason,details:r.details||'',status:r.status,createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at}:null;
+export async function updateTrustReportStatus(id,status,{actorId}={}) {
+  if (!actorId) throw Object.assign(new Error('TRUST_REPORT_ACTOR_REQUIRED'),{code:'TRUST_REPORT_ACTOR_REQUIRED'});
+  return withSqlTransaction(async (client) => {
+    const {rows:current}=await client.query(
+      `SELECT status FROM trust_reports WHERE id=$1 FOR UPDATE`,
+      [id],
+    );
+    if (!current[0]) return null;
+    const {rows}=await client.query(
+      `UPDATE trust_reports SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *`,
+      [id,status],
+    );
+    const r=rows[0];
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'TRUST_REPORT_STATUS',$1,'trust_report',$2,$3::jsonb,NOW())`,
+      [actorId,id,JSON.stringify({status,previousStatus:current[0].status})],
+    );
+    return {
+      id:r.id,reporterId:r.reporter_id,entityType:r.entity_type,entityId:r.entity_id,
+      reason:r.reason,details:r.details||'',status:r.status,
+      createdAt:r.created_at?.toISOString?.() ?? r.created_at,
+      updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at,
+    };
+  });
 }
 export async function listCandidatesForComparison(jobId, applicationIds) {
   const ids=Array.isArray(applicationIds)?applicationIds.slice(0,10):[]; if(!ids.length) return [];

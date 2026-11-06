@@ -5,9 +5,9 @@ import { runMigrations } from './db/migrations.js';
 import { pool, getPool, withSqlTransaction, databaseHealth, closePool } from './db/runtime.js';
 import { CATEGORY_CATALOG } from './db/categories.js';
 
-const collections = ['users','providers','refreshTokens','resetTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches','recommendationProfiles'];
+const collections = ['users','providers','refreshTokens','resetTokens','emailVerificationTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches','recommendationProfiles'];
 const tableMap = {
-  users: 'users', providers: 'providers', refreshTokens: 'refresh_tokens', resetTokens: 'reset_tokens',
+  users: 'users', providers: 'providers', refreshTokens: 'refresh_tokens', resetTokens: 'reset_tokens', emailVerificationTokens: 'email_verification_tokens',
   categories: 'categories', jobs: 'jobs', offers: 'offers', jobApplications: 'job_applications', payments: 'payments', evidence: 'evidence',
   uploads: 'uploads', uploadIntents: 'upload_intents', audit: 'audit_logs', ledgerEntries: 'ledger_entries', settlements: 'settlements', refunds: 'refunds', paymentWebhooks: 'payment_webhook_events',
   notifications: 'notifications', notificationPreferences: 'notification_preferences', notificationDevices: 'notification_devices',
@@ -37,7 +37,12 @@ async function loadSqlSnapshot(client) {
   for (const collection of collections) {
     const table = tableMap[collection];
     const columns = tableColumns[table] || [];
-    const orderBy = columns.includes('created_at') ? 'created_at NULLS FIRST, id' : 'id';
+    // recommendation_profiles is keyed by user_id rather than id; ordering
+    // its test snapshot by a nonexistent id column breaks PostgreSQL bootstrap.
+    const identityColumn = table === 'recommendation_profiles' ? 'user_id' : 'id';
+    const orderBy = columns.includes('created_at')
+      ? `created_at NULLS FIRST, ${identityColumn}`
+      : identityColumn;
     const { rows } = await client.query(`SELECT * FROM ${table} ORDER BY ${orderBy}`);
     next[collection] = rows.map((row) => fromDbRow(collection, row));
   }

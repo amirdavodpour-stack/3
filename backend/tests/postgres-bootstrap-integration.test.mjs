@@ -24,6 +24,7 @@ test('PostgreSQL bootstrap creates every mapped application table and can load s
   assert.equal(rows.length, MAPPED_TABLES.length);
   assert.ok(Array.isArray(db.collection.notifications));
   assert.ok(Array.isArray(db.collection.analyticsEvents));
+  assert.ok(Array.isArray(db.collection.recommendationProfiles));
   await db.close();
 });
 

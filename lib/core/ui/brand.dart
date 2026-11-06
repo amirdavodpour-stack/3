@@ -43,7 +43,7 @@ class SoftPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(label,
               style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w900, color: color))
+                  fontSize: 12, fontWeight: FontWeight.w900, color: color))
         ]),
       );
 }

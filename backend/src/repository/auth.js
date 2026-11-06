@@ -19,6 +19,8 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
     if(!r) return {kind:'invalid'};
     if(r.revoked_at){
       await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[r.family_id]);
+      await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1`,[r.user_id]);
+      await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,[r.user_id,JSON.stringify({tokenFamilyId:r.family_id})]);
       return {kind:'reuse'};
     }
     if(new Date(r.expires_at).getTime()<=Date.now()) return {kind:'invalid'};
@@ -38,7 +40,7 @@ export async function updatePasswordHash(userId, passwordHash) {
   return Boolean(rows[0]);
 }
 export async function bumpUserSessionVersion(userId) {
-  const { rows } = await requirePool().query(`UPDATE users SET session_version=session_version+1 WHERE id=$1 RETURNING session_version`, [userId]);
+  const { rows } = await requirePool().query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING session_version`, [userId]);
   return rows[0] ? Number(rows[0].session_version) : null;
 }
 
@@ -49,6 +51,93 @@ export async function insertResetToken(token) {
   const {rows}=await requirePool().query(`INSERT INTO reset_tokens(id,user_id,token_hash,family_id,expires_at,used_at,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,[token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,null,token.createdAt]);
   return rows[0];
 }
+
+export async function insertEmailVerificationToken(token) {
+  return withSqlTransaction(async (client) => {
+    // Serialize resend/verify on the user row before taking token-row locks.
+    // FOR NO KEY UPDATE is sufficient because verification never changes the
+    // user's key; it also remains compatible with the token table's FK check.
+    const { rows: users } = await client.query(
+      `SELECT id,status FROM users WHERE id=$1 FOR NO KEY UPDATE`,
+      [token.userId],
+    );
+    if (!users[0] || users[0].status !== 'PENDING_EMAIL_VERIFICATION') return null;
+
+    await client.query(
+      `UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW())
+        WHERE user_id=$1 AND used_at IS NULL`,
+      [token.userId],
+    );
+    const { rows } = await client.query(
+      `INSERT INTO email_verification_tokens(id,user_id,token_hash,expires_at,used_at,created_at)
+       VALUES($1,$2,$3,$4,NULL,$5) RETURNING id,user_id,token_hash,expires_at,used_at,created_at`,
+      [token.id,token.userId,token.tokenHash,token.expiresAt,token.createdAt],
+    );
+    const r = rows[0];
+    return r ? {
+      id:r.id,userId:r.user_id,tokenHash:r.token_hash,
+      expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,
+      usedAt:r.used_at ? (r.used_at.toISOString?.() ?? r.used_at) : null,
+      createdAt:r.created_at?.toISOString?.() ?? r.created_at,
+    } : null;
+  });
+}
+
+export async function invalidateEmailVerificationToken(tokenHash) {
+  const { rows } = await requirePool().query(
+    `UPDATE email_verification_tokens SET used_at=COALESCE(used_at,NOW())
+      WHERE token_hash=$1 AND used_at IS NULL RETURNING id`,
+    [tokenHash],
+  );
+  return Boolean(rows[0]);
+}
+
+export async function consumeEmailVerificationToken(tokenHash) {
+  return withSqlTransaction(async (client) => {
+    // Use the same lock order as resend: user first, then verification token.
+    // The initial lookup is intentionally unlocked; the token is re-read and
+    // locked after the account lock has been acquired.
+    const { rows: owners } = await client.query(
+      `SELECT user_id FROM email_verification_tokens WHERE token_hash=$1`,
+      [tokenHash],
+    );
+    const userId = owners[0]?.user_id;
+    if (!userId) return null;
+
+    const { rows: lockedUsers } = await client.query(
+      `SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE`,
+      [userId],
+    );
+    if (!lockedUsers[0]) return null;
+
+    const { rows: tokens } = await client.query(
+      `SELECT id,user_id,expires_at,used_at FROM email_verification_tokens
+        WHERE token_hash=$1 FOR UPDATE`,
+      [tokenHash],
+    );
+    const token = tokens[0];
+    if (
+      !token ||
+      String(token.user_id) !== String(userId) ||
+      token.used_at ||
+      new Date(token.expires_at).getTime() <= Date.now()
+    ) return null;
+
+    const { rows: users } = await client.query(
+      `UPDATE users SET status='ACTIVE'
+        WHERE id=$1 AND status='PENDING_EMAIL_VERIFICATION'
+        RETURNING ${userSelect}`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE email_verification_tokens SET used_at=NOW()
+        WHERE user_id=$1 AND used_at IS NULL`,
+      [userId],
+    );
+    return users[0] ? userFromRow(users[0]) : null;
+  });
+}
+
 export async function findResetTokenForUse(tokenHash) {
   return withSqlTransaction(async(client)=>{
     const {rows}=await client.query(`SELECT * FROM reset_tokens WHERE token_hash=$1 FOR UPDATE`,[tokenHash]);
@@ -61,7 +150,7 @@ export async function consumeResetTokenAndChangePassword(tokenId,userId,password
   return withSqlTransaction(async(client)=>{
     const {rows}=await client.query(`UPDATE reset_tokens SET used_at=NOW() WHERE id=$1 AND user_id=$2 AND used_at IS NULL RETURNING id`,[tokenId,userId]);
     if(!rows[0]) return false;
-    await client.query(`UPDATE users SET password_hash=$2,session_version=session_version+1 WHERE id=$1`,[userId,passwordHash]);
+    await client.query(`UPDATE users SET password_hash=$2,session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1`,[userId,passwordHash]);
     await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`,[userId]);
     return true;
   });

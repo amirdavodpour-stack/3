@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../network/api_client.dart';
 import '../theme/hope_v2_design.dart';
+import 'components.dart';
 
 enum HopeStateKind {
   initial,
@@ -57,23 +58,23 @@ class HopeAsyncState extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final config = switch (kind) {
-      HopeStateKind.initial => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.onSurfaceVariant),
-      HopeStateKind.loading => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
-      HopeStateKind.refreshing => (Icons.refresh_rounded, Theme.of(context).colorScheme.primary),
-      HopeStateKind.empty => (Icons.inbox_outlined, Theme.of(context).colorScheme.onSurfaceVariant),
-      HopeStateKind.partial => (Icons.incomplete_circle_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.error => (Icons.error_outline_rounded, Theme.of(context).colorScheme.error),
-      HopeStateKind.offline => (Icons.cloud_off_rounded, Theme.of(context).colorScheme.error),
-      HopeStateKind.unauthorized => (Icons.login_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.forbidden => (Icons.lock_outline_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.conflict => (Icons.sync_problem_rounded, Theme.of(context).colorScheme.error),
-      HopeStateKind.validation => (Icons.rule_rounded, Theme.of(context).colorScheme.error),
-      HopeStateKind.rateLimited => (Icons.hourglass_top_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.retrying => (Icons.sync_rounded, Theme.of(context).colorScheme.primary),
-      HopeStateKind.permission => (Icons.lock_outline_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.pending => (Icons.schedule_rounded, HopeV2SemanticColors.warning(context)),
-      HopeStateKind.submitting => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
-      HopeStateKind.success => (Icons.check_circle_outline_rounded, Theme.of(context).colorScheme.tertiary),
+      HopeStateKind.initial => (HopeV2Icons.pending, Theme.of(context).colorScheme.onSurfaceVariant),
+      HopeStateKind.loading => (HopeV2Icons.pending, Theme.of(context).colorScheme.primary),
+      HopeStateKind.refreshing => (HopeV2Icons.refresh, Theme.of(context).colorScheme.primary),
+      HopeStateKind.empty => (HopeV2Icons.empty, Theme.of(context).colorScheme.onSurfaceVariant),
+      HopeStateKind.partial => (HopeV2Icons.partial, Theme.of(context).colorScheme.secondary),
+      HopeStateKind.error => (HopeV2Icons.error, Theme.of(context).colorScheme.error),
+      HopeStateKind.offline => (HopeV2Icons.offline, Theme.of(context).colorScheme.error),
+      HopeStateKind.unauthorized => (HopeV2Icons.login, Theme.of(context).colorScheme.secondary),
+      HopeStateKind.forbidden => (HopeV2Icons.secure, Theme.of(context).colorScheme.secondary),
+      HopeStateKind.conflict => (HopeV2Icons.conflict, Theme.of(context).colorScheme.error),
+      HopeStateKind.validation => (HopeV2Icons.validation, Theme.of(context).colorScheme.error),
+      HopeStateKind.rateLimited => (HopeV2Icons.rateLimit, Theme.of(context).colorScheme.secondary),
+      HopeStateKind.retrying => (HopeV2Icons.retry, Theme.of(context).colorScheme.primary),
+      HopeStateKind.permission => (HopeV2Icons.secure, Theme.of(context).colorScheme.secondary),
+      HopeStateKind.pending => (HopeV2Icons.pending, HopeV2SemanticColors.warning(context)),
+      HopeStateKind.submitting => (HopeV2Icons.pending, Theme.of(context).colorScheme.primary),
+      HopeStateKind.success => (HopeV2Icons.success, Theme.of(context).colorScheme.tertiary),
     };
     return Semantics(
       liveRegion: true,
@@ -101,7 +102,17 @@ class HopeAsyncState extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       )
                     else
-                      Icon(config.$1, size: 38, color: config.$2),
+                      HopeKineticGlyph(
+                        color: config.$2,
+                        alert: kind == HopeStateKind.error ||
+                            kind == HopeStateKind.offline ||
+                            kind == HopeStateKind.conflict,
+                        child: HopeIcon(
+                          config.$1,
+                          size: 30,
+                          color: config.$2,
+                        ),
+                      ),
                     const SizedBox(height: HopeV2Spacing.md),
                     Text(
                       title,
@@ -144,3 +155,5 @@ class HopeAsyncState extends StatelessWidget {
     );
   }
 }
+
+

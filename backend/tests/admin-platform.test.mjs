@@ -9,11 +9,13 @@ const adminRepo = new URL('../../lib/core/admin/admin_repository.dart', import.m
 
 test('admin platform exposes summary, users, status, audit and moderation routes', async () => {
   const source = await readFile(app, 'utf8');
+  const accessPolicy = await readFile(new URL('../src/application/admin_panel_access.js', import.meta.url), 'utf8');
   for (const marker of [
-    "parts[1]==='summary'", "parts[1]==='users'", "parts[3]==='status'",
+    "parts[1]==='summary'", "parts[1]==='users'", "parts[1]==='admins'", "parts[3]==='status'",
     "parts[1]==='audit'", "parts[3]==='moderate'", "requireAdmin(await authUser(req))",
-    "SELF_SUSPEND_FORBIDDEN", "JOB_LOCKED", "ADMIN_USER_STATUS", "ADMIN_JOB_MODERATE", "ADMIN_PERMISSION_DENIED", "/admin/admins/", "revoke-sessions"
+    "SELF_SUSPEND_FORBIDDEN", "JOB_LOCKED", "ADMIN_USER_STATUS", "ADMIN_JOB_MODERATE", "revoke-sessions"
   ]) assert.ok(source.includes(marker), `Missing admin control marker: ${marker}`);
+  assert.ok(accessPolicy.includes('ADMIN_PERMISSION_DENIED'), 'admin permission errors are centralized in the access policy');
 });
 
 test('admin repository supports summary, user management, audit and locked moderation', async () => {

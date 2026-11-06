@@ -8,7 +8,7 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 test('Flutter exposes verified admin entry and dispute controls', () => {
   const routes = read('lib/core/router/app_routes.dart');
-  const home = read('lib/features/home/home_page.dart');
+  const home = `${read('lib/features/home/home_page.dart')}\n${read('lib/features/home/home_widgets.part.dart')}`;
   const repo = read('lib/core/admin/admin_repository.dart');
   const access = read('lib/features/admin/admin_access_page.dart');
   const disputes = read('lib/features/admin/admin_disputes_page.dart');

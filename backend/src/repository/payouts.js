@@ -2,11 +2,34 @@ import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
+import { lockActiveWalletUsers } from '../wallet_ledger.js';
+import { isInternalWalletPayoutEnabled } from '../wallet_payout_policy.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
 const INTERNAL_CURRENCY = 'TOMAN';
 const PAYOUT_PROVIDER = 'internal';
+
+async function appendPayoutReversalEntry(client, {
+  walletId, payoutId, amount, operationId, balanceAfter, failureCode,
+}) {
+  await client.query(
+    `INSERT INTO wallet_entries(
+       id,wallet_id,entry_type,direction,amount,currency,
+       reference_type,reference_id,financial_operation_id,metadata,balance_after
+     )
+     VALUES($1,$2,'PAYOUT','CREDIT',$3,'TOMAN','PAYOUT',$4,$5,$6::jsonb,$7)`,
+    [
+      crypto.randomUUID(),
+      walletId,
+      amount,
+      payoutId,
+      operationId,
+      JSON.stringify({ state:'REVERSED', failureCode }),
+      balanceAfter,
+    ],
+  );
+}
 
 function parseAmount(value) {
   const raw = String(value ?? '').trim();
@@ -20,7 +43,9 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
   const value = parseAmount(amount);
   const key = String(idempotencyKey || '').trim();
   if (!key) throw Object.assign(new Error('IDEMPOTENCY_KEY_REQUIRED'), { code:'IDEMPOTENCY_KEY_REQUIRED' });
-  if (config.paymentProvider !== 'internal') throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+  if (!isInternalWalletPayoutEnabled({ paymentProvider: config.paymentProvider })) {
+    throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+  }
 
   return withSqlTransaction(async (client) => {
     const existing = await client.query(`SELECT * FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
@@ -29,6 +54,8 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
       if (BigInt(String(p.amount)) !== value) throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { code:'IDEMPOTENCY_CONFLICT' });
       return p;
     }
+
+    await lockActiveWalletUsers(client, [userId]);
 
     const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE user_id=$1 AND currency='TOMAN' FOR UPDATE`, [userId]);
     const wallet = walletRows[0];
@@ -54,7 +81,7 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
     await client.query(`INSERT INTO wallet_entries(wallet_id,entry_type,direction,amount,currency,reference_type,reference_id,financial_operation_id,metadata,balance_after) VALUES($1,'PAYOUT','DEBIT',$2,'TOMAN',$3,$4,$5,$6::jsonb,$7)`, [wallet.id,value,referenceType,referenceId || payoutId,operationId,JSON.stringify({state:'RESERVED'}),(BigInt(String(wallet.available_balance))-value).toString()]);
     await client.query(`INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,idempotency_key,created_at,updated_at) VALUES($1,$2,$3,$4,'TOMAN','RESERVED',$5,$6,NOW(),NOW())`, [payoutId,wallet.id,userId,value,PAYOUT_PROVIDER,key]);
     await client.query(`INSERT INTO journals(operation_id,journal_type,currency,status,posted_at) VALUES($1,'PAYOUT','TOMAN','CREATED',NULL)`, [operationId]);
-    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value,currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
+    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value.toString(),currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
     const { rows } = await client.query(`SELECT * FROM payouts WHERE id=$1`, [payoutId]);
     return rows[0];
   });
@@ -69,16 +96,98 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
     const { rows: payouts } = await client.query(`SELECT * FROM payouts WHERE id=$1 FOR UPDATE`, [payoutId]);
     const payout = payouts[0];
     if (!payout) return { marked: false, reason: 'PAYOUT_NOT_FOUND' };
-    if (payout.status === 'UNKNOWN') {
-      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
-      return { marked: true, alreadyUnknown: true };
+    const alreadyUnknown = payout.status === 'UNKNOWN';
+    if (!alreadyUnknown && !['RESERVED','PROCESSING'].includes(payout.status)) {
+      return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
     }
-    if (!['RESERVED','PROCESSING'].includes(payout.status)) return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
-    await client.query(`UPDATE payouts SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW() WHERE id=$1`, [payoutId, String(reason).slice(0, 1000)]);
-    await client.query(`UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=$1`, [payout.financial_operation_id]);
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`, [payoutId, JSON.stringify({ eventId, reason })]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
-    return { marked: true, alreadyUnknown: false };
+
+    // payouts has no financial_operation_id column. The reservation hold is the
+    // canonical relation between a payout and its financial operation.
+    const { rows: holds } = await client.query(
+      `SELECT * FROM wallet_holds
+        WHERE reference_id=$1
+          AND hold_type='PAYOUT_RESERVATION'
+          AND status='ACTIVE'
+        FOR UPDATE`,
+      [payoutId],
+    );
+    const hold = holds[0];
+    let reconciliationReason = null;
+    let operationId = null;
+
+    if (!hold?.financial_operation_id) {
+      reconciliationReason = 'PAYOUT_RESERVATION_NOT_FOUND';
+    } else {
+      operationId = hold.financial_operation_id;
+      if (String(event.payload?.operationId || '') !== String(operationId)) {
+        reconciliationReason = 'PAYOUT_OPERATION_MISMATCH';
+      }
+      const { rows: operations } = await client.query(
+        `UPDATE financial_operations
+            SET status='UNKNOWN',completed_at=NULL
+          WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')
+          RETURNING id`,
+        [operationId],
+      );
+      if (!operations[0] && !reconciliationReason) {
+        reconciliationReason = 'FINANCIAL_OPERATION_NOT_PROCESSING';
+      }
+    }
+
+    // An UNKNOWN provider outcome must never fall through the generic outbox
+    // failure path: its terminal payout failure handler would release the hold.
+    // Preserve the reservation, mark the payout UNKNOWN and surface any broken
+    // internal linkage as a critical reconciliation case for manual repair.
+    if (reconciliationReason) {
+      await client.query(
+        `INSERT INTO reconciliation_cases(
+           id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+         ) VALUES(
+           gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY','payout',$1,'CRITICAL',
+           $2::jsonb,$3::jsonb,'OPEN',NOW(),NOW()
+         )
+         ON CONFLICT (case_type,resource_type,resource_id)
+           WHERE status IN ('OPEN','INVESTIGATING')
+         DO UPDATE SET
+           severity='CRITICAL',expected=EXCLUDED.expected,observed=EXCLUDED.observed,updated_at=NOW()`,
+        [
+          payoutId,
+          JSON.stringify({ payoutStatus: 'UNKNOWN', financialOperationStatus: 'UNKNOWN', activeReservationHold: true }),
+          JSON.stringify({
+            reason: reconciliationReason,
+            eventOperationId: event.payload?.operationId || null,
+            holdOperationId: operationId,
+          }),
+        ],
+      );
+    }
+
+    if (!alreadyUnknown) {
+      await client.query(
+        `UPDATE payouts
+            SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW()
+          WHERE id=$1`,
+        [payoutId, String(reason).slice(0, 1000)],
+      );
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
+        [payoutId, JSON.stringify({ eventId, reason, reconciliationReason })],
+      );
+    }
+
+    await client.query(
+      `UPDATE outbox_events
+          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL
+        WHERE id=$1`,
+      [eventId],
+    );
+    return {
+      marked: true,
+      alreadyUnknown,
+      requiresReconciliation: Boolean(reconciliationReason),
+      reconciliationReason,
+    };
   });
 }
 
@@ -107,14 +216,45 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
       await client.query(`UPDATE journals SET status='POSTED',posted_at=NOW() WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     } else {
       if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
-      await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
+      const { rows: restoredWallets } = await client.query(
+        `UPDATE wallet_accounts
+            SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW()
+          WHERE id=$1 RETURNING available_balance`,
+        [wallet.id,payout.amount],
+      );
+      await appendPayoutReversalEntry(client, {
+        walletId: wallet.id,
+        payoutId,
+        amount: payout.amount,
+        operationId: hold.financial_operation_id,
+        balanceAfter: restoredWallets[0].available_balance,
+        failureCode: 'UNKNOWN_RESOLVED_FAILED',
+      });
       await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
       await client.query(`UPDATE payouts SET status='FAILED',failure_code='UNKNOWN_RESOLVED_FAILED',failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId, reason ? String(reason).slice(0,1000) : 'Unknown payout resolved as failed']);
       await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
       await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     }
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN_RESOLVED',$1,'payout',$2,$3::jsonb,NOW())`, [adminId, payoutId, JSON.stringify({ decision: normalized, providerRef, reason })]);
-    return { payoutId, status: normalized };
+    // Resolve all active reconciliation cases in the same transaction as the
+    // terminal payout decision. This keeps the admin queue consistent with the
+    // wallet/ledger transition and also covers automatic provider reconciliation.
+    const resolutionActor = adminId ? `admin:${String(adminId)}` : 'provider-reconciliation';
+    const resolutionEvidence = providerRef
+      ? `providerRef:${String(providerRef)}`
+      : `reason:${String(reason || 'terminal-provider-confirmation')}`;
+    const resolutionReference = `${resolutionActor}:${normalized}:${resolutionEvidence}`.slice(0, 200);
+    const { rows: resolvedCases } = await client.query(
+      `UPDATE reconciliation_cases
+          SET status='RESOLVED',resolution_reference=$2,resolved_at=NOW(),updated_at=NOW()
+        WHERE resource_type='payout'
+          AND resource_id=$1
+          AND status IN ('OPEN','INVESTIGATING')
+        RETURNING id`,
+      [payoutId, resolutionReference],
+    );
+
+    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN_RESOLVED',$1,'payout',$2,$3::jsonb,NOW())`, [adminId, payoutId, JSON.stringify({ decision: normalized, providerRef, reason, reconciliationCasesResolved: resolvedCases.length })]);
+    return { payoutId, status: normalized, reconciliationCasesResolved: resolvedCases.length };
   });
 }
 
@@ -148,7 +288,7 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
   });
 }
 
-export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken }) {
+export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
     const { rows: ev } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!ev[0]) return {completed:false,reason:'OUTBOX_NOT_FOUND'};
     if (leaseToken && String(ev[0].lease_token)!==String(leaseToken)) return {completed:false,reason:'STALE_LEASE'};
@@ -165,17 +305,30 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
     const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [payout.wallet_id]);
     const wallet = walletRows[0];
     if (!hold || !wallet) return {completed:false,reason:'PAYOUT_RESERVATION_NOT_FOUND'};
-    await client.query(`UPDATE wallet_accounts SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
+    const { rows: restoredWallets } = await client.query(
+      `UPDATE wallet_accounts
+          SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW()
+        WHERE id=$1 RETURNING available_balance`,
+      [wallet.id,payout.amount],
+    );
+    await appendPayoutReversalEntry(client, {
+      walletId: wallet.id,
+      payoutId,
+      amount: payout.amount,
+      operationId: hold.financial_operation_id,
+      balanceAfter: restoredWallets[0].available_balance,
+      failureCode,
+    });
     await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
-    await client.query(`UPDATE payouts SET status='FAILED',failure_code='PROVIDER_ERROR',failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000)]);
+    await client.query(`UPDATE payouts SET status='FAILED',failure_code=$3,failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000),String(failureCode || 'PROVIDER_ERROR')]);
     await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
     await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=NOW(),locked_at=NULL,last_error=$2 WHERE id=$1`,[eventId,String(error).slice(0,2000)]);
   return {completed:true,alreadyFailed:false};
 }
 
-export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken }) {
-  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken }));
+export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
+  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode }));
 }
 
 export async function getPayoutForUser(userId,payoutId) {
@@ -212,21 +365,40 @@ export async function listPayoutsForUser(userId, { limit = 50 } = {}) {
 export async function listUnknownPayouts({ limit = 50 } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const { rows } = await requirePool().query(`
-    SELECT id,
-           wallet_id AS "walletId",
-           user_id AS "userId",
-           amount,
-           currency,
-           provider,
-           status,
-           provider_ref AS "providerRef",
-           failure_code AS "failureCode",
-           failure_message AS "failureMessage",
-           created_at AS "createdAt",
-           updated_at AS "updatedAt"
-      FROM payouts
-     WHERE status='UNKNOWN'
-     ORDER BY updated_at ASC,id ASC
+    SELECT p.id,
+           p.wallet_id AS "walletId",
+           p.user_id AS "userId",
+           p.amount,
+           p.currency,
+           p.provider,
+           p.status,
+           p.provider_ref AS "providerRef",
+           p.failure_code AS "failureCode",
+           p.failure_message AS "failureMessage",
+           p.created_at AS "createdAt",
+           p.updated_at AS "updatedAt",
+           COALESCE((
+             SELECT jsonb_agg(
+               jsonb_build_object(
+                 'id',rc.id,
+                 'caseType',rc.case_type,
+                 'severity',rc.severity,
+                 'status',rc.status,
+                 'expected',rc.expected,
+                 'observed',rc.observed,
+                 'createdAt',rc.created_at,
+                 'updatedAt',rc.updated_at
+               )
+               ORDER BY rc.created_at DESC,rc.id DESC
+             )
+               FROM reconciliation_cases rc
+              WHERE rc.resource_type='payout'
+                AND rc.resource_id=p.id
+                AND rc.status IN ('OPEN','INVESTIGATING')
+           ),'[]'::jsonb) AS "reconciliationCases"
+      FROM payouts p
+     WHERE p.status='UNKNOWN'
+     ORDER BY p.updated_at ASC,p.id ASC
      LIMIT $1`, [safeLimit]);
   return rows;
 }

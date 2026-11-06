@@ -7,11 +7,21 @@ const repoSource = fs.readFileSync(new URL('../src/repository.js', import.meta.u
 
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
+function assertSmallReexportFacade(source, label) {
+  const declarations = source.split('\n').map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('//'));
+  assert.ok(declarations.length <= 25, `${label} should expose a bounded set of repository domains`);
+  assert.ok(
+    declarations.every((line) => /^export \* from ['"]\.\/repository\/[a-z0-9_]+\.js';?$/.test(line)),
+    `${label} must contain only repository re-exports, not persistence/business logic`,
+  );
+}
+
 test('repository domains are physically separated behind a small public facade', () => {
   for (const file of ['context.js', 'core.js', 'auth.js', 'storage.js', 'payments.js', 'payment_queries.js', 'payment_lifecycle.js', 'payment_funding.js', 'payment_refunds.js', 'payment_webhooks.js', 'views.js', 'notifications.js', 'analytics.js']) {
     assert.equal(fs.existsSync(new URL(file, root)), true, `missing repository/${file}`);
   }
-  assert.ok(repoSource.split('\n').length <= 20, 'repository facade should remain small');
+  assertSmallReexportFacade(repoSource, 'repository facade');
   for (const file of ['core.js','auth.js','storage.js','payments.js','outbox.js','views.js','notifications.js','analytics.js']) {
     assert.match(repoSource, new RegExp(`repository/${file.replace('.', '\\.')}`));
   }
@@ -36,7 +46,7 @@ test('bounded contexts own their implementations rather than the facade', () => 
 
 test('repository architecture guard keeps bounded contexts independently evolvable', () => {
   const facade = fs.readFileSync(new URL('../src/repository.js', import.meta.url), 'utf8');
-  assert.ok(facade.split('\n').length <= 20, 'public facade must remain small');
+  assertSmallReexportFacade(facade, 'public facade');
   for (const file of fs.readdirSync(root).filter((name) => name.endsWith('.js') && !['context.js','mappers.js'].includes(name))) {
     const source = read(file);
     assert.doesNotMatch(source, /from ['"]\.\/\.\/repository\.js['"]/);

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const root = new URL('../', import.meta.url);
 const read = (file) => fs.readFileSync(new URL(file, root), 'utf8');
 const storageRoutes = read('src/routes/storage_routes.js');
+const http = read('src/http.js');
 const storageRepository = read('src/repository/storage.js');
 const cleanupWorker = read('src/storage_cleanup_worker.js');
 const server = read('src/server.js');
@@ -13,11 +14,21 @@ const envExample = read('.env.example');
 const liveWorkflow = read('../.github/workflows/supabase-storage-live.yml');
 const rlsIntegration = read('tests/supabase-storage-rls.test.mjs');
 
-for (const name of ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain']) {
+for (const name of ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav']) {
   test(`storage route allows declared MIME type: ${name}`, () => {
     assert.match(storageRoutes, new RegExp(name.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')));
   });
 }
+
+test('multipart parser validates audio signatures and infers MIME only from an allowlisted filename extension', () => {
+  assert.match(http, /\['\.m4a', 'audio\/mp4'\]/);
+  assert.match(http, /\['\.mp3', 'audio\/mpeg'\]/);
+  assert.match(http, /\['\.wav', 'audio\/wav'\]/);
+  assert.match(http, /incomingType === 'application\/octet-stream'/);
+  assert.match(http, /content\.subarray\(4, 8\)\.toString\(\) === 'ftyp'/);
+  assert.match(http, /content\.subarray\(0, 3\)\.toString\(\) === 'ID3'/);
+  assert.match(http, /content\.subarray\(8, 12\)\.toString\(\) === 'WAVE'/);
+});
 
 test('storage routes enforce filename/content-type consistency and bounded presigned intents', () => {
   assert.match(storageRoutes, /validateFilenameForContentType/);
@@ -26,6 +37,57 @@ test('storage routes enforce filename/content-type consistency and bounded presi
   assert.match(storageRoutes, /FILE_TOO_LARGE/);
   assert.match(storageRoutes, /CONTENT_TYPE_MISMATCH/);
   assert.match(storageRoutes, /storage\.validateObject/);
+});
+
+test('S3 presigned uploads are single-write and expose the required conditional header', async () => {
+  const names = [
+    'STORAGE_BACKEND', 'S3_BUCKET', 'S3_REGION', 'S3_ENDPOINT', 'S3_PREFIX',
+    'S3_FORCE_PATH_STYLE', 'S3_SERVER_SIDE_ENCRYPTION',
+    'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
+    'AWS_REGION', 'AWS_EC2_METADATA_DISABLED',
+  ];
+  const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+  Object.assign(process.env, {
+    STORAGE_BACKEND: 's3',
+    S3_BUCKET: 'hope-presign-regression-test',
+    S3_REGION: 'us-east-1',
+    S3_ENDPOINT: '',
+    S3_PREFIX: 'uploads',
+    S3_FORCE_PATH_STYLE: 'false',
+    AWS_ACCESS_KEY_ID: 'test-access-key',
+    AWS_SECRET_ACCESS_KEY: 'test-secret-key',
+    AWS_EC2_METADATA_DISABLED: 'true',
+  });
+  delete process.env.S3_SERVER_SIDE_ENCRYPTION;
+  delete process.env.AWS_SESSION_TOKEN;
+  delete process.env.AWS_REGION;
+
+  try {
+    const { storage } = await import(`../src/storage.js?presign-regression-${Date.now()}`);
+    const presigned = await storage.presignPut({
+      key: 'uploads/regression.pdf',
+      contentType: 'application/pdf',
+      expiresIn: 300,
+    });
+    const signedHeaders = new URL(presigned.url).searchParams
+      .get('X-Amz-SignedHeaders')?.split(';') ?? [];
+    assert.ok(
+      signedHeaders.includes('if-none-match'),
+      'the signed PUT must reject a second write to the same object key',
+    );
+    assert.deepEqual(presigned.requiredHeaders, {'If-None-Match': '*'});
+  } finally {
+    for (const name of names) {
+      if (previous[name] === undefined) delete process.env[name];
+      else process.env[name] = previous[name];
+    }
+  }
+});
+
+test('OpenAPI documents the single-write presigned PUT requirement', () => {
+  assert.match(read('openapi/openapi.yaml'), /requiredHeaders/);
+  assert.match(read('openapi/openapi.yaml'), /If-None-Match: \\*/);
+  assert.match(read('openapi/openapi.yaml'), /single-write/);
 });
 
 test('storage repository exposes safe expired-intent cleanup primitives', () => {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -19,11 +20,25 @@ let passedFiles = 0;
 for (const file of files) {
   const rel = path.relative(root, file);
   process.stdout.write(`\n=== OFFLINE ISOLATED: ${rel} ===\n`);
-  const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', file], {
-    cwd: root,
-    env,
-    stdio: 'inherit',
-  });
+  // Some test files import the DB graph before their setup helpers assign DATA_FILE.
+  // Provide unique paths before Node evaluates any module so these tests cannot touch
+  // the repository's default JSON database or leak state into the next child process.
+  const testTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-offline-isolated-'));
+  const childEnv = {
+    ...env,
+    DATA_FILE: path.join(testTempDir, 'hope.json'),
+    STORAGE_DIR: path.join(testTempDir, 'storage'),
+  };
+  let result;
+  try {
+    result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', file], {
+      cwd: root,
+      env: childEnv,
+      stdio: 'inherit',
+    });
+  } finally {
+    fs.rmSync(testTempDir, { recursive: true, force: true });
+  }
   if (result.error) {
     console.error(`[offline-isolated] ${rel}: ${result.error.message}`);
     failed += 1;

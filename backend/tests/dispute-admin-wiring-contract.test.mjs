@@ -14,17 +14,20 @@ test('dispute route is wired and satisfaction conflicts auto-open adjudication',
   assert.match(app, /createJobDisputeRoutes/);
   assert.match(app, /parts\[2\] === 'dispute'/);
   assert.match(satisfaction, /SATISFACTION_CONFLICT/);
-  assert.match(satisfaction, /createJobDispute/);
+  assert.match(satisfaction, /openJobDisputeWithHold/);
   assert.match(satisfaction, /analyzeDisputeWithAI/);
   assert.match(route, /PAYMENT_RELEASE:ADMIN_DISPUTE/);
   assert.match(route, /DISPUTE_REFUND/);
 });
 
-test('admin dispute operations must remain behind the verified admin panel', () => {
+test('admin dispute operations remain behind panel verification and audit their fenced decision', () => {
   const admin = read('backend/src/routes/admin_routes.js');
+  const dispute = read('backend/src/routes/job_dispute_routes.js');
   assert.match(admin, /ADMIN_PANEL_LOCKED/);
-  assert.match(admin, /disputes/);
-  assert.match(admin, /ADMIN_DISPUTE_RESOLVE/);
+  assert.match(admin, /parts\[0\] === 'admin' && parts\[1\] === 'disputes'/);
+  assert.match(dispute, /repo\.claimJobDisputeResolution/);
+  assert.match(dispute, /ADMIN_DISPUTE_RESOLVE/);
+  assert.match(dispute, /repo\.completeJobDisputeResolution/);
 });
 test('admin panel exposes a verification state endpoint and UI checks it before loading admin data', () => {
   const route = read('backend/src/routes/admin_routes.js');
@@ -33,4 +36,73 @@ test('admin panel exposes a verification state endpoint and UI checks it before 
   assert.match(route, /parts\[1\]==='access'.*req\.method==='GET'|req\.method==='GET'.*parts\[1\]==='access'/s);
   assert.match(repo, /getPanelAccess/);
   assert.match(page, /_checkPanelAccess|checkingPanel|verified/);
+});
+test('admin dispute gate honors the configured Admin Panel verification duration', () => {
+  const app = read('backend/src/app.js');
+  const route = read('backend/src/routes/job_dispute_routes.js');
+  assert.match(app, /createJobDisputeRoutes\(\{[^\n]*config/);
+  assert.match(route, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
+  assert.doesNotMatch(route, /repo\.isAdminPanelVerified\(me\.id,\s*15\)/);
+});
+
+test('admin dispute endpoint delegates to the claim-fenced dispute route', async () => {
+  const app = read('backend/src/app.js');
+  assert.match(
+    app,
+    /createAdminRoutes\(\{\s*authUser,\s*requireAdmin,\s*jobDisputeRoutes:\s*\(\.\.\.args\)\s*=>\s*jobDisputeRoutes\(\.\.\.args\)/s,
+  );
+  const { createAdminRoutes } = await import('../src/routes/admin_routes.js');
+  const admin = {
+    id: 'admin-1',
+    role: 'ADMIN',
+    email: 'amir.davodpour@gmail.com',
+    googleSubject: 'verified-google-subject',
+    passwordHash: 'test-password-hash',
+    displayName: 'Primary Admin',
+    sessionVersion: 1,
+    sessionJti: 'dispute-route-session-jti',
+  };
+  const delegatedCalls = [];
+  const route = createAdminRoutes({
+    authUser: async () => admin,
+    requireAdmin: (user) => user,
+    readBody: async (req) => req.url.endsWith('/access')
+      ? { name: 'Primary Admin', username: 'admin-panel-secret', password: 'admin-current-password' }
+      : { resolution: 'HOLD', reason: 'keep case open' },
+    sendJson: (_res, status, body) => ({ status, body }),
+    HttpError: class HttpError extends Error {
+      constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+    },
+    repo: {
+      isAdminPanelVerified: async () => true,
+      setAdminPanelVerified: async () => true,
+      getAdminDispute: async () => { throw new Error('legacy dispute resolver was reached'); },
+    },
+    config: { adminPanelUsername: 'admin-panel-secret', adminPanelAllowedEmail: 'amir.davodpour@gmail.com', adminPanelVerificationMinutes: 15 },
+    verifyPassword: async (password, encoded) => password === 'admin-current-password' && encoded === 'test-password-hash',
+    verifyGoogleIdToken: async () => { throw new Error('Google proof not used in this test'); },
+    rateLimitAuth: async () => true,
+    rateLimitAuthAccount: async () => true,
+    DUMMY_PASSWORD_HASH: 'dummy-password-hash',
+    PASSWORD_MAX_LENGTH: 1024,
+    createAudit: async () => {},
+    jobDisputeRoutes: async (_req, _res, parts) => {
+      delegatedCalls.push(parts.join('/'));
+      return { delegated: true };
+    },
+  });
+
+  await route(
+    { method: 'POST', url: '/api/v1/admin/access', headers: {} },
+    {},
+    ['admin', 'access'],
+  );
+  const response = await route(
+    { method: 'POST', url: '/api/v1/admin/disputes/dispute-1', headers: {} },
+    {},
+    ['admin', 'disputes', 'dispute-1'],
+  );
+
+  assert.deepEqual(delegatedCalls, ['admin/disputes/dispute-1']);
+  assert.deepEqual(response, { delegated: true });
 });

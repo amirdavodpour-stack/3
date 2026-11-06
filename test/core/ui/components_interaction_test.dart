@@ -142,7 +142,7 @@ void main() {
     final theme = AppTheme.light();
 
     final cardShape = theme.cardTheme.shape as RoundedRectangleBorder;
-    expect(cardShape.borderRadius, BorderRadius.circular(HopeV2Radii.lg));
+    expect(cardShape.borderRadius, BorderRadius.circular(HopeV2Radii.md));
 
     final inputShape =
         theme.inputDecorationTheme.border as OutlineInputBorder;

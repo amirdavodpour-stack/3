@@ -1,5 +1,7 @@
+import crypto from 'node:crypto';
 import { requirePool } from './context.js';
 import { withSqlTransaction } from '../db.js';
+import { holdPaymentForDisputeWithClient } from './outbox.js';
 
 const disputeView = (row) => row ? ({
   id: row.id, jobId: row.job_id, openedBy: row.opened_by, triggerType: row.trigger_type, status: row.status,
@@ -7,6 +9,8 @@ const disputeView = (row) => row ? ({
   aiReport: row.ai_report || {}, legalRulesetVersion: row.legal_ruleset_version,
   resolution: row.resolution, resolutionReason: row.resolution_reason || '', resolvedBy: row.resolved_by,
   resolvedAt: row.resolved_at?.toISOString?.() ?? row.resolved_at ?? null,
+  resolutionStartedAt: row.resolution_started_at?.toISOString?.() ?? row.resolution_started_at ?? null,
+  resolutionLeaseUntil: row.resolution_lease_until?.toISOString?.() ?? row.resolution_lease_until ?? null,
   createdAt: row.created_at?.toISOString?.() ?? row.created_at ?? null,
   updatedAt: row.updated_at?.toISOString?.() ?? row.updated_at ?? null,
 }) : null;
@@ -45,8 +49,47 @@ export async function createJobDispute({ jobId, openedBy = null, triggerType = '
   return disputeView(rows[0]);
 }
 
+export async function openJobDisputeWithHold({
+  jobId,
+  paymentId,
+  openedBy = null,
+  triggerType = 'USER',
+}) {
+  return withSqlTransaction(async (client) => {
+    // Escrow protection and the dispute row are one atomic commit. If the
+    // insert/upsert fails, the payment and release outbox are rolled back too.
+    const held = await holdPaymentForDisputeWithClient(client, { jobId, paymentId });
+    if (!held?.held) return { opened:false, dispute:null, ...held };
+
+    const { rows } = await client.query(`
+      INSERT INTO job_disputes(id,job_id,opened_by,trigger_type,status)
+      VALUES(gen_random_uuid(),$1,$2,$3,'OPEN')
+      ON CONFLICT(job_id) DO UPDATE SET updated_at=NOW()
+      RETURNING *, (xmax='0'::xid) AS inserted
+    `, [jobId, openedBy, triggerType]);
+
+    if (rows[0]?.inserted === true) {
+      await client.query(
+        `INSERT INTO audit_logs(
+           id,action,actor_id,entity_type,entity_id,meta,created_at
+         ) VALUES(
+           gen_random_uuid(),'JOB_DISPUTE_OPEN',$1,'job',$2,$3::jsonb,NOW()
+         )`,
+        [openedBy,jobId,JSON.stringify({
+          disputeId:rows[0].id,
+          triggerType,
+          paymentHeld:true,
+          cancelledReleaseEvents:Number(held.cancelledReleaseEvents || 0),
+        })],
+      );
+    }
+
+    return { opened:true, dispute:disputeView(rows[0]), ...held };
+  });
+}
+
 export async function updateJobDisputeAnalysis(id, analysis) {
-  const { rows } = await requirePool().query(`UPDATE job_disputes SET status=CASE WHEN ($6::jsonb->>'manualReview')::boolean THEN 'ADMIN_REVIEW' ELSE 'AI_ANALYZED' END,ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion, JSON.stringify(analysis)]);
+  const { rows } = await requirePool().query(`UPDATE job_disputes SET status=CASE WHEN status IN ('RESOLVING','RESOLVED') THEN status WHEN ($6::jsonb->>'manualReview')::boolean THEN 'ADMIN_REVIEW' ELSE 'AI_ANALYZED' END,ai_decision=$2,ai_confidence=$3,ai_report=$4::jsonb,legal_ruleset_version=$5,updated_at=NOW() WHERE id=$1 AND status NOT IN ('RESOLVING','RESOLVED') RETURNING *`, [id, analysis.decision, analysis.confidence, JSON.stringify(analysis), analysis.rulesetVersion, JSON.stringify(analysis)]);
   return disputeView(rows[0]);
 }
 
@@ -62,6 +105,165 @@ export async function resolveJobDispute(id, { resolution, reason, adminId }) {
     if (rows[0].status === 'RESOLVED') return disputeView(rows[0]);
     const { rows: updated } = await client.query(`UPDATE job_disputes SET status='RESOLVED',resolution=$2,resolution_reason=$3,resolved_by=$4,resolved_at=NOW(),updated_at=NOW() WHERE id=$1 RETURNING *`, [id, resolution, reason || '', adminId]);
     return disputeView(updated[0]);
+  });
+}
+
+export async function claimJobDisputeResolution(id, {
+  resolution,
+  reason = '',
+  adminId,
+  leaseSeconds = 300,
+}) {
+  const decision = String(resolution || '').toUpperCase();
+  if (!['RELEASE','REFUND','HOLD'].includes(decision)) {
+    throw Object.assign(new Error('INVALID_DISPUTE_RESOLUTION'), { code:'INVALID_DISPUTE_RESOLUTION' });
+  }
+  if (!adminId) throw Object.assign(new Error('ADMIN_ID_REQUIRED'), { code:'ADMIN_ID_REQUIRED' });
+  const lease = Math.min(1800, Math.max(30, Number(leaseSeconds) || 300));
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT *, (resolution_lease_until > NOW()) AS resolution_lease_active FROM job_disputes WHERE id=$1 FOR UPDATE`,
+      [id],
+    );
+    const current = rows[0];
+    if (!current) return null;
+
+    if (current.status === 'RESOLVED') {
+      if (current.resolution !== decision) {
+        return { claimed:false, conflict:true, code:'DISPUTE_ALREADY_RESOLVED', dispute:disputeView(current) };
+      }
+      return { claimed:false, alreadyResolved:true, dispute:disputeView(current) };
+    }
+
+    if (current.status === 'RESOLVING') {
+      if (current.resolution !== decision) {
+        return { claimed:false, conflict:true, code:'DISPUTE_RESOLUTION_IN_PROGRESS', dispute:disputeView(current) };
+      }
+      if (current.resolution_lease_active === true) {
+        return { claimed:false, inProgress:true, resolution:decision, leaseUntil:current.resolution_lease_until, dispute:disputeView(current) };
+      }
+    } else if (!['OPEN','AI_ANALYZED','ADMIN_REVIEW','ESCALATED'].includes(current.status)) {
+      return { claimed:false, conflict:true, code:'DISPUTE_NOT_RESOLVABLE', dispute:disputeView(current) };
+    }
+
+    const token = crypto.randomUUID();
+    const resumed = current.status === 'RESOLVING';
+    const { rows: updated } = await client.query(
+      `UPDATE job_disputes
+          SET status='RESOLVING',
+              resolution=$2,
+              resolution_reason=CASE WHEN resolution_reason='' THEN $3 ELSE resolution_reason END,
+              resolved_by=$4,
+              resolved_at=NULL,
+              resolution_started_at=COALESCE(resolution_started_at,NOW()),
+              resolution_lease_token=$5,
+              resolution_lease_until=NOW()+make_interval(secs => $6),
+              updated_at=NOW()
+        WHERE id=$1
+        RETURNING *`,
+      [id,decision,String(reason || '').trim().slice(0,2000),adminId,token,lease],
+    );
+    return {
+      claimed:true,
+      resumed,
+      token,
+      resolution:decision,
+      leaseUntil:updated[0].resolution_lease_until,
+      dispute:disputeView(updated[0]),
+    };
+  });
+}
+
+export async function completeJobDisputeResolution(id, { resolution, token }) {
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
+      [id],
+    );
+    const current = rows[0];
+    if (!current) return null;
+    if (current.status === 'RESOLVED') {
+      return current.resolution === resolution
+        ? { ...disputeView(current), alreadyDone:true }
+        : { stale:true, dispute:disputeView(current) };
+    }
+    if (
+      current.status !== 'RESOLVING' ||
+      current.resolution !== resolution ||
+      !token ||
+      String(current.resolution_lease_token) !== String(token)
+    ) {
+      return { stale:true, dispute:disputeView(current) };
+    }
+    // Validate the lease against PostgreSQL time at the state-changing UPDATE.
+    // The predicate is rechecked after any row-lock wait, preventing an expired
+    // worker from finalizing after the lease deadline.
+    const { rows: updated } = await client.query(
+      `UPDATE job_disputes
+          SET status=CASE WHEN $2='HOLD' THEN 'ADMIN_REVIEW' ELSE 'RESOLVED' END,
+              resolved_at=CASE WHEN $2='HOLD' THEN NULL ELSE NOW() END,
+              resolution_lease_token=NULL,
+              resolution_lease_until=NULL,
+              updated_at=NOW()
+        WHERE id=$1
+          AND status='RESOLVING'
+          AND resolution=$2
+          AND resolution_lease_token=$3
+          AND resolution_lease_until > NOW()
+        RETURNING *`,
+      [id,resolution,token],
+    );
+    if (!updated[0]) return { stale:true, dispute:disputeView(current) };
+
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_DISPUTE_RESOLVE',$1,'job_dispute',$2,$3::jsonb,NOW()
+       )`,
+      [current.resolved_by,id,JSON.stringify({
+        jobId:current.job_id,
+        resolution,
+        reason:current.resolution_reason || '',
+        aiDecision:current.ai_decision || null,
+        aiConfidence:current.ai_confidence == null ? null : Number(current.ai_confidence),
+        outcomeStatus:updated[0].status,
+      })],
+    );
+    return disputeView(updated[0]);
+  });
+}
+
+export async function abandonJobDisputeResolutionClaim(id, { resolution, token }) {
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT * FROM job_disputes WHERE id=$1 FOR UPDATE`,
+      [id],
+    );
+    const current = rows[0];
+    if (!current) return null;
+    if (
+      current.status !== 'RESOLVING' ||
+      current.resolution !== resolution ||
+      !token ||
+      String(current.resolution_lease_token) !== String(token)
+    ) return { abandoned:false, stale:true, dispute:disputeView(current) };
+
+    const { rows: updated } = await client.query(
+      `UPDATE job_disputes
+          SET status='ADMIN_REVIEW',
+              resolution=NULL,
+              resolution_reason='',
+              resolved_by=NULL,
+              resolved_at=NULL,
+              resolution_lease_token=NULL,
+              resolution_lease_until=NULL,
+              updated_at=NOW()
+        WHERE id=$1
+        RETURNING *`,
+      [id],
+    );
+    return { abandoned:true, dispute:disputeView(updated[0]) };
   });
 }
 
@@ -103,18 +305,58 @@ export async function getAdminPanelIdentity(userId) {
   };
 }
 
-export async function setAdminPanelVerified(userId) {
-  const { rows } = await requirePool().query(`UPDATE users SET admin_panel_verified_at=NOW() WHERE id=$1 AND role='ADMIN' RETURNING id,admin_panel_verified_at`, [userId]);
-  return rows[0] ? { verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at } : null;
+export async function setAdminPanelVerified(userId, sessionJti, scope = 'READ') {
+  const jti = String(sessionJti || '').trim();
+  const verificationScope = String(scope || 'READ').trim().toUpperCase();
+  if (!jti || jti.length > 128 || !['READ','WRITE'].includes(verificationScope)) return null;
+  const { rows } = await requirePool().query(
+    `UPDATE users
+       SET admin_panel_verified_at=NOW(),
+           admin_panel_verified_session_jti=$2,
+           admin_panel_verified_scope=$3
+     WHERE id=$1 AND role='ADMIN' AND status='ACTIVE'
+     RETURNING id,admin_panel_verified_at,admin_panel_verified_scope`,
+    [userId, jti, verificationScope],
+  );
+  return rows[0] ? {
+    verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at,
+    scope: rows[0].admin_panel_verified_scope,
+  } : null;
 }
 
-export async function isAdminPanelVerified(userId, ttlMinutes = 15) {
-  const { rows } = await requirePool().query(`SELECT role,admin_panel_verified_at FROM users WHERE id=$1`, [userId]);
-  const at = rows[0]?.admin_panel_verified_at;
-  return rows[0]?.role === 'ADMIN' && at && (Date.now() - new Date(at).getTime()) <= Math.max(1, Number(ttlMinutes) || 15) * 60000;
+export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti, requiredScope = 'READ') {
+  const jti = String(sessionJti || '').trim();
+  const scope = String(requiredScope || 'READ').trim().toUpperCase();
+  if (!jti || jti.length > 128 || !['READ','WRITE'].includes(scope)) return false;
+  const { rows } = await requirePool().query(
+    `SELECT role,status,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope
+       FROM users WHERE id=$1`,
+    [userId],
+  );
+  const row = rows[0];
+  const at = row?.admin_panel_verified_at;
+  const ageMs = at ? Date.now() - new Date(at).getTime() : Number.NaN;
+  const storedScope = String(row?.admin_panel_verified_scope || '').toUpperCase();
+  const scopeAllowed = scope === 'READ'
+    ? ['READ','WRITE'].includes(storedScope)
+    : storedScope === 'WRITE';
+  return Boolean(
+    row?.role === 'ADMIN' &&
+    row?.status === 'ACTIVE' &&
+    row?.admin_panel_verified_session_jti === jti &&
+    scopeAllowed &&
+    Number.isFinite(ageMs) &&
+    ageMs >= 0 &&
+    ageMs <= Math.max(1, Number(ttlMinutes) || 15) * 60000
+  );
 }
 
 export async function clearAdminPanelVerification(userId) {
-  await requirePool().query(`UPDATE users SET admin_panel_verified_at=NULL WHERE id=$1`, [userId]);
+  await requirePool().query(
+    `UPDATE users
+       SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL, admin_panel_verified_scope=NULL
+     WHERE id=$1`,
+    [userId],
+  );
   return true;
 }

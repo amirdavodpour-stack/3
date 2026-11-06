@@ -22,15 +22,33 @@ class _JobsResultsSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
-        sliver: SliverList(
-          delegate: SliverChildListDelegate([
-            const OpportunitySkeletonCard(),
-            const SizedBox(height: 12),
-            const OpportunitySkeletonCard(),
-          ]),
-        ),
+      return SliverLayoutBuilder(
+        builder: (context, constraints) {
+          // Match the same padded content width used by the loaded results.
+          final viewportWidth = constraints.crossAxisExtent;
+          final textScale = MediaQuery.textScalerOf(context).scale(1);
+          final horizontalSkeleton =
+              viewportWidth < 420 && textScale <= 1.2;
+          final compactGridSkeleton = viewportWidth >= 420 &&
+              viewportWidth < HopeV2Breakpoints.expanded &&
+              textScale <= 1.2;
+          return SliverPadding(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 56),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                OpportunitySkeletonCard(
+                  horizontal: horizontalSkeleton,
+                  compact: compactGridSkeleton,
+                ),
+                const SizedBox(height: 12),
+                OpportunitySkeletonCard(
+                  horizontal: horizontalSkeleton,
+                  compact: compactGridSkeleton,
+                ),
+              ]),
+            ),
+          );
+        },
       );
     }
 
@@ -122,11 +140,11 @@ class _JobsResultsSliver extends StatelessWidget {
                       ),
                     ),
                   if (featuredJob != null && remaining.isNotEmpty)
-                    const SizedBox(height: HopeV2Spacing.sm),
+                    const SizedBox(height: HopeV2Spacing.md),
                   for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(
-                        bottom: HopeV2Spacing.sm,
+                        bottom: HopeV2Spacing.md,
                       ),
                       child: AnimatedEntrance(
                         delay: Duration(
@@ -167,25 +185,37 @@ class _JobsResultsSliver extends StatelessWidget {
                   ),
                 if (featuredJob != null && remaining.isNotEmpty)
                   const SizedBox(height: HopeV2Spacing.sm),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: remaining.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: HopeV2Spacing.md,
-                    mainAxisSpacing: HopeV2Spacing.sm,
-                    childAspectRatio: columns == 3 ? 1.04 : 0.86,
-                  ),
-                  itemBuilder: (context, index) => AnimatedEntrance(
-                    delay: Duration(milliseconds: 35 * index.clamp(0, 10)),
-                    child: OpportunityCard(
-                      job: remaining[index],
-                      variant: columns == 2
-                          ? OpportunityCardVariant.compactGrid
-                          : OpportunityCardVariant.standard,
-                    ),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final columnGap = HopeV2Spacing.md;
+                    final rowGap = HopeV2Spacing.sm;
+                    final cardWidth = (constraints.maxWidth -
+                            columnGap * (columns - 1)) /
+                        columns;
+                    // Let each tile fit its actual metadata and budget instead
+                    // of reserving a tall fixed-aspect cell in a scroll view.
+                    return Wrap(
+                      spacing: columnGap,
+                      runSpacing: rowGap,
+                      children: [
+                        for (var index = 0; index < remaining.length; index++)
+                          SizedBox(
+                            width: cardWidth,
+                            child: AnimatedEntrance(
+                              delay: Duration(
+                                milliseconds: 35 * index.clamp(0, 10),
+                              ),
+                              child: OpportunityCard(
+                                job: remaining[index],
+                                variant: columns == 2
+                                    ? OpportunityCardVariant.compactGrid
+                                    : OpportunityCardVariant.standard,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
               ],
             );

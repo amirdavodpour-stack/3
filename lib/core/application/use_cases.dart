@@ -23,7 +23,7 @@ class LoginUseCase {
 class RegisterUseCase {
   const RegisterUseCase(this.repository);
   final AuthRepository repository;
-  Future<AuthSession> call(String email, String password, String displayName) =>
+  Future<void> call(String email, String password, String displayName) =>
       repository.register(email, password, displayName);
 }
 
@@ -186,6 +186,7 @@ class AdminCommandUseCase {
   Future<void> forward(String id) => repository.forwardApplication(id);
   Future<void> reject(String id) => repository.rejectApplication(id);
   Future<void> moderateJob(String id, String status) => repository.moderateJob(id, status);
-  Future<void> setUserStatus(String id, String status) => repository.setUserStatus(id, status);
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) =>
+      repository.setUserStatus(id, status, reason: reason, reviewDueAt: reviewDueAt);
   Future<void> deleteJob(String id) => repository.deleteJob(id);
 }
