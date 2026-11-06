@@ -21,6 +21,7 @@ function makeRoutes({
   config = {},
   verifyFailure = null,
   legacy: legacyOverrides = {},
+  withTransaction = async (callback) => callback(),
 } = {}) {
   const repo = {
     findUserByGoogleSubject: async () => null,
@@ -54,6 +55,7 @@ function makeRoutes({
     rateLimitAuthAccount: async () => true,
     stringField,
     id: () => 'unused',
+    withTransaction,
     legacy: {
       findUserByGoogleSubject: async () => null,
       linkGoogleSubject: async (userId, subject) => ({ ...user, id: userId, googleSubject: subject }),
@@ -489,5 +491,72 @@ test('Google account linking works in the legacy adapter path and persists the a
     assert.equal(saved, true);
   } finally {
     process.env.DATABASE_URL = original;
+  }
+});
+
+test('legacy primary-owner Google link rolls back subject and role when its audit fails', async () => {
+  const original=process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  const user={
+    id:'owner-legacy-atomic',
+    email:'amir.davodpour@gmail.com',
+    displayName:'Primary owner',
+    role:'USER',
+    status:'ACTIVE',
+    googleSubject:null,
+    sessionVersion:4,
+    adminPanelVerifiedAt:'2026-11-06T00:00:00.000Z',
+    adminPanelVerifiedSessionJti:'old-admin-jti',
+    adminPanelVerifiedScope:'WRITE',
+  };
+  const state={users:[user],audit:[]};
+  let transactionActive=false;
+  let saveCalled=false;
+  const db={
+    collection:state,
+    touch(name){assert.equal(name,'users');},
+    async save(){assert.equal(transactionActive,true,'legacy save must occur within transaction');saveCalled=true;},
+  };
+  const legacy=createAuthLegacyAdapter({db,findUser:(id)=>state.users.find((item)=>item.id===id),issueSession:async()=>({}),withTransaction:async(callback)=>callback(),now:()=> '2026-11-06T20:00:00.000Z'});
+  const snapshot={...user};
+  const withTransaction=async(callback)=>{
+    transactionActive=true;
+    try {
+      const result=await callback();
+      return result;
+    } catch(error) {
+      Object.assign(user,snapshot);
+      state.audit.length=0;
+      throw error;
+    } finally {
+      transactionActive=false;
+    }
+  };
+  try {
+    const {routes}=makeRoutes({
+      user,
+      identity:{subject:'verified-owner-subject',email:'amir.davodpour@gmail.com',authoritativeEmail:true,displayName:'Primary owner'},
+      legacy,
+      withTransaction,
+      audit:async(action)=>{
+        assert.equal(transactionActive,true,'AUTH_GOOGLE_LINK audit must share the mutation transaction');
+        assert.equal(action,'AUTH_GOOGLE_LINK');
+        throw new Error('R05 forced legacy Google-link audit failure');
+      },
+    });
+    await assert.rejects(
+      routes(request,response,['auth','google','link']),
+      /R05 forced legacy Google-link audit failure/,
+    );
+    assert.equal(saveCalled,true,'legacy state save must be attempted inside transaction before audit commit');
+    assert.equal(user.googleSubject,null);
+    assert.equal(user.role,'USER');
+    assert.equal(user.sessionVersion,4);
+    assert.equal(user.adminPanelVerifiedAt,snapshot.adminPanelVerifiedAt);
+    assert.equal(user.adminPanelVerifiedSessionJti,snapshot.adminPanelVerifiedSessionJti);
+    assert.equal(user.adminPanelVerifiedScope,snapshot.adminPanelVerifiedScope);
+  } finally {
+    if(original===undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL=original;
   }
 });
