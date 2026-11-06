@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createAdminLegacyAdapter } from '../src/application/legacy/admin_legacy.js';
 
 const ROOT = new URL('../', import.meta.url);
 
@@ -22,4 +23,65 @@ test('administrator promotion requires target provider identity and stores the g
   assert.match(legacy, /googleSubject/);
   assert.match(legacy, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
   assert.match(routes, /if\s*\(!process\.env\.DATABASE_URL\)/);
+});
+
+test('legacy administrator promotion requires an already-linked provider identity and clears stale step-up', () => {
+  const actor = {
+    id:'primary-owner',
+    email:'amir.davodpour@gmail.com',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'verified-primary-google-subject',
+  };
+  const unlinked = {
+    id:'unlinked-target',
+    email:'unlinked@example.test',
+    role:'USER',
+    status:'ACTIVE',
+    sessionVersion:4,
+    googleSubject:null,
+  };
+  const linked = {
+    id:'linked-target',
+    email:'linked@example.test',
+    role:'USER',
+    status:'ACTIVE',
+    sessionVersion:7,
+    googleSubject:'verified-target-google-subject',
+    adminPanelVerifiedAt:'2026-11-06T00:00:00.000Z',
+    adminPanelVerifiedSessionJti:'prior-session',
+    adminPanelVerifiedScope:'WRITE',
+  };
+  const state={users:[actor,unlinked,linked],audit:[]};
+  const touched=[];
+  const db={
+    collection:state,
+    touch(name){ if(name!=='users' && name!=='audit') throw new Error('Unknown collection: '+name); touched.push(name); },
+  };
+  const adapter=createAdminLegacyAdapter({
+    db,
+    findUser:(id)=>state.users.find((user)=>user.id===id),
+    now:()=>new Date('2026-11-06T18:00:00.000Z'),
+  });
+
+  assert.throws(
+    ()=>adapter.grantAdminByEmail(unlinked.email,actor.id),
+    (error)=>error?.code==='ADMIN_PROVIDER_IDENTITY_REQUIRED',
+  );
+  assert.equal(unlinked.role,'USER');
+  assert.equal(unlinked.sessionVersion,4);
+
+  const promoted=adapter.grantAdminByEmail(linked.email,actor.id);
+  assert.equal(promoted.role,'ADMIN');
+  assert.equal(promoted.roleGrantApplied,true);
+  assert.equal(promoted.sessionVersion,8);
+  assert.equal(promoted.googleSubject,'verified-target-google-subject');
+  assert.equal(promoted.adminPanelVerifiedAt,null);
+  assert.equal(promoted.adminPanelVerifiedSessionJti,null);
+  assert.equal(promoted.adminPanelVerifiedScope,null);
+
+  const idempotent=adapter.grantAdminByEmail(linked.email,actor.id);
+  assert.equal(idempotent.role,'ADMIN');
+  assert.equal(idempotent.roleGrantApplied,false);
+  assert.equal(linked.sessionVersion,8);
 });

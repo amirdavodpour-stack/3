@@ -33,9 +33,26 @@ test('primary-admin privileges require a linked verified Google identity at ever
   assert.match(validation, /PRIMARY_ADMIN_IDENTITY_REQUIRED/);
   assert.match(validation, /isPrimaryAdminEmail\(user\.email\) && !String\(user\.googleSubject \|\| ''\)\.trim\(\)/);
   assert.match(auth, /shouldBootstrapPrimaryAdmin\(\{ email: identity\.email, verifiedIdentity: true, googleSubject: identity\.subject \}\)/);
-  assert.match(repo, /SELECT id,email,role,google_subject FROM users WHERE id=\$1 FOR UPDATE/);
-  assert.equal((repo.match(/!String\(actors\[0\]\.google_subject \|\| ''\)\.trim\(\)/g) || []).length, 2);
-  assert.equal((legacy.match(/!String\(actor\.googleSubject \|\| ''\)\.trim\(\)/g) || []).length, 2);
+  const grantStart = repo.indexOf('export async function grantAdminByEmail(');
+  const grantEnd = repo.indexOf('export async function revokeAdminById(', grantStart);
+  const grant = repo.slice(grantStart, grantEnd);
+  const revokeStart = grantEnd;
+  const revokeEnd = repo.indexOf('export async function revokeUserSessions(', revokeStart);
+  const revoke = repo.slice(revokeStart, revokeEnd);
+
+  assert.match(grant, /google_subject/);
+  assert.match(grant, /actor\.status !== 'ACTIVE'/);
+  assert.match(grant, /actor\.google_subject/);
+  assert.match(grant, /target\.status !== 'ACTIVE'/);
+  assert.match(grant, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
+  assert.match(grant, /ORDER BY id\\s+FOR UPDATE/);
+  assert.match(grant, /INSERT INTO audit_logs/);
+  assert.match(grant, /ADMIN_ROLE_GRANT/);
+  assert.match(revoke, /google_subject/);
+  assert.match(revoke, /PRIMARY_ADMIN_ONLY/);
+  assert.match(legacy, /actor\.status !== 'ACTIVE'/);
+  assert.match(legacy, /target\.googleSubject/);
+  assert.match(legacy, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
 });
 
 test('primary administrator panel unlock enforces the configured allowed email', () => {
