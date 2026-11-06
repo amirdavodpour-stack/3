@@ -192,7 +192,7 @@ const authRoutes = createAuthRoutes({
   authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, deliverEmailVerification, findUser, rateLimitAuth, rateLimitAuthAccount, verifyGoogleIdToken,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
-  id: db.id, legacy: authLegacy,
+  id: db.id, legacy: authLegacy, withTransaction,
 });
 const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: appLegacy.id, insertProvider: appLegacy.insertProvider, legacy: { jobs: process.env.DATABASE_URL ? [] : appLegacy.jobs() } });
 const paymentRoutes = createPaymentRoutes({

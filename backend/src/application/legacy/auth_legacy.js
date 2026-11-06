@@ -29,8 +29,10 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
       }
       user.googleSubject = subject;
       if (promoteToPrimaryAdmin) user.role = 'ADMIN';
+      user.sessionVersion = Number(user.sessionVersion || 0) + 1;
       user.adminPanelVerifiedAt = null;
       user.adminPanelVerifiedSessionJti = null;
+      user.adminPanelVerifiedScope = null;
       db.touch('users');
       return user;
     },

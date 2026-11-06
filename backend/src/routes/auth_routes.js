@@ -5,6 +5,7 @@ export function createAuthRoutes({
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH,
   logEvent, rateLimitAuth, rateLimitAuthAccount, stringField, id, legacy, verifyGoogleIdToken,
+  withTransaction = async (callback) => callback(),
 }) {
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -176,9 +177,23 @@ export function createAuthRoutes({
       const linkOptions = { promoteToPrimaryAdmin: primaryAdminBootstrap };
       let linked;
       try {
-        linked = process.env.DATABASE_URL
-          ? await repo.linkGoogleSubject(user.id, identity.subject, linkOptions)
-          : await legacy.linkGoogleSubject(user.id, identity.subject, linkOptions);
+        if (process.env.DATABASE_URL) {
+          // PostgreSQL repository commits Provider Subject, optional owner-role bootstrap
+          // and AUTH_GOOGLE_LINK audit in one SQL transaction.
+          linked = await repo.linkGoogleSubject(user.id, identity.subject, linkOptions);
+        } else {
+          // Legacy/test-runtime state, persistence flush and Audit share one rollback boundary.
+          linked = await withTransaction(async () => {
+            const result = legacy.linkGoogleSubject(user.id, identity.subject, linkOptions);
+            if (!result) return null;
+            await legacy.save();
+            await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, {
+              provider: 'google',
+              primaryAdminBootstrap,
+            });
+            return result;
+          });
+        }
       } catch (error) {
         if (error?.code === '23505') {
           throw new HttpError(409, 'GOOGLE_IDENTITY_ALREADY_LINKED', 'This Google identity is already linked to another HOPE account');
@@ -192,14 +207,7 @@ export function createAuthRoutes({
         if (currentSubject?.id === user.id && (!needsPrimaryAdminBootstrap || currentSubject.role === 'ADMIN')) {
           return sendJson(res, 200, { linked: true, alreadyLinked: true, user: authUserView(currentSubject) });
         }
-        throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to this HOPE account');
-      }
-      if (!process.env.DATABASE_URL) {
-        await legacy.save();
-        await createAudit('AUTH_GOOGLE_LINK', user.id, 'user', user.id, {
-          provider: 'google',
-          primaryAdminBootstrap,
-        });
+        throw new HttpError(409, 'GOOGLE_ACCOUNT_ALREADY_LINKED', 'A Google account is already linked to another HOPE account');
       }
       return sendJson(res, 200, { linked: true, alreadyLinked, user: authUserView(linked) });
     }
