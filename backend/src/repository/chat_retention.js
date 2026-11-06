@@ -18,26 +18,47 @@ function decodeRetentionCursor(value) {
     error.code = 'INVALID_RETENTION_CURSOR';
     return error;
   };
-  if (typeof value !== 'string' || value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value)) {
+  if (typeof value !== 'string' || value.length > 2048 || !/^[A-Za-z0-9_-]+$/.test(value)) {
     throw invalid();
   }
   try {
     const bytes = Buffer.from(value,'base64url');
     if (bytes.toString('base64url') !== value) throw invalid();
     const parsed = JSON.parse(bytes.toString('utf8'));
-    if (!parsed || typeof parsed.createdAt !== 'string' || !Number.isFinite(Date.parse(parsed.createdAt)) ||
-        typeof parsed.id !== 'string' || !RETENTION_CURSOR_UUID.test(parsed.id)) throw invalid();
-    return { createdAt: parsed.createdAt, id: parsed.id };
+    if (
+      parsed?.version !== 1 ||
+      typeof parsed.createdAt !== 'string' ||
+      !Number.isFinite(Date.parse(parsed.createdAt)) ||
+      typeof parsed.id !== 'string' ||
+      !RETENTION_CURSOR_UUID.test(parsed.id) ||
+      typeof parsed.snapshotCreatedAt !== 'string' ||
+      !Number.isFinite(Date.parse(parsed.snapshotCreatedAt)) ||
+      typeof parsed.snapshotId !== 'string' ||
+      !RETENTION_CURSOR_UUID.test(parsed.snapshotId) ||
+      typeof parsed.asOf !== 'string' ||
+      !Number.isFinite(Date.parse(parsed.asOf))
+    ) throw invalid();
+    return {
+      createdAt: parsed.createdAt,
+      id: parsed.id,
+      snapshotCreatedAt: parsed.snapshotCreatedAt,
+      snapshotId: parsed.snapshotId,
+      asOf: parsed.asOf,
+    };
   } catch (error) {
     if (error?.code === 'INVALID_RETENTION_CURSOR') throw error;
     throw invalid();
   }
 }
 
-function encodeRetentionCursor(row) {
+function encodeRetentionCursor(row, snapshot) {
   return Buffer.from(JSON.stringify({
+    version: 1,
     createdAt: row.cursor_created_at,
     id: row.conversation_id,
+    snapshotCreatedAt: snapshot.createdAt,
+    snapshotId: snapshot.id,
+    asOf: snapshot.asOf,
   }), 'utf8').toString('base64url');
 }
 function classifyConversation(row, asOf) {
@@ -140,15 +161,14 @@ function classifyConversation(row, asOf) {
  * claims work, or calls an object-storage provider.
  */
 export async function buildChatRetentionDryRun({
-  asOf = new Date(),
+  asOf = null,
   limit = 200,
   cursor = null,
 } = {}) {
-  const asOfDate = asOf instanceof Date ? new Date(asOf.getTime()) : new Date(asOf);
-  if (!Number.isFinite(asOfDate.getTime())) {
+  const requestedAsOf = asOf == null ? new Date() : (asOf instanceof Date ? new Date(asOf.getTime()) : new Date(asOf));
+  if (!Number.isFinite(requestedAsOf.getTime())) {
     throw new TypeError('asOf must be a valid Date or ISO-8601 timestamp');
   }
-
   const requestedLimit = Number(limit);
   if (!Number.isFinite(requestedLimit) || requestedLimit < 1) {
     throw new TypeError('limit must be a positive integer');
@@ -160,12 +180,36 @@ export async function buildChatRetentionDryRun({
 
   try {
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    let snapshot;
+    if (decodedCursor) {
+      snapshot = {
+        createdAt: decodedCursor.snapshotCreatedAt,
+        id: decodedCursor.snapshotId,
+        asOf: decodedCursor.asOf,
+      };
+    } else {
+      const { rows: watermarkRows } = await client.query(`
+        SELECT c.created_at::text AS created_at,c.id::text AS id
+          FROM chat_conversations c
+          JOIN jobs j ON j.id=c.job_id
+         WHERE c.kind='JOB'
+         ORDER BY c.created_at DESC,c.id DESC
+         LIMIT 1
+      `);
+      snapshot = {
+        createdAt: watermarkRows[0]?.created_at ?? null,
+        id: watermarkRows[0]?.id ?? null,
+        asOf: requestedAsOf.toISOString(),
+      };
+    }
+    const asOfDate = new Date(snapshot.asOf);
     const { rows: totalRows } = await client.query(`
       SELECT COUNT(*)::int AS total
         FROM chat_conversations c
         JOIN jobs j ON j.id=c.job_id
        WHERE c.kind='JOB'
-    `);
+         AND ($1::timestamptz IS NULL OR (c.created_at,c.id) <= ($1::timestamptz,$2::uuid))
+    `, [snapshot.createdAt, snapshot.id]);
     const totalCount = Number(totalRows[0]?.total || 0);
     const { rows } = await client.query(`
       SELECT
@@ -232,9 +276,10 @@ export async function buildChatRetentionDryRun({
       ) attachments ON TRUE
       WHERE c.kind='JOB'
         AND ($2::timestamptz IS NULL OR (c.created_at,c.id) > ($2::timestamptz,$3::uuid))
+        AND ($4::timestamptz IS NULL OR (c.created_at,c.id) <= ($4::timestamptz,$5::uuid))
       ORDER BY c.created_at ASC,c.id ASC
       LIMIT $1
-    `, [safeLimit + 1, decodedCursor?.createdAt ?? null, decodedCursor?.id ?? null]);
+    `, [safeLimit + 1, decodedCursor?.createdAt ?? null, decodedCursor?.id ?? null, snapshot.createdAt, snapshot.id]);
 
     const hasMore = rows.length > safeLimit;
     const pageRows = hasMore ? rows.slice(0,safeLimit) : rows;
@@ -244,7 +289,7 @@ export async function buildChatRetentionDryRun({
       summary[item.action] = (summary[item.action] || 0) + 1;
     }
     const nextCursor = hasMore && pageRows.length
-      ? encodeRetentionCursor(pageRows[pageRows.length - 1])
+      ? encodeRetentionCursor(pageRows[pageRows.length - 1],snapshot)
       : null;
 
     await client.query('COMMIT');
@@ -254,11 +299,14 @@ export async function buildChatRetentionDryRun({
       limit: safeLimit,
       scanned: items.length,
       totalCount,
+      snapshotMaxCreatedAt: snapshot.createdAt,
+      snapshotMaxId: snapshot.id,
       hasMore,
       nextCursor,
       pageComplete: !hasMore,
-      inventoryComplete: !decodedCursor && !hasMore,
+      inventoryComplete: !hasMore && !decodedCursor,
       cursorProvided: Boolean(decodedCursor),
+      snapshotConsistent: true,
       policy: {
         supportWindowDays: SUPPORT_WINDOW_DAYS,
         contentRetentionMonths: CONTENT_RETENTION_MONTHS,

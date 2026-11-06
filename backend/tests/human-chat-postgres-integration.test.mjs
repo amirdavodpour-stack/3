@@ -6733,7 +6733,7 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
   const jobIds = jobs.map((row) => row.id);
   try {
     for (const id of jobIds) assert.ok(await ensureJobChat(id));
-    const first = await buildChatRetentionDryRun({limit:2});
+    const first = await buildChatRetentionDryRun({limit:2,asOf:new Date('2026-11-06T00:00:00.000Z')});
     assert.equal(first.limit,2);
     assert.equal(first.scanned,2);
     assert.ok(first.totalCount>=3);
@@ -6743,11 +6743,32 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
     assert.equal(first.inventoryComplete,false);
 
     const seen = new Set(first.items.map((item) => item.conversationId));
-    let cursor = first.nextCursor;
+    const { rows: lateJobs } = await pool.query(
+      `INSERT INTO jobs(
+         id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+         budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+         created_at,updated_at
+       )
+       SELECT gen_random_uuid(),$1,$2,$3,'Inserted after retention snapshot',c.id,
+              'FIXED','FIXED',100,100,1,'Late pagination fixture','IN_PROGRESS',
+              'R05 test','MISSION','PUBLIC',NOW()+INTERVAL '1 day',NOW()+INTERVAL '1 day'
+         FROM categories c WHERE c.is_active=TRUE ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+       RETURNING id`,
+      [fixture.ownerId,fixture.workerId,`R05 late retention page ${suffix}`],
+    );
+    const lateJobId = lateJobs[0]?.id;
+    assert.ok(lateJobId);
+    try {
+      const lateConversation = await ensureJobChat(lateJobId);
+      assert.ok(lateConversation);
+      const lateConversationId = lateConversation.id;
+      let cursor = first.nextCursor;
     let lastPage = first;
     let pageCount = 1;
     while (cursor) {
       lastPage = await buildChatRetentionDryRun({limit:2,cursor});
+      assert.equal(lastPage.asOf,first.asOf,'all pages must use the same retention cutoff');
+      assert.equal(lastPage.totalCount,first.totalCount,'new conversations after the watermark must not change the inventory total');
       assert.equal(lastPage.totalCount,first.totalCount);
       for (const item of lastPage.items) {
         assert.equal(seen.has(item.conversationId),false,'cursor pages must not repeat a conversation');
@@ -6756,6 +6777,11 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
       cursor = lastPage.nextCursor;
       pageCount += 1;
       assert.ok(pageCount <= Math.ceil(first.totalCount/2)+1,'cursor traversal must terminate');
+    }
+      assert.equal(seen.has(lateConversationId),false,'conversations created after the inventory watermark must be excluded');
+    } finally {
+      await pool.query('DELETE FROM chat_conversations WHERE job_id=$1',[lateJobId]).catch(()=>{});
+      await pool.query('DELETE FROM jobs WHERE id=$1',[lateJobId]).catch(()=>{});
     }
     assert.equal(seen.size,first.totalCount);
     assert.equal(lastPage.hasMore,false);
