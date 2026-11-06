@@ -306,7 +306,7 @@ export async function buildChatRetentionDryRun({
       pageComplete: !hasMore,
       inventoryComplete: !hasMore && !decodedCursor,
       cursorProvided: Boolean(decodedCursor),
-      snapshotConsistent: true,
+      inventoryBoundaryPinned: true,
       policy: {
         supportWindowDays: SUPPORT_WINDOW_DAYS,
         contentRetentionMonths: CONTENT_RETENTION_MONTHS,
