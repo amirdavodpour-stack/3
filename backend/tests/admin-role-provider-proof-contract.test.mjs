@@ -85,3 +85,28 @@ test('legacy administrator promotion requires an already-linked provider identit
   assert.equal(idempotent.roleGrantApplied,false);
   assert.equal(linked.sessionVersion,8);
 });
+
+test('legacy admin role revocation requires an active verified owner and clears all step-up state', () => {
+  const actor={id:'owner',email:'amir.davodpour@gmail.com',role:'ADMIN',status:'ACTIVE',googleSubject:'owner-google-sub'};
+  const target={id:'target-admin',email:'admin-target@example.test',role:'ADMIN',status:'ACTIVE',googleSubject:'target-google-sub',sessionVersion:9,adminPanelVerifiedAt:'2026-11-06T00:00:00.000Z',adminPanelVerifiedSessionJti:'old-jti',adminPanelVerifiedScope:'WRITE'};
+  const state={users:[actor,target]};
+  const touched=[];
+  const db={collection:state,touch(name){if(name!=='users')throw new Error('Unknown collection: '+name);touched.push(name);}};
+  const adapter=createAdminLegacyAdapter({db,findUser:(id)=>state.users.find((user)=>user.id===id),now:()=>new Date('2026-11-06T20:00:00.000Z')});
+  const revoked=adapter.revokeAdminById(target.id,actor.id);
+  assert.equal(revoked.role,'USER');
+  assert.equal(revoked.sessionVersion,10);
+  assert.equal(revoked.googleSubject,'target-google-sub');
+  assert.equal(revoked.adminPanelVerifiedAt,null);
+  assert.equal(revoked.adminPanelVerifiedSessionJti,null);
+  assert.equal(revoked.adminPanelVerifiedScope,null);
+  assert.deepEqual(touched,['users']);
+
+  actor.status='SUSPENDED';
+  target.role='ADMIN';
+  assert.throws(
+    ()=>adapter.revokeAdminById(target.id,actor.id),
+    (error)=>error?.code==='PRIMARY_ADMIN_ONLY',
+  );
+  assert.equal(target.role,'ADMIN','an inactive primary-owner actor must not mutate administrator roles');
+});
