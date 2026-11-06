@@ -114,7 +114,6 @@ jobs:
       # Wave 1 verification trigger: execute the bounded suite against the latest branch head.
 
       - name: HOPE Superwave — one consolidated Flutter regression gate
-        if: ${{ !contains(github.event.pull_request.title, '[flutter-preverified]') }}
         timeout-minutes: 8
         # One Flutter invocation lets ordinary failing test cases finish and reports failures together.
         # The full Wallet page file replaces seven chained invocations that a prior failure could skip.
