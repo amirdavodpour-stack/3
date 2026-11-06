@@ -274,7 +274,7 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   assert.equal(completed?.resolution,winner.resolution);
 
   const { rows } = await pool.query(
-    'SELECT status,resolution,resolution_lease_token,resolution_lease_until FROM job_disputes WHERE id=$1',
+    'SELECT status,resolution,resolution_lease_token,resolution_lease_until,resolved_by,resolution_reason FROM job_disputes WHERE id=$1',
     [disputeId],
   );
   assert.equal(rows[0]?.status,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
@@ -286,9 +286,9 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     [disputeId],
   );
   assert.equal(resolutionAudits.length,1);
-  assert.equal(resolutionAudits[0].actor_id,rows[0]?.resolved_by || fixture.adminId);
+  assert.equal(resolutionAudits[0].actor_id,rows[0]?.resolved_by);
   assert.equal(resolutionAudits[0].meta.resolution,winner.resolution);
-  assert.equal(resolutionAudits[0].meta.reason,'resume the same decision after lease expiry');
+  assert.equal(resolutionAudits[0].meta.reason,rows[0]?.resolution_reason);
   assert.equal(resolutionAudits[0].meta.outcomeStatus,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
   await pool.query("DELETE FROM audit_logs WHERE action='ADMIN_DISPUTE_RESOLVE' AND entity_id=$1",[disputeId]);
   await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
