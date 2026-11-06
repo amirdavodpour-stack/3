@@ -12,6 +12,20 @@ on:
       - "backend/src/db/runtime.js"
       - "backend/src/db/migrations/03*.js"
       - "backend/src/db/migrations/04*.js"
+      - "backend/src/db/migrations/05*.js"
+      - "backend/src/repository/admin.js"
+      - "backend/src/repository/disputes.js"
+      - "backend/src/repository/chat_retention.js"
+      - "backend/src/repository/privacy.js"
+      - "backend/src/repository/payment_webhooks.js"
+      - "backend/src/application/use_cases/admin_use_cases.js"
+      - "backend/application/legacy/admin_legacy.js"
+      - "backend/src/application/legacy/admin_legacy.js"
+      - "backend/src/application/legacy/account_legacy.js"
+      - "backend/src/routes/admin_routes.js"
+      - "backend/src/routes/job_dispute_routes.js"
+      - "backend/tests/admin-*.test.mjs"
+      - "backend/tests/privacy-v2.test.mjs"
       - "backend/src/repository/human_chat.js"
       - "backend/src/repository/storage.js"
       - "backend/src/repository/auth.js"
@@ -37,7 +51,7 @@ concurrency:
 
 jobs:
   postgres-chat:
-    name: PostgreSQL migrations 035–046, chat and email-verification gate
+    name: PostgreSQL migrations, identity, finance, disputes, privacy and chat gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
