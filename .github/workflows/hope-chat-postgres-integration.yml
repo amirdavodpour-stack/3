@@ -19,7 +19,6 @@ on:
       - "backend/src/repository/privacy.js"
       - "backend/src/repository/payment_webhooks.js"
       - "backend/src/application/use_cases/admin_use_cases.js"
-      - "backend/application/legacy/admin_legacy.js"
       - "backend/src/application/legacy/admin_legacy.js"
       - "backend/src/application/legacy/account_legacy.js"
       - "backend/src/routes/admin_routes.js"
