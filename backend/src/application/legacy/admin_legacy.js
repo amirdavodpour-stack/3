@@ -148,19 +148,37 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
     },
     revokeAdminById(id, actorId) {
       const actor = db.collection.users.find((x) => x.id === actorId);
-      if (!actor || actor.role !== 'ADMIN' || String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actor.googleSubject || '').trim()) {
-        const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
+      if (
+        !actor ||
+        actor.role !== 'ADMIN' ||
+        actor.status !== 'ACTIVE' ||
+        String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' ||
+        !String(actor.googleSubject || '').trim()
+      ) {
+        const error = new Error('PRIMARY_ADMIN_ONLY');
+        error.code = 'PRIMARY_ADMIN_ONLY';
+        error.status = 403;
+        throw error;
       }
       const target = db.collection.users.find((x) => x.id === id);
       if (!target) return null;
       if (String(target.email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
-        const error = new Error('PRIMARY_ADMIN_PROTECTED'); error.code='PRIMARY_ADMIN_PROTECTED'; error.status=403; throw error;
+        const error = new Error('PRIMARY_ADMIN_PROTECTED');
+        error.code = 'PRIMARY_ADMIN_PROTECTED';
+        error.status = 403;
+        throw error;
       }
       if (target.role !== 'ADMIN') {
-        const error = new Error('NOT_AN_ADMIN'); error.code='NOT_AN_ADMIN'; error.status=409; throw error;
+        const error = new Error('NOT_AN_ADMIN');
+        error.code = 'NOT_AN_ADMIN';
+        error.status = 409;
+        throw error;
       }
-      target.role='USER';
-      target.sessionVersion=Number(target.sessionVersion||0)+1;
+      target.role = 'USER';
+      target.sessionVersion = Number(target.sessionVersion || 0) + 1;
+      target.adminPanelVerifiedAt = null;
+      target.adminPanelVerifiedSessionJti = null;
+      target.adminPanelVerifiedScope = null;
       db.touch('users');
       return target;
     },

@@ -390,12 +390,34 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
       const id=parts[2];
       try {
-        const revoked=process.env.DATABASE_URL ? await adminUseCases.revokeAdminById(id,me.id) : legacyAdmin.revokeAdminById(id,me.id);
+        let revoked;
+        if (!process.env.DATABASE_URL) {
+          revoked = await withTransaction(async () => {
+            const result = legacyAdmin.revokeAdminById(id,me.id);
+            if (result) {
+              await createAudit('ADMIN_ROLE_REVOKE',me.id,'user',id,{
+                role:'USER',
+                email:result.email,
+                provider:'google',
+                providerIdentityVerified:true,
+              });
+            }
+            return result;
+          });
+        } else {
+          // PostgreSQL repository commits role/session/refresh-token updates and Audit atomically.
+          revoked = await adminUseCases.revokeAdminById(id,me.id);
+        }
         if(!revoked) throw new HttpError(404,'USER_NOT_FOUND','Administrator not found');
-        if(!process.env.DATABASE_URL) await legacyAdmin.save();
-        await createAudit('ADMIN_ROLE_REVOKE',me.id,'user',id,{role:'USER',email:revoked.email});
-        return sendJson(res,200,{id:revoked.id,email:revoked.email,displayName:revoked.displayName,role:revoked.role});
+        return sendJson(res,200,{
+          id:revoked.id,
+          email:revoked.email,
+          displayName:revoked.displayName,
+          role:revoked.role,
+          roleRevocationApplied:revoked.roleRevocationApplied !== false,
+        });
       } catch(error) {
+        if(error?.code==='PRIMARY_ADMIN_ONLY') throw new HttpError(403,'PRIMARY_ADMIN_ONLY','Only the verified primary administrator can revoke administrator access');
         if(error?.code==='PRIMARY_ADMIN_PROTECTED') throw new HttpError(403,'PRIMARY_ADMIN_PROTECTED','The primary administrator cannot be removed');
         if(error?.code==='NOT_AN_ADMIN') throw new HttpError(409,'NOT_AN_ADMIN','User is not an administrator');
         throw error;

@@ -185,21 +185,80 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
 }
 export async function revokeAdminById(id, actorId) {
   return withSqlTransaction(async (client) => {
-    const { rows: actors } = await client.query(`SELECT id,email,role,google_subject FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
-    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actors[0].google_subject || '').trim()) {
-      const error = new Error('PRIMARY_ADMIN_ONLY'); error.code='PRIMARY_ADMIN_ONLY'; error.status=403; throw error;
+    // Acquire both identity rows in a stable order to prevent reciprocal
+    // role-change requests from deadlocking while enforcing the current actor state.
+    const actorKey = String(actorId || '');
+    const targetKey = String(id || '');
+    const lockIds = [...new Set([actorKey,targetKey])];
+    const { rows: lockedUsers } = await client.query(
+      `SELECT id,email,role,status,google_subject
+         FROM users
+        WHERE id=ANY($1::uuid[])
+        ORDER BY id
+        FOR UPDATE`,
+      [lockIds],
+    );
+    const actor = lockedUsers.find((row) => String(row.id) === actorKey);
+    const target = lockedUsers.find((row) => String(row.id) === targetKey);
+    if (
+      !actor ||
+      actor.role !== 'ADMIN' ||
+      actor.status !== 'ACTIVE' ||
+      String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' ||
+      !String(actor.google_subject || '').trim()
+    ) {
+      const error = new Error('PRIMARY_ADMIN_ONLY');
+      error.code = 'PRIMARY_ADMIN_ONLY';
+      error.status = 403;
+      throw error;
     }
-    const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE id=$1 FOR UPDATE`, [id]);
-    if (!rows[0]) return null;
-    if (String(rows[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
-      const error = new Error('PRIMARY_ADMIN_PROTECTED'); error.code='PRIMARY_ADMIN_PROTECTED'; error.status=403; throw error;
+    if (!target) return null;
+    if (String(target.email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
+      const error = new Error('PRIMARY_ADMIN_PROTECTED');
+      error.code = 'PRIMARY_ADMIN_PROTECTED';
+      error.status = 403;
+      throw error;
     }
-    if (String(rows[0].role || '').toUpperCase() !== 'ADMIN') {
-      const error = new Error('NOT_AN_ADMIN'); error.code='NOT_AN_ADMIN'; error.status=409; throw error;
+    if (String(target.role || '').toUpperCase() !== 'ADMIN') {
+      const error = new Error('NOT_AN_ADMIN');
+      error.code = 'NOT_AN_ADMIN';
+      error.status = 409;
+      throw error;
     }
-    const { rows: updated } = await client.query(`UPDATE users SET role='USER', session_version=session_version+1, admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING ${userSelect}`, [id]);
-    await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
-    return updated[0] ? userFromRow(updated[0]) : null;
+
+    const { rows: updated } = await client.query(
+      `UPDATE users
+          SET role='USER',
+              session_version=session_version+1,
+              admin_panel_verified_at=NULL,
+              admin_panel_verified_session_jti=NULL,
+              admin_panel_verified_scope=NULL
+        WHERE id=$1
+          AND role='ADMIN'
+        RETURNING ${userSelect}`,
+      [id],
+    );
+    if (!updated[0]) return null;
+    await client.query(
+      `UPDATE refresh_tokens
+          SET revoked_at=COALESCE(revoked_at,NOW())
+        WHERE user_id=$1 AND revoked_at IS NULL`,
+      [id],
+    );
+    // Keep the role demotion, credential revocation and audit event atomic.
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_ROLE_REVOKE',$1,'user',$2,$3::jsonb,NOW()
+       )`,
+      [actor.id,updated[0].id,JSON.stringify({
+        role:'USER',
+        provider:'google',
+        providerIdentityVerified:true,
+      })],
+    );
+    return { ...userFromRow(updated[0]), roleRevocationApplied:true };
   });
 }
 export async function revokeUserSessions(id) {
