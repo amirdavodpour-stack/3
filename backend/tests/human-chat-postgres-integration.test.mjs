@@ -5212,19 +5212,30 @@ test('PostgreSQL forced session revocation clears admin-panel verification', { s
 test('PostgreSQL admin status changes clear admin-panel verification', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const userId = await createPanelTestAdmin(pool, 'admin-panel-status-invalidation');
-  assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
-
-  const updated = await setUserStatus(userId, 'SUSPENDED', {
-    actorId: fixture.adminId,
-    reason: 'Temporary administrative access restriction for panel-verification test',
-    reviewDueAt: new Date(Date.now()+72*60*60*1000).toISOString(),
-  });
-  assert.equal(updated?.status, 'SUSPENDED');
-  assert.ok(updated?.reviewCaseId);
-  await assertPanelVerificationCleared(pool, userId);
-  await pool.query('DELETE FROM audit_logs WHERE entity_id=$1 AND action=$2',[userId,'ADMIN_USER_STATUS']);
-  await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=$1',[userId]);
-  await pool.query('DELETE FROM users WHERE id=$1',[userId]);
+  const actorId = crypto.randomUUID();
+  await pool.query(
+    `INSERT INTO users(
+       id,email,password_hash,display_name,role,status,session_version,google_subject,created_at
+     ) VALUES($1,'amir.davodpour@gmail.com','r05-primary-test','R05 verified primary admin',
+              'ADMIN','ACTIVE',0,$2,NOW())`,
+    [actorId,`r05-primary-google-1793928800932`],
+  );
+  try {
+    assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
+    const updated = await setUserStatus(userId, 'SUSPENDED', {
+      actorId,
+      reason: 'Temporary administrative access restriction for panel-verification test',
+      reviewDueAt: new Date(Date.now()+72*60*60*1000).toISOString(),
+    });
+    assert.equal(updated?.status, 'SUSPENDED');
+    assert.ok(updated?.reviewCaseId);
+    await assertPanelVerificationCleared(pool, userId);
+  } finally {
+    await pool.query('DELETE FROM audit_logs WHERE actor_id=$1 OR entity_id=$2',[actorId,userId]).catch(()=>{});
+    await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=$1',[userId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[actorId]).catch(()=>{});
+  }
 });
 
 test('PostgreSQL privacy deletion clears admin-panel verification from the account tombstone', { skip: !enabled }, async () => {
