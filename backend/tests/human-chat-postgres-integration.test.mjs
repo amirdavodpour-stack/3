@@ -233,6 +233,39 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   });
   assert.equal(stale?.stale,true,'an expired worker must not finalize after a newer claim takes over');
 
+  const auditFunction = 'r05_fail_dispute_resolution_audit_' + disputeId.replaceAll('-', '');
+  const auditTrigger = 'r05_fail_dispute_resolution_audit_trigger_' + disputeId.replaceAll('-', '');
+  await pool.query(`CREATE FUNCTION ${auditFunction}() RETURNS trigger AS $body$
+    BEGIN
+      IF NEW.action='ADMIN_DISPUTE_RESOLVE' AND NEW.entity_id::text=TG_ARGV[0] THEN
+        RAISE EXCEPTION 'R05 forced ADMIN_DISPUTE_RESOLVE audit failure';
+      END IF;
+      RETURN NEW;
+    END;
+  $body$ LANGUAGE plpgsql`);
+  await pool.query(
+    `CREATE TRIGGER ${auditTrigger}
+     BEFORE INSERT ON audit_logs
+     FOR EACH ROW EXECUTE FUNCTION ${auditFunction}('${disputeId}')`,
+  );
+  await assert.rejects(
+    completeJobDisputeResolution(disputeId,{
+      resolution:winner.resolution,
+      token:resumed.token,
+    }),
+    /R05 forced ADMIN_DISPUTE_RESOLVE audit failure/,
+    'a final dispute decision must not commit without its audit event',
+  );
+  const { rows: retryable } = await pool.query(
+    'SELECT status,resolution,resolution_lease_token FROM job_disputes WHERE id=$1',
+    [disputeId],
+  );
+  assert.equal(retryable[0]?.status,'RESOLVING');
+  assert.equal(retryable[0]?.resolution,winner.resolution);
+  assert.equal(retryable[0]?.resolution_lease_token,resumed.token);
+  await pool.query('DROP TRIGGER IF EXISTS ' + auditTrigger + ' ON audit_logs');
+  await pool.query('DROP FUNCTION IF EXISTS ' + auditFunction + '()');
+
   const completed = await completeJobDisputeResolution(disputeId,{
     resolution:winner.resolution,
     token:resumed.token,
@@ -248,6 +281,15 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   assert.equal(rows[0]?.resolution,winner.resolution);
   assert.equal(rows[0]?.resolution_lease_token,null);
   assert.equal(rows[0]?.resolution_lease_until,null);
+  const { rows: resolutionAudits } = await pool.query(
+    "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_DISPUTE_RESOLVE' AND entity_id=$1",
+    [disputeId],
+  );
+  assert.equal(resolutionAudits.length,1);
+  assert.equal(resolutionAudits[0].actor_id,rows[0]?.resolved_by || fixture.adminId);
+  assert.equal(resolutionAudits[0].meta.resolution,winner.resolution);
+  await pool.query("DELETE FROM audit_logs WHERE action='ADMIN_DISPUTE_RESOLVE' AND entity_id=$1",[disputeId]);
+  await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
 });
 
 test('admin dispute HOLD cancels pending release events but refuses a provider operation already in progress', { skip: !enabled, timeout: 30000 }, async () => {
@@ -5663,6 +5705,38 @@ test('dispute creation and escrow hold roll back together when dispute persisten
     assert.equal(rolledBack[0].dispute_count,0);
 
     await pool.query('ALTER TABLE job_disputes DROP CONSTRAINT IF EXISTS ' + constraintName);
+    const auditFunction = 'r05_fail_dispute_open_audit_' + suffix;
+    const auditTrigger = 'r05_fail_dispute_open_audit_trigger_' + suffix;
+    await pool.query(`CREATE FUNCTION ${auditFunction}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='JOB_DISPUTE_OPEN' AND NEW.entity_id::text=TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced JOB_DISPUTE_OPEN audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${auditTrigger}
+       BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${auditFunction}('${jobId}')`,
+    );
+    await assert.rejects(
+      openJobDisputeWithHold({jobId,paymentId,openedBy:fixture.ownerId,triggerType:'USER'}),
+      /R05 forced JOB_DISPUTE_OPEN audit failure/,
+      'a dispute and escrow hold must roll back when the audit insert fails',
+    );
+    const { rows: auditRollback } = await pool.query(
+      'SELECT p.status AS payment_status,o.status AS release_status,COUNT(d.id)::int AS dispute_count ' +
+      'FROM payments p JOIN outbox_events o ON o.aggregate_id=p.id AND o.id=$2 ' +
+      'LEFT JOIN job_disputes d ON d.job_id=p.job_id WHERE p.id=$1 GROUP BY p.id,o.id',
+      [paymentId,eventId],
+    );
+    assert.equal(auditRollback[0]?.payment_status,'RELEASE_PENDING');
+    assert.equal(auditRollback[0]?.release_status,'PENDING');
+    assert.equal(auditRollback[0]?.dispute_count,0);
+    await pool.query('DROP TRIGGER IF EXISTS ' + auditTrigger + ' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS ' + auditFunction + '()');
+
     const opened = await openJobDisputeWithHold({jobId,paymentId,openedBy:fixture.ownerId,triggerType:'USER'});
     assert.equal(opened?.opened,true);
     assert.equal(opened.dispute?.status,'OPEN');
@@ -5677,6 +5751,9 @@ test('dispute creation and escrow hold roll back together when dispute persisten
     assert.equal(committed[0]?.dispute_status,'OPEN');
   } finally {
     await pool.query('ALTER TABLE job_disputes DROP CONSTRAINT IF EXISTS ' + constraintName);
+    await pool.query('DROP TRIGGER IF EXISTS r05_fail_dispute_open_audit_trigger_' + suffix + ' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS r05_fail_dispute_open_audit_' + suffix + '()').catch(()=>{});
+    await pool.query("DELETE FROM audit_logs WHERE action='JOB_DISPUTE_OPEN' AND entity_id=$1",[jobId]).catch(()=>{});
     await pool.query('DELETE FROM job_disputes WHERE job_id=$1',[jobId]);
     await pool.query('DELETE FROM outbox_events WHERE aggregate_id=$1',[paymentId]);
     await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
@@ -6415,7 +6492,38 @@ test('PostgreSQL legal holds are created and released transactionally with an im
   timeout:30000,
 }, async () => {
   let holdId=null;
+  const suffix=crypto.randomBytes(6).toString('hex');
+  const createFunction='r05_fail_chat_hold_create_audit_'+suffix;
+  const createTrigger='r05_fail_chat_hold_create_audit_trigger_'+suffix;
+  const releaseFunction='r05_fail_chat_hold_release_audit_'+suffix;
+  const releaseTrigger='r05_fail_chat_hold_release_audit_trigger_'+suffix;
   try {
+    await pool.query(`CREATE FUNCTION ${createFunction}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_CHAT_LEGAL_HOLD_CREATED' THEN
+          RAISE EXCEPTION 'R05 forced legal hold create audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(`CREATE TRIGGER ${createTrigger} BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION ${createFunction}()`);
+    await assert.rejects(
+      createChatConversationLegalHold({
+        conversationId:fixture.conversationId,
+        holdKind:'LEGAL',
+        reason:'Preserve the shared job chat while the dispute is reviewed',
+        createdBy:fixture.adminId,
+      }),
+      /R05 forced legal hold create audit failure/,
+    );
+    const { rows: failedCreates } = await pool.query(
+      "SELECT id FROM chat_conversation_legal_holds WHERE conversation_id=$1 AND reason='Preserve the shared job chat while the dispute is reviewed'",
+      [fixture.conversationId],
+    );
+    assert.equal(failedCreates.length,0,'a legal hold without its audit event must not be persisted');
+    await pool.query('DROP TRIGGER IF EXISTS '+createTrigger+' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS '+createFunction+'()');
+
     const created=await createChatConversationLegalHold({
       conversationId:fixture.conversationId,
       holdKind:'LEGAL',
@@ -6429,6 +6537,32 @@ test('PostgreSQL legal holds are created and released transactionally with an im
     assert.equal(created.reason,'Preserve the shared job chat while the dispute is reviewed');
     assert.equal(created.createdBy,fixture.adminId);
     assert.equal(created.releasedAt,null);
+
+    await pool.query(`CREATE FUNCTION ${releaseFunction}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_CHAT_LEGAL_HOLD_RELEASED' THEN
+          RAISE EXCEPTION 'R05 forced legal hold release audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(`CREATE TRIGGER ${releaseTrigger} BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION ${releaseFunction}()`);
+    await assert.rejects(
+      releaseChatConversationLegalHold({
+        holdId,
+        releasedBy:fixture.adminId,
+        releaseReason:'Dispute resolved and preservation obligation formally released',
+      }),
+      /R05 forced legal hold release audit failure/,
+    );
+    const { rows: stillHeld } = await pool.query(
+      'SELECT released_at,released_by,release_reason FROM chat_conversation_legal_holds WHERE id=$1',
+      [holdId],
+    );
+    assert.equal(stillHeld.length,1);
+    assert.equal(stillHeld[0].released_at,null,'a hold release without its audit event must rollback');
+    await pool.query('DROP TRIGGER IF EXISTS '+releaseTrigger+' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS '+releaseFunction+'()');
 
     const released=await releaseChatConversationLegalHold({
       holdId,
@@ -6465,7 +6599,15 @@ test('PostgreSQL legal holds are created and released transactionally with an im
       createdBy:fixture.adminId,
     }),null);
   } finally {
+    await pool.query('DROP TRIGGER IF EXISTS '+createTrigger+' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS '+createFunction+'()').catch(()=>{});
+    await pool.query('DROP TRIGGER IF EXISTS '+releaseTrigger+' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS '+releaseFunction+'()').catch(()=>{});
     if(holdId) {
+      await dbModule.getPool().query(
+        'DELETE FROM audit_logs WHERE entity_id=$1 AND action IN ($2,$3)',
+        [holdId,'ADMIN_CHAT_LEGAL_HOLD_CREATED','ADMIN_CHAT_LEGAL_HOLD_RELEASED'],
+      ).catch(()=>{});
       await dbModule.getPool().query(
         'DELETE FROM chat_conversation_legal_holds WHERE id=$1',
         [holdId],
