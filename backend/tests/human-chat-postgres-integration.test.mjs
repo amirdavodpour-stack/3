@@ -6758,6 +6758,7 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
     );
     const lateJobId = lateJobs[0]?.id;
     assert.ok(lateJobId);
+    let lastPage = first;
     try {
       const { rows: lateConversations } = await pool.query(
         `INSERT INTO chat_conversations(id,kind,job_id,status,title,created_at)
@@ -6768,7 +6769,6 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
       const lateConversationId = lateConversations[0]?.id;
       assert.ok(lateConversationId);
       let cursor = first.nextCursor;
-      let lastPage = first;
       let pageCount = 1;
       while (cursor) {
         lastPage = await buildChatRetentionDryRun({limit:2,cursor});
