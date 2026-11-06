@@ -34,9 +34,8 @@ test('primary-admin privileges require a linked verified Google identity at ever
   assert.match(validation, /isPrimaryAdminEmail\(user\.email\) && !String\(user\.googleSubject \|\| ''\)\.trim\(\)/);
   assert.match(auth, /shouldBootstrapPrimaryAdmin\(\{ email: identity\.email, verifiedIdentity: true, googleSubject: identity\.subject \}\)/);
   const grantStart = repo.indexOf('export async function grantAdminByEmail(');
-  const grantEnd = repo.indexOf('export async function revokeAdminById(', grantStart);
-  const grant = repo.slice(grantStart, grantEnd);
-  const revokeStart = grantEnd;
+  const grant = repo.slice(grantStart);
+  const revokeStart = repo.indexOf('export async function revokeAdminById(');
   const revokeEnd = repo.indexOf('export async function revokeUserSessions(', revokeStart);
   const revoke = repo.slice(revokeStart, revokeEnd);
 
