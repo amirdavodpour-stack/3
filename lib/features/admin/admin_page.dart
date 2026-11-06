@@ -848,58 +848,13 @@ class _AdminPageState extends State<AdminPage>
   Future<void> _setUserStatus(String id, String status) async {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     final isSuspending = status == 'SUSPENDED';
-    final reasonController = TextEditingController();
-    var canSubmit = false;
     final reason = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(isSuspending
-              ? (isEn ? 'Temporarily suspend user?' : 'تعلیق موقت کاربر؟')
-              : (isEn ? 'Reactivate user?' : 'رفع تعلیق کاربر؟')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(isSuspending
-                  ? (isEn
-                      ? 'A human review is due within 72 hours. The account will not be reactivated automatically.'
-                      : 'موعد بازبینی انسانی ۷۲ ساعت دیگر است. حساب به‌صورت خودکار فعال نمی‌شود.')
-                  : (isEn
-                      ? 'Enter the human review outcome and reason for lifting the suspension.'
-                      : 'نتیجه بازبینی انسانی و علت رفع تعلیق را وارد کنید.')),
-              const SizedBox(height: 12),
-              TextField(
-                controller: reasonController,
-                minLines: 2,
-                maxLines: 4,
-                maxLength: 1000,
-                onChanged: (value) => setDialogState(() => canSubmit = value.trim().length >= 3),
-                decoration: InputDecoration(
-                  labelText: isEn ? 'Reason (required)' : 'علت (الزامی)',
-                  hintText: isEn
-                      ? 'Describe the risk or review decision'
-                      : 'ریسک یا تصمیم بازبینی را توضیح دهید',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(isEn ? 'Cancel' : 'انصراف'),
-            ),
-            FilledButton(
-              onPressed: canSubmit
-                  ? () => Navigator.pop(dialogContext, reasonController.text.trim())
-                  : null,
-              child: Text(isEn ? 'Confirm' : 'تأیید'),
-            ),
-          ],
-        ),
+      builder: (dialogContext) => _AdminUserStatusDialog(
+        isSuspending: isSuspending,
+        isEn: isEn,
       ),
     );
-    reasonController.dispose();
     if (!mounted || reason == null || reason.trim().length < 3) return;
     final dueAt = isSuspending
         ? DateTime.now().add(const Duration(hours: 72))
@@ -940,6 +895,80 @@ class _AdminPageState extends State<AdminPage>
     if (confirmed != true || !mounted) return;
     await _runAction(
       () => _applicationRegistry(context).adminCommands.deleteJob(id),
+    );
+  }
+}
+
+class _AdminUserStatusDialog extends StatefulWidget {
+  const _AdminUserStatusDialog({
+    required this.isSuspending,
+    required this.isEn,
+  });
+
+  final bool isSuspending;
+  final bool isEn;
+
+  @override
+  State<_AdminUserStatusDialog> createState() => _AdminUserStatusDialogState();
+}
+
+class _AdminUserStatusDialogState extends State<_AdminUserStatusDialog> {
+  final TextEditingController _reasonController = TextEditingController();
+  bool _canSubmit = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuspending = widget.isSuspending;
+    final isEn = widget.isEn;
+    return AlertDialog(
+      title: Text(isSuspending
+          ? (isEn ? 'Temporarily suspend user?' : 'تعلیق موقت کاربر؟')
+          : (isEn ? 'Reactivate user?' : 'رفع تعلیق کاربر؟')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(isSuspending
+              ? (isEn
+                  ? 'A human review is due within 72 hours. The account will not be reactivated automatically.'
+                  : 'موعد بازبینی انسانی ۷۲ ساعت دیگر است. حساب به‌صورت خودکار فعال نمی‌شود.')
+              : (isEn
+                  ? 'Enter the human review outcome and reason for lifting the suspension.'
+                  : 'نتیجه بازبینی انسانی و علت رفع تعلیق را وارد کنید.')),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reasonController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 1000,
+            onChanged: (value) => setState(() => _canSubmit = value.trim().length >= 3),
+            decoration: InputDecoration(
+              labelText: isEn ? 'Reason (required)' : 'علت (الزامی)',
+              hintText: isEn
+                  ? 'Describe the risk or review decision'
+                  : 'ریسک یا تصمیم بازبینی را توضیح دهید',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(isEn ? 'Cancel' : 'انصراف'),
+        ),
+        FilledButton(
+          onPressed: _canSubmit
+              ? () => Navigator.pop(context, _reasonController.text.trim())
+              : null,
+          child: Text(isEn ? 'Confirm' : 'تأیید'),
+        ),
+      ],
     );
   }
 }
