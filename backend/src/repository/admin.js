@@ -242,18 +242,94 @@ export async function deleteJob(id) {
 
 
 export async function grantAdminByEmail(email, actorId) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
   return withSqlTransaction(async (client) => {
-    const { rows: actors } = await client.query(`SELECT id,email,role,google_subject FROM users WHERE id=$1 FOR UPDATE`, [actorId]);
-    if (!actors[0] || actors[0].role !== 'ADMIN' || String(actors[0].email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' || !String(actors[0].google_subject || '').trim()) {
+    // Resolve the target key, then lock actor and target in deterministic UUID
+    // order. Re-check the email under lock so an address change cannot redirect
+    // an approval between lookup and privilege mutation.
+    const { rows: targetKeys } = await client.query(
+      `SELECT id FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1`,
+      [normalizedEmail],
+    );
+    if (!targetKeys[0]) return null;
+
+    const targetId = String(targetKeys[0].id);
+    const actorKey = String(actorId || '');
+    const lockIds = [...new Set([actorKey,targetId])];
+    const { rows: lockedUsers } = await client.query(
+      `SELECT id,email,role,status,google_subject
+         FROM users
+        WHERE id=ANY($1::uuid[])
+        ORDER BY id
+        FOR UPDATE`,
+      [lockIds],
+    );
+    const actor = lockedUsers.find((row) => String(row.id) === actorKey);
+    const target = lockedUsers.find((row) => String(row.id) === targetId);
+
+    if (
+      !actor ||
+      actor.role !== 'ADMIN' ||
+      actor.status !== 'ACTIVE' ||
+      String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' ||
+      !String(actor.google_subject || '').trim()
+    ) {
       const error = new Error('PRIMARY_ADMIN_ONLY');
       error.code = 'PRIMARY_ADMIN_ONLY';
+      error.status = 403;
       throw error;
     }
-    const normalizedEmail = String(email || '').trim().toLowerCase();
-    const { rows } = await client.query(`SELECT ${userSelect} FROM users WHERE LOWER(email)=LOWER($1) FOR UPDATE`, [normalizedEmail]);
-    if (!rows[0]) return null;
-    if (String(rows[0].role || '').toUpperCase() === 'ADMIN') return userFromRow(rows[0]);
-    const { rows: updated } = await client.query(`UPDATE users SET role='ADMIN', session_version=session_version+1, admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING ${userSelect}`, [rows[0].id]);
-    return updated[0] ? userFromRow(updated[0]) : null;
+    if (!target || String(target.email || '').trim().toLowerCase() !== normalizedEmail) {
+      return null;
+    }
+    if (target.status !== 'ACTIVE') {
+      const error = new Error('ADMIN_TARGET_NOT_ACTIVE');
+      error.code = 'ADMIN_TARGET_NOT_ACTIVE';
+      error.status = 409;
+      throw error;
+    }
+    // A matching email is not proof of ownership. The target must already
+    // have a Google subject linked through the verified-provider flow.
+    if (!String(target.google_subject || '').trim()) {
+      const error = new Error('ADMIN_PROVIDER_IDENTITY_REQUIRED');
+      error.code = 'ADMIN_PROVIDER_IDENTITY_REQUIRED';
+      error.status = 409;
+      throw error;
+    }
+    if (String(target.role || '').toUpperCase() === 'ADMIN') {
+      return { ...userFromRow(target), roleGrantApplied: false };
+    }
+
+    const { rows: updated } = await client.query(
+      `UPDATE users
+          SET role='ADMIN',
+              session_version=session_version+1,
+              admin_panel_verified_at=NULL,
+              admin_panel_verified_session_jti=NULL,
+              admin_panel_verified_scope=NULL
+        WHERE id=$1
+          AND status='ACTIVE'
+          AND google_subject=$2
+        RETURNING ${userSelect}`,
+      [target.id,target.google_subject],
+    );
+    if (!updated[0]) return null;
+
+    // Role mutation and its provider-proof audit are one atomic commit.
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),'ADMIN_ROLE_GRANT',$1,'user',$2,$3::jsonb,NOW()
+       )`,
+      [actor.id,updated[0].id,JSON.stringify({
+        role:'ADMIN',
+        provider:'google',
+        providerIdentityVerified:true,
+      })],
+    );
+    return { ...userFromRow(updated[0]), roleGrantApplied: true };
   });
 }

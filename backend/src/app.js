@@ -130,7 +130,7 @@ const storageRoutes = createStorageRoutes({
 
 const adminRoutes = createAdminRoutes({
   authUser, requireAdmin, jobDisputeRoutes: (...args) => jobDisputeRoutes(...args),
-  readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases,
+  readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases, withTransaction,
   verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH,
   createAudit: (...args) => createAudit(...args), findUser, getJob: (...args) => getJob(...args),
   notifyApplicationCandidate: (...args) => notifyApplicationCandidate(...args), URL,

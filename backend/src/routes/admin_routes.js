@@ -14,7 +14,7 @@ function isLegacyAdminPanelVerified(userId, sessionJti, requiredScope = 'READ') 
   return Boolean(sessionJti && verification.sessionJti === sessionJti && (required === 'READ' ? ['READ','WRITE'].includes(stored) : required === 'WRITE' && stored === 'WRITE'));
 }
 
-export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
+export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, withTransaction = async (fn) => fn(), findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
   async function enforceAuthRateLimits(req, me) {
     if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function') {
       throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
@@ -345,12 +345,46 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const body=await readBody(req);
       const email=String(body?.email||'').trim().toLowerCase();
       if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) throw new HttpError(400,'INVALID_EMAIL','A valid email is required');
-      const promoted=process.env.DATABASE_URL
-        ? await adminUseCases.grantAdminByEmail(email, me.id)
-        : legacyAdmin.grantAdminByEmail(email, me.id);
+      let promoted;
+      try {
+        if (!process.env.DATABASE_URL) {
+          promoted = await withTransaction(async () => {
+            const result = legacyAdmin.grantAdminByEmail(email, me.id);
+            if (result?.roleGrantApplied) {
+              await createAudit('ADMIN_ROLE_GRANT',me.id,'user',result.id,{
+                role:'ADMIN',
+                email:result.email,
+                provider:'google',
+                providerIdentityVerified:true,
+              });
+            }
+            return result;
+          });
+        } else {
+          // The PostgreSQL repository commits role mutation and audit atomically.
+          promoted = await adminUseCases.grantAdminByEmail(email, me.id);
+        }
+      } catch(error) {
+        if (error?.code==='PRIMARY_ADMIN_ONLY') {
+          throw new HttpError(403,'PRIMARY_ADMIN_ONLY','Only the verified primary administrator can grant administrator access');
+        }
+        if (error?.code==='ADMIN_PROVIDER_IDENTITY_REQUIRED') {
+          throw new HttpError(409,'ADMIN_PROVIDER_IDENTITY_REQUIRED','The target account must first link a verified Google identity');
+        }
+        if (error?.code==='ADMIN_TARGET_NOT_ACTIVE') {
+          throw new HttpError(409,'ADMIN_TARGET_NOT_ACTIVE','Only an active account can be promoted to administrator');
+        }
+        throw error;
+      }
       if(!promoted) throw new HttpError(404,'USER_NOT_FOUND','No existing user was found for this email');
-      await createAudit('ADMIN_ROLE_GRANT',me.id,'user',promoted.id,{role:'ADMIN',email:promoted.email});
-      return sendJson(res,200,{id:promoted.id,email:promoted.email,displayName:promoted.displayName,role:promoted.role});
+      return sendJson(res,200,{
+        id:promoted.id,
+        email:promoted.email,
+        displayName:promoted.displayName,
+        role:promoted.role,
+        roleGrantApplied:promoted.roleGrantApplied === true,
+        providerIdentityVerified:true,
+      });
     }
     if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='admins' && parts[2]){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_ADMINS);
