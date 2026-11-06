@@ -136,7 +136,7 @@ test('deleted account tombstones are terminal and lose administrator privileges'
   const deletion = privacyRepositorySource.slice(
     privacyRepositorySource.indexOf('export async function deleteUserPrivacyBundle('),
   );
-  const legacyStatusStart = legacyAdminRepositorySource.indexOf('setUserStatus(id, status)');
+  const legacyStatusStart = legacyAdminRepositorySource.indexOf('setUserStatus(id, status');
   const legacyStatusEnd = legacyAdminRepositorySource.indexOf('revokeAdminById(id, actorId)', legacyStatusStart);
   const legacyStatusChange = legacyAdminRepositorySource.slice(legacyStatusStart, legacyStatusEnd);
   const legacyDeletion = legacyAccountRepositorySource.slice(
