@@ -6918,6 +6918,107 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
   }
 });
 
+test('PostgreSQL administrator promotion requires a verified Google subject and commits its audit atomically', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const actorId = crypto.randomUUID();
+  const unlinkedTargetId = crypto.randomUUID();
+  const linkedTargetId = crypto.randomUUID();
+  const suffix = `r05-admin-grant-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const actorSubject = `r05-primary-sub-${suffix}`;
+  const targetSubject = `r05-target-google-sub-${suffix}`;
+  const actorEmail = `r05-primary-${suffix}@example.test`;
+  const targetEmail = `r05-linked-target-${suffix}@example.test`;
+  const unlinkedEmail = `r05-unlinked-target-${suffix}@example.test`;
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,google_subject,created_at)
+     VALUES($1,'amir.davodpour@gmail.com','r05-test','R05 verified primary owner','ADMIN','ACTIVE',0,$2,NOW())`,
+    [actorId,actorSubject],
+  );
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES($1,$2,'r05-test','R05 unlinked promotion target','USER','ACTIVE',4,NOW())`,
+    [unlinkedTargetId,unlinkedEmail],
+  );
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,google_subject,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,created_at)
+     VALUES($1,$2,'r05-test','R05 linked promotion target','USER','ACTIVE',7,$3,NOW(),'prior-panel-jti','WRITE',NOW())`,
+    [linkedTargetId,targetEmail,targetSubject],
+  );
+  const functionName = `r05_fail_admin_grant_audit_${actorId.replaceAll('-','')}`;
+  const triggerName = `r05_fail_admin_grant_audit_trigger_${actorId.replaceAll('-','')}`;
+  try {
+    await assert.rejects(
+      grantAdminByEmail(unlinkedEmail,actorId),
+      (error)=>error?.code==='ADMIN_PROVIDER_IDENTITY_REQUIRED',
+      'an email-matched account without a verified provider subject must not become ADMIN',
+    );
+    const { rows: unlinked } = await pool.query('SELECT role,session_version FROM users WHERE id=$1',[unlinkedTargetId]);
+    assert.equal(unlinked[0].role,'USER');
+    assert.equal(Number(unlinked[0].session_version),4);
+
+    await pool.query(`CREATE FUNCTION ${functionName}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_ROLE_GRANT' AND NEW.actor_id::text=TG_ARGV[0] AND NEW.entity_id::text=TG_ARGV[1] THEN
+          RAISE EXCEPTION 'R05 forced ADMIN_ROLE_GRANT audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${triggerName} BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${functionName}('${actorId}','${linkedTargetId}')`,
+    );
+    await assert.rejects(
+      grantAdminByEmail(targetEmail,actorId),
+      /R05 forced ADMIN_ROLE_GRANT audit failure/,
+      'role and step-up mutation must roll back when the audit insert fails',
+    );
+    const { rows: rolledBack } = await pool.query(
+      `SELECT role,session_version,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,google_subject
+         FROM users WHERE id=$1`,
+      [linkedTargetId],
+    );
+    assert.equal(rolledBack[0].role,'USER');
+    assert.equal(Number(rolledBack[0].session_version),7);
+    assert.ok(rolledBack[0].admin_panel_verified_at);
+    assert.equal(rolledBack[0].admin_panel_verified_session_jti,'prior-panel-jti');
+    assert.equal(rolledBack[0].admin_panel_verified_scope,'WRITE');
+    assert.equal(rolledBack[0].google_subject,targetSubject);
+
+    await pool.query(`DROP TRIGGER ${triggerName} ON audit_logs`);
+    await pool.query(`DROP FUNCTION ${functionName}()`);
+    const promoted = await grantAdminByEmail(targetEmail,actorId);
+    assert.equal(promoted.role,'ADMIN');
+    const { rows: promotedRows } = await pool.query(
+      `SELECT role,session_version,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,google_subject
+         FROM users WHERE id=$1`,
+      [linkedTargetId],
+    );
+    assert.equal(promotedRows[0].role,'ADMIN');
+    assert.equal(Number(promotedRows[0].session_version),8);
+    assert.equal(promotedRows[0].admin_panel_verified_at,null);
+    assert.equal(promotedRows[0].admin_panel_verified_session_jti,null);
+    assert.equal(promotedRows[0].admin_panel_verified_scope,null);
+    assert.equal(promotedRows[0].google_subject,targetSubject);
+    const { rows: audit } = await pool.query(
+      `SELECT action,actor_id,entity_id,meta FROM audit_logs
+        WHERE action='ADMIN_ROLE_GRANT' AND actor_id=$1 AND entity_id=$2`,
+      [actorId,linkedTargetId],
+    );
+    assert.equal(audit.length,1);
+    assert.equal(audit[0].meta.provider,'google');
+    assert.equal(audit[0].meta.providerIdentityVerified,true);
+  } finally {
+    await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON audit_logs`).catch(()=>{});
+    await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(()=>{});
+    await pool.query(`DELETE FROM audit_logs WHERE actor_id=$1 OR entity_id=ANY($2::uuid[])`,[actorId,[unlinkedTargetId,linkedTargetId]]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[[actorId,unlinkedTargetId,linkedTargetId]]).catch(()=>{});
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
