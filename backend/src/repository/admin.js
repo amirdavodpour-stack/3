@@ -80,10 +80,18 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
   }
 
   return withSqlTransaction(async (client) => {
-    const { rows: actors } = await client.query(
-      `SELECT id,email,google_subject,role,status FROM users WHERE id=$1 FOR UPDATE`,
-      [actor],
+    // Lock actor and target in stable UUID order so reciprocal admin actions
+    // cannot deadlock by acquiring the two user rows in opposite order.
+    const { rows: lockedUsers } = await client.query(
+      `SELECT id,email,google_subject,role,status
+         FROM users
+        WHERE id=ANY($1::uuid[])
+        ORDER BY id
+        FOR UPDATE`,
+      [[actor,String(id)]],
     );
+    const actors = lockedUsers.filter((row) => row.id === actor);
+    const current = lockedUsers.filter((row) => row.id === String(id));
     if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
       const error=new Error('ADMIN_REQUIRED'); error.code='ADMIN_REQUIRED'; error.status=403; throw error;
     }
@@ -93,11 +101,6 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
     if(actor===String(id) && targetStatus==='SUSPENDED') {
       const error=new Error('SELF_SUSPEND_FORBIDDEN'); error.code='SELF_SUSPEND_FORBIDDEN'; error.status=400; throw error;
     }
-
-    const { rows: current } = await client.query(
-      `SELECT id,email,role,status FROM users WHERE id=$1 FOR UPDATE`,
-      [id],
-    );
     if (!current[0]) return null;
     if (String(current[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com') {
       const error = new Error('PRIMARY_ADMIN_PROTECTED');
