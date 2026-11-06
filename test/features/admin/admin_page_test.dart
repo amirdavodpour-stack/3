@@ -114,8 +114,8 @@ class _FakeAdmin implements AdminRepository {
   }
 
   @override
-  Future<void> setUserStatus(String id, String status) async {
-    calls.add('status:$id:$status');
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) async {
+    calls.add('status:$id:$status:$reason:' + (reviewDueAt?.toIso8601String() ?? ''));
     if (failNextAction) throw Exception('action boom');
   }
 
@@ -676,7 +676,11 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(suspend, findsOneWidget);
     await tester.tap(suspend);
     await tester.pumpAndSettle();
-    expect(repo.calls, contains('status:u1:SUSPENDED'));
+    expect(find.text('Reason (required)'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Temporary hold pending manual review');
+    await tester.tap(find.text('Confirm'));
+    await tester.pumpAndSettle();
+    expect(repo.calls.any((call) => call.startsWith('status:u1:SUSPENDED:Temporary hold pending manual review:')), isTrue);
 
     // Audit log tab: system actor fallback for empty actor name.
     await _openTab(tester, 'Audit log');
@@ -756,6 +760,10 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(activate, findsOneWidget);
     await tester.tap(activate);
     await tester.pumpAndSettle();
-    expect(repo.calls, contains('status:u3:ACTIVE'));
+    expect(find.text('Reason (required)'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Manual review completed; restriction lifted');
+    await tester.tap(find.text('Confirm'));
+    await tester.pumpAndSettle();
+    expect(repo.calls.any((call) => call.startsWith('status:u3:ACTIVE:Manual review completed; restriction lifted:')), isTrue);
   });
 }

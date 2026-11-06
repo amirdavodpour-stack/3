@@ -69,7 +69,7 @@ class _FakeAdminOperations implements AdminRepository {
   Future<void> moderateJob(String id, String status) async {}
 
   @override
-  Future<void> setUserStatus(String id, String status) async {}
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) async {}
 
   @override
   Future<void> deleteJob(String id) async {}
