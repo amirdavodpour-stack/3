@@ -678,8 +678,13 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     await tester.pumpAndSettle();
     expect(find.text('Reason (required)'), findsOneWidget);
     await tester.enterText(find.byType(TextField).last, 'Temporary hold pending manual review');
-    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(FilledButton, 'Confirm');
+    expect(confirm, findsOneWidget);
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(find.text('Reason (required)'), findsNothing);
     expect(repo.calls.any((call) => call.startsWith('status:u1:SUSPENDED:Temporary hold pending manual review:')), isTrue);
 
     // Audit log tab: system actor fallback for empty actor name.
@@ -762,8 +767,13 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     await tester.pumpAndSettle();
     expect(find.text('Reason (required)'), findsOneWidget);
     await tester.enterText(find.byType(TextField).last, 'Manual review completed; restriction lifted');
-    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(FilledButton, 'Confirm');
+    expect(confirm, findsOneWidget);
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(find.text('Reason (required)'), findsNothing);
     expect(repo.calls.any((call) => call.startsWith('status:u3:ACTIVE:Manual review completed; restriction lifted:')), isTrue);
   });
 }
