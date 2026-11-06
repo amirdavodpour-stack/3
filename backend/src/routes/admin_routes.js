@@ -218,7 +218,25 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       if (typeof repo.buildChatRetentionDryRun !== 'function') {
         throw new HttpError(503,'CHAT_RETENTION_UNAVAILABLE','Chat-retention assessment is unavailable');
       }
-      const plan = await repo.buildChatRetentionDryRun({limit:200});
+      const requestUrl = new URL(req.url || '/', 'http://localhost');
+      const rawLimit = requestUrl.searchParams.get('limit');
+      const limit = rawLimit == null ? 200 : Number(rawLimit);
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) {
+        throw new HttpError(400,'INVALID_RETENTION_LIMIT','limit must be an integer between 1 and 1000');
+      }
+      const cursor = requestUrl.searchParams.get('cursor') || null;
+      if (cursor && cursor.length > 1024) {
+        throw new HttpError(400,'INVALID_RETENTION_CURSOR','cursor token is too long');
+      }
+      let plan;
+      try {
+        plan = await repo.buildChatRetentionDryRun({limit,cursor});
+      } catch (error) {
+        if (error?.code === 'INVALID_RETENTION_CURSOR') {
+          throw new HttpError(400,'INVALID_RETENTION_CURSOR','cursor token is invalid');
+        }
+        throw error;
+      }
       await createAudit(
         'ADMIN_CHAT_RETENTION_DRY_RUN',
         me.id,
@@ -228,7 +246,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         {
           wouldMutate:plan?.wouldMutate === true,
           scanned:Number(plan?.scanned || 0),
-          limit:Number(plan?.limit || 200),
+          limit:Number(plan?.limit || limit),
+          totalCount:Number(plan?.totalCount || 0),
+          hasMore:plan?.hasMore === true,
+          inventoryComplete:plan?.inventoryComplete === true,
+          cursorProvided:plan?.cursorProvided === true,
         },
       );
       return sendJson(res,200,plan);

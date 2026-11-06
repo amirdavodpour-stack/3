@@ -38,6 +38,12 @@ const EMPTY_PLAN = Object.freeze({
   providerDeleteCalls:0,
   summary:{},
   items:[],
+  totalCount:0,
+  hasMore:false,
+  nextCursor:null,
+  pageComplete:true,
+  inventoryComplete:true,
+  cursorProvided:false,
 });
 
 function makeHarness({user=OPS_ADMIN,verified=true,plan=EMPTY_PLAN}={}) {
@@ -86,6 +92,7 @@ function makeHarness({user=OPS_ADMIN,verified=true,plan=EMPTY_PLAN}={}) {
     readBody:async(req)=>req.body||{},
     sendJson:async(_res,status,data)=>({status,data}),
     HttpError,
+    URL:globalThis.URL,
     config:{
       adminMfaRequired:true,
       adminPanelReadVerificationMinutes:15,
@@ -94,9 +101,9 @@ function makeHarness({user=OPS_ADMIN,verified=true,plan=EMPTY_PLAN}={}) {
     createAudit:async(...args)=>audit.push(args),
     repo,
   });
-  const invoke=(method,parts,body={})=>route({
+  const invoke=(method,parts,body={},query='')=>route({
     method,
-    url:'/api/v1/'+parts.join('/'),
+    url:'/api/v1/'+parts.join('/')+query,
     headers:{host:'localhost'},
     body,
   },{},parts);
@@ -111,7 +118,7 @@ test('admin chat-retention dry-run requires session-bound READ verification and 
   assert.deepEqual(h.verificationCalls,[
     [OPS_ADMIN.id,15,OPS_ADMIN.sessionJti,'READ'],
   ]);
-  assert.deepEqual(h.calls,[['dry-run',{limit:200}]]);
+  assert.deepEqual(h.calls,[['dry-run',{limit:200,cursor:null}]]);
   assert.equal(h.audit.length,1);
   assert.equal(h.audit[0][0],'ADMIN_CHAT_RETENTION_DRY_RUN');
   assert.equal(h.audit[0][1],OPS_ADMIN.id);
@@ -204,6 +211,34 @@ test('legal hold mutations reject invalid identifiers, kinds and empty reasons',
       conversationId:'00000000-0000-4000-8000-000000000001',holdKind:'LEGAL',reason:'   ',
     }),
     (error)=>error?.status===400,
+  );
+  assert.equal(h.calls.length,0);
+  assert.equal(h.audit.length,0);
+});
+
+test('admin chat-retention dry-run paginates with a stable cursor and reports inventory completeness',async()=>{
+  const plan={...EMPTY_PLAN,limit:1,scanned:1,totalCount:7,hasMore:true,nextCursor:'eyJjdXJzb3IiOiIxIn0',pageComplete:false,inventoryComplete:false};
+  const h=makeHarness({plan});
+  const response=await h.invoke('GET',['admin','privacy','chat-retention','dry-run'],{},'?limit=1&cursor=eyJjdXJzb3IiOiIxIn0');
+  assert.equal(response.status,200);
+  assert.equal(response.data.hasMore,true);
+  assert.equal(response.data.totalCount,7);
+  assert.equal(response.data.inventoryComplete,false);
+  assert.deepEqual(h.calls,[['dry-run',{limit:1,cursor:'eyJjdXJzb3IiOiIxIn0'}]]);
+  assert.equal(h.audit[0][5].hasMore,true);
+  assert.equal(h.audit[0][5].totalCount,7);
+  assert.equal(h.audit[0][5].cursorProvided,true);
+});
+
+test('admin chat-retention dry-run rejects invalid page limits before scanning',async()=>{
+  const h=makeHarness();
+  await assert.rejects(
+    h.invoke('GET',['admin','privacy','chat-retention','dry-run'],{},'?limit=1001'),
+    (error)=>error?.status===400&&error?.code==='INVALID_RETENTION_LIMIT',
+  );
+  await assert.rejects(
+    h.invoke('GET',['admin','privacy','chat-retention','dry-run'],{},'?limit=1.5'),
+    (error)=>error?.status===400&&error?.code==='INVALID_RETENTION_LIMIT',
   );
   assert.equal(h.calls.length,0);
   assert.equal(h.audit.length,0);

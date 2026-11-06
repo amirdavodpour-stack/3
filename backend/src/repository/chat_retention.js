@@ -4,12 +4,42 @@ import { withSqlTransaction } from '../db.js';
 const SUPPORT_WINDOW_DAYS = 30;
 const CONTENT_RETENTION_MONTHS = 24;
 const MAX_DRY_RUN_LIMIT = 1000;
+const RETENTION_CURSOR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TERMINAL_JOB_STATUSES = new Set(['COMPLETED','CANCELLED']);
 
 const iso = (value) => value == null
   ? null
   : (value instanceof Date ? value : new Date(value)).toISOString();
 
+function decodeRetentionCursor(value) {
+  if (value == null || value === '') return null;
+  const invalid = () => {
+    const error = new TypeError('cursor must be a valid retention cursor token');
+    error.code = 'INVALID_RETENTION_CURSOR';
+    return error;
+  };
+  if (typeof value !== 'string' || value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value)) {
+    throw invalid();
+  }
+  try {
+    const bytes = Buffer.from(value,'base64url');
+    if (bytes.toString('base64url') !== value) throw invalid();
+    const parsed = JSON.parse(bytes.toString('utf8'));
+    if (!parsed || typeof parsed.createdAt !== 'string' || !Number.isFinite(Date.parse(parsed.createdAt)) ||
+        typeof parsed.id !== 'string' || !RETENTION_CURSOR_UUID.test(parsed.id)) throw invalid();
+    return { createdAt: parsed.createdAt, id: parsed.id };
+  } catch (error) {
+    if (error?.code === 'INVALID_RETENTION_CURSOR') throw error;
+    throw invalid();
+  }
+}
+
+function encodeRetentionCursor(row) {
+  return Buffer.from(JSON.stringify({
+    createdAt: row.cursor_created_at,
+    id: row.conversation_id,
+  }), 'utf8').toString('base64url');
+}
 function classifyConversation(row, asOf) {
   const terminalAt = row.terminal_at ? new Date(row.terminal_at) : null;
   const supportWindowEndsAt = row.support_window_ends_at
@@ -112,6 +142,7 @@ function classifyConversation(row, asOf) {
 export async function buildChatRetentionDryRun({
   asOf = new Date(),
   limit = 200,
+  cursor = null,
 } = {}) {
   const asOfDate = asOf instanceof Date ? new Date(asOf.getTime()) : new Date(asOf);
   if (!Number.isFinite(asOfDate.getTime())) {
@@ -123,14 +154,23 @@ export async function buildChatRetentionDryRun({
     throw new TypeError('limit must be a positive integer');
   }
   const safeLimit = Math.min(MAX_DRY_RUN_LIMIT, Math.floor(requestedLimit));
+  const decodedCursor = decodeRetentionCursor(cursor);
   const pool = requirePool();
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const { rows: totalRows } = await client.query(`
+      SELECT COUNT(*)::int AS total
+        FROM chat_conversations c
+        JOIN jobs j ON j.id=c.job_id
+       WHERE c.kind='JOB'
+    `);
+    const totalCount = Number(totalRows[0]?.total || 0);
     const { rows } = await client.query(`
       SELECT
         c.id AS conversation_id,
+        c.created_at::text AS cursor_created_at,
         c.job_id,
         c.status AS conversation_status,
         c.terminal_at,
@@ -191,15 +231,21 @@ export async function buildChatRetentionDryRun({
         WHERE m.conversation_id=c.id
       ) attachments ON TRUE
       WHERE c.kind='JOB'
+        AND ($2::timestamptz IS NULL OR (c.created_at,c.id) > ($2::timestamptz,$3::uuid))
       ORDER BY c.created_at ASC,c.id ASC
       LIMIT $1
-    `, [safeLimit]);
+    `, [safeLimit + 1, decodedCursor?.createdAt ?? null, decodedCursor?.id ?? null]);
 
-    const items = rows.map((row) => classifyConversation(row, asOfDate));
+    const hasMore = rows.length > safeLimit;
+    const pageRows = hasMore ? rows.slice(0,safeLimit) : rows;
+    const items = pageRows.map((row) => classifyConversation(row, asOfDate));
     const summary = {};
     for (const item of items) {
       summary[item.action] = (summary[item.action] || 0) + 1;
     }
+    const nextCursor = hasMore && pageRows.length
+      ? encodeRetentionCursor(pageRows[pageRows.length - 1])
+      : null;
 
     await client.query('COMMIT');
     return {
@@ -207,6 +253,12 @@ export async function buildChatRetentionDryRun({
       asOf: asOfDate.toISOString(),
       limit: safeLimit,
       scanned: items.length,
+      totalCount,
+      hasMore,
+      nextCursor,
+      pageComplete: !hasMore,
+      inventoryComplete: !decodedCursor && !hasMore,
+      cursorProvided: Boolean(decodedCursor),
       policy: {
         supportWindowDays: SUPPORT_WINDOW_DAYS,
         contentRetentionMonths: CONTENT_RETENTION_MONTHS,
@@ -224,7 +276,6 @@ export async function buildChatRetentionDryRun({
     client.release();
   }
 }
-
 
 const CHAT_RETENTION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

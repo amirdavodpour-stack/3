@@ -60,7 +60,7 @@ const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePass
 const { setUserStatus, revokeUserSessions, listAdminUsers } = modules[15] || {};
 const { linkGoogleSubject } = modules[16] || {};
 const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
-const { createChatConversationLegalHold, releaseChatConversationLegalHold } = modules[18] || {};
+const { createChatConversationLegalHold, releaseChatConversationLegalHold, buildChatRetentionDryRun } = modules[18] || {};
 const {
   closeJobChatForJob,
   ensureJobChat,
@@ -6705,6 +6705,70 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
     await pool.query("DELETE FROM audit_logs WHERE entity_id=$1 AND action='ADMIN_USER_STATUS'",[userId]).catch(()=>{});
     await pool.query('DELETE FROM admin_user_status_review_cases WHERE user_id=$1',[userId]).catch(()=>{});
     await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
+});
+
+test('PostgreSQL retention dry-run cursor traverses the complete inventory without duplicates', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const suffix = `retention-pages-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const { rows: jobs } = await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT gen_random_uuid(),$1,$2,$3 || ' ' || seq::text,'R05 retention pagination fixture',c.id,
+            'FIXED','FIXED',100,100,1,'Retention pagination fixture','IN_PROGRESS',
+            'R05 test','MISSION','PUBLIC',NOW(),NOW()
+       FROM generate_series(1,3) AS seq
+       CROSS JOIN LATERAL (
+         SELECT id FROM categories WHERE is_active=TRUE ORDER BY created_at NULLS FIRST,id LIMIT 1
+       ) c
+     RETURNING id` ,
+    [fixture.ownerId,fixture.workerId,`R05 retention page ${suffix}`],
+  );
+  const jobIds = jobs.map((row) => row.id);
+  try {
+    for (const id of jobIds) assert.ok(await ensureJobChat(id));
+    const first = await buildChatRetentionDryRun({limit:2});
+    assert.equal(first.limit,2);
+    assert.equal(first.scanned,2);
+    assert.ok(first.totalCount>=3);
+    assert.equal(first.hasMore,true);
+    assert.ok(first.nextCursor);
+    assert.equal(first.pageComplete,false);
+    assert.equal(first.inventoryComplete,false);
+
+    const seen = new Set(first.items.map((item) => item.conversationId));
+    let cursor = first.nextCursor;
+    let lastPage = first;
+    let pageCount = 1;
+    while (cursor) {
+      lastPage = await buildChatRetentionDryRun({limit:2,cursor});
+      assert.equal(lastPage.totalCount,first.totalCount);
+      for (const item of lastPage.items) {
+        assert.equal(seen.has(item.conversationId),false,'cursor pages must not repeat a conversation');
+        seen.add(item.conversationId);
+      }
+      cursor = lastPage.nextCursor;
+      pageCount += 1;
+      assert.ok(pageCount <= Math.ceil(first.totalCount/2)+1,'cursor traversal must terminate');
+    }
+    assert.equal(seen.size,first.totalCount);
+    assert.equal(lastPage.hasMore,false);
+    assert.equal(lastPage.pageComplete,true);
+    assert.equal(lastPage.inventoryComplete,false,'a later page is terminal but is not a standalone full-inventory response');
+    assert.equal(lastPage.wouldMutate,false);
+    await assert.rejects(
+      buildChatRetentionDryRun({limit:2,cursor:'not-a-valid-cursor'}),
+      (error) => error?.code==='INVALID_RETENTION_CURSOR',
+    );
+  } finally {
+    await pool.query('DELETE FROM chat_conversations WHERE job_id=ANY($1::uuid[])',[jobIds]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=ANY($1::uuid[])',[jobIds]).catch(()=>{});
   }
 });
 
