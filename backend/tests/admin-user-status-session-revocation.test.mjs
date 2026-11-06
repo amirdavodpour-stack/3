@@ -69,6 +69,18 @@ test('logout and password reset clear admin-panel verification in the session-ve
   assert.match(passwordResetInvalidation, /UPDATE users SET[^\`]*password_hash\s*=\s*\$2[^\`]*session_version\s*=\s*session_version\s*\+\s*1[^\`]*admin_panel_verified_at\s*=\s*NULL/is);
 });
 
+test('admin role revocation clears every step-up field and commits its audit atomically', () => {
+  const revoke = functionSource(adminRepositorySource, 'revokeAdminById', 'revokeUserSessions');
+  assert.match(revoke, /actor\.status\s*!==\s*'ACTIVE'/);
+  assert.match(revoke, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(revoke, /admin_panel_verified_at\s*=\s*NULL/);
+  assert.match(revoke, /admin_panel_verified_session_jti\s*=\s*NULL/);
+  assert.match(revoke, /admin_panel_verified_scope\s*=\s*NULL/);
+  assert.match(revoke, /UPDATE refresh_tokens/);
+  assert.match(revoke, /INSERT INTO audit_logs/);
+  assert.match(revoke, /ADMIN_ROLE_REVOKE/);
+  assert.match(revoke, /withSqlTransaction/);
+});
 test('admin session revocation, status changes and role changes clear prior panel unlocks', () => {
   const statusChange = functionSource(adminRepositorySource, 'setUserStatus', 'revokeAdminById');
   const roleRevocation = functionSource(adminRepositorySource, 'revokeAdminById', 'revokeUserSessions');
