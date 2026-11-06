@@ -86,3 +86,16 @@ test('admin panel unlock requires one recent step-up proof and independent accou
   assert.ok(page.includes('.authenticate()'));
   assert.ok(repository.includes('verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = \'WRITE\'})'));
 });
+
+test('migration 050 audits the verified-provider primary-owner access invariant and clears stale sessions', () => {
+  const migration = read('backend/src/db/migrations/050_primary_admin_identity_policy_audit.js');
+  assert.match(migration, /PRIMARY_ADMIN_IDENTITY_POLICY_ENFORCED/);
+  assert.match(migration, /actor_id/);
+  assert.match(migration, /googleSubjectLinked/);
+  assert.match(migration, /session_version\s*=\s*session_version\s*\+\s*1/);
+  assert.match(migration, /admin_panel_verified_scope\s*=\s*NULL/);
+  assert.match(migration, /UPDATE refresh_tokens/);
+  assert.match(migration, /migrationVersion/);
+  assert.match(migration, /NOT EXISTS/);
+  assert.match(migration, /cannot be rolled back/i);
+});

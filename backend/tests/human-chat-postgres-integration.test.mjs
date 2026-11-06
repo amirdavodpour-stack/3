@@ -2,6 +2,7 @@ import { buildDataExport } from '../src/privacy.js';
 import { getAdminPermissions } from '../src/application/admin_panel_access.js';
 import { requireAdmin } from '../src/policies/validation.js';
 import { migration as primaryAdminIdentityMigration } from '../src/db/migrations/032_primary_admin_identity.js';
+import { migration as primaryAdminIdentityPolicyAuditMigration } from '../src/db/migrations/050_primary_admin_identity_policy_audit.js';
 import { migrationStatus } from '../src/db/migrations.js';
 import test, { after } from 'node:test';
 import crypto from 'node:crypto';
@@ -7113,6 +7114,109 @@ test('PostgreSQL administrator promotion requires a verified Google subject and 
     await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(()=>{});
     await pool.query(`DELETE FROM audit_logs WHERE actor_id=$1 OR entity_id=ANY($2::uuid[])`,[actorId,[unlinkedTargetId,linkedTargetId]]).catch(()=>{});
     await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[[actorId,unlinkedTargetId,linkedTargetId]]).catch(()=>{});
+  }
+});
+
+test('Migration 050 invalidates unlinked primary-owner sessions and writes one idempotent system audit', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool=dbModule.getPool();
+  const client=await pool.connect();
+  const refreshId=crypto.randomUUID();
+  const familyId=crypto.randomUUID();
+  let userId=null;
+  try {
+    await client.query('BEGIN');
+    const { rows: existing } = await client.query(
+      `SELECT id FROM users WHERE LOWER(email)=LOWER('amir.davodpour@gmail.com') LIMIT 1 FOR UPDATE`,
+    );
+    if (existing[0]) {
+      userId=existing[0].id;
+      await client.query(
+        `UPDATE users
+            SET role='ADMIN',status='ACTIVE',google_subject=NULL,session_version=17,
+                admin_panel_verified_at=NOW(),
+                admin_panel_verified_session_jti='migration-050-stale-jti',
+                admin_panel_verified_scope='WRITE'
+          WHERE id=$1`,
+        [userId],
+      );
+    } else {
+      userId=crypto.randomUUID();
+      await client.query(
+        `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at,
+                          admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope)
+         VALUES($1,'amir.davodpour@gmail.com','r05-migration-050','R05 unlinked primary owner','ADMIN','ACTIVE',17,NOW(),
+                NOW(),'migration-050-stale-jti','WRITE')`,
+        [userId],
+      );
+    }
+    await client.query(
+      `DELETE FROM audit_logs
+        WHERE action='PRIMARY_ADMIN_IDENTITY_POLICY_ENFORCED'
+          AND entity_id=$1 AND meta->>'migrationVersion'='50'`,
+      [userId],
+    );
+    await client.query(
+      `INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at)
+       VALUES($1,$2,$3,$4,NOW()+INTERVAL '7 days',NOW())`,
+      [refreshId,userId,`r05-migration-050-${refreshId}`,familyId],
+    );
+
+    await primaryAdminIdentityPolicyAuditMigration.up(client);
+    const { rows: enforced } = await client.query(
+      `SELECT role,status,google_subject,session_version,admin_panel_verified_at,
+              admin_panel_verified_session_jti,admin_panel_verified_scope
+         FROM users WHERE id=$1`,
+      [userId],
+    );
+    assert.equal(enforced[0].role,'USER');
+    assert.equal(enforced[0].status,'ACTIVE');
+    assert.equal(enforced[0].google_subject,null);
+    assert.equal(Number(enforced[0].session_version),18);
+    assert.equal(enforced[0].admin_panel_verified_at,null);
+    assert.equal(enforced[0].admin_panel_verified_session_jti,null);
+    assert.equal(enforced[0].admin_panel_verified_scope,null);
+    const { rows: revoked } = await client.query('SELECT revoked_at FROM refresh_tokens WHERE id=$1',[refreshId]);
+    assert.ok(revoked[0].revoked_at);
+    const { rows: audit } = await client.query(
+      `SELECT actor_id,action,entity_id,meta FROM audit_logs
+        WHERE action='PRIMARY_ADMIN_IDENTITY_POLICY_ENFORCED'
+          AND entity_id=$1 AND meta->>'migrationVersion'='50'`,
+      [userId],
+    );
+    assert.equal(audit.length,1);
+    assert.equal(audit[0].actor_id,null,'migration audit is a system event, not falsely attributed to a human');
+    assert.equal(audit[0].meta.previousRole,'ADMIN');
+    assert.equal(audit[0].meta.effectiveRole,'USER');
+    assert.equal(audit[0].meta.googleSubjectLinked,false);
+    assert.equal(audit[0].meta.migrationVersion,50);
+
+    await primaryAdminIdentityPolicyAuditMigration.up(client);
+    const { rows: idempotent } = await client.query(
+      `SELECT role,session_version FROM users WHERE id=$1`,
+      [userId],
+    );
+    assert.equal(idempotent[0].role,'USER');
+    assert.equal(Number(idempotent[0].session_version),18,'rerunning the migration must not invalidate sessions twice');
+    const { rows: oneAudit } = await client.query(
+      `SELECT COUNT(*)::int AS count FROM audit_logs
+        WHERE action='PRIMARY_ADMIN_IDENTITY_POLICY_ENFORCED'
+          AND entity_id=$1 AND meta->>'migrationVersion'='50'`,
+      [userId],
+    );
+    assert.equal(oneAudit[0].count,1);
+    await assert.rejects(
+      primaryAdminIdentityPolicyAuditMigration.down(client),
+      /cannot be rolled back/i,
+    );
+    await client.query('ROLLBACK');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(()=>{});
+    throw error;
+  } finally {
+    client.release();
   }
 });
 
