@@ -561,13 +561,13 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       assertAdminPermission(me, ADMIN_PERMISSIONS.MODERATE_JOBS);
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['DRAFT','PUBLISHED','CANCELLED']),'status');
       const job=await getJob(id); if(!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
-      try { const updated=process.env.DATABASE_URL ? await adminUseCases.moderateJob(id,status) : legacyAdmin.moderateJob(id,status); if(!updated) throw new HttpError(404,'JOB_NOT_FOUND','Job not found'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await createAudit('ADMIN_JOB_MODERATE',me.id,'job',id,{status}); return sendJson(res,200,updated); } catch(e){ if(e?.code==='JOB_LOCKED') throw new HttpError(409,'JOB_LOCKED','This opportunity is already in a protected lifecycle state'); throw e; }
+      try { const updated=process.env.DATABASE_URL ? await adminUseCases.moderateJob(id,status,{adminId:me.id}) : legacyAdmin.moderateJob(id,status); if(!updated) throw new HttpError(404,'JOB_NOT_FOUND','Job not found'); if(!process.env.DATABASE_URL) { await legacyAdmin.save(); await createAudit('ADMIN_JOB_MODERATE',me.id,'job',id,{status}); } return sendJson(res,200,updated); } catch(e){ if(e?.code==='JOB_LOCKED') throw new HttpError(409,'JOB_LOCKED','This opportunity is already in a protected lifecycle state'); throw e; }
     }
     if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='jobs' && parts[2]){
       assertAdminPermission(me, ADMIN_PERMISSIONS.DELETE_JOBS);
       const id=parts[2]; const job=await getJob(id); if(!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
       if(!['DRAFT','PUBLISHED'].includes(job.status)) throw new HttpError(409,'JOB_NOT_DELETABLE','Only draft or published opportunities can be deleted by admins');
-      if(process.env.DATABASE_URL) await adminUseCases.deleteJob(id);
+      if(process.env.DATABASE_URL) await adminUseCases.deleteJob(id,{adminId:me.id});
       else {
         try { legacyAdmin.deleteJob(id); } catch (error) {
           if (error?.code === 'JOB_HAS_FINANCIAL_RECORDS') throw new HttpError(409,'JOB_HAS_FINANCIAL_RECORDS','This opportunity has financial records and cannot be deleted');
@@ -575,7 +575,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         }
         await legacyAdmin.save();
       }
-      await createAudit('ADMIN_JOB_DELETE',me.id,'job',id); return sendJson(res,200,{deleted:true,id});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_JOB_DELETE',me.id,'job',id); return sendJson(res,200,{deleted:true,id});
     }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='applications'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const apps=process.env.DATABASE_URL ? await adminUseCases.applications() : legacyAdmin.applications(); return sendJson(res,200,apps); }

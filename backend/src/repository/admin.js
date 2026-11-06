@@ -273,28 +273,59 @@ export async function listAdminAudit(limit=100, offset=0) {
   const { rows } = await requirePool().query(`SELECT a.id,a.action,a.actor_id,a.entity_type,a.entity_id,a.meta,a.created_at,u.display_name AS actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.created_at DESC LIMIT $1 OFFSET $2`, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
   return rows.map(r=>({id:r.id,action:r.action,actorId:r.actor_id,actorName:r.actor_name||null,entityType:r.entity_type,entityId:r.entity_id,meta:r.meta||{},createdAt:r.created_at?.toISOString?.() ?? r.created_at}));
 }
-export async function moderateJob(id,toStatus) {
+export async function moderateJob(id,toStatus,{adminId}={}) {
   const allowed = new Set(['DRAFT','PUBLISHED','CANCELLED']);
   if (!allowed.has(toStatus)) { const e=new Error('INVALID_STATUS'); e.code='INVALID_STATUS'; throw e; }
+  const actor=String(adminId || '').trim();
+  if(!actor) { const e=new Error('ADMIN_ACTOR_REQUIRED'); e.code='ADMIN_ACTOR_REQUIRED'; throw e; }
   return withSqlTransaction(async(client)=>{
+    const {rows:actors}=await client.query(
+      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
+      [actor],
+    );
+    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
+      const e=new Error('ADMIN_REQUIRED'); e.code='ADMIN_REQUIRED'; e.status=403; throw e;
+    }
     const {rows}=await client.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`,[id]);
     if(!rows[0]) return null;
     const job=jobFromRow(rows[0]);
     if(['COMPLETED','ASSIGNED','FUNDED','IN_PROGRESS','DELIVERED','UNDER_REVIEW'].includes(job.status)) { const e=new Error('JOB_LOCKED'); e.code='JOB_LOCKED'; throw e; }
     const {rows:u}=await client.query(`UPDATE jobs SET status=$2,updated_at=NOW(),published_at=CASE WHEN $2='PUBLISHED' THEN COALESCE(published_at,NOW()) ELSE published_at END WHERE id=$1 RETURNING *`,[id,toStatus]);
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'ADMIN_JOB_MODERATE',$1,'job',$2,$3::jsonb,NOW())`,
+      [actor,id,JSON.stringify({previousStatus:job.status,status:toStatus})],
+    );
     return jobFromRow(u[0]);
   });
 }
 
 export async function listAdminJobs() { const {rows}=await requirePool().query(`SELECT * FROM jobs ORDER BY created_at DESC`); return rows.map(jobFromRow); }
-export async function deleteJob(id) {
+export async function deleteJob(id,{adminId}={}) {
+  const actor=String(adminId || '').trim();
+  if(!actor) { const e=new Error('ADMIN_ACTOR_REQUIRED'); e.code='ADMIN_ACTOR_REQUIRED'; throw e; }
   return withSqlTransaction(async (client) => {
+    const {rows:actors}=await client.query(
+      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
+      [actor],
+    );
+    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
+      const e=new Error('ADMIN_REQUIRED'); e.code='ADMIN_REQUIRED'; e.status=403; throw e;
+    }
     const { rows } = await client.query(`SELECT id,status FROM jobs WHERE id=$1 FOR UPDATE`, [id]);
     if (!rows[0]) return null;
-    if (!['DRAFT','PUBLISHED'].includes(rows[0].status)) { const e=new Error('JOB_LOCKED'); e.code='JOB_LOCKED'; throw e; }
+    const previousStatus=rows[0].status;
+    if (!['DRAFT','PUBLISHED'].includes(previousStatus)) { const e=new Error('JOB_LOCKED'); e.code='JOB_LOCKED'; throw e; }
     const { rows: financial } = await client.query(`SELECT COUNT(*)::int AS count FROM payments WHERE job_id=$1`, [id]);
     if (Number(financial[0]?.count || 0) > 0) { const e=new Error('JOB_HAS_FINANCIAL_RECORDS'); e.code='JOB_HAS_FINANCIAL_RECORDS'; throw e; }
     const { rowCount } = await client.query(`DELETE FROM jobs WHERE id=$1`, [id]);
+    if(rowCount>0) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'ADMIN_JOB_DELETE',$1,'job',$2,$3::jsonb,NOW())`,
+        [actor,id,JSON.stringify({status:previousStatus,deleted:true})],
+      );
+    }
     return rowCount > 0;
   });
 }
