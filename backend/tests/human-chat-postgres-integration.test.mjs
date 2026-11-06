@@ -59,7 +59,7 @@ const { createPaymentProvider } = modules[12] || {};
 const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis, createJobDispute, openJobDisputeWithHold } = modules[13] || {};
 const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
 const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
-const { setUserStatus, revokeUserSessions, listAdminUsers, grantAdminByEmail, revokeAdminById } = modules[15] || {};
+const { setUserStatus, revokeUserSessions, listAdminUsers, grantAdminByEmail, revokeAdminById, moderateJob, deleteJob } = modules[15] || {};
 const { linkGoogleSubject } = modules[16] || {};
 const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
 const { createChatConversationLegalHold, releaseChatConversationLegalHold, buildChatRetentionDryRun } = modules[18] || {};
@@ -7441,6 +7441,105 @@ test('PostgreSQL trust-report status and its audit commit or roll back atomicall
     await pool.query('DROP FUNCTION IF EXISTS '+fn+'()').catch(()=>{});
     await pool.query(`DELETE FROM audit_logs WHERE action='TRUST_REPORT_STATUS' AND entity_id=$1`,[reportId]).catch(()=>{});
     await pool.query('DELETE FROM trust_reports WHERE id=$1',[reportId]).catch(()=>{});
+  }
+});
+
+
+test('PostgreSQL admin job moderation and deletion are atomic with their audit events', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool=dbModule.getPool();
+  const jobId=crypto.randomUUID();
+  const suffix=jobId.replaceAll('-','');
+  const modFn='r05_fail_job_moderate_audit_'+suffix;
+  const modTrigger='r05_fail_job_moderate_audit_trigger_'+suffix;
+  const delFn='r05_fail_job_delete_audit_'+suffix;
+  const delTrigger='r05_fail_job_delete_audit_trigger_'+suffix;
+  const { rows: jobs }=await pool.query(
+    `INSERT INTO jobs(
+       id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
+       budget_min,budget_max,duration,acceptance_criteria,status,city,kind,visibility,
+       created_at,updated_at
+     )
+     SELECT $1,$2,$3,'R05 job audit atomicity fixture','Admin moderation/deletion audit test',
+            c.id,'FIXED','FIXED',100,100,1,'Admin audit fixture','DRAFT',
+            'R05 test','MISSION','PRIVATE',NOW(),NOW()
+       FROM categories c WHERE c.is_active=TRUE
+       ORDER BY c.created_at NULLS FIRST,c.id LIMIT 1
+     RETURNING id`,
+    [jobId,fixture.ownerId,fixture.workerId],
+  );
+  assert.equal(jobs.length,1,'job audit fixture requires an active category');
+  try {
+    await pool.query(`CREATE FUNCTION ${modFn}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_JOB_MODERATE' AND NEW.entity_id::text=TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced ADMIN_JOB_MODERATE audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${modTrigger} BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${modFn}('${jobId}')`,
+    );
+    await assert.rejects(
+      moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId}),
+      /R05 forced ADMIN_JOB_MODERATE audit failure/,
+    );
+    let { rows: state }=await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
+    assert.equal(state[0]?.status,'DRAFT','job status must roll back if its audit write fails');
+    await pool.query('DROP TRIGGER IF EXISTS '+modTrigger+' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS '+modFn+'()');
+
+    const moderated=await moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId});
+    assert.equal(moderated.status,'PUBLISHED');
+    let { rows: moderationAudits }=await pool.query(
+      "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_JOB_MODERATE' AND entity_id=$1",
+      [jobId],
+    );
+    assert.equal(moderationAudits.length,1);
+    assert.equal(moderationAudits[0].actor_id,fixture.adminId);
+    assert.equal(moderationAudits[0].meta.status,'PUBLISHED');
+
+    await pool.query(`CREATE FUNCTION ${delFn}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_JOB_DELETE' AND NEW.entity_id::text=TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced ADMIN_JOB_DELETE audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${delTrigger} BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${delFn}('${jobId}')`,
+    );
+    await assert.rejects(
+      deleteJob(jobId,{adminId:fixture.adminId}),
+      /R05 forced ADMIN_JOB_DELETE audit failure/,
+    );
+    ({ rows: state }=await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]));
+    assert.equal(state[0]?.status,'PUBLISHED','job deletion must roll back if its audit write fails');
+    await pool.query('DROP TRIGGER IF EXISTS '+delTrigger+' ON audit_logs');
+    await pool.query('DROP FUNCTION IF EXISTS '+delFn+'()');
+
+    const deleted=await deleteJob(jobId,{adminId:fixture.adminId});
+    assert.equal(deleted,true);
+    const { rows: deleteAudits }=await pool.query(
+      "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_JOB_DELETE' AND entity_id=$1",
+      [jobId],
+    );
+    assert.equal(deleteAudits.length,1);
+    assert.equal(deleteAudits[0].actor_id,fixture.adminId);
+    assert.equal(deleteAudits[0].meta.status,'PUBLISHED');
+  } finally {
+    await pool.query('DROP TRIGGER IF EXISTS '+modTrigger+' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS '+modFn+'()').catch(()=>{});
+    await pool.query('DROP TRIGGER IF EXISTS '+delTrigger+' ON audit_logs').catch(()=>{});
+    await pool.query('DROP FUNCTION IF EXISTS '+delFn+'()').catch(()=>{});
+    await pool.query("DELETE FROM audit_logs WHERE entity_id=$1 AND action IN ('ADMIN_JOB_MODERATE','ADMIN_JOB_DELETE')",[jobId]).catch(()=>{});
+    await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]).catch(()=>{});
   }
 });
 
