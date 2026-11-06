@@ -6759,25 +6759,29 @@ test('PostgreSQL retention dry-run cursor traverses the complete inventory witho
     const lateJobId = lateJobs[0]?.id;
     assert.ok(lateJobId);
     try {
-      const lateConversation = await ensureJobChat(lateJobId);
-      assert.ok(lateConversation);
-      const lateConversationId = lateConversation.id;
+      const { rows: lateConversations } = await pool.query(
+        `INSERT INTO chat_conversations(id,kind,job_id,status,title,created_at)
+         VALUES(gen_random_uuid(),'JOB',$1,'OPEN','Inserted after retention snapshot',NOW()+INTERVAL '1 day')
+         RETURNING id`,
+        [lateJobId],
+      );
+      const lateConversationId = lateConversations[0]?.id;
+      assert.ok(lateConversationId);
       let cursor = first.nextCursor;
-    let lastPage = first;
-    let pageCount = 1;
-    while (cursor) {
-      lastPage = await buildChatRetentionDryRun({limit:2,cursor});
-      assert.equal(lastPage.asOf,first.asOf,'all pages must use the same retention cutoff');
-      assert.equal(lastPage.totalCount,first.totalCount,'new conversations after the watermark must not change the inventory total');
-      assert.equal(lastPage.totalCount,first.totalCount);
-      for (const item of lastPage.items) {
-        assert.equal(seen.has(item.conversationId),false,'cursor pages must not repeat a conversation');
-        seen.add(item.conversationId);
+      let lastPage = first;
+      let pageCount = 1;
+      while (cursor) {
+        lastPage = await buildChatRetentionDryRun({limit:2,cursor});
+        assert.equal(lastPage.asOf,first.asOf,'all pages must use the same retention cutoff');
+        assert.equal(lastPage.totalCount,first.totalCount,'new conversations after the watermark must not change the inventory total');
+        for (const item of lastPage.items) {
+          assert.equal(seen.has(item.conversationId),false,'cursor pages must not repeat a conversation');
+          seen.add(item.conversationId);
+        }
+        cursor = lastPage.nextCursor;
+        pageCount += 1;
+        assert.ok(pageCount <= Math.ceil(first.totalCount/2)+1,'cursor traversal must terminate');
       }
-      cursor = lastPage.nextCursor;
-      pageCount += 1;
-      assert.ok(pageCount <= Math.ceil(first.totalCount/2)+1,'cursor traversal must terminate');
-    }
       assert.equal(seen.has(lateConversationId),false,'conversations created after the inventory watermark must be excluded');
     } finally {
       await pool.query('DELETE FROM chat_conversations WHERE job_id=$1',[lateJobId]).catch(()=>{});
