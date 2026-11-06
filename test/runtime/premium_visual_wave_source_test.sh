@@ -5,6 +5,8 @@
 # Final verification capture after adding the scoped fixture contract.
 # The restored #1560 baseline does not require a runtime media fixture; editorial media activation remains a separate visual wave.
 set -eu
+
+# Required Flutter regression gates must not be suppressible by PR title metadata.
 trap 'status=$?; echo "FAIL: source guard line ${LINENO}: ${BASH_COMMAND}" >&2; exit "$status"' ERR
 
 opportunity="lib/core/ui/opportunity_card.dart"
