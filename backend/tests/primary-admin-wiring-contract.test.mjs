@@ -45,7 +45,7 @@ test('primary-admin privileges require a linked verified Google identity at ever
   assert.match(grant, /actor\.google_subject/);
   assert.match(grant, /target\.status !== 'ACTIVE'/);
   assert.match(grant, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
-  assert.match(grant, /ORDER BY id\\s+FOR UPDATE/);
+  assert.match(grant, /ORDER BY id\s+FOR UPDATE/);
   assert.match(grant, /INSERT INTO audit_logs/);
   assert.match(grant, /ADMIN_ROLE_GRANT/);
   assert.match(revoke, /google_subject/);
