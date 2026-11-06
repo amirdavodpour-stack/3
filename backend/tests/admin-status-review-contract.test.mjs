@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createAdminLegacyAdapter } from '../src/application/legacy/admin_legacy.js';
 
 const ROOT = new URL('../', import.meta.url);
 
@@ -23,4 +24,36 @@ test('temporary admin suspension requires reason, review deadline, durable case 
   assert.match(migration, /CREATE UNIQUE INDEX[\s\S]*status='OPEN'/);
   assert.doesNotMatch(repository, /review_due_at[\s\S]*UPDATE users SET status='ACTIVE'/i,
     'a review deadline is not an automatic reactivation trigger');
+});
+
+
+test('legacy suspension review metadata persists through the supported user collection', () => {
+  const user={id:'legacy-user-1',email:'legacy-user@example.test',role:'USER',status:'ACTIVE',sessionVersion:0};
+  const state={users:[user],adminUserStatusReviewCases:[]};
+  const touched=[];
+  const db={
+    collection:state,
+    touch(name){ if(name!=='users') throw new Error('Unknown collection: '+name); touched.push(name); },
+  };
+  const adapter=createAdminLegacyAdapter({db,findUser:(id)=>state.users.find((u)=>u.id===id),now:()=>new Date('2026-11-06T01:00:00.000Z')});
+  const reviewDueAt='2026-11-09T01:00:00.000Z';
+  const suspended=adapter.setUserStatus(user.id,'SUSPENDED',{
+    actorId:'legacy-admin-1',
+    reason:'Temporary review required',
+    reviewDueAt,
+  });
+  assert.equal(suspended.status,'SUSPENDED');
+  assert.equal(state.adminUserStatusReviewCases.length,1);
+  assert.equal(state.adminUserStatusReviewCases[0].reason,'Temporary review required');
+  assert.equal(state.adminUserStatusReviewCases[0].reviewDueAt,reviewDueAt);
+  assert.deepEqual(touched,['users']);
+
+  const activated=adapter.setUserStatus(user.id,'ACTIVE',{
+    actorId:'legacy-admin-1',
+    reason:'Manual review completed',
+  });
+  assert.equal(activated.status,'ACTIVE');
+  assert.equal(state.adminUserStatusReviewCases[0].status,'RESOLVED');
+  assert.equal(state.adminUserStatusReviewCases[0].resolutionReason,'Manual review completed');
+  assert.deepEqual(touched,['users','users']);
 });

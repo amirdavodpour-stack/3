@@ -116,8 +116,9 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
       }
       user.status = status;
       user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+      // Legacy persistence serializes the complete state after a known collection is marked dirty.
+      // adminUserStatusReviewCases is an extension field, not a registered DB collection.
       db.touch('users');
-      db.touch('adminUserStatusReviewCases');
       return { ...user, reviewCaseId, reviewDueAt: due?.toISOString() || null };
     },
     revokeAdminById(id, actorId) {
