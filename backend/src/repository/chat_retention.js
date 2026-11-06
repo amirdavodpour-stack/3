@@ -5,7 +5,7 @@ const SUPPORT_WINDOW_DAYS = 30;
 const CONTENT_RETENTION_MONTHS = 24;
 const MAX_DRY_RUN_LIMIT = 1000;
 const RETENTION_CURSOR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TERMINAL_JOB_STATUSES = new Set(['COMPLETED','CANCELLED']);
+const TERMINAL_JOB_STATUSES = new Set(['COMPLETED','CANCELLED','SETTLED']);
 
 const iso = (value) => value == null
   ? null
@@ -72,6 +72,8 @@ function classifyConversation(row, asOf) {
     : null;
   const jobStatus = String(row.job_status || '').toUpperCase();
   const conversationStatus = String(row.conversation_status || '').toUpperCase();
+  // Payment release advances a completed job to SETTLED; its durable chat terminal event remains COMPLETED.
+  const expectedTerminalEvent = jobStatus === 'SETTLED' ? 'COMPLETED' : jobStatus;
   const activeDisputeCount = Number(row.active_dispute_count || 0);
   const activeLegalHoldCount = Number(row.active_legal_hold_count || 0);
   const chatAttachmentCount = Number(row.chat_attachment_count || 0);
@@ -88,9 +90,9 @@ function classifyConversation(row, asOf) {
     } else if (!TERMINAL_JOB_STATUSES.has(jobStatus)) {
       action = 'BLOCKED_JOB_NOT_TERMINAL';
       reason = 'The linked job is not in a terminal status.';
-    } else if (row.terminal_event !== jobStatus) {
+    } else if (row.terminal_event !== expectedTerminalEvent) {
       action = 'BLOCKED_TERMINAL_EVENT_MISMATCH';
-      reason = 'The recorded terminal event does not match the linked job status.';
+      reason = 'The recorded terminal event does not match the linked job lifecycle; SETTLED requires an original COMPLETED event.';
     } else if (activeDisputeCount > 0) {
       action = 'BLOCKED_OPEN_DISPUTE';
       reason = 'At least one linked dispute is not finally resolved.';
