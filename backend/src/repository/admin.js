@@ -26,19 +26,24 @@ export async function getAdminSummary() {
 
 export async function listAdminUsers(limit=100, offset=0) {
   const { rows } = await requirePool().query(`
-    SELECT ${userSelect},
+    SELECT u.id,u.email,u.password_hash,
+           u.password_hash AS "passwordHash",
+           u.display_name AS "displayName",
+           u.role,u.status,u.session_version,
+           u.created_at AS "createdAt",
+           u.google_subject AS "googleSubject",
            r.id AS "statusReviewCaseId",
            r.reason AS "statusReviewReason",
            r.review_due_at AS "statusReviewDueAt"
-      FROM users
+      FROM users u
       LEFT JOIN LATERAL (
         SELECT id,reason,review_due_at
           FROM admin_user_status_review_cases
-         WHERE user_id=users.id AND status='OPEN'
+         WHERE user_id=u.id AND status='OPEN'
          ORDER BY created_at DESC,id DESC
          LIMIT 1
       ) r ON TRUE
-     ORDER BY created_at DESC
+     ORDER BY u.created_at DESC,u.id DESC
      LIMIT $1 OFFSET $2
   `, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
   return rows.map((row) => ({
