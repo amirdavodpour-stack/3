@@ -57,7 +57,7 @@ const { createPaymentProvider } = modules[12] || {};
 const { claimJobDisputeResolution, completeJobDisputeResolution, updateJobDisputeAnalysis, createJobDispute, openJobDisputeWithHold } = modules[13] || {};
 const { setAdminPanelVerified, isAdminPanelVerified } = modules[13] || {};
 const { bumpUserSessionVersion, insertResetToken, consumeResetTokenAndChangePassword, insertRefreshToken, rotateRefreshToken } = modules[14] || {};
-const { setUserStatus, revokeUserSessions } = modules[15] || {};
+const { setUserStatus, revokeUserSessions, listAdminUsers } = modules[15] || {};
 const { linkGoogleSubject } = modules[16] || {};
 const { cancelJobAfterConfirmedRefundWithClient } = modules[17] || {};
 const { createChatConversationLegalHold, releaseChatConversationLegalHold } = modules[18] || {};
@@ -6663,6 +6663,12 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
     assert.equal(new Date(openCases[0].review_due_at).toISOString(),new Date(reviewDueAt).toISOString());
     assert.equal(openCases[0].resolved_by,null);
     assert.equal(openCases[0].resolved_at,null);
+    const adminUsers = await listAdminUsers(200,0);
+    const listedUser = adminUsers.find((item) => item.id === userId);
+    assert.ok(listedUser,'admin user listing should include the suspended user');
+    assert.equal(listedUser.statusReviewCaseId,suspended.reviewCaseId);
+    assert.equal(listedUser.statusReviewReason,reason);
+    assert.equal(new Date(listedUser.statusReviewDueAt).toISOString(),new Date(reviewDueAt).toISOString());
     const afterSuspend=await pool.query('SELECT session_version FROM users WHERE id=$1',[userId]);
     assert.equal(Number(afterSuspend.rows[0].session_version),Number(before.rows[0].session_version)+1);
 
