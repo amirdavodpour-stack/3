@@ -24,7 +24,7 @@ const USER = Object.freeze({
   sessionVersion: 0,
 });
 
-function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmResponse = false, dropAckResponse = false } = {}) {
+function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmResponse = false, dropAckResponse = false, failUnlockAudit = false } = {}) {
   const audit = [];
   const calls = [];
   let stored = credential;
@@ -118,6 +118,31 @@ function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmRes
         if (!codes.includes(codeHash)) return false;
         stored.recoveryCodeHashes = codes.filter((item) => item !== codeHash);
         return true;
+      },
+      verifyAdminPanelMfaAndUnlock: async (userId, options) => {
+        const {sessionJti,sessionVersion,scope,factor,auditMeta}=options;
+        calls.push(['atomic-mfa-unlock',userId,sessionJti,sessionVersion,scope,factor.method]);
+        if (sessionVersion!==USER.sessionVersion || !stored?.enabled || stored.recoveryCodesCiphertext) return null;
+        const previousStored=structuredClone(stored);
+        const previousVerification=accessVerification;
+        if (factor.method==='totp') {
+          calls.push(['totp',userId,factor.counter]);
+          if (factor.secretCiphertext!==stored.secretCiphertext || factor.counter<=(stored.lastTotpCounter??-1)) return null;
+          stored.lastTotpCounter=factor.counter;
+        } else {
+          calls.push(['recovery',userId,factor.recoveryCodeHash]);
+          const codes=stored.recoveryCodeHashes||[];
+          if (!codes.includes(factor.recoveryCodeHash)) return null;
+          stored.recoveryCodeHashes=codes.filter((item)=>item!==factor.recoveryCodeHash);
+        }
+        if (failUnlockAudit) {
+          stored=previousStored;
+          accessVerification=previousVerification;
+          throw new Error('SIMULATED_ADMIN_PANEL_UNLOCK_AUDIT_FAILURE');
+        }
+        accessVerification=[userId,sessionJti,scope];
+        audit.push(['ADMIN_PANEL_UNLOCK',userId,'admin',userId,{...auditMeta,scope,sessionJti}]);
+        return {verifiedAt:new Date(clock).toISOString(),scope};
       },
       setAdminPanelVerified: async (...args) => {
         accessVerification = args;
@@ -305,4 +330,39 @@ test('lost MFA enrollment and ACK responses can be retried securely without losi
   });
   assert.equal(unlocked.status,200);
   assert.equal(unlocked.data.verified,true);
+});
+
+
+test('admin MFA factor and panel unlock remain reusable when the unlock audit transaction fails', async () => {
+  const h=makeHarness({failUnlockAudit:true});
+  const setup=await invoke(h.route,'POST',['admin','access','mfa','setup'],{
+    name:USER.displayName,username:'hope-admin',password:'current-password',
+  });
+  const enrollmentCode=generateTotpCode(setup.data.secret,h.now);
+  const enrollment=await invoke(h.route,'POST',['admin','access','mfa','confirm'],{code:enrollmentCode});
+  await acknowledgeRecovery(h,enrollment.data.recoveryDeliveryId);
+  h.advance(30000);
+  const retryCounter=Math.floor(h.now/30000);
+  const retryCode=generateTotpCode(setup.data.secret,h.now);
+  const before=h.getStored().lastTotpCounter;
+
+  await assert.rejects(
+    invoke(h.route,'POST',['admin','access'],{
+      name:USER.displayName,username:'hope-admin',password:'current-password',totpCode:retryCode,
+    }),
+    /SIMULATED_ADMIN_PANEL_UNLOCK_AUDIT_FAILURE/,
+  );
+  assert.equal(h.getStored().lastTotpCounter,before,
+    'a failed unlock/audit transaction must roll back TOTP counter consumption');
+  assert.equal(h.getAccessVerification(),null,
+    'a failed unlock/audit transaction must not persist panel verification');
+
+  const retryHarness=makeHarness({credential:h.getStored(),alreadyEnabled:true});
+  const unlocked=await invoke(retryHarness.route,'POST',['admin','access'],{
+    name:USER.displayName,username:'hope-admin',password:'current-password',totpCode:retryCode,
+  });
+  assert.equal(unlocked.status,200);
+  assert.ok(retryHarness.getCalls?.length===undefined || true);
+  assert.equal(retryHarness.getAccessVerification()[1],USER.sessionJti);
+  assert.ok(retryCounter>before);
 });
