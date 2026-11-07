@@ -2,7 +2,7 @@ export const migration = {
   version: 52,
   name: 'refresh_token_session_generation_binding',
   async up(client) {
-    await client.query(\`
+    await client.query(`
       ALTER TABLE refresh_tokens
         ADD COLUMN IF NOT EXISTS session_version INTEGER;
 
@@ -31,7 +31,7 @@ export const migration = {
             CHECK (session_version >= 0);
         END IF;
       END $$;
-    \`);
+    `);
   },
   async down() {
     throw new Error(
