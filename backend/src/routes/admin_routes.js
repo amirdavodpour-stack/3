@@ -580,11 +580,26 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='applications'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const apps=process.env.DATABASE_URL ? await adminUseCases.applications() : legacyAdmin.applications(); return sendJson(res,200,apps); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='shortlist'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.shortlist(id) : legacyAdmin.shortlist(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application is not pending'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_SHORTLISTED', 'درخواست شما وارد فهرست کوتاه شد', 'درخواست شما برای بررسی بیشتر انتخاب شده است.'); await createAudit('ADMIN_APPLICATION_SHORTLIST',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_SHORTLISTED',title:'درخواست شما وارد فهرست کوتاه شد',body:'درخواست شما برای بررسی بیشتر انتخاب شده است.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.shortlist(id,applicationOptions) : legacyAdmin.shortlist(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application is not pending');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_SHORTLISTED','درخواست شما وارد فهرست کوتاه شد','درخواست شما برای بررسی بیشتر انتخاب شده است.');await createAudit('ADMIN_APPLICATION_SHORTLIST',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='select'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.forward(id) : legacyAdmin.forward(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be forwarded'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_FORWARDED', 'درخواست شما برای کارفرما ارسال شد', 'رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.'); await createAudit('ADMIN_APPLICATION_FORWARD',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_FORWARDED',title:'درخواست شما برای کارفرما ارسال شد',body:'رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.forward(id,applicationOptions) : legacyAdmin.forward(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be forwarded');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_FORWARDED','درخواست شما برای کارفرما ارسال شد','رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.');await createAudit('ADMIN_APPLICATION_FORWARD',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='reject'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.reject(id) : legacyAdmin.reject(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be rejected from its current state'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_REJECTED', 'درخواست شما پذیرفته نشد', 'درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.'); await createAudit('ADMIN_APPLICATION_REJECT',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_REJECTED',title:'درخواست شما پذیرفته نشد',body:'درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.reject(id,applicationOptions) : legacyAdmin.reject(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be rejected from its current state');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_REJECTED','درخواست شما پذیرفته نشد','درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.');await createAudit('ADMIN_APPLICATION_REJECT',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     throw new HttpError(404,'NOT_FOUND','Admin route not found');
   };
 }

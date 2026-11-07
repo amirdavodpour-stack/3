@@ -122,7 +122,7 @@ export function createWalletRoutes({ authUser, adminGuard, readBody, sendJson, H
       }
       const body = await readBody(req);
       if (!body?.userId || !body?.amount || !body?.idempotencyKey) throw new HttpError(400,'INVALID_SANDBOX_CREDIT','userId, amount and idempotencyKey are required');
-      const result = await creditWallet({ userId:String(body.userId), amount:body.amount, idempotencyKey:`sandbox:${body.idempotencyKey}`, metadata:{ actorId:me.id, sandbox:true } });
+      const result = await creditWallet({ userId:String(body.userId), amount:body.amount, idempotencyKey:`sandbox:${body.idempotencyKey}`, actorId:me.id, metadata:{ actorId:me.id, sandbox:true } });
       return sendJson(res, 200, result);
     }
     throw new HttpError(404,'NOT_FOUND','Wallet route not found');

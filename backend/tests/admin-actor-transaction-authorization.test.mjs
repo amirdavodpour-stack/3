@@ -121,3 +121,45 @@ test('Admin panel unlock/lock and MFA setup/enrollment commit security state wit
   assert.match(complete, /ADMIN_MFA_ENROLLED/);
   assert.match(complete, /INSERT INTO audit_logs/);
 });
+
+test('admin application shortlist/forward/reject commit actor audit and retryable notification outbox with the status transition', () => {
+  const applications = read('backend/src/repository/applications.js');
+  const transition = block(applications, 'const ADMIN_APPLICATION_ACTIONS', 'export async function transitionEmployerApplication(');
+  assert.match(transition, /withSqlTransaction/);
+  assert.match(transition, /lockAuthorizedAdminActor/);
+  assert.match(transition, /FOR UPDATE/);
+  assert.match(transition, /INSERT INTO audit_logs/);
+  assert.match(transition, /queueNotificationWithClient/);
+  assert.match(transition, /ADMIN_APPLICATION_SHORTLIST/);
+  assert.match(transition, /ADMIN_APPLICATION_FORWARD/);
+  assert.match(transition, /ADMIN_APPLICATION_REJECT/);
+
+  const notifications = read('backend/src/repository/notifications.js');
+  assert.match(notifications, /export async function queueNotificationWithClient/);
+  assert.match(notifications, /INSERT INTO outbox_events/);
+
+  const useCases = read('backend/src/application/use_cases/admin_use_cases.js');
+  assert.match(useCases, /transitionAdminJobApplication\(id,\s*'PENDING',\s*'SHORTLISTED',\s*options\)/);
+  assert.match(useCases, /transitionAdminJobApplication\(id,\s*\['PENDING',\s*'SHORTLISTED'\],\s*'FORWARDED',\s*options\)/);
+  assert.match(useCases, /transitionAdminJobApplication\(id,\s*\['PENDING',\s*'SHORTLISTED'\],\s*'REJECTED',\s*options\)/);
+
+  const ports = read('backend/src/application/ports/repository_ports.js');
+  assert.match(ports, /'transitionAdminJobApplication'/);
+
+  const routes = read('backend/src/routes/admin_routes.js');
+  for (const marker of ['ADMIN_APPLICATION_SHORTLIST','ADMIN_APPLICATION_FORWARD','ADMIN_APPLICATION_REJECT']) {
+    assert.ok(routes.includes(marker), `route should preserve notification type ${marker}`);
+  }
+  assert.match(routes, /adminUseCases\.shortlist\(id,applicationOptions\)/);
+  assert.match(routes, /adminUseCases\.forward\(id,applicationOptions\)/);
+  assert.match(routes, /adminUseCases\.reject\(id,applicationOptions\)/);
+});
+
+test('sandbox wallet credit attributes the ledger operation and idempotency principal to the acting administrator', () => {
+  const walletRoutes = read('backend/src/application/wallet_routes.js');
+  const sandboxCall = walletRoutes.slice(walletRoutes.indexOf("if (req.method === 'POST' && parts[1] === 'sandbox-credit')"));
+  assert.ok(sandboxCall.includes('userId:String(body.userId)'));
+  assert.ok(sandboxCall.includes('idempotencyKey:`sandbox:${body.idempotencyKey}`'));
+  assert.ok(sandboxCall.includes('actorId:me.id'));
+  assert.match(sandboxCall, /metadata:\{\s*actorId:me\.id,\s*sandbox:true\s*\}/);
+});

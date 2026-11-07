@@ -17,8 +17,8 @@ export function createAdminUseCases({ admin }) {
     deleteJob: (id, options) => repository.deleteJob(id, options),
     trustReports: (status) => repository.listTrustReports(status),
     updateTrustReportStatus: (id, status, options) => repository.updateTrustReportStatus(id, status, options),
-    shortlist: (id) => repository.transitionJobApplication(id, 'PENDING', 'SHORTLISTED'),
-    forward: (id) => repository.selectJobApplication(id),
-    reject: (id) => repository.transitionJobApplication(id, ['PENDING', 'SHORTLISTED'], 'REJECTED'),
+    shortlist: (id, options) => repository.transitionAdminJobApplication(id, 'PENDING', 'SHORTLISTED', options),
+    forward: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'FORWARDED', options),
+    reject: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'REJECTED', options),
   });
 }
