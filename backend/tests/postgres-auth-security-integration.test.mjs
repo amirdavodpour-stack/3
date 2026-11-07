@@ -1,6 +1,7 @@
 import test, { after } from 'node:test';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
+import { migration as refreshTokenSessionGenerationMigration } from '../src/db/migrations/052_refresh_token_session_generation_binding.js';
 
 process.env.NODE_ENV = 'test';
 process.env.DATA_FILE ||= '/tmp/hope-auth-security-postgres-integration.json';
@@ -580,6 +581,83 @@ test('PostgreSQL password rehash compare-and-set cannot overwrite a concurrent p
     assert.equal(rows[0].password_hash,'password-reset-wins-hash');
     assert.equal(Number(rows[0].session_version),8);
   } finally {
+    await cleanupUser(user.id);
+  }
+});
+
+
+test('PostgreSQL migration does not revive legacy active refresh tokens after an account generation change', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'legacy-refresh-generation-migration-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'legacy-refresh-generation-' + crypto.randomUUID(),
+    sessionVersion:1,
+  });
+  const revokedFamilyToken = await insertExistingRefreshToken(
+    user.id,
+    'legacy-revoked-family-' + crypto.randomUUID(),
+  );
+  const stillActiveLegacyToken = await insertExistingRefreshToken(
+    user.id,
+    'legacy-active-family-' + crypto.randomUUID(),
+  );
+  let schemaRelaxed = false;
+
+  try {
+    // Recreate the historical state: a refresh-reuse event revoked one token
+    // family and advanced the account generation, while another older family
+    // remained unrevoked. Before migration 052, refresh rows had no generation.
+    await pool.query(
+      'UPDATE refresh_tokens SET revoked_at=NOW() WHERE id=$1',
+      [revokedFamilyToken.id],
+    );
+    await pool.query('ALTER TABLE refresh_tokens ALTER COLUMN session_version DROP NOT NULL');
+    schemaRelaxed = true;
+    await pool.query(
+      'UPDATE refresh_tokens SET session_version=NULL WHERE user_id=$1',
+      [user.id],
+    );
+
+    await refreshTokenSessionGenerationMigration.up(pool);
+    schemaRelaxed = false;
+
+    const nextToken = {
+      id:crypto.randomUUID(),
+      tokenHash:sha256('legacy-refresh-successor-' + crypto.randomUUID()),
+      familyId:stillActiveLegacyToken.familyId,
+      expiresAt:new Date(Date.now()+30*24*60*60_000).toISOString(),
+      createdAt:new Date().toISOString(),
+    };
+    const rotated = await repository.rotateRefreshToken(
+      stillActiveLegacyToken.tokenHash,
+      nextToken,
+      stillActiveLegacyToken.familyId,
+    );
+
+    assert.equal(rotated.kind,'invalid',
+      'a legacy token with no recorded generation must not inherit a newer account generation during migration');
+    const {rows:successorRows}=await pool.query(
+      'SELECT id FROM refresh_tokens WHERE token_hash=$1',
+      [nextToken.tokenHash],
+    );
+    assert.equal(successorRows.length,0,
+      'migration must not make a pre-invalidation refresh family eligible to mint a successor token');
+    const {rows:mismatchAudits}=await pool.query(
+      'SELECT action FROM audit_logs WHERE actor_id=$1 AND action=$2',
+      [user.id,'AUTH_REFRESH_SESSION_GENERATION_MISMATCH'],
+    );
+    assert.equal(mismatchAudits.length,1,
+      'legacy generation invalidation must use the non-pageable mismatch path, not misclassify normal migration logout as token reuse');
+  } finally {
+    if (schemaRelaxed) {
+      await pool.query(
+        'UPDATE refresh_tokens SET session_version=0 WHERE user_id=$1 AND session_version IS NULL',
+        [user.id],
+      ).catch(() => {});
+      await pool.query('ALTER TABLE refresh_tokens ALTER COLUMN session_version SET NOT NULL').catch(() => {});
+    }
     await cleanupUser(user.id);
   }
 });
