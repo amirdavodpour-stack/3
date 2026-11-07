@@ -77,3 +77,27 @@ test('release audit is committed with settlement transaction', () => {
   assert.match(repo, /INSERT INTO audit_logs\(id,action,actor_id,entity_type,entity_id,meta,created_at\)/);
   assert.match(repo, /PAYMENT_RELEASE/);
 });
+
+
+test('refresh-reuse security alert is created transactionally and completed under its active outbox lease', () => {
+  const auth = fs.readFileSync(new URL('../src/repository/auth.js', import.meta.url), 'utf8');
+  const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
+  const alerting = fs.readFileSync(new URL('../src/alerting.js', import.meta.url), 'utf8');
+
+  const rotateStart = auth.indexOf('export async function rotateRefreshToken(');
+  const rotateEnd = auth.indexOf('export async function revokeRefreshFamily(',rotateStart);
+  const rotate = auth.slice(rotateStart,rotateEnd);
+  const reuseStart = rotate.indexOf('if (r.revoked_at)');
+  const reuseEnd = rotate.indexOf('if (Number(r.session_version)',reuseStart);
+  const reuse = rotate.slice(reuseStart,reuseEnd);
+  assert.match(rotate,/return withSqlTransaction/);
+  assert.match(reuse,/AUTH_REFRESH_REUSE_DETECTED/);
+  assert.match(reuse,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(reuse,/ON CONFLICT\\(dedupe_key\\) DO NOTHING/);
+
+  assert.match(outbox,/export async function completeOutboxEvent/);
+  assert.match(outbox,/lease_token=\\$2/);
+  assert.match(alerting,/AUTH_REFRESH_REUSE_DETECTED/);
+  assert.match(alerting,/idempotency-key/);
+  assert.match(alerting,/redirect:\\s*'error'/);
+});

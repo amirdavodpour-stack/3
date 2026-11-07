@@ -392,3 +392,39 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     return { terminal, attempts };
   });
 }
+
+
+/**
+ * Complete a generic outbox delivery only while this worker still owns its
+ * lease. External delivery is at-least-once; callers must send an idempotency
+ * key derived from eventId so a stale worker can safely retry.
+ */
+export async function completeOutboxEvent({ eventId, leaseToken }) {
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT status,lease_token FROM outbox_events WHERE id=$1 FOR UPDATE`,
+      [eventId],
+    );
+    const current = rows[0];
+    if (!current) return { completed:false, reason:'OUTBOX_NOT_FOUND' };
+    if (current.status === 'DONE') return { completed:true, alreadyDone:true };
+    if (current.status !== 'PROCESSING') return { completed:false, reason:'INVALID_OUTBOX_STATE' };
+    if (!leaseToken || String(current.lease_token) !== String(leaseToken)) {
+      return { completed:false, reason:'STALE_LEASE' };
+    }
+
+    const { rowCount } = await client.query(
+      `UPDATE outbox_events
+          SET status='DONE',
+              processed_at=COALESCE(processed_at,NOW()),
+              locked_at=NULL,
+              lease_token=NULL,
+              last_error=NULL
+        WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
+      [eventId,leaseToken],
+    );
+    return rowCount === 1
+      ? { completed:true, alreadyDone:false }
+      : { completed:false, reason:'STALE_LEASE' };
+  });
+}

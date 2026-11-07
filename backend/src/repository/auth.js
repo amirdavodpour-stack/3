@@ -89,6 +89,29 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
         `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,
         [userId,JSON.stringify({tokenFamilyId:r.family_id})],
       );
+
+      // Keep security alert intent atomic with family revocation and its audit.
+      // The account/window key bounds alert storms while preserving the first
+      // family identifier for triage. The worker uses an idempotent delivery key.
+      const alertWindow = Math.floor(Date.now() / (5 * 60 * 1000));
+      await client.query(
+        `INSERT INTO outbox_events(
+           id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
+           status,attempts,available_at,created_at
+         ) VALUES(
+           gen_random_uuid(),'AUTH_REFRESH_REUSE_ALERT','user',$1,$2,$3::jsonb,
+           'PENDING',0,NOW(),NOW()
+         )
+         ON CONFLICT(dedupe_key) DO NOTHING`,
+        [
+          userId,
+          `auth-refresh-reuse:${userId}:${alertWindow}`,
+          JSON.stringify({
+            alertCode:'AUTH_REFRESH_REUSE_DETECTED',
+            tokenFamilyId:r.family_id,
+          }),
+        ],
+      );
       return { kind:'reuse' };
     }
 

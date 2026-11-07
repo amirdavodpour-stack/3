@@ -1,14 +1,16 @@
 import { config } from './config.js';
-import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
+import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, completeOutboxEvent, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
 import { logEvent, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
 import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
+import { dispatchSecurityAlert } from './alerting.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
   if (type.startsWith('PAYMENT_')) return 'payment';
+  if (type === 'AUTH_REFRESH_REUSE_ALERT') return 'security';
   if (type === 'NOTIFICATION_DISPATCH') {
     const channel = event?.payload?.channel;
     if (channel === 'PUSH') return 'push';
@@ -104,6 +106,18 @@ export async function processOutboxEvent(event) {
       if (!completed?.completed) throw new Error(`OUTBOX_RELEASE_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
+    } else if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT') {
+      const delivered = await dispatchSecurityAlert(event);
+      if (!delivered?.dispatched) throw new Error('SECURITY_ALERT_NOT_DISPATCHED');
+      const completed = await completeOutboxEvent({eventId:event.id,leaseToken:event.lease_token});
+      if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
+      recordOutboxProcessed();
+      logEvent({
+        level:'warn',
+        action:'SECURITY_ALERT_DISPATCHED',
+        eventId:event.id,
+        alertCode:payload.alertCode,
+      });
     } else if (event.event_type === 'NOTIFICATION_DISPATCH') {
       const channel = payload.channel;
       if (channel === 'IN_APP') {

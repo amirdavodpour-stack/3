@@ -78,6 +78,7 @@ test('refresh reuse security alerts use stable outbox idempotency and allowliste
       severity:'page',
       actorUserId:event.aggregate_id,
       tokenFamilyId:event.payload.tokenFamilyId,
+      runbook:'docs/runbooks/auth-refresh-token-reuse.md',
     },
   });
   assert.doesNotMatch(JSON.stringify(body),/must-not-be-forwarded|private@example\.test/);
