@@ -9,6 +9,7 @@ test('administrator promotion requires target provider identity and stores the g
   const repository = await readFile(new URL('src/repository/admin.js', ROOT), 'utf8');
   const legacy = await readFile(new URL('src/application/legacy/admin_legacy.js', ROOT), 'utf8');
   const routes = await readFile(new URL('src/routes/admin_routes.js', ROOT), 'utf8');
+  const authorization = await readFile(new URL('src/repository/admin_authorization.js', ROOT), 'utf8');
 
   const grantStart = repository.indexOf('export async function grantAdminByEmail(');
   const grantEnd = repository.indexOf('export async function revokeAdminById(', grantStart);
