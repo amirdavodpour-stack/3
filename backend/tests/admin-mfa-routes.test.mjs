@@ -32,6 +32,7 @@ function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmRes
   let clock = Date.now();
   let loseConfirmResponse=dropConfirmResponse;
   let loseAckResponse=dropAckResponse;
+  let rejectUnlockAudit=failUnlockAudit;
   const route = createAdminRoutes({
     authUser: async () => USER,
     requireAdmin: (user) => user,
@@ -135,7 +136,7 @@ function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmRes
           if (!codes.includes(factor.recoveryCodeHash)) return null;
           stored.recoveryCodeHashes=codes.filter((item)=>item!==factor.recoveryCodeHash);
         }
-        if (failUnlockAudit) {
+        if (rejectUnlockAudit) {
           stored=previousStored;
           accessVerification=previousVerification;
           throw new Error('SIMULATED_ADMIN_PANEL_UNLOCK_AUDIT_FAILURE');
@@ -158,7 +159,7 @@ function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmRes
     DUMMY_PASSWORD_HASH: 'dummy-hash',
     PASSWORD_MAX_LENGTH: 128,
   });
-  return { route, audit, calls, getStored: () => stored, getAccessVerification: () => accessVerification, get now() { return clock; }, advance(ms) { clock += ms; } };
+  return { route, audit, calls, getStored: () => stored, getAccessVerification: () => accessVerification, setFailUnlockAudit(value) { rejectUnlockAudit=Boolean(value); }, get now() { return clock; }, advance(ms) { clock += ms; } };
 }
 
 function invoke(route, method, parts, body = {}) {
@@ -357,12 +358,11 @@ test('admin MFA factor and panel unlock remain reusable when the unlock audit tr
   assert.equal(h.getAccessVerification(),null,
     'a failed unlock/audit transaction must not persist panel verification');
 
-  const retryHarness=makeHarness({credential:h.getStored(),alreadyEnabled:true});
-  const unlocked=await invoke(retryHarness.route,'POST',['admin','access'],{
+  h.setFailUnlockAudit(false);
+  const unlocked=await invoke(h.route,'POST',['admin','access'],{
     name:USER.displayName,username:'hope-admin',password:'current-password',totpCode:retryCode,
   });
   assert.equal(unlocked.status,200);
-  assert.ok(retryHarness.getCalls?.length===undefined || true);
-  assert.equal(retryHarness.getAccessVerification()[1],USER.sessionJti);
+  assert.equal(h.getAccessVerification()[1],USER.sessionJti);
   assert.ok(retryCounter>before);
 });
