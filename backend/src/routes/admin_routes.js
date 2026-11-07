@@ -99,17 +99,19 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified = verifyTotpCode(secret, totpCode, Number.isFinite(nowMs) ? nowMs : Date.now(), {
         lastAcceptedCounter: Number(credential.lastTotpCounter ?? -1),
       });
-      if (!verified.valid || !(await repo.consumeAdminTotpCounter(me.id, verified.counter))) {
+      if (!verified.valid) {
         throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
       }
-      return { method:'totp' };
+      return {
+        method:'totp',
+        counter:verified.counter,
+        secretCiphertext:credential.secretCiphertext,
+      };
     }
     let recoveryHash;
     try { recoveryHash = hashRecoveryCode(recoveryCode); }
     catch { throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used'); }
-    const consumed = await repo.consumeAdminRecoveryCode(me.id, recoveryHash);
-    if (!consumed) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used');
-    return { method:'recovery_code' };
+    return { method:'recovery_code', recoveryCodeHash:recoveryHash };
   }
 
   return async function adminRoutes(req,res,parts){
@@ -215,8 +217,17 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
       const auditMeta={expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),method:primaryMethod,mfaMethod:mfa.method};
       if (config.adminMfaRequired) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,...(process.env.DATABASE_URL?[auditMeta]:[]));
-        if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+        if (typeof repo.verifyAdminPanelMfaAndUnlock !== 'function') {
+          throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Atomic administrator MFA verification is unavailable');
+        }
+        const verified=await repo.verifyAdminPanelMfaAndUnlock(me.id,{
+          sessionJti,
+          sessionVersion:me.sessionVersion,
+          scope,
+          factor:mfa,
+          auditMeta,
+        });
+        if (!verified) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid, expired, or already used');
       } else if (process.env.DATABASE_URL) {
         const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,auditMeta);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
@@ -227,7 +238,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           scope,
         });
       }
-      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
+      if(!process.env.DATABASE_URL && !config.adminMfaRequired) {
+        await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
+      }
       return sendJson(res,200,{verified:true,scope,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15)});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
