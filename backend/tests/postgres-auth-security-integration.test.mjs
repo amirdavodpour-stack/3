@@ -15,6 +15,7 @@ const modules = enabled
       import('../src/db.js'),
       import('../src/repository.js'),
       import('../src/routes/auth_routes.js'),
+      import('../src/services/session.js'),
       import('../src/routes/admin_routes.js'),
       import('../src/api/http_error.js'),
       import('../src/policies/validation.js'),
@@ -24,6 +25,7 @@ const modules = enabled
 const dbModule = modules[0];
 const repository = modules[1];
 const { createAuthRoutes } = modules[2] || {};
+const { createSessionService } = modules[6] || {};
 const { createAdminRoutes } = modules[3] || {};
 const { HttpError } = modules[4] || {};
 const { requireFields, stringField, requireAdmin } = modules[5] || {};
@@ -51,7 +53,7 @@ async function createUser({
      ) VALUES($1,$2,$3,$4,$5,'ACTIVE',$6,NOW(),$7,$8,$9)`,
     [id,email,passwordHash,displayName,role,sessionVersion,googleSubject,verifiedAt,verifiedJti],
   );
-  return { id,email,displayName,role,googleSubject };
+  return { id,email,displayName,role,googleSubject,sessionVersion };
 }
 
 async function insertExistingRefreshToken(userId, rawToken) {
@@ -459,6 +461,125 @@ test('PostgreSQL refresh rotation and logout serialize user-first so logout revo
     blocker.release();
     if(logoutPromise) await logoutPromise.catch(() => {});
     if(rotationPromise) await rotationPromise.catch(() => {});
+    await cleanupUser(user.id);
+  }
+});
+
+
+test('PostgreSQL session issuance rejects a login snapshot after logout advances the account session version', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'session-issuance-revocation-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'session-issuance-' + crypto.randomUUID(),
+    sessionVersion:0,
+  });
+  try {
+    const observed = await repository.findUserByEmail(user.email);
+    assert.equal(observed.sessionVersion,0);
+
+    const loggedOut = await repository.logoutUser(user.id);
+    assert.equal(loggedOut.sessionVersion,1);
+
+    const sessions = createSessionService({
+      config:{
+        refreshTtlSeconds:3600,
+        accessSecret:'hope-session-issuance-race-test-secret',
+        accessTtlSeconds:300,
+        accessIssuer:'hope-api',
+        accessAudience:'hope-mobile',
+      },
+      repo:repository,
+      legacy:{id:() => crypto.randomUUID(),insertRefreshToken:() => {}},
+      logEvent:() => {},
+      now:() => new Date().toISOString(),
+    });
+
+    await assert.rejects(
+      sessions.issueSession(observed),
+      (error) => error?.status===401 && error?.code==='SESSION_CHANGED',
+      'a login verified against a revoked session generation must not create a successor refresh token',
+    );
+    const {rows} = await pool.query(
+      'SELECT count(*)::int AS count FROM refresh_tokens WHERE user_id=$1',
+      [user.id],
+    );
+    assert.equal(rows[0].count,0);
+  } finally {
+    await cleanupUser(user.id);
+  }
+});
+
+test('PostgreSQL refresh rotation rejects an unrevoked token from an older account session generation', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'refresh-generation-race-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'refresh-generation-' + crypto.randomUUID(),
+    sessionVersion:0,
+  });
+  try {
+    const rawToken = 'stale-generation-refresh-' + crypto.randomUUID();
+    const refresh = await insertExistingRefreshToken(user.id,rawToken);
+    await pool.query(
+      'UPDATE users SET session_version=session_version+1 WHERE id=$1',
+      [user.id],
+    );
+    const nextToken = {
+      id:crypto.randomUUID(),
+      tokenHash:sha256('stale-generation-successor-' + crypto.randomUUID()),
+      familyId:refresh.familyId,
+      expiresAt:new Date(Date.now()+30*24*60*60_000).toISOString(),
+      createdAt:new Date().toISOString(),
+    };
+    const result = await repository.rotateRefreshToken(refresh.tokenHash,nextToken,refresh.familyId);
+    assert.equal(result.kind,'invalid');
+    const {rows} = await pool.query(
+      'SELECT count(*)::int AS count FROM refresh_tokens WHERE token_hash=$1',
+      [nextToken.tokenHash],
+    );
+    assert.equal(rows[0].count,0);
+  } finally {
+    await cleanupUser(user.id);
+  }
+});
+
+test('PostgreSQL password rehash compare-and-set cannot overwrite a concurrent password reset', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'password-rehash-reset-race-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'password-rehash-reset-' + crypto.randomUUID(),
+    passwordHash:'legacy-password-hash',
+    sessionVersion:7,
+  });
+  try {
+    const observed = await repository.findUserByEmail(user.email);
+    assert.equal(observed.passwordHash,'legacy-password-hash');
+    assert.equal(observed.sessionVersion,7);
+
+    await pool.query(
+      'UPDATE users SET password_hash=$2,session_version=session_version+1 WHERE id=$1',
+      [user.id,'password-reset-wins-hash'],
+    );
+    const updated = await repository.updatePasswordHash(
+      user.id,
+      'stale-login-rehash',
+      observed.passwordHash,
+      observed.sessionVersion,
+    );
+    assert.equal(updated,false);
+
+    const {rows} = await pool.query(
+      'SELECT password_hash,session_version FROM users WHERE id=$1',
+      [user.id],
+    );
+    assert.equal(rows[0].password_hash,'password-reset-wins-hash');
+    assert.equal(Number(rows[0].session_version),8);
+  } finally {
     await cleanupUser(user.id);
   }
 });
