@@ -132,7 +132,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const encrypted = encryptTotpSecret(secret,config.adminMfaEncryptionKey);
       const minutes = config.adminMfaEnrollmentMinutes ?? 10;
       const expiresAt = new Date(Date.now()+minutes*60000).toISOString();
-      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes},me.sessionJti,me.sessionVersion);
+      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes,sessionJti:me.sessionJti},me.sessionJti,me.sessionVersion);
       if (!created) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
       if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
       return sendJson(res,200,{pending:true,secret,otpauthUri:buildTotpUri({secret,email:me.email}),expiresInMinutes:minutes});
@@ -161,7 +161,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         lastTotpCounter:verified.counter,
         sessionJti:me.sessionJti,
         sessionVersion:me.sessionVersion,
-        auditMeta:{recoveryCodesIssued:recovery.codes.length},
+        auditMeta:{recoveryCodesIssued:recovery.codes.length,sessionJti:me.sessionJti},
       });
       if (!completed) throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
       if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});

@@ -31,6 +31,7 @@ class _FakeAdmin implements AdminRepository {
   bool failVerificationAfterCapture = false;
   bool recoveryDeliveryPending = false;
   bool loseNextEnrollmentResponse = false;
+  bool loseNextRecoveryAckResponse = false;
   String recoveryDeliveryId = 'test-recovery-delivery-1';
   final List<Map<String, dynamic>> verificationRequests = [];
 
@@ -189,6 +190,10 @@ class _FakeAdmin implements AdminRepository {
   Future<Map<String, dynamic>> acknowledgeAdminMfaRecoveryDelivery(String deliveryId, String name, String username, {String? password, String? idToken}) async {
     if (deliveryId != recoveryDeliveryId) throw StateError('Delivery receipt mismatch');
     recoveryDeliveryPending = false;
+    if (loseNextRecoveryAckResponse) {
+      loseNextRecoveryAckResponse = false;
+      throw Exception('simulated ACK response loss after server commit');
+    }
     return {'acknowledged': true, 'recoveryCodesDeliveryPending': false};
   }
 
@@ -393,6 +398,7 @@ void main() {
     expect(find.text('Recovery codes — available until securely acknowledged'), findsOneWidget);
     expect(find.textContaining('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0'), findsOneWidget);
 
+    repo.loseNextRecoveryAckResponse = true;
     await tester.tap(find.text('I stored the codes and acknowledge receipt'));
     await tester.pumpAndSettle();
     expect(repo.recoveryDeliveryPending, isFalse);

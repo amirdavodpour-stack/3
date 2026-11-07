@@ -203,7 +203,12 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
       _notify(_t('دریافت امن کدهای بازیابی تأیید شد.', 'Recovery-code delivery acknowledged securely.'));
     } catch (error) {
       await _loadStatus();
-      _notify(apiErrorMessage(error, fallback: _t('تأیید دریافت کدها ناموفق بود؛ احراز اصلی را بررسی کنید.', 'Could not acknowledge recovery-code delivery; verify your primary credentials.')));
+      if (!mounted) return;
+      if (_status['recoveryCodesDeliveryPending'] != true) {
+        _notify(_t('تأیید دریافت کدها در سرور ثبت شد.', 'Recovery-code receipt was confirmed by the server.'));
+      } else {
+        _notify(apiErrorMessage(error, fallback: _t('تأیید دریافت کدها ناموفق بود؛ احراز اصلی را بررسی کنید.', 'Could not acknowledge recovery-code delivery; verify your primary credentials.')));
+      }
     } finally { if (mounted) setState(() => _busy = false); }
   }
 

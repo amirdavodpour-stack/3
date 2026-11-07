@@ -44,7 +44,13 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
     const ciphertext = mfa.encryptTotpSecret(secret,encryptionKey);
     assert.notEqual(ciphertext,secret);
     const expiresAt = new Date(Date.now()+10*60_000).toISOString();
-    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,{expiresInMinutes:10},jti,0),true);
+    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,null,null,0),false,
+      'MFA setup must require a non-empty authenticated session JTI');
+    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,null,jti,null),false,
+      'MFA setup must reject a missing session version rather than coercing null to zero');
+    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,{expiresInMinutes:10,sessionJti:jti},jti,0),true,
+      'MFA setup accepts an authenticated JTI and the current explicit session version');
+    assert.equal(await repository.getAdminMfaCredential(userId),null,'rejected setup attempts must not persist pending MFA credentials');
 
     const pending = await repository.getAdminMfaCredential(userId);
     assert.equal(pending.pendingSecretCiphertext,ciphertext);
@@ -61,8 +67,20 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
       recoveryDeliveryId,
       lastTotpCounter:enrollmentCounter,
       sessionJti:jti,
+      sessionVersion:null,
+      auditMeta:{recoveryCodesIssued:recovery.codes.length,sessionJti:jti},
+    }),false,'MFA confirmation must reject a missing session version rather than coercing null to zero');
+    assert.equal((await repository.getAdminMfaCredential(userId)).pendingSecretCiphertext,ciphertext,
+      'a rejected session provenance check must leave the pending enrollment intact');
+    assert.equal(await repository.completeAdminMfaEnrollment(userId,{
+      secretCiphertext:ciphertext,
+      recoveryCodeHashes:recovery.hashes,
+      recoveryCodesCiphertext:recoveryCiphertext,
+      recoveryDeliveryId,
+      lastTotpCounter:enrollmentCounter,
+      sessionJti:jti,
       sessionVersion:0,
-      auditMeta:{recoveryCodesIssued:recovery.codes.length},
+      auditMeta:{recoveryCodesIssued:recovery.codes.length,sessionJti:jti},
     }),true);
 
     const stored = await pool.query(
@@ -110,7 +128,23 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
       [userId],
     );
     assert.deepEqual(mfaAudit.rows.map((row)=>row.action),['ADMIN_MFA_SETUP_STARTED','ADMIN_MFA_ENROLLED']);
+    assert.equal(mfaAudit.rows[0]?.meta?.sessionJti,jti,'MFA setup audit records the authenticated session JTI');
     assert.equal(mfaAudit.rows[1]?.meta?.recoveryCodesIssued,10);
+    assert.equal(mfaAudit.rows[1]?.meta?.sessionJti,jti,'MFA enrollment audit records the authenticated session JTI');
+    const recoveryAudit=await pool.query(
+      `SELECT action,meta FROM audit_logs WHERE actor_id=$1 AND action IN ('ADMIN_MFA_RECOVERY_CODES_RETRIEVED','ADMIN_MFA_RECOVERY_CODES_ACKNOWLEDGED') ORDER BY created_at`,
+      [userId],
+    );
+    const retrievalAudit=recoveryAudit.rows.filter((row)=>row.action==='ADMIN_MFA_RECOVERY_CODES_RETRIEVED');
+    const acknowledgementAudit=recoveryAudit.rows.filter((row)=>row.action==='ADMIN_MFA_RECOVERY_CODES_ACKNOWLEDGED');
+    assert.equal(retrievalAudit.length,3,'each successful initial/retry/resumed retrieval is audited once');
+    assert.equal(retrievalAudit.filter((row)=>row.meta?.sessionJti===jti).length,2,
+      'both retrievals in the original session record its exact JTI');
+    assert.equal(retrievalAudit.filter((row)=>row.meta?.sessionJti===renewedJti).length,1,
+      'the resumed retrieval records the renewed session JTI');
+    assert.equal(acknowledgementAudit.length,1,'idempotent ACK writes exactly one audit event');
+    assert.equal(acknowledgementAudit[0]?.meta?.sessionJti,renewedJti,
+      'recovery acknowledgement audit records the current session JTI');
 
     assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter),false,
       'the enrollment counter must not be accepted for panel unlock again');
