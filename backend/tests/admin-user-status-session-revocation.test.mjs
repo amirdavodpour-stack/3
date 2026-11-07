@@ -104,16 +104,16 @@ test('admin session revocation, status changes and role changes clear prior pane
 
 test('refresh-token reuse invalidates access sessions and admin-panel verification', () => {
   const rotate = functionSource(authRepositorySource, 'rotateRefreshToken', 'revokeRefreshFamily');
-  const reuseStart = rotate.indexOf('if(r.revoked_at)');
-  const reuseEnd = rotate.indexOf("if(new Date(r.expires_at)", reuseStart);
+  const reuseStart = rotate.indexOf('if (r.revoked_at)');
+  const reuseEnd = rotate.indexOf('if (new Date(r.expires_at)', reuseStart);
   assert.ok(reuseStart >= 0 && reuseEnd > reuseStart, 'refresh reuse branch must exist');
   const reuseBranch = rotate.slice(reuseStart, reuseEnd);
   assert.match(
     reuseBranch,
     /UPDATE users SET[^\`]*session_version\s*=\s*session_version\s*\+\s*1[^\`]*admin_panel_verified_at\s*=\s*NULL[^\`]*WHERE id=\$1/is,
   );
-  assert.match(reuseBranch, /r\.user_id/,
-    'reuse invalidation must target the account owning the compromised token');
+  assert.match(reuseBranch, /userId/,
+    'reuse invalidation must target the account id resolved from the presented token before locking that account');
   assert.match(reuseBranch, /INSERT INTO audit_logs/i,
     'reuse detection must persist a durable audit event in the transaction');
   assert.match(reuseBranch, /AUTH_REFRESH_REUSE_DETECTED/);
@@ -272,12 +272,13 @@ test('admin-panel repository persists and checks the exact bound session JTI', (
   assert.match(migration, /DROP COLUMN IF EXISTS admin_panel_verified_session_jti/);
 });
 
-test('every protected admin route supplies the authenticated session JTI to the verification guard', () => {
-  assert.match(adminRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\.adminPanelVerificationMinutes,\s*me\.sessionJti\)/);
-  assert.match(disputeRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
-  assert.match(analyticsRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
-  assert.match(humanChatRoutesSource, /repo\.isAdminPanelVerified\(admin\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*admin\.sessionJti\)/);
-  assert.match(walletRoutesSource, /walletRepo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelVerificationMinutes\s*\?\?\s*15,\s*me\.sessionJti\)/);
+test('every protected admin route supplies the authenticated session JTI and exact READ/WRITE scope', () => {
+  assert.match(adminRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\.adminPanelReadVerificationMinutes[^,]*,\s*me\.sessionJti,\s*'READ'\)/);
+  assert.match(adminRoutesSource, /repo\.isAdminPanelVerified\(me\.id,ttlMinutes,me\.sessionJti,requiredScope\)/);
+  assert.match(disputeRoutesSource, /repo\.isAdminPanelVerified\(me\.id,verificationMinutes,me\.sessionJti,requiredScope\)/);
+  assert.match(analyticsRoutesSource, /repo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelReadVerificationMinutes[^,]*,\s*me\.sessionJti,\s*'READ'\)/);
+  assert.match(humanChatRoutesSource, /repo\.isAdminPanelVerified\(admin\.id,req\.method === 'GET'[\s\S]*?admin\.sessionJti,req\.method === 'GET' \? 'READ' : 'WRITE'\)/);
+  assert.match(walletRoutesSource, /walletRepo\.isAdminPanelVerified\(me\.id,\s*config\?\.adminPanelWriteVerificationMinutes[^,]*,\s*me\.sessionJti,\s*'WRITE'\)/);
 });
 
 test('legacy admin-panel verification is bound to the active session JTI', () => {

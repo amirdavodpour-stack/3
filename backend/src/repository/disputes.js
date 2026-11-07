@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { requirePool } from './context.js';
 import { withSqlTransaction } from '../db.js';
 import { holdPaymentForDisputeWithClient } from './outbox.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
 
 const disputeView = (row) => row ? ({
   id: row.id, jobId: row.job_id, openedBy: row.opened_by, triggerType: row.trigger_type, status: row.status,
@@ -112,15 +113,17 @@ export async function claimJobDisputeResolution(id, {
   resolution,
   reason = '',
   adminId,
+  sessionJti,
+  verificationMinutes = 5,
   leaseSeconds = 300,
 }) {
   const decision = String(resolution || '').toUpperCase();
   if (!['RELEASE','REFUND','HOLD'].includes(decision)) {
     throw Object.assign(new Error('INVALID_DISPUTE_RESOLUTION'), { code:'INVALID_DISPUTE_RESOLUTION' });
   }
-  if (!adminId) throw Object.assign(new Error('ADMIN_ID_REQUIRED'), { code:'ADMIN_ID_REQUIRED' });
   const lease = Math.min(1800, Math.max(30, Number(leaseSeconds) || 300));
   return withSqlTransaction(async (client) => {
+    const { actor } = await lockAuthorizedAdminActor(client,{actorId:adminId,sessionJti,verificationMinutes,requiredScope:'WRITE'});
     const { rows } = await client.query(
       `SELECT *, (resolution_lease_until > NOW()) AS resolution_lease_active FROM job_disputes WHERE id=$1 FOR UPDATE`,
       [id],
@@ -161,7 +164,12 @@ export async function claimJobDisputeResolution(id, {
               updated_at=NOW()
         WHERE id=$1
         RETURNING *`,
-      [id,decision,String(reason || '').trim().slice(0,2000),adminId,token,lease],
+      [id,decision,String(reason || '').trim().slice(0,2000),actor.id,token,lease],
+    );
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'ADMIN_DISPUTE_RESOLUTION_CLAIMED',$1,'job_dispute',$2,$3::jsonb,NOW())`,
+      [actor.id,id,JSON.stringify({resolution:decision,reason:String(reason || '').trim().slice(0,2000),sessionJti})],
     );
     return {
       claimed:true,
@@ -305,23 +313,33 @@ export async function getAdminPanelIdentity(userId) {
   };
 }
 
-export async function setAdminPanelVerified(userId, sessionJti, scope = 'READ') {
+export async function setAdminPanelVerified(userId, sessionJti, scope = 'READ', auditMeta = null) {
   const jti = String(sessionJti || '').trim();
   const verificationScope = String(scope || 'READ').trim().toUpperCase();
   if (!jti || jti.length > 128 || !['READ','WRITE'].includes(verificationScope)) return null;
-  const { rows } = await requirePool().query(
-    `UPDATE users
-       SET admin_panel_verified_at=NOW(),
-           admin_panel_verified_session_jti=$2,
-           admin_panel_verified_scope=$3
-     WHERE id=$1 AND role='ADMIN' AND status='ACTIVE'
-     RETURNING id,admin_panel_verified_at,admin_panel_verified_scope`,
-    [userId, jti, verificationScope],
-  );
-  return rows[0] ? {
-    verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at,
-    scope: rows[0].admin_panel_verified_scope,
-  } : null;
+  return withSqlTransaction(async (client) => {
+    const { rows } = await client.query(
+      `UPDATE users
+         SET admin_panel_verified_at=NOW(),
+             admin_panel_verified_session_jti=$2,
+             admin_panel_verified_scope=$3
+       WHERE id=$1 AND role='ADMIN' AND status='ACTIVE'
+       RETURNING id,admin_panel_verified_at,admin_panel_verified_scope`,
+      [userId, jti, verificationScope],
+    );
+    if(!rows[0]) return null;
+    if(auditMeta) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'ADMIN_PANEL_UNLOCK',$1,'admin',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify({...auditMeta,scope:verificationScope,sessionJti:jti})],
+      );
+    }
+    return {
+      verifiedAt: rows[0].admin_panel_verified_at?.toISOString?.() ?? rows[0].admin_panel_verified_at,
+      scope: rows[0].admin_panel_verified_scope,
+    };
+  });
 }
 
 export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti, requiredScope = 'READ') {
@@ -351,12 +369,21 @@ export async function isAdminPanelVerified(userId, ttlMinutes = 15, sessionJti, 
   );
 }
 
-export async function clearAdminPanelVerification(userId) {
-  await requirePool().query(
-    `UPDATE users
-       SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL, admin_panel_verified_scope=NULL
-     WHERE id=$1`,
-    [userId],
-  );
-  return true;
+export async function clearAdminPanelVerification(userId, auditMeta = null) {
+  return withSqlTransaction(async (client) => {
+    const { rowCount } = await client.query(
+      `UPDATE users
+         SET admin_panel_verified_at=NULL, admin_panel_verified_session_jti=NULL, admin_panel_verified_scope=NULL
+       WHERE id=$1`,
+      [userId],
+    );
+    if(rowCount && auditMeta) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'ADMIN_PANEL_LOCK',$1,'admin',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify(auditMeta)],
+      );
+    }
+    return true;
+  });
 }

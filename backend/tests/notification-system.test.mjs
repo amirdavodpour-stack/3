@@ -8,6 +8,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-notifications-'));
 process.env.DATA_FILE = path.join(tmp, 'hope.json');
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
+process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
 process.env.AUTH_RATE_LIMIT_MAX = '1000';
 process.env.GENERAL_RATE_LIMIT_MAX = '5000';
 process.env.ADMIN_PANEL_USERNAME = 'hope-admin';
@@ -18,8 +19,19 @@ const server = createServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}/api/v1`;
 const json = (url, options={}) => fetch(base+url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
-async function register(email) { const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email.split('@')[0]})}); assert.equal(r.status,201); return r.body.data; }
-async function unlockAdminPanel(admin) { const r=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin'})}); assert.equal(r.status,200,JSON.stringify(r.body)); }
+async function register(email) {
+  const pending = await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email.split('@')[0]})});
+  assert.equal(pending.status,202,JSON.stringify(pending.body));
+  assert.equal(pending.body.data.verificationRequired,true);
+  assert.equal(pending.body.data.accessToken,undefined);
+  assert.ok(pending.body.data.verificationCode);
+  const verified = await json('/auth/email/verify',{method:'POST',body:JSON.stringify({code:pending.body.data.verificationCode})});
+  assert.equal(verified.status,200,JSON.stringify(verified.body));
+  assert.equal(verified.body.data.emailVerified,true);
+  assert.ok(verified.body.data.accessToken);
+  return verified.body.data;
+}
+async function unlockAdminPanel(admin) { const r=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin',password:'pass123456789'})}); assert.equal(r.status,200,JSON.stringify(r.body)); }
 
 test('notification preferences are created with safe defaults and can be updated', async()=>{
   const u=await register('notify-prefs@example.com');

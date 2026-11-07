@@ -164,6 +164,46 @@ export function decryptTotpSecret(encrypted, masterKey) {
   return plaintext;
 }
 
+export function encryptRecoveryCodes(codes, masterKey) {
+  if (!Array.isArray(codes) || codes.length !== 10 ||
+      codes.some((code) => typeof code !== 'string' || !/^[A-F0-9]{32}$/.test(code)) ||
+      new Set(codes).size !== 10) {
+    throw new TypeError('Invalid recovery-code delivery payload');
+  }
+  const key = deriveEncryptionKey(masterKey);
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from('hope-admin-mfa-recovery-codes-v1', 'utf8'));
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(codes), 'utf8'),
+    cipher.final(),
+  ]);
+  return ['rc1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), ciphertext.toString('base64url')].join('.');
+}
+
+export function decryptRecoveryCodes(encrypted, masterKey) {
+  const parts = String(encrypted ?? '').split('.');
+  if (parts.length !== 4 || parts[0] !== 'rc1') throw new TypeError('Unsupported recovery-code ciphertext');
+  const [, ivText, tagText, ciphertextText] = parts;
+  const iv = Buffer.from(ivText, 'base64url');
+  const tag = Buffer.from(tagText, 'base64url');
+  const ciphertext = Buffer.from(ciphertextText, 'base64url');
+  if (iv.length !== 12 || tag.length !== 16 || ciphertext.length === 0 || ciphertext.length > 4096) {
+    throw new TypeError('Malformed recovery-code ciphertext');
+  }
+  const decipher = crypto.createDecipheriv('aes-256-gcm', deriveEncryptionKey(masterKey), iv);
+  decipher.setAAD(Buffer.from('hope-admin-mfa-recovery-codes-v1', 'utf8'));
+  decipher.setAuthTag(tag);
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+  const codes = JSON.parse(plaintext);
+  if (!Array.isArray(codes) || codes.length !== 10 ||
+      codes.some((code) => typeof code !== 'string' || !/^[A-F0-9]{32}$/.test(code)) ||
+      new Set(codes).size !== 10) {
+    throw new TypeError('Invalid recovery-code delivery payload');
+  }
+  return codes;
+}
+
 export function hashRecoveryCode(code) {
   const normalized = String(code ?? '').trim().replace(/[-\s]/g, '').toUpperCase();
   if (!/^[A-F0-9]{32}$/.test(normalized)) {

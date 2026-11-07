@@ -4,6 +4,7 @@ import { requirePool } from './context.js';
 import { config } from '../config.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
 import { isInternalWalletPayoutEnabled } from '../wallet_payout_policy.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
@@ -191,11 +192,18 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
   });
 }
 
-export async function resolvePayoutUnknown({ payoutId, decision, providerRef = null, adminId = null, reason = null }) {
+export async function resolvePayoutUnknown({ payoutId, decision, providerRef = null, source, adminId = null, adminSessionJti = null, verificationMinutes = 5, reason = null }) {
   const normalized = String(decision || '').toUpperCase();
+  const resolutionSource = String(source || '').trim().toUpperCase();
   if (!['SUCCEEDED','FAILED'].includes(normalized)) throw Object.assign(new Error('INVALID_UNKNOWN_RESOLUTION'), { code: 'INVALID_UNKNOWN_RESOLUTION' });
   if (normalized === 'SUCCEEDED' && !String(providerRef || '').trim()) throw Object.assign(new Error('PROVIDER_REF_REQUIRED'), { code: 'PROVIDER_REF_REQUIRED' });
+  if (!['ADMIN','PROVIDER_RECONCILIATION'].includes(resolutionSource)) throw Object.assign(new Error('UNKNOWN_RESOLUTION_SOURCE_REQUIRED'), { code:'UNKNOWN_RESOLUTION_SOURCE_REQUIRED',status:403 });
+  if (resolutionSource === 'ADMIN' && !adminId) throw Object.assign(new Error('ADMIN_ACTOR_REQUIRED'), { code:'ADMIN_ACTOR_REQUIRED',status:401 });
+  if (resolutionSource === 'PROVIDER_RECONCILIATION' && adminId) throw Object.assign(new Error('INVALID_PROVIDER_RECONCILIATION_ACTOR'), { code:'INVALID_PROVIDER_RECONCILIATION_ACTOR',status:403 });
   return withSqlTransaction(async (client) => {
+    if (resolutionSource === 'ADMIN') {
+      await lockAuthorizedAdminActor(client,{actorId:adminId,sessionJti:adminSessionJti,verificationMinutes,requiredScope:'WRITE'});
+    }
     const { rows: payouts } = await client.query(`SELECT p.* FROM payouts p WHERE p.id=$1 FOR UPDATE`, [payoutId]);
     const payout = payouts[0];
     if (!payout) return null;

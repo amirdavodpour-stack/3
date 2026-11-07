@@ -96,6 +96,9 @@ jobs:
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET_PRODUCTION }}
           REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_PRODUCTION }}
           ADMIN_PANEL_USERNAME: ${{ secrets.ADMIN_PANEL_USERNAME_PRODUCTION }}
+          GOOGLE_AUTH_ENABLED: 'true'
+          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID_PRODUCTION }}
+          ADMIN_MFA_ENCRYPTION_KEY: ${{ secrets.ADMIN_MFA_ENCRYPTION_KEY_PRODUCTION }}
           PAYMENT_WEBHOOK_SECRET: ${{ secrets.PAYMENT_WEBHOOK_SECRET }}
         run: bash scripts/validate-production-env.sh
 

@@ -97,11 +97,8 @@ test('Google reauthentication unlocks the admin panel only for the same recent p
 
   assert.equal(result.status, 200);
   assert.equal(result.data.verified, true);
-  assert.deepEqual(verificationWrites, [['admin-1', 'admin-session-jti-1']]);
-  assert.equal(auditEntries.length, 1);
-  assert.equal(auditEntries[0][0], 'ADMIN_PANEL_UNLOCK');
-  assert.equal(auditEntries[0][1], 'admin-1');
-  assert.deepEqual(auditEntries[0][4], { scope: 'WRITE', expiresInMinutes: 5, method: 'google', mfaMethod: 'not_required' });
+  assert.deepEqual(verificationWrites, [['admin-1', 'admin-session-jti-1', 'WRITE', { expiresInMinutes:5, method:'google', mfaMethod:'not_required' }]]);
+  assert.equal(auditEntries.length, 0, 'PostgreSQL unlock audit must be written atomically by the repository, not as a second route operation');
   assert.equal(rateLimitCalls.length, 2);
   assert.equal(rateLimitCalls[1][1], 'admin-panel:admin-1');
 });

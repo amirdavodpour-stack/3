@@ -12,13 +12,13 @@ export function createAdminUseCases({ admin }) {
     setUserStatus: (id, status, options) => repository.setUserStatus(id, status, options),
     grantAdminByEmail: (email, actorId) => repository.grantAdminByEmail(email, actorId),
     revokeAdminById: (id, actorId) => repository.revokeAdminById(id, actorId),
-    revokeUserSessions: (id) => repository.revokeUserSessions(id),
+    revokeUserSessions: (id, options) => repository.revokeUserSessions(id, options),
     moderateJob: (id, status, options) => repository.moderateJob(id, status, options),
     deleteJob: (id, options) => repository.deleteJob(id, options),
     trustReports: (status) => repository.listTrustReports(status),
     updateTrustReportStatus: (id, status, options) => repository.updateTrustReportStatus(id, status, options),
-    shortlist: (id) => repository.transitionJobApplication(id, 'PENDING', 'SHORTLISTED'),
-    forward: (id) => repository.selectJobApplication(id),
-    reject: (id) => repository.transitionJobApplication(id, ['PENDING', 'SHORTLISTED'], 'REJECTED'),
+    shortlist: (id, options) => repository.transitionAdminJobApplication(id, 'PENDING', 'SHORTLISTED', options),
+    forward: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'FORWARDED', options),
+    reject: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'REJECTED', options),
   });
 }
