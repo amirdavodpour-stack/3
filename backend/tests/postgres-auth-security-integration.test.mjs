@@ -661,3 +661,70 @@ test('PostgreSQL migration does not revive legacy active refresh tokens after an
     await cleanupUser(user.id);
   }
 });
+
+
+test('PostgreSQL refresh-reuse dedupe window follows database time under application clock skew', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'refresh-reuse-dedupe-clock-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'refresh-reuse-dedupe-clock-' + crypto.randomUUID(),
+  });
+  const revokedToken = await insertExistingRefreshToken(
+    user.id,
+    'refresh-reuse-dedupe-clock-' + crypto.randomUUID(),
+  );
+  const originalNow = Date.now;
+
+  try {
+    await pool.query(
+      'UPDATE refresh_tokens SET revoked_at=NOW() WHERE id=$1',
+      [revokedToken.id],
+    );
+
+    // Simulate a worker/API replica whose wall clock is behind the database.
+    // The dedupe bucket must be derived from PostgreSQL NOW(), not this clock.
+    Date.now = () => 0;
+    const rotated = await repository.rotateRefreshToken(
+      revokedToken.tokenHash,
+      {
+        id:crypto.randomUUID(),
+        tokenHash:sha256('refresh-reuse-dedupe-successor-' + crypto.randomUUID()),
+        familyId:revokedToken.familyId,
+        expiresAt:new Date(originalNow()+30*24*60*60_000).toISOString(),
+        createdAt:new Date(originalNow()).toISOString(),
+      },
+      revokedToken.familyId,
+    );
+    assert.equal(rotated.kind,'reuse');
+
+    const {rows} = await pool.query(
+      `SELECT dedupe_key,
+              floor(extract(epoch FROM created_at) / 300)::bigint::text AS db_window
+         FROM outbox_events
+        WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+          AND aggregate_type='user'
+          AND aggregate_id=$1
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [user.id],
+    );
+    assert.equal(rows.length,1);
+    assert.equal(
+      rows[0].dedupe_key,
+      `auth-refresh-reuse:${user.id}:${rows[0].db_window}`,
+      'the account dedupe bucket must use the same database clock as outbox created_at',
+    );
+  } finally {
+    Date.now = originalNow;
+    await pool.query(
+      `DELETE FROM outbox_events
+        WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+          AND aggregate_type='user'
+          AND aggregate_id=$1`,
+      [user.id],
+    ).catch(() => {});
+    await cleanupUser(user.id);
+  }
+});
