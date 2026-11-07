@@ -5289,6 +5289,7 @@ test('PostgreSQL admin status changes clear admin-panel verification', { skip: !
   );
   try {
     assert.ok(await setAdminPanelVerified(actorId, sessionJti, 'WRITE'));
+    assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
     const updated = await setUserStatus(userId, 'SUSPENDED', {
       actorId,
       sessionJti,
