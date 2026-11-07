@@ -170,12 +170,15 @@ export async function completeAdminMfaEnrollment(userId, {
 
 export async function consumeAdminMfaRecoveryDelivery(userId, counter, sessionJti, sessionVersion) {
   const value = Number(counter);
-  if (!Number.isSafeInteger(value) || value < 0) return null;
+  const sessionId = String(sessionJti ?? '').trim();
+  const version = Number(sessionVersion);
+  if (!Number.isSafeInteger(value) || value < 0 || !sessionId ||
+      sessionVersion === null || sessionVersion === undefined || !Number.isSafeInteger(version)) return null;
   return withSqlTransaction(async (client) => {
-    try { await lockAuthorizedAdminActor(client,{actorId:userId,sessionJti,requireStepUp:false}); }
+    try { await lockAuthorizedAdminActor(client,{actorId:userId,sessionJti:sessionId,requireStepUp:false}); }
     catch (error) { if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) return null; throw error; }
     const {rows:sessionRows}=await client.query('SELECT session_version FROM users WHERE id=$1',[userId]);
-    if(!sessionRows[0] || !Number.isSafeInteger(Number(sessionVersion)) || Number(sessionRows[0].session_version)!==Number(sessionVersion)) return null;
+    if(!sessionRows[0] || Number(sessionRows[0].session_version)!==version) return null;
     const { rows } = await client.query(
       `SELECT recovery_codes_ciphertext,recovery_delivery_id,last_totp_counter
          FROM admin_mfa_credentials WHERE user_id=$1 AND enrolled_at IS NOT NULL FOR UPDATE`,
@@ -192,7 +195,7 @@ export async function consumeAdminMfaRecoveryDelivery(userId, counter, sessionJt
     await client.query(
       `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
        VALUES(gen_random_uuid(),'ADMIN_MFA_RECOVERY_CODES_RETRIEVED',$1,'admin',$1,$2::jsonb,NOW())`,
-      [userId,JSON.stringify({deliveryId:row.recovery_delivery_id,counter:value,sessionJti})],
+      [userId,JSON.stringify({deliveryId:row.recovery_delivery_id,counter:value,sessionJti:sessionId})],
     );
     return {ciphertext:row.recovery_codes_ciphertext,deliveryId:row.recovery_delivery_id};
   });
@@ -200,12 +203,15 @@ export async function consumeAdminMfaRecoveryDelivery(userId, counter, sessionJt
 
 export async function acknowledgeAdminMfaRecoveryDelivery(userId, sessionJti, sessionVersion, deliveryId) {
   const receipt=String(deliveryId??'').trim().toLowerCase();
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(receipt)) return false;
+  const sessionId = String(sessionJti ?? '').trim();
+  const version = Number(sessionVersion);
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(receipt) ||
+      !sessionId || sessionVersion === null || sessionVersion === undefined || !Number.isSafeInteger(version)) return false;
   return withSqlTransaction(async(client)=>{
-    try { await lockAuthorizedAdminActor(client,{actorId:userId,sessionJti,requireStepUp:false}); }
+    try { await lockAuthorizedAdminActor(client,{actorId:userId,sessionJti:sessionId,requireStepUp:false}); }
     catch(error) { if(['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) return false; throw error; }
     const {rows:sessionRows}=await client.query('SELECT session_version FROM users WHERE id=$1',[userId]);
-    if(!sessionRows[0] || !Number.isSafeInteger(Number(sessionVersion)) || Number(sessionRows[0].session_version)!==Number(sessionVersion)) return false;
+    if(!sessionRows[0] || Number(sessionRows[0].session_version)!==version) return false;
     const {rows}=await client.query(
       `SELECT recovery_delivery_id,recovery_codes_ciphertext,recovery_codes_acknowledged_at
          FROM admin_mfa_credentials WHERE user_id=$1 AND enrolled_at IS NOT NULL FOR UPDATE`,
@@ -225,7 +231,7 @@ export async function acknowledgeAdminMfaRecoveryDelivery(userId, sessionJti, se
     await client.query(
       `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
        VALUES(gen_random_uuid(),'ADMIN_MFA_RECOVERY_CODES_ACKNOWLEDGED',$1,'admin',$1,$2::jsonb,NOW())`,
-      [userId,JSON.stringify({deliveryId:receipt,sessionJti})],
+      [userId,JSON.stringify({deliveryId:receipt,sessionJti:sessionId})],
     );
     return true;
   });
