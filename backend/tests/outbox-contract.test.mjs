@@ -93,11 +93,11 @@ test('refresh-reuse security alert is created transactionally and completed unde
   assert.match(rotate,/return withSqlTransaction/);
   assert.match(reuse,/AUTH_REFRESH_REUSE_DETECTED/);
   assert.match(reuse,/AUTH_REFRESH_REUSE_ALERT/);
-  assert.match(reuse,/ON CONFLICT\\(dedupe_key\\) DO NOTHING/);
+  assert.match(reuse,/ON CONFLICT\(dedupe_key\) DO NOTHING/);
 
   assert.match(outbox,/export async function completeOutboxEvent/);
-  assert.match(outbox,/lease_token=\\$2/);
+  assert.match(outbox,/lease_token=\$2/);
   assert.match(alerting,/AUTH_REFRESH_REUSE_DETECTED/);
   assert.match(alerting,/idempotency-key/);
-  assert.match(alerting,/redirect:\\s*'error'/);
+  assert.match(alerting,/redirect:\s*'error'/);
 });
