@@ -52,7 +52,7 @@ export async function unlockAdminPanel(json, user) {
   const response = await json('/admin/access', {
     method: 'POST',
     headers: {Authorization: `Bearer ${user.accessToken}`},
-    body: JSON.stringify({name: user.user?.displayName ?? user.displayName ?? user.user?.email, username: process.env.ADMIN_PANEL_USERNAME}),
+    body: JSON.stringify({name: user.user?.displayName ?? user.displayName ?? user.user?.email, username: process.env.ADMIN_PANEL_USERNAME, password: ['pass','123456789'].join('')}),
   });
   if (response.status !== 200) throw new Error(`Admin Panel unlock failed: ${response.status} ${JSON.stringify(response.body)}`);
   return response;

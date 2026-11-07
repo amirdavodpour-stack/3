@@ -128,9 +128,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const encrypted = encryptTotpSecret(secret,config.adminMfaEncryptionKey);
       const minutes = config.adminMfaEnrollmentMinutes ?? 10;
       const expiresAt = new Date(Date.now()+minutes*60000).toISOString();
-      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt);
+      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes});
       if (!created) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
-      await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
       return sendJson(res,200,{pending:true,secret,otpauthUri:buildTotpUri({secret,email:me.email}),expiresInMinutes:minutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='confirm' && parts.length===4) {
@@ -152,18 +152,19 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         secretCiphertext:credential.pendingSecretCiphertext,
         recoveryCodeHashes:recovery.hashes,
         lastTotpCounter:verified.counter,
+        auditMeta:{recoveryCodesIssued:recovery.codes.length},
       });
       if (!completed) throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
-      await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
       return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes});
     }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const verified = config.adminMfaRequired
         ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes, me.sessionJti, 'READ')
         : process.env.DATABASE_URL
-          ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes, me.sessionJti)
+          ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 15, me.sessionJti, 'READ')
           : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
-      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes});
+      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 15});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
@@ -173,11 +174,12 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const mfa=await verifyAdminMfa(me,body);
       const scope=String(body?.scope||'WRITE').trim().toUpperCase();
       if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
+      const auditMeta={expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),method:primaryMethod,mfaMethod:mfa.method};
       if (config.adminMfaRequired) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope);
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,...(process.env.DATABASE_URL?[auditMeta]:[]));
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else if (process.env.DATABASE_URL) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti);
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,auditMeta);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else {
         legacyVerifiedAdmins.set(me.id,{
@@ -186,18 +188,14 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           scope,
         });
       }
-      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{
-        scope,
-        expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),
-        method:primaryMethod,
-        mfaMethod:mfa.method,
-      });
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
       return sendJson(res,200,{verified:true,scope,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15)});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
-      if (process.env.DATABASE_URL || config.adminMfaRequired) await repo.clearAdminPanelVerification(me.id);
+      if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id,{sessionJti:me.sessionJti});
+      else if(config.adminMfaRequired) await repo.clearAdminPanelVerification(me.id);
       else legacyVerifiedAdmins.delete(me.id);
-      await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
       return sendJson(res,200,{verified:false});
     }
     const requiredScope=req.method==='GET'?'READ':'WRITE';
@@ -208,7 +206,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
     } else if (process.env.DATABASE_URL) {
-      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes ?? 15,me.sessionJti);
+      const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
@@ -430,9 +428,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='users' && parts[3]==='revoke-sessions'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.REVOKE_SESSIONS);
       const id=parts[2];
-      const revoked=process.env.DATABASE_URL ? await adminUseCases.revokeUserSessions(id) : legacyAdmin.revokeUserSessions(id);
+      const revoked=process.env.DATABASE_URL
+        ? await adminUseCases.revokeUserSessions(id,{actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5})
+        : legacyAdmin.revokeUserSessions(id);
       if(!revoked) throw new HttpError(404,'USER_NOT_FOUND','User not found');
-      await createAudit('ADMIN_SESSIONS_REVOKE',me.id,'user',id,{sessionVersion:revoked.sessionVersion});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_SESSIONS_REVOKE',me.id,'user',id,{sessionVersion:revoked.sessionVersion});
       return sendJson(res,200,{...revoked,revoked:true});
     }
     if (parts[0] === 'admin' && parts[1] === 'disputes') {
@@ -518,7 +518,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       assertAdminPermission(me, ADMIN_PERMISSIONS.TRUST_SAFETY);
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['OPEN','REVIEWING','RESOLVED','DISMISSED']),'status');
       const updated=process.env.DATABASE_URL
-        ? await adminUseCases.updateTrustReportStatus(id,status,{actorId:me.id})
+        ? await adminUseCases.updateTrustReportStatus(id,status,{actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5})
         : legacyAdmin.updateTrustReportStatus(id,status);
       if(!updated) throw new HttpError(404,'REPORT_NOT_FOUND','Trust report not found');
       if(!process.env.DATABASE_URL) {
@@ -539,7 +539,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const payoutId = parts[2];
       const body = await readBody(req);
       try {
-        const result = await resolvePayoutUnknown({ payoutId, decision: body?.decision, providerRef: body?.providerRef, adminId: me.id, reason: body?.reason });
+        const result = await resolvePayoutUnknown({ payoutId, decision: body?.decision, providerRef: body?.providerRef, source:'ADMIN', adminId: me.id, adminSessionJti:me.sessionJti, verificationMinutes:config.adminPanelWriteVerificationMinutes??5, reason: body?.reason });
         if (!result) throw new HttpError(404, 'PAYOUT_NOT_FOUND', 'Payout not found');
         return sendJson(res, 200, result);
       } catch (error) {

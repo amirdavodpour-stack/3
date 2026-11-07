@@ -1,5 +1,6 @@
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
 
 function normalizeHashes(values) {
   if (!Array.isArray(values) || values.length > 20) throw new TypeError('Invalid recovery-code hash list');
@@ -45,16 +46,17 @@ export async function getAdminMfaCredential(userId) {
   };
 }
 
-export async function beginAdminMfaEnrollment(userId, encryptedPendingSecret, expiresAt) {
+export async function beginAdminMfaEnrollment(userId, encryptedPendingSecret, expiresAt, auditMeta = null) {
   const ciphertext = String(encryptedPendingSecret ?? '').trim();
   const expiry = new Date(expiresAt);
   if (!ciphertext || ciphertext.length > 2048 || !Number.isFinite(expiry.getTime())) return false;
   return withSqlTransaction(async (client) => {
-    const { rows: users } = await client.query(
-      `SELECT role,status FROM users WHERE id=$1 FOR UPDATE`,
-      [userId],
-    );
-    if (!users[0] || users[0].role !== 'ADMIN' || users[0].status !== 'ACTIVE') return false;
+    try {
+      await lockAuthorizedAdminActor(client,{actorId:userId,requireStepUp:false});
+    } catch (error) {
+      if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) return false;
+      throw error;
+    }
     const { rows } = await client.query(
       `INSERT INTO admin_mfa_credentials(
          user_id,pending_secret_ciphertext,pending_expires_at,updated_at
@@ -67,6 +69,13 @@ export async function beginAdminMfaEnrollment(userId, encryptedPendingSecret, ex
        RETURNING user_id`,
       [userId,ciphertext,expiry],
     );
+    if(rows.length===1 && auditMeta) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'ADMIN_MFA_SETUP_STARTED',$1,'admin',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify(auditMeta)],
+      );
+    }
     return rows.length === 1;
   });
 }
@@ -75,12 +84,19 @@ export async function completeAdminMfaEnrollment(userId, {
   secretCiphertext,
   recoveryCodeHashes,
   lastTotpCounter,
+  auditMeta = null,
 } = {}) {
   const ciphertext = String(secretCiphertext ?? '').trim();
   const hashes = normalizeHashes(recoveryCodeHashes);
   const counter = Number(lastTotpCounter);
   if (!ciphertext || ciphertext.length > 2048 || !Number.isSafeInteger(counter) || counter < 0 || hashes.length !== 10) return false;
   return withSqlTransaction(async (client) => {
+    try {
+      await lockAuthorizedAdminActor(client,{actorId:userId,requireStepUp:false});
+    } catch (error) {
+      if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) return false;
+      throw error;
+    }
     const { rows } = await client.query(
       `SELECT pending_secret_ciphertext,pending_expires_at,enrolled_at
          FROM admin_mfa_credentials WHERE user_id=$1 FOR UPDATE`,
@@ -115,6 +131,13 @@ export async function completeAdminMfaEnrollment(userId, {
         WHERE id=$1`,
       [userId],
     );
+    if(auditMeta) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'ADMIN_MFA_ENROLLED',$1,'admin',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify(auditMeta)],
+      );
+    }
     return true;
   });
 }

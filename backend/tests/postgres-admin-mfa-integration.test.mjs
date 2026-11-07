@@ -43,7 +43,7 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
     const ciphertext = mfa.encryptTotpSecret(secret,encryptionKey);
     assert.notEqual(ciphertext,secret);
     const expiresAt = new Date(Date.now()+10*60_000).toISOString();
-    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt),true);
+    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,{expiresInMinutes:10}),true);
 
     const pending = await repository.getAdminMfaCredential(userId);
     assert.equal(pending.pendingSecretCiphertext,ciphertext);
@@ -55,6 +55,7 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
       secretCiphertext:ciphertext,
       recoveryCodeHashes:recovery.hashes,
       lastTotpCounter:enrollmentCounter,
+      auditMeta:{recoveryCodesIssued:recovery.codes.length},
     }),true);
 
     const stored = await pool.query(
@@ -68,6 +69,13 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
     assert.equal(stored.rows[0].recovery_code_hashes.length,10);
     assert.ok(!stored.rows[0].recovery_code_hashes.includes(recovery.codes[0]));
     assert.equal(Number(stored.rows[0].last_totp_counter),enrollmentCounter);
+
+    const mfaAudit=await pool.query(
+      `SELECT action,meta FROM audit_logs WHERE actor_id=$1 AND action IN ('ADMIN_MFA_SETUP_STARTED','ADMIN_MFA_ENROLLED') ORDER BY created_at`,
+      [userId],
+    );
+    assert.deepEqual(mfaAudit.rows.map((row)=>row.action),['ADMIN_MFA_SETUP_STARTED','ADMIN_MFA_ENROLLED']);
+    assert.equal(mfaAudit.rows[1]?.meta?.recoveryCodesIssued,10);
 
     assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter),false,
       'the enrollment counter must not be accepted for panel unlock again');
@@ -107,4 +115,43 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
 
 after(async () => {
   if (enabled) await dbModule.db.close();
+});
+
+test('PostgreSQL MFA enrollment completion fails when the administrator role is revoked after setup starts', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const userId=crypto.randomUUID();
+  const email=`admin-mfa-revoked-${userId}@example.test`;
+  const encryptionKey='hope-postgres-mfa-encryption-key-with-adequate-entropy';
+  const secret=mfa.generateTotpSecret();
+  const ciphertext=mfa.encryptTotpSecret(secret,encryptionKey);
+  const expiresAt=new Date(Date.now()+10*60_000).toISOString();
+  const recovery=mfa.generateRecoveryCodes(10);
+  const counter=Math.floor(Date.now()/30_000);
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at,google_subject)
+     VALUES($1,$2,'integration-hash','Revoked MFA Admin','ADMIN','ACTIVE',0,NOW(),$3)`,
+    [userId,email,`google-${userId}`],
+  );
+  try {
+    assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt),true);
+    await pool.query("UPDATE users SET role='USER',session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL,admin_panel_verified_scope=NULL WHERE id=$1",[userId]);
+    assert.equal(await repository.completeAdminMfaEnrollment(userId,{
+      secretCiphertext:ciphertext,
+      recoveryCodeHashes:recovery.hashes,
+      lastTotpCounter:counter,
+    }),false,'a user whose ADMIN role was revoked must not complete administrator MFA enrollment');
+    const stored=await pool.query(
+      'SELECT enrolled_at,pending_secret_ciphertext,recovery_code_hashes FROM admin_mfa_credentials WHERE user_id=$1',
+      [userId],
+    );
+    assert.equal(stored.rows.length,1);
+    assert.equal(stored.rows[0].enrolled_at,null);
+    assert.equal(stored.rows[0].pending_secret_ciphertext,ciphertext,
+      'the incomplete setup remains pending rather than being activated for a non-admin account');
+    assert.equal(stored.rows[0].recovery_code_hashes.length,0);
+  } finally {
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
 });

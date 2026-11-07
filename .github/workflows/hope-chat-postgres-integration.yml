@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - feat/ui-v2-wave-1-execution-2026-10-07
+      - fix/hopev2-visual-audit-v1-v2-2026-10-20
     paths:
       - "backend/src/app.js"
       - "backend/src/config.js"
@@ -14,6 +15,10 @@ on:
       - "backend/src/db/migrations/04*.js"
       - "backend/src/db/migrations/05*.js"
       - "backend/src/repository/admin.js"
+      - "backend/src/repository/admin_authorization.js"
+      - "backend/src/repository/admin_mfa.js"
+      - "backend/src/repository/trust.js"
+      - "backend/src/repository/payouts.js"
       - "backend/src/repository/disputes.js"
       - "backend/src/repository/chat_retention.js"
       - "backend/src/repository/privacy.js"
