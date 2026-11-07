@@ -29,6 +29,9 @@ class _FakeAdmin implements AdminRepository {
   bool mfaEnabled;
   bool failMfaStatus = false;
   bool failVerificationAfterCapture = false;
+  bool recoveryDeliveryPending = false;
+  bool loseNextEnrollmentResponse = false;
+  String recoveryDeliveryId = 'test-recovery-delivery-1';
   final List<Map<String, dynamic>> verificationRequests = [];
 
   /// When true the next state-mutating action throws (error-path coverage).
@@ -147,6 +150,7 @@ class _FakeAdmin implements AdminRepository {
         'enabled': mfaEnabled,
         'enrollmentPending': false,
         'recoveryCodesRemaining': mfaEnabled ? 10 : 0,
+        'recoveryCodesDeliveryPending': recoveryDeliveryPending,
       };
   }
 
@@ -160,10 +164,32 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async {
     mfaEnabled = true;
+    recoveryDeliveryPending = true;
+    if (loseNextEnrollmentResponse) {
+      loseNextEnrollmentResponse = false;
+      throw Exception('simulated response loss after enrollment commit');
+    }
     return {
       'enabled': true,
+      'recoveryCodesDeliveryPending': true,
+      'recoveryDeliveryId': recoveryDeliveryId,
       'recoveryCodes': List<String>.generate(10, (index) => 'A' * 31 + index.toString()),
     };
+  }
+
+  @override
+  Future<Map<String, dynamic>> retrieveAdminMfaRecoveryCodes(String code) async => {
+        'enabled': true,
+        'recoveryCodesDeliveryPending': true,
+        'recoveryDeliveryId': recoveryDeliveryId,
+        'recoveryCodes': List<String>.generate(10, (index) => 'A' * 31 + index.toString()),
+      };
+
+  @override
+  Future<Map<String, dynamic>> acknowledgeAdminMfaRecoveryDelivery(String deliveryId, String name, String username, {String? password, String? idToken}) async {
+    if (deliveryId != recoveryDeliveryId) throw StateError('Delivery receipt mismatch');
+    recoveryDeliveryPending = false;
+    return {'acknowledged': true, 'recoveryCodesDeliveryPending': false};
   }
 
   @override
@@ -339,9 +365,39 @@ void main() {
     await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Six-digit code'), '123456');
     await tester.tap(find.text('Confirm and enable'));
     await tester.pumpAndSettle();
-    expect(find.text('Recovery codes — shown once'), findsOneWidget);
+    expect(find.text('Recovery codes — available until securely acknowledged'), findsOneWidget);
     expect(repo.mfaEnabled, isTrue);
     expect(find.textContaining('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0'), findsOneWidget);
+  });
+
+  testWidgets('lost MFA enrollment response can be recovered and acknowledged before admin access', (tester) async {
+    final repo = _FakeAdmin(mfaEnabled: false)..loseNextEnrollmentResponse = true;
+    await _pumpAdminAccess(tester, repo);
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin name'), 'Operations Admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin username'), 'hope-admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Current password'), 'current-password');
+    await tester.tap(find.text('Set up with password'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Six-digit code'), '123456');
+    await tester.tap(find.text('Confirm and enable'));
+    await tester.pumpAndSettle();
+
+    expect(repo.mfaEnabled, isTrue);
+    expect(repo.recoveryDeliveryPending, isTrue);
+    expect(find.text('Recovery-code delivery needs confirmation'), findsOneWidget);
+    expect(find.text('Verify password and second factor'), findsNothing);
+
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Fresh authenticator code'), '234567');
+    await tester.tap(find.text('Retrieve recovery codes again'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recovery codes — available until securely acknowledged'), findsOneWidget);
+    expect(find.textContaining('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0'), findsOneWidget);
+
+    await tester.tap(find.text('I stored the codes and acknowledge receipt'));
+    await tester.pumpAndSettle();
+    expect(repo.recoveryDeliveryPending, isFalse);
+    expect(find.text('Recovery codes — available until securely acknowledged'), findsNothing);
+    expect(find.text('Verify password and second factor'), findsOneWidget);
   });
 
   testWidgets('admin unlock sends the chosen MFA factor and selected READ scope', (tester) async {

@@ -1,5 +1,6 @@
+import crypto from 'node:crypto';
 import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminPermissions, isPrimaryAdmin, isPrimaryAdminEmail, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
-import { buildTotpUri, decryptTotpSecret, encryptTotpSecret, generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, verifyTotpCode } from '../security/admin_mfa.js';
+import { buildTotpUri, decryptRecoveryCodes, decryptTotpSecret, encryptRecoveryCodes, encryptTotpSecret, generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, verifyTotpCode } from '../security/admin_mfa.js';
 
 const legacyVerifiedAdmins = new Map();
 
@@ -82,6 +83,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if (!credential?.enrolledAt || !credential.secretCiphertext) {
       throw new HttpError(403,'ADMIN_MFA_ENROLLMENT_REQUIRED','Enroll an authenticator before opening the administrator panel');
     }
+    if (credential.recoveryCodesCiphertext) {
+      throw new HttpError(409,'ADMIN_MFA_RECOVERY_CODES_ACK_REQUIRED','Retrieve and acknowledge your recovery codes before opening the administrator panel');
+    }
     const totpCode = typeof body?.totpCode === 'string' ? body.totpCode.trim() : '';
     const recoveryCode = typeof body?.recoveryCode === 'string' ? body.recoveryCode.trim() : '';
     if (Boolean(totpCode) === Boolean(recoveryCode)) {
@@ -128,7 +132,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const encrypted = encryptTotpSecret(secret,config.adminMfaEncryptionKey);
       const minutes = config.adminMfaEnrollmentMinutes ?? 10;
       const expiresAt = new Date(Date.now()+minutes*60000).toISOString();
-      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes});
+      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes},me.sessionJti,me.sessionVersion);
       if (!created) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
       if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
       return sendJson(res,200,{pending:true,secret,otpauthUri:buildTotpUri({secret,email:me.email}),expiresInMinutes:minutes});
@@ -148,15 +152,50 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified=verifyTotpCode(secret,body?.code,Number.isFinite(nowMs)?nowMs:Date.now());
       if (!verified.valid) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid');
       const recovery=generateRecoveryCodes(10);
+      const recoveryDeliveryId=crypto.randomUUID();
       const completed=await repo.completeAdminMfaEnrollment(me.id,{
         secretCiphertext:credential.pendingSecretCiphertext,
         recoveryCodeHashes:recovery.hashes,
+        recoveryCodesCiphertext:encryptRecoveryCodes(recovery.codes,config.adminMfaEncryptionKey),
+        recoveryDeliveryId,
         lastTotpCounter:verified.counter,
+        sessionJti:me.sessionJti,
+        sessionVersion:me.sessionVersion,
         auditMeta:{recoveryCodesIssued:recovery.codes.length},
       });
       if (!completed) throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
       if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
-      return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes});
+      return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes,recoveryDeliveryId,recoveryCodesDeliveryPending:true});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='recovery-codes' && parts[4]==='retrieve' && parts.length===5) {
+      const body=await readBody(req);
+      await enforceAuthRateLimits(req,me);
+      if (!config.adminMfaEncryptionKey || Buffer.byteLength(config.adminMfaEncryptionKey,'utf8') < 32) {
+        throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA encryption is not configured');
+      }
+      const credential=await repo.getAdminMfaCredential(me.id);
+      if (!credential?.recoveryCodesCiphertext || !credential?.recoveryDeliveryId) {
+        throw new HttpError(404,'ADMIN_MFA_RECOVERY_DELIVERY_UNAVAILABLE','No recovery-code delivery is pending');
+      }
+      let secret;
+      try { secret=decryptTotpSecret(credential.secretCiphertext,config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA secret could not be opened'); }
+      const nowMs=Date.parse(typeof now==='function'?now():new Date().toISOString());
+      const verified=verifyTotpCode(secret,body?.code,Number.isFinite(nowMs)?nowMs:Date.now(),{lastAcceptedCounter:Number(credential.lastTotpCounter ?? -1)});
+      if (!verified.valid) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
+      const delivery=await repo.consumeAdminMfaRecoveryDelivery(me.id,verified.counter,me.sessionJti,me.sessionVersion);
+      if (!delivery) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
+      let recoveryCodes;
+      try { recoveryCodes=decryptRecoveryCodes(delivery.ciphertext,config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Recovery codes could not be opened'); }
+      return sendJson(res,200,{enabled:true,recoveryCodes,recoveryDeliveryId:delivery.deliveryId,recoveryCodesDeliveryPending:true});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='recovery-codes' && parts[4]==='ack' && parts.length===5) {
+      const body=await readBody(req);
+      await verifyPrimaryFactor(me,body,req);
+      const acknowledged=await repo.acknowledgeAdminMfaRecoveryDelivery(me.id,me.sessionJti,me.sessionVersion,body?.recoveryDeliveryId);
+      if (!acknowledged) throw new HttpError(409,'ADMIN_MFA_RECOVERY_ACK_FAILED','Recovery-code delivery could not be acknowledged');
+      return sendJson(res,200,{enabled:true,recoveryCodesDeliveryPending:false,acknowledged:true});
     }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const verified = config.adminMfaRequired

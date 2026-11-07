@@ -21,6 +21,7 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   final _factor = TextEditingController();
+  final _recoveryDeliveryFactor = TextEditingController();
   bool _busy = false;
   bool _loading = true;
   bool _recovery = false;
@@ -29,6 +30,7 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
   Map<String, dynamic> _status = const {};
   Map<String, dynamic>? _pending;
   List<String> _recoveryCodes = const [];
+  String? _recoveryDeliveryId;
 
   @override
   void initState() {
@@ -42,6 +44,7 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
     _username.dispose();
     _password.dispose();
     _factor.dispose();
+    _recoveryDeliveryFactor.dispose();
     super.dispose();
   }
 
@@ -67,6 +70,10 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
       if (!mounted) return;
       setState(() {
         _status = status;
+        if (status['recoveryCodesDeliveryPending'] != true) {
+          _recoveryCodes = const [];
+          _recoveryDeliveryId = null;
+        }
         _loading = false;
       });
     } catch (error) {
@@ -131,20 +138,73 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
       final codes = raw is List
           ? raw.map((item) => item.toString()).toList(growable: false)
           : const <String>[];
-      if (codes.length != 10) throw StateError('Expected ten recovery codes.');
+      if (codes.length != 10 || (result['recoveryDeliveryId']?.toString().isEmpty ?? true)) throw StateError('Expected a complete recovery-code delivery receipt.');
       if (!mounted) return;
       setState(() {
-        _status = {..._status, 'enabled': true, 'recoveryCodesRemaining': 10};
+        _status = {..._status, 'enabled': true, 'recoveryCodesRemaining': 10, 'recoveryCodesDeliveryPending': true};
         _pending = null;
         _recoveryCodes = codes;
+        _recoveryDeliveryId = result['recoveryDeliveryId']?.toString();
         _factor.clear();
       });
     } catch (error) {
+      await _loadStatus();
       _notify(apiErrorMessage(error,
-          fallback: _t('کد تأیید نشد؛ کد فعلی را بررسی کنید.', 'Authenticator code was not accepted.')));
+          fallback: _t('کد تأیید نشد؛ کد تازه را بررسی کنید یا کدهای ذخیره‌شده را بازیابی کنید.', 'Enrollment response was unavailable. Check the current code or retrieve the stored recovery codes.')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _retrieveRecoveryCodes() async {
+    final code = _recoveryDeliveryFactor.text.trim();
+    if (_busy || !RegExp(r'^\d{6}$').hasMatch(code)) {
+      _notify(_t('کد شش‌رقمی Authenticator را وارد کنید.', 'Enter the six-digit authenticator code.'));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final result = await context.read<AdminRepository>().retrieveAdminMfaRecoveryCodes(code);
+      final raw = result['recoveryCodes'];
+      final codes = raw is List ? raw.map((item) => item.toString()).toList(growable: false) : const <String>[];
+      final deliveryId = result['recoveryDeliveryId']?.toString();
+      if (codes.length != 10 || deliveryId == null || deliveryId.isEmpty) throw StateError('Expected ten recovery codes and a delivery receipt.');
+      if (!mounted) return;
+      setState(() {
+        _recoveryCodes = codes;
+        _recoveryDeliveryId = deliveryId;
+        _status = {..._status, 'recoveryCodesDeliveryPending': true};
+      });
+      _recoveryDeliveryFactor.clear();
+    } catch (error) {
+      await _loadStatus();
+      _notify(apiErrorMessage(error, fallback: _t('بازیابی کدها ممکن نشد؛ کد تازه Authenticator را وارد کنید.', 'Recovery codes could not be retrieved; enter a fresh authenticator code.')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _acknowledgeRecoveryCodes() async {
+    final deliveryId = _recoveryDeliveryId;
+    if (_busy || deliveryId == null || deliveryId.isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      final token = _password.text.isEmpty ? await _googleToken() : null;
+      await context.read<AdminRepository>().acknowledgeAdminMfaRecoveryDelivery(
+        deliveryId, _name.text.trim(), _username.text.trim(),
+        password: token == null ? _password.text : null, idToken: token,
+      );
+      if (!mounted) return;
+      setState(() {
+        _recoveryCodes = const [];
+        _recoveryDeliveryId = null;
+        _status = {..._status, 'recoveryCodesDeliveryPending': false};
+      });
+      _notify(_t('دریافت امن کدهای بازیابی تأیید شد.', 'Recovery-code delivery acknowledged securely.'));
+    } catch (error) {
+      await _loadStatus();
+      _notify(apiErrorMessage(error, fallback: _t('تأیید دریافت کدها ناموفق بود؛ احراز اصلی را بررسی کنید.', 'Could not acknowledge recovery-code delivery; verify your primary credentials.')));
+    } finally { if (mounted) setState(() => _busy = false); }
   }
 
   Future<void> _copy(String value, String message) async {
@@ -279,10 +339,10 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(children: [
-            Text(_t('کدهای بازیابی — فقط همین‌بار', 'Recovery codes — shown once')),
+            Text(_t('کدهای بازیابی — دریافت تا زمان تأیید امن', 'Recovery codes — available until securely acknowledged')),
             const SizedBox(height: 8),
-            Text(_t('هر کد یک‌بار مصرف است. در محل امن ذخیره کنید؛ سرور فقط hash آن‌ها را نگه می‌دارد.',
-                'Each code works once. Store them securely; the server keeps only hashes.')),
+            Text(_t('هر کد یک‌بار مصرف است. در محل امن ذخیره کنید؛ سرور hashها و نسخه رمز‌شده را تا تأیید دریافت نگه می‌دارد.',
+                'Each code works once. Store them securely; the server keeps hashes and an encrypted copy until receipt is acknowledged.')),
             const SizedBox(height: 8),
             SelectableText(_recoveryCodes.join('\n'), textAlign: TextAlign.center),
             TextButton.icon(
@@ -291,8 +351,32 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
               label: Text(_t('کپی همهٔ کدها', 'Copy all codes')),
             ),
             TextButton(
-              onPressed: () => setState(() => _recoveryCodes = const []),
-              child: Text(_t('کدها را ذخیره کردم', 'I have stored the codes')),
+              onPressed: _busy ? null : _acknowledgeRecoveryCodes,
+              child: Text(_t('کدها را ذخیره کردم و دریافت را تأیید می‌کنم', 'I stored the codes and acknowledge receipt')),
+            ),
+          ]),
+        ),
+      );
+
+  Widget _recoveryDeliveryCard() => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(_t('تحویل کدهای بازیابی در انتظار تأیید است', 'Recovery-code delivery needs confirmation'), style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(_t('MFA فعال شده، اما تا زمان ذخیره و تأیید امن کدهای بازیابی، ورود به پنل مدیریت باز نمی‌شود. با کد تازه Authenticator آن‌ها را دوباره دریافت کنید.', 'MFA is enabled, but admin access remains locked until you store and acknowledge your recovery codes. Retrieve them again using a fresh authenticator code.')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _recoveryDeliveryFactor,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(labelText: _t('کد تازه Authenticator', 'Fresh authenticator code')),
+            ),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _retrieveRecoveryCodes,
+              icon: const Icon(Icons.refresh),
+              label: Text(_t('دریافت دوباره کدهای بازیابی', 'Retrieve recovery codes again')),
             ),
           ]),
         ),
@@ -388,6 +472,10 @@ class _AdminAccessPageState extends State<AdminAccessPage> {
                 )
               else if (!_enabled)
                 _mfaEnrollment()
+              else if (_status['recoveryCodesDeliveryPending'] == true && _recoveryCodes.isEmpty)
+                _recoveryDeliveryCard()
+              else if (_status['recoveryCodesDeliveryPending'] == true)
+                const SizedBox.shrink()
               else
                 _mfaUnlock(),
               if (_recoveryCodes.isNotEmpty) ...[
