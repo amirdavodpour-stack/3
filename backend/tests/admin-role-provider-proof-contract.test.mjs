@@ -17,12 +17,18 @@ test('administrator promotion requires target provider identity and stores the g
   assert.match(grant, /google_subject/);
   assert.match(grant, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
   assert.match(grant, /status\s*!==\s*'ACTIVE'/);
-  assert.match(grant, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(grant, /lockAuthorizedAdminActor/);
+  assert.match(grant, /sessionJti/);
+  assert.match(grant, /requiredScope:\s*'WRITE'/);
+  assert.match(authorization, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(authorization, /status !== 'ACTIVE'/);
+  assert.match(authorization, /admin_panel_verified_session_jti/);
   assert.match(grant, /admin_panel_verified_scope=NULL/);
   assert.match(grant, /INSERT INTO audit_logs/);
   assert.match(grant, /ADMIN_ROLE_GRANT/);
   assert.match(legacy, /googleSubject/);
   assert.match(legacy, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
+  assert.match(routes, /grantAdminByEmail\(email, me\.id, \{sessionJti:me\.sessionJti/);
   assert.match(routes, /if\s*\(!process\.env\.DATABASE_URL\)/);
 });
 
