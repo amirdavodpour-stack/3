@@ -163,3 +163,54 @@ test('sandbox wallet credit attributes the ledger operation and idempotency prin
   assert.ok(sandboxCall.includes('actorId:me.id'));
   assert.match(sandboxCall, /metadata:\{\s*actorId:me\.id,\s*sandbox:true\s*\}/);
 });
+
+
+test('all inherited database admin mutations revalidate exact-session WRITE access under their SQL transaction', () => {
+  const repository = read('backend/src/repository/admin.js');
+  const methods = [
+    ['setUserStatus', 'revokeAdminById'],
+    ['revokeAdminById', 'revokeUserSessions'],
+    ['moderateJob', 'listAdminJobs'],
+    ['deleteJob', 'grantAdminByEmail'],
+    ['grantAdminByEmail', null],
+  ];
+
+  for (const [name, nextName] of methods) {
+    const source = block(
+      repository,
+      `export async function ${name}(`,
+      nextName ? `export async function ${nextName}(` : null,
+    );
+    assert.match(source, /withSqlTransaction/,`${name} must retain one SQL transaction`);
+    assert.match(source, /lockAuthorizedAdminActor\(client/,`${name} must lock/revalidate the actor under that transaction`);
+    assert.match(source, /sessionJti/,`${name} must bind step-up to the authenticated session`);
+    assert.match(source, /requiredScope:\s*'WRITE'/,`${name} must require current WRITE step-up`);
+  }
+
+  for (const name of ['setUserStatus', 'revokeAdminById', 'grantAdminByEmail']) {
+    const source = block(
+      repository,
+      `export async function ${name}(`,
+      name === 'setUserStatus' ? 'export async function revokeAdminById(' :
+        name === 'revokeAdminById' ? 'export async function revokeUserSessions(' :
+        null,
+    );
+    assert.match(source, /targetUserIds:\s*\[.*\]/s,`${name} must use stable actor/target row locking`);
+  }
+});
+
+test('admin mutation routes pass the authenticated session JTI and write-verification TTL into repositories', () => {
+  const route = read('backend/src/routes/admin_routes.js');
+  const slices = [
+    block(route, "if(req.method==='POST' && parts[0]==='admin' && parts[1]==='admins' && parts.length===2)", "if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='admins'"),
+    block(route, "if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='admins'", "if(req.method==='POST' && parts[0]==='admin' && parts[1]==='users'"),
+    block(route, "if(req.method==='POST' && parts[0]==='admin' && parts[1]==='users' && parts[3]==='status')", "if(req.method==='GET' && parts[0]==='admin' && parts[1]==='trust-reports')"),
+    block(route, "if(req.method==='POST' && parts[0]==='admin' && parts[1]==='jobs' && parts[3]==='moderate')", "if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='jobs'"),
+    block(route, "if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='jobs'", "if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications'"),
+  ];
+
+  for (const source of slices) {
+    assert.match(source, /sessionJti:\s*me\.sessionJti/);
+    assert.match(source, /verificationMinutes:\s*config(?:\?\.)?\.?.*adminPanelWriteVerificationMinutes|verificationMinutes:\s*config\?\.adminPanelWriteVerificationMinutes/);
+  }
+});
