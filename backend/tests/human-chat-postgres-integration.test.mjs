@@ -5279,6 +5279,7 @@ test('PostgreSQL admin status changes clear admin-panel verification', { skip: !
   const pool = dbModule.getPool();
   const userId = await createPanelTestAdmin(pool, 'admin-panel-status-invalidation');
   const actorId = crypto.randomUUID();
+  const sessionJti = `admin-panel-status-actor:${actorId}`;
   await pool.query(
     `INSERT INTO users(
        id,email,password_hash,display_name,role,status,session_version,google_subject,created_at
@@ -5287,9 +5288,10 @@ test('PostgreSQL admin status changes clear admin-panel verification', { skip: !
     [actorId,`r05-primary-google-1793928800932`],
   );
   try {
-    assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
+    assert.ok(await setAdminPanelVerified(actorId, sessionJti, 'WRITE'));
     const updated = await setUserStatus(userId, 'SUSPENDED', {
       actorId,
+      sessionJti,
       reason: 'Temporary administrative access restriction for panel-verification test',
       reviewDueAt: new Date(Date.now()+72*60*60*1000).toISOString(),
     });
@@ -6856,16 +6858,18 @@ test('PostgreSQL status mutation rechecks administrator and reserved-owner prote
     [ownerTargetId],
   );
   const reviewDueAt = new Date(Date.now()+72*60*60*1000).toISOString();
+  const sessionJti = `admin-status-race:${actorId}`;
   try {
+    assert.ok(await setAdminPanelVerified(actorId,sessionJti,'WRITE'));
     await assert.rejects(
       setUserStatus(adminTargetId,'SUSPENDED',{
-        actorId,reason:'Operational admin cannot suspend another admin',reviewDueAt,
+        actorId,sessionJti,reason:'Operational admin cannot suspend another admin',reviewDueAt,
       }),
       (error)=>error?.code==='MANAGE_ADMINS_REQUIRED',
     );
     await assert.rejects(
       setUserStatus(ownerTargetId,'SUSPENDED',{
-        actorId,reason:'Operational admin cannot suspend reserved owner identity',reviewDueAt,
+        actorId,sessionJti,reason:'Operational admin cannot suspend reserved owner identity',reviewDueAt,
       }),
       (error)=>error?.code==='PRIMARY_ADMIN_PROTECTED',
     );
@@ -6896,14 +6900,16 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
   const email = `r05-status-review-${userId}@example.test`;
   const reviewDueAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
   const reason = 'Temporary restriction pending manual Trust and Safety review';
+  const sessionJti = `status-review-admin:${actorId}`;
   await pool.query(
     `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
      VALUES($1,$2,'r05-integration-only','R05 status review user','USER','ACTIVE',0,NOW())`,
     [userId,email],
   );
   try {
+    assert.ok(await setAdminPanelVerified(actorId,sessionJti,'WRITE'));
     const before = await pool.query('SELECT status,session_version FROM users WHERE id=$1',[userId]);
-    const suspended = await setUserStatus(userId,'SUSPENDED',{actorId,reason,reviewDueAt});
+    const suspended = await setUserStatus(userId,'SUSPENDED',{actorId,sessionJti,reason,reviewDueAt});
     assert.equal(suspended.status,'SUSPENDED');
     assert.ok(suspended.reviewCaseId);
     assert.equal(new Date(suspended.reviewDueAt).toISOString(),new Date(reviewDueAt).toISOString());
@@ -6930,7 +6936,7 @@ test('PostgreSQL user suspension opens a reasoned human review case and explicit
     assert.equal(Number(afterSuspend.rows[0].session_version),Number(before.rows[0].session_version)+1);
 
     const resolutionReason = 'Manual review completed; restriction lifted after evidence review';
-    const activated = await setUserStatus(userId,'ACTIVE',{actorId,reason:resolutionReason});
+    const activated = await setUserStatus(userId,'ACTIVE',{actorId,sessionJti,reason:resolutionReason});
     assert.equal(activated.status,'ACTIVE');
 
     const { rows: resolvedCases } = await pool.query(
@@ -7119,6 +7125,7 @@ test('PostgreSQL admin role revocation clears step-up and commits its audit atom
   const suffix = `r05-admin-revoke-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const actorSubject = `r05-revoke-primary-${suffix}`;
   const targetSubject = `r05-revoke-target-${suffix}`;
+  const sessionJti = `role-revoke-actor:${actorId}`;
   const refreshId = crypto.randomUUID();
   const familyId = crypto.randomUUID();
   await pool.query(
@@ -7140,6 +7147,7 @@ test('PostgreSQL admin role revocation clears step-up and commits its audit atom
   const functionName = `r05_fail_admin_revoke_audit_${actorId.replaceAll('-','')}`;
   const triggerName = `r05_fail_admin_revoke_audit_trigger_${actorId.replaceAll('-','')}`;
   try {
+    assert.ok(await setAdminPanelVerified(actorId,sessionJti,'WRITE'));
     await pool.query(`CREATE FUNCTION ${functionName}() RETURNS trigger AS $body$
       BEGIN
         IF NEW.action='ADMIN_ROLE_REVOKE' AND NEW.actor_id::text=TG_ARGV[0] AND NEW.entity_id::text=TG_ARGV[1] THEN
@@ -7153,7 +7161,7 @@ test('PostgreSQL admin role revocation clears step-up and commits its audit atom
        FOR EACH ROW EXECUTE FUNCTION ${functionName}('${actorId}','${targetId}')`,
     );
     await assert.rejects(
-      revokeAdminById(targetId,actorId),
+      revokeAdminById(targetId,actorId,{sessionJti}),
       /R05 forced ADMIN_ROLE_REVOKE audit failure/,
       'demotion, session revocation and panel unlock clearing must roll back if audit fails',
     );
@@ -7174,7 +7182,7 @@ test('PostgreSQL admin role revocation clears step-up and commits its audit atom
 
     await pool.query(`DROP TRIGGER ${triggerName} ON audit_logs`);
     await pool.query(`DROP FUNCTION ${functionName}()`);
-    const revoked = await revokeAdminById(targetId,actorId);
+    const revoked = await revokeAdminById(targetId,actorId,{sessionJti});
     assert.equal(revoked.role,'USER');
     const { rows: demoted } = await pool.query(
       `SELECT role,session_version,admin_panel_verified_at,admin_panel_verified_session_jti,
@@ -7220,6 +7228,7 @@ test('PostgreSQL administrator promotion requires a verified Google subject and 
   const actorEmail = `r05-primary-${suffix}@example.test`;
   const targetEmail = `r05-linked-target-${suffix}@example.test`;
   const unlinkedEmail = `r05-unlinked-target-${suffix}@example.test`;
+  const sessionJti = `role-grant-actor:${actorId}`;
   await pool.query(
     `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,google_subject,created_at)
      VALUES($1,'amir.davodpour@gmail.com','r05-test','R05 verified primary owner','ADMIN','ACTIVE',0,$2,NOW())`,
@@ -7238,8 +7247,9 @@ test('PostgreSQL administrator promotion requires a verified Google subject and 
   const functionName = `r05_fail_admin_grant_audit_${actorId.replaceAll('-','')}`;
   const triggerName = `r05_fail_admin_grant_audit_trigger_${actorId.replaceAll('-','')}`;
   try {
+    assert.ok(await setAdminPanelVerified(actorId,sessionJti,'WRITE'));
     await assert.rejects(
-      grantAdminByEmail(unlinkedEmail,actorId),
+      grantAdminByEmail(unlinkedEmail,actorId,{sessionJti}),
       (error)=>error?.code==='ADMIN_PROVIDER_IDENTITY_REQUIRED',
       'an email-matched account without a verified provider subject must not become ADMIN',
     );
@@ -7260,7 +7270,7 @@ test('PostgreSQL administrator promotion requires a verified Google subject and 
        FOR EACH ROW EXECUTE FUNCTION ${functionName}('${actorId}','${linkedTargetId}')`,
     );
     await assert.rejects(
-      grantAdminByEmail(targetEmail,actorId),
+      grantAdminByEmail(targetEmail,actorId,{sessionJti}),
       /R05 forced ADMIN_ROLE_GRANT audit failure/,
       'role and step-up mutation must roll back when the audit insert fails',
     );
@@ -7278,7 +7288,7 @@ test('PostgreSQL administrator promotion requires a verified Google subject and 
 
     await pool.query(`DROP TRIGGER ${triggerName} ON audit_logs`);
     await pool.query(`DROP FUNCTION ${functionName}()`);
-    const promoted = await grantAdminByEmail(targetEmail,actorId);
+    const promoted = await grantAdminByEmail(targetEmail,actorId,{sessionJti});
     assert.equal(promoted.role,'ADMIN');
     const { rows: promotedRows } = await pool.query(
       `SELECT role,session_version,admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,google_subject
@@ -7478,6 +7488,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
   const modTrigger='r05_fail_job_moderate_audit_trigger_'+suffix;
   const delFn='r05_fail_job_delete_audit_'+suffix;
   const delTrigger='r05_fail_job_delete_audit_trigger_'+suffix;
+  const sessionJti=`admin-job-audit:${fixture.adminId}`;
   const { rows: jobs }=await pool.query(
     `INSERT INTO jobs(
        id,owner_id,provider_id,title,description,category_id,job_type,budget_type,
@@ -7494,6 +7505,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
   );
   assert.equal(jobs.length,1,'job audit fixture requires an active category');
   try {
+    assert.ok(await setAdminPanelVerified(fixture.adminId,sessionJti,'WRITE'));
     await pool.query(`CREATE FUNCTION ${modFn}() RETURNS trigger AS $body$
       BEGIN
         IF NEW.action='ADMIN_JOB_MODERATE' AND NEW.entity_id::text=TG_ARGV[0] THEN
@@ -7507,7 +7519,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
        FOR EACH ROW EXECUTE FUNCTION ${modFn}('${jobId}')`,
     );
     await assert.rejects(
-      moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId}),
+      moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId,sessionJti}),
       /R05 forced ADMIN_JOB_MODERATE audit failure/,
     );
     let { rows: state }=await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]);
@@ -7515,7 +7527,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
     await pool.query('DROP TRIGGER IF EXISTS '+modTrigger+' ON audit_logs');
     await pool.query('DROP FUNCTION IF EXISTS '+modFn+'()');
 
-    const moderated=await moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId});
+    const moderated=await moderateJob(jobId,'PUBLISHED',{adminId:fixture.adminId,sessionJti});
     assert.equal(moderated.status,'PUBLISHED');
     let { rows: moderationAudits }=await pool.query(
       "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_JOB_MODERATE' AND entity_id=$1",
@@ -7538,7 +7550,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
        FOR EACH ROW EXECUTE FUNCTION ${delFn}('${jobId}')`,
     );
     await assert.rejects(
-      deleteJob(jobId,{adminId:fixture.adminId}),
+      deleteJob(jobId,{adminId:fixture.adminId,sessionJti}),
       /R05 forced ADMIN_JOB_DELETE audit failure/,
     );
     ({ rows: state }=await pool.query('SELECT status FROM jobs WHERE id=$1',[jobId]));
@@ -7546,7 +7558,7 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
     await pool.query('DROP TRIGGER IF EXISTS '+delTrigger+' ON audit_logs');
     await pool.query('DROP FUNCTION IF EXISTS '+delFn+'()');
 
-    const deleted=await deleteJob(jobId,{adminId:fixture.adminId});
+    const deleted=await deleteJob(jobId,{adminId:fixture.adminId,sessionJti});
     assert.equal(deleted,true);
     const { rows: deleteAudits }=await pool.query(
       "SELECT action,actor_id,meta FROM audit_logs WHERE action='ADMIN_JOB_DELETE' AND entity_id=$1",
