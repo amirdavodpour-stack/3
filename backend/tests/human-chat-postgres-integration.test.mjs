@@ -7643,7 +7643,8 @@ test('PostgreSQL session revocation rechecks admin role after waiting for the ac
     await blocker.query('ROLLBACK').catch(()=>{});
     blocker.release();
     if(revokePromise) await revokePromise.catch(()=>{});
-    await cleanupUser(actorId);
-    await cleanupUser(targetId);
+    const fixtureIds=[actorId,targetId];
+    await pool.query('DELETE FROM audit_logs WHERE actor_id=ANY($1::uuid[]) OR entity_id=ANY($1::uuid[])',[fixtureIds]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[fixtureIds]).catch(()=>{});
   }
 });
