@@ -98,8 +98,8 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
            id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
            status,attempts,available_at,created_at
          ) VALUES(
-           gen_random_uuid(),'AUTH_REFRESH_REUSE_ALERT','user',$1,
-           'auth-refresh-reuse:' || $1::text || ':' ||
+           gen_random_uuid(),'AUTH_REFRESH_REUSE_ALERT','user',$1::uuid,
+           'auth-refresh-reuse:' || ($1::uuid)::text || ':' ||
              floor(extract(epoch FROM NOW()) / 300)::bigint::text,
            $2::jsonb,'PENDING',0,NOW(),NOW()
          )
