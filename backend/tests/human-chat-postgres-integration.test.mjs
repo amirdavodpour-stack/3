@@ -5339,7 +5339,7 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
     createdAt: now.toISOString(),
     revokedAt: now.toISOString(),
     replacedBy: siblingTokenHash,
-  });
+  }, 0);
   await insertRefreshToken({
     id: crypto.randomUUID(),
     userId,
@@ -5349,7 +5349,7 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
     createdAt: now.toISOString(),
     revokedAt: null,
     replacedBy: null,
-  });
+  }, 0);
 
   const result = await rotateRefreshToken(oldTokenHash, null, familyId);
   assert.equal(result?.kind, 'reuse');
@@ -7594,7 +7594,7 @@ test('PostgreSQL session revocation rechecks admin role after waiting for the ac
       createdAt:new Date().toISOString(),
       revokedAt:null,
       replacedBy:null,
-    });
+    },0);
 
     await blocker.query('BEGIN');
     await blocker.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[actorId]);
