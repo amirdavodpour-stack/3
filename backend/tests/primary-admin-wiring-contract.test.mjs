@@ -13,7 +13,7 @@ test('admin promotion endpoint is primary-owner-only and audit logged', () => {
   const repo = read('backend/src/repository/admin.js');
   assert.match(route, /parts\[1\]==='admins'/);
   assert.match(route, /assertPrimaryAdmin\(me\)/);
-  assert.match(route, /grantAdminByEmail\(email, me\.id\)/);
+  assert.match(route, /grantAdminByEmail\(email, me\.id, \{sessionJti:me\.sessionJti/);
   assert.match(route, /ADMIN_ROLE_GRANT/);
   assert.match(useCases, /grantAdminByEmail/);
   assert.match(ports, /grantAdminByEmail/);
@@ -41,11 +41,15 @@ test('primary-admin privileges require a linked verified Google identity at ever
   const revoke = repo.slice(revokeStart, revokeEnd);
 
   assert.match(grant, /google_subject/);
-  assert.match(grant, /actor\.status !== 'ACTIVE'/);
+  assert.match(grant, /lockAuthorizedAdminActor/);
+  assert.match(grant, /sessionJti/);
+  assert.match(grant, /requiredScope:'WRITE'/);
+  assert.match(authorization, /status !== 'ACTIVE'/);
   assert.match(grant, /actor\.google_subject/);
   assert.match(grant, /target\.status !== 'ACTIVE'/);
   assert.match(grant, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
-  assert.match(grant, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(authorization, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(authorization, /admin_panel_verified_session_jti/);
   assert.match(grant, /INSERT INTO audit_logs/);
   assert.match(grant, /ADMIN_ROLE_GRANT/);
   assert.match(revoke, /google_subject/);
