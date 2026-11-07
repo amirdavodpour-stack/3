@@ -25,6 +25,7 @@ test('primary-admin privileges require a linked verified Google identity at ever
   const auth = read('backend/src/routes/auth_routes.js');
   const repo = read('backend/src/repository/admin.js');
   const legacy = read('backend/src/application/legacy/admin_legacy.js');
+  const authorization = read('backend/src/repository/admin_authorization.js');
 
   assert.match(access, /shouldBootstrapPrimaryAdmin\(\{ email, verifiedIdentity = false, googleSubject \}/);
   assert.match(access, /Boolean\(normalize\(googleSubject\)\)/);
@@ -49,6 +50,9 @@ test('primary-admin privileges require a linked verified Google identity at ever
   assert.match(grant, /ADMIN_ROLE_GRANT/);
   assert.match(revoke, /google_subject/);
   assert.match(revoke, /PRIMARY_ADMIN_ONLY/);
+  assert.match(revoke, /lockAuthorizedAdminActor/);
+  assert.match(revoke, /sessionJti/);
+  assert.match(revoke, /requiredScope:'WRITE'/);
   assert.match(legacy, /actor\.status !== 'ACTIVE'/);
   assert.match(legacy, /target\.googleSubject/);
   assert.match(legacy, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
