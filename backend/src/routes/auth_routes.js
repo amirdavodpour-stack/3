@@ -297,7 +297,7 @@ export function createAuthRoutes({
       if (rateLimitAuthAccount && !(await rateLimitAuthAccount(email, config.authRateLimitMax, config.rateLimitWindowMs))) {
         throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
       }
-      const user = await getUserByEmail(email);
+      let user = await getUserByEmail(email);
       // Always perform the expensive password verification step, including for unknown users,
       // to reduce account-enumeration through response-time differences.
       const password = typeof body.password === 'string' ? body.password : '';
