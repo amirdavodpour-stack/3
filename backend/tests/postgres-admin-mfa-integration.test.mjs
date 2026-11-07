@@ -48,9 +48,10 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
       'MFA setup must require a non-empty authenticated session JTI');
     assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,null,jti,null),false,
       'MFA setup must reject a missing session version rather than coercing null to zero');
+    assert.equal(await repository.getAdminMfaCredential(userId),null,
+      'rejected setup attempts must not persist pending MFA credentials');
     assert.equal(await repository.beginAdminMfaEnrollment(userId,ciphertext,expiresAt,{expiresInMinutes:10,sessionJti:jti},jti,0),true,
       'MFA setup accepts an authenticated JTI and the current explicit session version');
-    assert.equal(await repository.getAdminMfaCredential(userId),null,'rejected setup attempts must not persist pending MFA credentials');
 
     const pending = await repository.getAdminMfaCredential(userId);
     assert.equal(pending.pendingSecretCiphertext,ciphertext);
