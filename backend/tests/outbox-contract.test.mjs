@@ -101,3 +101,17 @@ test('refresh-reuse security alert is created transactionally and completed unde
   assert.match(alerting,/idempotency-key/);
   assert.match(alerting,/redirect:\s*'error'/);
 });
+
+
+test('refresh-reuse security alerts share high priority with critical payment outbox events', () => {
+  const claimStart = repo.indexOf('export async function claimOutboxEvent(');
+  const orderStart = repo.indexOf('ORDER BY CASE', claimStart);
+  const orderEnd = repo.indexOf('END,', orderStart);
+  assert.ok(claimStart >= 0 && orderStart > claimStart && orderEnd > orderStart,
+    'claimOutboxEvent must expose a bounded priority clause');
+  const priorityClause = repo.slice(orderStart,orderEnd);
+  assert.match(priorityClause,/AUTH_REFRESH_REUSE_ALERT/,
+    'refresh-reuse pages must not queue behind routine notifications');
+  assert.match(priorityClause,/PAYMENT_CREATE_HOLD/);
+  assert.match(priorityClause,/PAYMENT_RELEASE/);
+});
