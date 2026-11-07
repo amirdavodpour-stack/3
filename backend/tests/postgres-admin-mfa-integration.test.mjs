@@ -98,12 +98,22 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
     assert.deepEqual(mfa.decryptRecoveryCodes(stored.rows[0].recovery_codes_ciphertext,encryptionKey),recovery.codes);
     assert.equal(stored.rows[0].recovery_delivery_id,recoveryDeliveryId);
     assert.equal(stored.rows[0].recovery_codes_acknowledged_at,null);
+    assert.equal(await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+1,'',0),null,
+      'recovery retrieval must reject a missing session JTI without consuming the TOTP counter');
+    assert.equal(await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+1,jti,null),null,
+      'recovery retrieval must reject a missing session version rather than coercing null to zero');
     const firstDelivery=await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+1,jti,0);
     assert.equal(firstDelivery.ciphertext,stored.rows[0].recovery_codes_ciphertext);
     assert.equal(firstDelivery.deliveryId,recoveryDeliveryId);
     assert.equal(await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+1,jti,0),null,'the same TOTP counter must not retrieve recovery codes twice');
     const retryDelivery=await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+2,jti,0);
     assert.deepEqual(retryDelivery,firstDelivery,'a fresh TOTP counter may retry the same encrypted bundle after a lost response');
+    assert.equal(await repository.acknowledgeAdminMfaRecoveryDelivery(userId,'',0,recoveryDeliveryId),false,
+      'recovery ACK must reject a missing session JTI');
+    assert.equal(await repository.acknowledgeAdminMfaRecoveryDelivery(userId,jti,null,recoveryDeliveryId),false,
+      'recovery ACK must reject a missing session version rather than coercing null to zero');
+    assert.ok((await repository.getAdminMfaCredential(userId)).recoveryCodesCiphertext,
+      'rejected recovery ACK attempts must preserve the encrypted delivery bundle');
     await pool.query('UPDATE users SET session_version=1 WHERE id=$1',[userId]);
     assert.equal(await repository.acknowledgeAdminMfaRecoveryDelivery(userId,jti,0,recoveryDeliveryId),false,'a revoked access-token session cannot acknowledge delivery');
     assert.equal(await repository.consumeAdminMfaRecoveryDelivery(userId,enrollmentCounter+3,jti,0),null,'a revoked access-token session cannot retrieve codes');
