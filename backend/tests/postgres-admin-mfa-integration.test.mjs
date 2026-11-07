@@ -114,8 +114,8 @@ test('PostgreSQL admin MFA stores only encrypted secrets and one-way recovery ha
 
     assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter),false,
       'the enrollment counter must not be accepted for panel unlock again');
-    assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter+3),true);
-    assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter+3),false,
+    assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter+4),true);
+    assert.equal(await repository.consumeAdminTotpCounter(userId,enrollmentCounter+4),false,
       'the same TOTP counter must not be accepted twice');
 
     const recoveryHash = mfa.hashRecoveryCode(recovery.codes[0]);
