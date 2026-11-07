@@ -15,20 +15,20 @@ const modules = enabled
       import('../src/db.js'),
       import('../src/repository.js'),
       import('../src/routes/auth_routes.js'),
-      import('../src/services/session.js'),
       import('../src/routes/admin_routes.js'),
       import('../src/api/http_error.js'),
       import('../src/policies/validation.js'),
+      import('../src/services/session.js'),
     ])
   : [];
 
 const dbModule = modules[0];
 const repository = modules[1];
 const { createAuthRoutes } = modules[2] || {};
-const { createSessionService } = modules[6] || {};
 const { createAdminRoutes } = modules[3] || {};
 const { HttpError } = modules[4] || {};
 const { requireFields, stringField, requireAdmin } = modules[5] || {};
+const { createSessionService } = modules[6] || {};
 
 if (enabled) await dbModule.initDatabase();
 const pool = enabled ? dbModule.getPool() : null;
