@@ -51,7 +51,7 @@ test('PostgreSQL logout route uses the atomic repository operation', () => {
 test('refresh-token issuance locks the account and requires the session version observed during authentication', () => {
   const issue = functionSource(authRepository, 'insertRefreshToken', 'findRefreshTokenByHash');
   assert.match(issue, /withSqlTransaction/);
-  assert.match(issue, /FROM users WHERE id=\\$1 FOR UPDATE/);
+  assert.match(issue, /FROM users WHERE id=\$1 FOR UPDATE/);
   assert.match(issue, /expectedSessionVersion/);
   assert.match(issue, /session_version/);
   assert.match(issue, /INSERT INTO refresh_tokens/);
@@ -61,13 +61,13 @@ test('refresh rotation rejects an active token from an older account session gen
   const rotate = functionSource(authRepository, 'rotateRefreshToken', 'revokeRefreshFamily');
   assert.match(rotate, /session_version/);
   assert.match(rotate, /kind:\s*'invalid'/);
-  assert.match(rotate, /r\\.session_version/);
-  assert.match(rotate, /user\\.sessionVersion/);
+  assert.match(rotate, /r\.session_version/);
+  assert.match(rotate, /user\.sessionVersion/);
 });
 
 test('password hash rehash is compare-and-set against the verified hash and session generation', () => {
   const update = functionSource(authRepository, 'updatePasswordHash', 'logoutUser');
-  assert.match(update, /password_hash=\\$3/);
-  assert.match(update, /session_version=\\$4/);
-  assert.match(update, /WHERE id=\\$1/);
+  assert.match(update, /password_hash=\$3/);
+  assert.match(update, /session_version=\$4/);
+  assert.match(update, /WHERE id=\$1/);
 });
