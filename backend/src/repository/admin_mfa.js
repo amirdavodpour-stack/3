@@ -273,3 +273,142 @@ export async function consumeAdminRecoveryCode(userId, codeHash) {
     return rowCount === 1;
   });
 }
+
+
+/**
+ * Consume the one-time MFA factor and unlock the exact authenticated admin
+ * session in one SQL transaction. The caller verifies the cryptographic
+ * response first; this function rechecks its counter/code under row locks and
+ * commits the factor consumption, unlock state and audit as one unit.
+ */
+export async function verifyAdminPanelMfaAndUnlock(userId, {
+  sessionJti,
+  sessionVersion,
+  scope = 'WRITE',
+  factor,
+  auditMeta = {},
+} = {}) {
+  const jti = String(sessionJti ?? '').trim();
+  const version = Number(sessionVersion);
+  const verificationScope = String(scope ?? 'WRITE').trim().toUpperCase();
+  if (
+    !jti ||
+    jti.length > 128 ||
+    sessionVersion === null ||
+    sessionVersion === undefined ||
+    !Number.isSafeInteger(version) ||
+    version < 0 ||
+    !['READ','WRITE'].includes(verificationScope) ||
+    !factor ||
+    !['totp','recovery_code'].includes(factor.method)
+  ) return null;
+
+  return withSqlTransaction(async (client) => {
+    try {
+      await lockAuthorizedAdminActor(client,{
+        actorId:userId,
+        sessionJti:jti,
+        requireStepUp:false,
+      });
+    } catch (error) {
+      if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) return null;
+      throw error;
+    }
+
+    // The actor row is already FOR UPDATE locked by the shared authorization
+    // helper, so logout/reset/role changes cannot advance this generation.
+    const { rows: owners } = await client.query(
+      `SELECT role,status,session_version FROM users WHERE id=$1`,
+      [userId],
+    );
+    const owner = owners[0];
+    if (
+      !owner ||
+      owner.role !== 'ADMIN' ||
+      owner.status !== 'ACTIVE' ||
+      Number(owner.session_version) !== version
+    ) return null;
+
+    const { rows: credentials } = await client.query(
+      `SELECT secret_ciphertext,recovery_code_hashes,last_totp_counter,
+              enrolled_at,recovery_codes_ciphertext
+         FROM admin_mfa_credentials
+        WHERE user_id=$1
+        FOR UPDATE`,
+      [userId],
+    );
+    const credential = credentials[0];
+    if (!credential?.enrolled_at || credential.recovery_codes_ciphertext) return null;
+
+    if (factor.method === 'totp') {
+      const counter = Number(factor.counter);
+      const expectedCiphertext = String(factor.secretCiphertext ?? '');
+      if (
+        !Number.isSafeInteger(counter) ||
+        counter < 0 ||
+        !expectedCiphertext ||
+        expectedCiphertext !== credential.secret_ciphertext
+      ) return null;
+
+      const { rowCount } = await client.query(
+        `UPDATE admin_mfa_credentials
+            SET last_totp_counter=$2,updated_at=NOW()
+          WHERE user_id=$1
+            AND enrolled_at IS NOT NULL
+            AND secret_ciphertext=$3
+            AND last_totp_counter < $2`,
+        [userId,counter,expectedCiphertext],
+      );
+      if (rowCount !== 1) return null;
+    } else {
+      const hash = String(factor.recoveryCodeHash ?? '').trim().toLowerCase();
+      if (!/^[a-f0-9]{64}$/.test(hash)) return null;
+      const hashes = Array.isArray(credential.recovery_code_hashes)
+        ? credential.recovery_code_hashes
+        : [];
+      if (!hashes.includes(hash)) return null;
+      const remaining = hashes.filter((value) => value !== hash);
+      const { rowCount } = await client.query(
+        `UPDATE admin_mfa_credentials
+            SET recovery_code_hashes=$2::jsonb,updated_at=NOW()
+          WHERE user_id=$1 AND enrolled_at IS NOT NULL`,
+        [userId,JSON.stringify(remaining)],
+      );
+      if (rowCount !== 1) return null;
+    }
+
+    const { rows: verifiedRows } = await client.query(
+      `UPDATE users
+          SET admin_panel_verified_at=NOW(),
+              admin_panel_verified_session_jti=$2,
+              admin_panel_verified_scope=$3
+        WHERE id=$1
+          AND role='ADMIN'
+          AND status='ACTIVE'
+          AND session_version=$4
+        RETURNING admin_panel_verified_at,admin_panel_verified_scope`,
+      [userId,jti,verificationScope,version],
+    );
+    if (!verifiedRows[0]) {
+      const error = new Error('Administrator session changed during MFA verification');
+      error.code = 'ADMIN_MFA_SESSION_CHANGED';
+      throw error; // Force rollback of the already-consumed factor.
+    }
+
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'ADMIN_PANEL_UNLOCK',$1,'admin',$1,$2::jsonb,NOW())`,
+      [userId,JSON.stringify({
+        ...(auditMeta && typeof auditMeta === 'object' ? auditMeta : {}),
+        scope:verificationScope,
+        sessionJti:jti,
+        mfaMethod:factor.method,
+      })],
+    );
+
+    return {
+      verifiedAt:verifiedRows[0].admin_panel_verified_at?.toISOString?.() ?? verifiedRows[0].admin_panel_verified_at,
+      scope:verifiedRows[0].admin_panel_verified_scope,
+    };
+  });
+}
