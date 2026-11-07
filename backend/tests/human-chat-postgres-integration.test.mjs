@@ -5392,6 +5392,35 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
   assert.equal(audit[0].action,'AUTH_REFRESH_REUSE_DETECTED');
   assert.equal(audit[0].entity_type,'user');
   assert.equal(audit[0].meta?.tokenFamilyId,familyId);
+
+  const { rows: queuedAlerts } = await pool.query(
+    `SELECT event_type,aggregate_type,aggregate_id,dedupe_key,payload,status
+       FROM outbox_events
+      WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+        AND aggregate_id=$1
+        AND payload->>'tokenFamilyId'=$2`,
+    [userId,familyId],
+  );
+  assert.equal(queuedAlerts.length,1,
+    'refresh reuse must enqueue one durable operational alert in the revocation transaction');
+  assert.equal(queuedAlerts[0].aggregate_type,'user');
+  assert.equal(queuedAlerts[0].aggregate_id,userId);
+  assert.equal(queuedAlerts[0].payload?.alertCode,'AUTH_REFRESH_REUSE_DETECTED');
+  assert.equal(queuedAlerts[0].payload?.tokenFamilyId,familyId);
+  assert.match(queuedAlerts[0].dedupe_key,/^auth-refresh-reuse:/);
+  assert.equal(queuedAlerts[0].status,'PENDING');
+
+  const repeatedReuse = await rotateRefreshToken(oldTokenHash,null,familyId);
+  assert.equal(repeatedReuse?.kind,'reuse');
+  const { rows: deduplicatedAlerts } = await pool.query(
+    `SELECT id FROM outbox_events
+      WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+        AND aggregate_id=$1
+        AND dedupe_key LIKE $2`,
+    [userId,`auth-refresh-reuse:${userId}:%`],
+  );
+  assert.equal(deduplicatedAlerts.length,1,
+    'repeated reuse against the same account/window must not flood duplicate alerts');
 });
 
 
