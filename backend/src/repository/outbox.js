@@ -202,7 +202,7 @@ export async function claimOutboxEvent(leaseSeconds = 60) {
            AND (status='PENDING' OR locked_at < NOW() - make_interval(secs => $1))
            AND available_at <= NOW()
          ORDER BY CASE
-                    WHEN event_type IN ('PAYMENT_CREATE_HOLD','PAYMENT_RELEASE','PAYMENT_REFUND','PAYOUT_EXECUTE') THEN 0
+                    WHEN event_type IN ('PAYMENT_CREATE_HOLD','PAYMENT_RELEASE','PAYMENT_REFUND','PAYOUT_EXECUTE','AUTH_REFRESH_REUSE_ALERT') THEN 0
                     ELSE 1
                   END,
                   created_at,
