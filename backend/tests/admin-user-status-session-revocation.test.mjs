@@ -8,6 +8,10 @@ const source = fs.readFileSync(
   'utf8',
 );
 const adminRepositorySource = source;
+const adminAuthorizationSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/repository/admin_authorization.js'),
+  'utf8',
+);
 const start = source.indexOf('export async function setUserStatus(');
 const end = source.indexOf('export async function revokeAdminById(', start);
 const implementation = source.slice(start, end);
