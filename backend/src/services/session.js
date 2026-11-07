@@ -38,8 +38,12 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
       expiresAt: new Date(Date.now() + config.refreshTtlSeconds * 1000).toISOString(),
       createdAt: now(), revokedAt: null, replacedBy: null,
     };
-    if (process.env.DATABASE_URL) await repo.insertRefreshToken(token);
-    else legacy.insertRefreshToken(token);
+    if (process.env.DATABASE_URL) {
+      const inserted = await repo.insertRefreshToken(token, Number(user.sessionVersion || 0));
+      if (!inserted) throw new HttpError(401, 'SESSION_CHANGED', 'Account session changed; authenticate again');
+    } else {
+      legacy.insertRefreshToken(token);
+    }
     return {
       accessToken: signAccessToken(
         { sub: user.id, role: user.role, sv: Number(user.sessionVersion || 0) },
