@@ -10,7 +10,7 @@ import { dispatchSecurityAlert } from './alerting.js';
 function failureCategory(event) {
   const type = event?.event_type || '';
   if (type.startsWith('PAYMENT_')) return 'payment';
-  if (type === 'AUTH_REFRESH_REUSE_ALERT') return 'security';
+  if (type === 'AUTH_REFRESH_REUSE_ALERT' || type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL') return 'security';
   if (type === 'NOTIFICATION_DISPATCH') {
     const channel = event?.payload?.channel;
     if (channel === 'PUSH') return 'push';
