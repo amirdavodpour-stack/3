@@ -22,6 +22,7 @@ export const migration = {
                 manual_replay_count=1
                 AND manual_replay_idempotency_key IS NOT NULL
                 AND length(btrim(manual_replay_idempotency_key)) BETWEEN 1 AND 200
+                AND manual_replay_idempotency_key !~ '[[:space:][:cntrl:]]'
               )
             );
         END IF;
