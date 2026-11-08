@@ -111,11 +111,24 @@ test('refresh-reuse security alerts share high priority with critical payment ou
     'claimOutboxEvent must expose a bounded priority clause');
   const priorityClause = repo.slice(orderStart,orderEnd);
   assert.match(priorityClause,/AUTH_REFRESH_REUSE_ALERT/,
-    'refresh-reuse pages must not queue behind routine notifications');
+    'refresh-reuse alerts must not queue behind routine notifications');
+  assert.match(priorityClause,/SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/,
+    'durable security paging signals must share critical security alert priority');
   assert.match(priorityClause,/PAYMENT_CREATE_HOLD/);
   assert.match(priorityClause,/PAYMENT_RELEASE/);
 });
 
+
+
+test('terminal security paging signal failures are included in security failure telemetry', () => {
+  const categoryStart=handlers.indexOf('function failureCategory(');
+  const categoryEnd=handlers.indexOf('\n}\n',categoryStart);
+  assert.ok(categoryStart>=0&&categoryEnd>categoryStart,'outbox handler must define failure categorization');
+  const classifier=handlers.slice(categoryStart,categoryEnd);
+  assert.match(classifier,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(classifier,/SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/);
+  assert.match(classifier,/return 'security'/);
+});
 
 test('manual outbox replay is primary-admin-only, security-alert-only, idempotent and never dispatches synchronously', () => {
   const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
