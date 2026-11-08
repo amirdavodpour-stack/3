@@ -186,6 +186,13 @@ test('same idempotency key returns the original replay while a different key con
     assert.equal(repeated.alreadyReplayed,true);
     assert.equal(repeated.replayed,true);
     assert.equal(repeated.status,'PENDING');
+    await pool.query(
+      "UPDATE outbox_events SET status='DONE',processed_at=NOW() WHERE id=$1",
+      [event.id],
+    );
+    const afterDelivery = await repository.replaySecurityAlert(replayArgs(admin,event,key));
+    assert.equal(afterDelivery.alreadyReplayed,true);
+    assert.equal(afterDelivery.status,'DONE','same-key retries remain idempotent after the worker finishes delivery');
     await assert.rejects(
       repository.replaySecurityAlert(replayArgs(admin,event,key + ':different')),
       (error) => error?.code === 'OUTBOX_EVENT_ALREADY_REPLAYED',
@@ -318,6 +325,14 @@ test('replay rejects missing, invalid, stale-session and non-primary actors unde
     await assert.rejects(
       repository.replaySecurityAlert(replayArgs(admin,event,'bad key')),
       (error) => error?.code === 'INVALID_IDEMPOTENCY_KEY',
+    );
+    await assert.rejects(
+      repository.replaySecurityAlert(replayArgs(admin,event,'k'.repeat(201))),
+      (error) => error?.code === 'INVALID_IDEMPOTENCY_KEY',
+    );
+    await assert.rejects(
+      repository.replaySecurityAlert(replayArgs(admin,event,undefined,{reason:'r'.repeat(1001)})),
+      (error) => error?.code === 'INVALID_REPLAY_REASON',
     );
     await assert.rejects(
       repository.replaySecurityAlert(replayArgs(admin,event,undefined,{eventId:'not-a-uuid'})),
