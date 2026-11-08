@@ -79,7 +79,7 @@ grep_fixed -Fq -- 'stableAtBottomFrames < 2' "$test_file"
 # The late Profile target must use the proven multi-offset swipe strategy.
 # A center-only scrollUntilVisible gesture can fail to advance from an interactive
 # settings surface even though the page scroll-end path can advance safely.
-profile_target_reveal_block="$(sed -n '/final shouldRevealProfileTarget =/,/if (auditedTarget.evaluate().isEmpty) {/p' "$test_file")"
+profile_target_reveal_block="$(sed -n '/final shouldRevealProfileTarget =/,/final scrollableAncestor = find.ancestor(/p' "$test_file")"
 if [[ -z "$profile_target_reveal_block" ]] || ! grep_fixed -Fq -- '_dragScrollableTowardEndWithFallbackOffsets(' <<<"$profile_target_reveal_block"; then
   echo "FAIL: Profile T10 target reveal must use the proven multi-offset vertical swipe helper." >&2
   exit 1
