@@ -158,6 +158,22 @@ export async function processOutboxEvent(event) {
     const category = failureCategory(event);
     if (category) recordCategoryFailure(category);
     logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
-    return failOutboxEvent({ eventId:event.id, error:error?.message || error, maxAttempts:config.outboxMaxAttempts, leaseToken:event.lease_token });
+    const failureResult = await failOutboxEvent({
+      eventId:event.id,
+      error:error?.message || error,
+      maxAttempts:config.outboxMaxAttempts,
+      leaseToken:event.lease_token,
+    });
+    if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT' && failureResult?.terminal) {
+      logEvent({
+        level:'error',
+        action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
+        eventId:event.id,
+        eventType:event.event_type,
+        attempts:Number(failureResult.attempts || 0),
+        runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+      });
+    }
+    return failureResult;
   }
 }
