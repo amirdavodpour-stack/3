@@ -106,7 +106,7 @@ export function metricsSnapshot() {
 export function logEvent(event) { process.stdout.write(JSON.stringify({ time: new Date().toISOString(), service: 'hope-api', ...event }) + '\n'); }
 
 export function logEventAndWait(event) {
-  const line = JSON.stringify({ time: new Date().toISOString(), service: 'hope-api', ...event }) + '\\n';
+  const line = JSON.stringify({ time: new Date().toISOString(), service: 'hope-api', ...event }) + '\n';
   return new Promise((resolve, reject) => {
     try {
       process.stdout.write(line, (error) => {
