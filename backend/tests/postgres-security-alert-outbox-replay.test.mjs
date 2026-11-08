@@ -274,26 +274,36 @@ test('replay rejects missing, invalid, stale-session and non-primary actors unde
 }, async () => {
   const admin = await createAdmin();
   const opsAdmin = await createAdmin({email:'ops-' + uuid() + '@example.test'});
-  const unlinkedOwner = await createAdmin({googleSubject:null});
-  const expiredAdmin = await createAdmin({verifiedAt:new Date(Date.now()-10*60_000)});
-  const readOnlyAdmin = await createAdmin({verifiedScope:'READ'});
   const event = await createFailedEvent();
   try {
     await assert.rejects(
       repository.replaySecurityAlert(replayArgs(opsAdmin,event)),
       (error) => error?.code === 'PRIMARY_ADMIN_ONLY',
     );
+    await pool.query('UPDATE users SET google_subject=NULL WHERE id=$1',[admin.id]);
     await assert.rejects(
-      repository.replaySecurityAlert(replayArgs(unlinkedOwner,event)),
-      (error) => ['PRIMARY_ADMIN_ONLY','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code),
+      repository.replaySecurityAlert(replayArgs(admin,event)),
+      (error) => error?.code === 'PRIMARY_ADMIN_IDENTITY_REQUIRED',
+    );
+    await pool.query(
+      'UPDATE users SET google_subject=$2,admin_panel_verified_at=NOW()-INTERVAL \'10 minutes\',admin_panel_verified_scope=\'WRITE\' WHERE id=$1',
+      [admin.id,admin.googleSubject],
     );
     await assert.rejects(
-      repository.replaySecurityAlert(replayArgs(expiredAdmin,event)),
+      repository.replaySecurityAlert(replayArgs(admin,event)),
       (error) => error?.code === 'ADMIN_PANEL_LOCKED',
     );
+    await pool.query(
+      'UPDATE users SET admin_panel_verified_at=NOW(),admin_panel_verified_scope=\'READ\' WHERE id=$1',
+      [admin.id],
+    );
     await assert.rejects(
-      repository.replaySecurityAlert(replayArgs(readOnlyAdmin,event)),
+      repository.replaySecurityAlert(replayArgs(admin,event)),
       (error) => error?.code === 'ADMIN_PANEL_LOCKED',
+    );
+    await pool.query(
+      'UPDATE users SET admin_panel_verified_scope=\'WRITE\' WHERE id=$1',
+      [admin.id],
     );
     await assert.rejects(
       repository.replaySecurityAlert(replayArgs(admin,event,undefined,{sessionJti:'wrong-session'})),
@@ -317,10 +327,7 @@ test('replay rejects missing, invalid, stale-session and non-primary actors unde
   } finally {
     await cleanup(event.id,admin.id);
     await cleanup(null,opsAdmin.id);
-    await cleanup(null,unlinkedOwner.id);
-    await cleanup(null,expiredAdmin.id);
-    await cleanup(null,readOnlyAdmin.id);
-  }
+   }
 });
 
 test('concurrent distinct replay keys serialize to exactly one successful replay', {
