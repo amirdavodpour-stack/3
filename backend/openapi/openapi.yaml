@@ -397,8 +397,31 @@ paths:
       security: [{bearerAuth: []}]
       summary: Replay one terminal refresh-token-reuse security alert as the verified primary administrator
       parameters:
-        - {name: eventId, in: path, required: true, schema: {type: string, format: uuid}}
-        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 200, pattern: '^[^\\s]+  /admin/jobs/{id}/moderate:
+        - name: eventId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 200}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: {type: string, minLength: 3, maxLength: 1000}
+      responses:
+        '200': {description: Replay queued, or same-key idempotent result}
+        '400': {description: Invalid event ID, reason, or idempotency key}
+        '403': {description: Requires verified primary admin and current-session WRITE step-up}
+        '404': {description: Security alert event not found}
+        '409': {description: Event is not replayable or its one replay has already been used}
+        '503': {description: PostgreSQL replay operation unavailable}
+  /admin/jobs/{id}/moderate:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Opportunity moderation result}, '403': {description: Forbidden}, '409': {description: Opportunity is locked by lifecycle state}}}
   /admin/applications/{id}/shortlist:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Application shortlisted}, '403': {description: Forbidden}}}
