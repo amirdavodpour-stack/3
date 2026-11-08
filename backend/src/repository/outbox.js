@@ -290,7 +290,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     // their completion paths. A non-locking metadata read selects that order
     // without owning the outbox row prematurely.
     const { rows: metadataRows } = await client.query(
-      `SELECT event_type,aggregate_type,aggregate_id FROM outbox_events WHERE id=$1`,
+      `SELECT event_type,aggregate_type,aggregate_id,manual_replay_count FROM outbox_events WHERE id=$1`,
       [eventId],
     );
     const eventMetadata = metadataRows[0];
@@ -389,6 +389,46 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
       await client.query(`UPDATE refunds r SET status='FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND r.id=(o.payload->>'refundId')::uuid AND r.status='PENDING'`, [eventId]);
       await client.query(`UPDATE payments p SET status='HELD',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_REFUND' AND p.id=o.aggregate_id AND p.status='REFUND_PENDING'`, [eventId]);
       await client.query(`UPDATE payments p SET status='RELEASE_FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_RELEASE' AND p.id=o.aggregate_id AND p.status='RELEASE_PENDING'`, [eventId]);
+
+      // Persist the paging signal in the same transaction as the parent
+      // terminal FAILED transition. The worker may crash after this commit;
+      // the signal remains claimable and is retried independently.
+      if (
+        terminalEvent.event_type === 'AUTH_REFRESH_REUSE_ALERT'
+        && terminalEvent.aggregate_type === 'user'
+        && terminalEvent.aggregate_id
+      ) {
+        const replayCount = Number(terminalEvent.manual_replay_count || 0);
+        await client.query(
+          `INSERT INTO outbox_events(
+             id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
+             status,attempts,available_at,created_at
+           ) VALUES(
+             gen_random_uuid(),
+             'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL',
+             'outbox_event',
+             $1,
+             $2,
+             $3::jsonb,
+             'PENDING',
+             0,
+             NOW(),
+             NOW()
+           )
+           ON CONFLICT(dedupe_key) DO NOTHING`,
+          [
+            eventId,
+            `security-alert-terminal-failure:${eventId}:${replayCount}`,
+            JSON.stringify({
+              sourceEventId:eventId,
+              sourceEventType:terminalEvent.event_type,
+              attempts,
+              replayCount,
+              runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+            }),
+          ],
+        );
+      }
     }
     return { terminal, attempts };
   });
