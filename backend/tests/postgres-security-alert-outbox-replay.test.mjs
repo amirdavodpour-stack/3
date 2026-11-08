@@ -622,6 +622,93 @@ test('terminal refresh-reuse failure persists a restart-safe paging signal befor
     await cleanup(event.id,null);
   }
 });
+test('terminal signal insert failure rolls back the parent FAILED transition', {
+  skip:!enabled || !hasReplay || typeof outboxHandlers?.processOutboxEvent !== 'function',
+  timeout:30_000,
+}, async () => {
+  const leaseToken=uuid();
+  const event=await createFailedEvent({
+    status:'PROCESSING',
+    attempts:8,
+    leaseToken,
+    lockedAt:new Date(),
+    payloadOverrides:{
+      alertCode:'AUTH_REFRESH_REUSE_DETECTED',
+      tokenFamilyId:uuid(),
+    },
+  });
+  const config=configModule.config;
+  const originalConfig={
+    alertWebhookUrl:config.alertWebhookUrl,
+    alertWebhookToken:config.alertWebhookToken,
+    outboxMaxAttempts:config.outboxMaxAttempts,
+  };
+  const originalWrite=process.stdout.write;
+  const suffix=uuid().replaceAll('-','');
+  const functionName='reject_terminal_signal_'+suffix;
+  const triggerName='reject_terminal_signal_trigger_'+suffix;
+  try {
+    config.alertWebhookUrl='';
+    config.alertWebhookToken='';
+    config.outboxMaxAttempts=8;
+    process.stdout.write=(chunk,encoding,callback)=>{
+      const done=typeof encoding==='function'?encoding:callback;
+      if(typeof done==='function') done();
+      return true;
+    };
+
+    await pool.query(`
+      CREATE FUNCTION ${functionName}() RETURNS trigger
+      LANGUAGE plpgsql AS $body$
+      BEGIN
+        IF NEW.event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'
+           AND NEW.payload->>'sourceEventId'='${event.id}' THEN
+          RAISE EXCEPTION 'injected durable signal insert failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $body$
+    `);
+    await pool.query(`
+      CREATE TRIGGER ${triggerName}
+      BEFORE INSERT ON outbox_events
+      FOR EACH ROW EXECUTE FUNCTION ${functionName}()
+    `);
+
+    const {rows:beforeRows}=await pool.query(
+      'SELECT * FROM outbox_events WHERE id=$1',
+      [event.id],
+    );
+    await assert.rejects(
+      outboxHandlers.processOutboxEvent(beforeRows[0]),
+      /injected durable signal insert failure/,
+    );
+
+    const {rows:parentRows}=await pool.query(
+      'SELECT status,attempts,locked_at,lease_token FROM outbox_events WHERE id=$1',
+      [event.id],
+    );
+    assert.equal(parentRows[0].status,'PROCESSING','the parent event must not become terminal without a durable signal row');
+    assert.equal(Number(parentRows[0].attempts),8);
+    assert.ok(parentRows[0].locked_at);
+    assert.equal(parentRows[0].lease_token,leaseToken);
+
+    const {rows:signalRows}=await pool.query(
+      `SELECT id FROM outbox_events
+        WHERE event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'
+          AND payload->>'sourceEventId'=$1`,
+      [event.id],
+    );
+    assert.equal(signalRows.length,0,'the failed transaction must not leave a partial signal');
+  } finally {
+    process.stdout.write=originalWrite;
+    Object.assign(config,originalConfig);
+    await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON outbox_events`).catch(() => {});
+    await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(() => {});
+    await cleanup(event.id,null);
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
