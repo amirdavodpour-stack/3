@@ -116,6 +116,15 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
 
   return async function adminRoutes(req,res,parts){
     const me=requireAdmin(await authUser(req));
+    const isSecurityAlertReplayRequest =
+      req.method === 'POST'
+      && parts[0] === 'admin'
+      && parts[1] === 'security-alerts'
+      && parts[3] === 'replay'
+      && parts.length === 4;
+    if (isSecurityAlertReplayRequest && !process.env.DATABASE_URL) {
+      throw new HttpError(503,'SECURITY_ALERT_REPLAY_UNAVAILABLE','Security alert replay requires PostgreSQL persistence');
+    }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts.length===3) {
       const status = config.adminMfaRequired && typeof repo.getAdminMfaStatus === 'function'
         ? await repo.getAdminMfaStatus(me.id)
@@ -263,6 +272,71 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
+    if (isSecurityAlertReplayRequest) {
+      assertAdminPermission(me, ADMIN_PERMISSIONS.REPLAY_SECURITY_ALERTS);
+      assertPrimaryAdmin(me);
+      if (typeof adminUseCases?.replaySecurityAlert !== 'function') {
+        throw new HttpError(503,'SECURITY_ALERT_REPLAY_UNAVAILABLE','Security alert replay is unavailable');
+      }
+
+      const eventId=String(parts[2] || '').trim();
+      const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(eventId)) {
+        throw new HttpError(400,'INVALID_EVENT_ID','eventId must be a UUID');
+      }
+
+      const distinctKeys=req.headersDistinct?.['idempotency-key'];
+      const rawKey=Array.isArray(distinctKeys)
+        ? (distinctKeys.length===1 ? distinctKeys[0] : null)
+        : (req.headers?.['idempotency-key'] ?? req.headers?.['Idempotency-Key']);
+      if (typeof rawKey !== 'string' || rawKey.length < 1 || rawKey.length > 200 || /[\\s\\x00-\\x1f\\x7f]/.test(rawKey)) {
+        throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY','Exactly one Idempotency-Key containing 1-200 non-whitespace characters is required');
+      }
+
+      const body=await readBody(req);
+      const reason=typeof body?.reason === 'string' ? body.reason.trim() : '';
+      if (reason.length < 3 || reason.length > 1000) {
+        throw new HttpError(400,'INVALID_REPLAY_REASON','reason must contain between 3 and 1000 characters');
+      }
+
+      try {
+        const result=await adminUseCases.replaySecurityAlert({
+          eventId,
+          actorId:me.id,
+          sessionJti:me.sessionJti,
+          verificationMinutes:config.adminPanelWriteVerificationMinutes??5,
+          reason,
+          idempotencyKey:rawKey,
+        });
+        return sendJson(res,200,{
+          eventId:result.eventId,
+          status:result.status,
+          replayed:result.replayed === true,
+          alreadyReplayed:result.alreadyReplayed === true,
+          replayCount:Number(result.replayCount || 0),
+        });
+      } catch(error) {
+        const statusByCode={
+          INVALID_EVENT_ID:400,
+          INVALID_REPLAY_REASON:400,
+          INVALID_IDEMPOTENCY_KEY:400,
+          OUTBOX_EVENT_NOT_FOUND:404,
+          ADMIN_PERMISSION_DENIED:403,
+          PRIMARY_ADMIN_ONLY:403,
+          PRIMARY_ADMIN_IDENTITY_REQUIRED:403,
+          ADMIN_PANEL_LOCKED:403,
+          OUTBOX_EVENT_ALREADY_REPLAYED:409,
+          OUTBOX_EVENT_NOT_REPLAYABLE:409,
+          OUTBOX_REPLAY_STATE_INVALID:409,
+        };
+        const status=statusByCode[error?.code];
+        if (status) {
+          throw new HttpError(status,error.code,'Security alert replay was not accepted');
+        }
+        throw error;
+      }
+    }
+
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='privacy' && parts[2]==='chat-retention' && parts[3]==='dry-run' && parts.length===4) {
       assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_AUDIT);
       if (typeof repo.buildChatRetentionDryRun !== 'function') {
