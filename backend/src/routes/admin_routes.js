@@ -299,6 +299,21 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         throw new HttpError(400,'INVALID_REPLAY_REASON','reason must contain between 3 and 1000 characters');
       }
 
+      let receiverEndpoint=null;
+      try {
+        const candidate=new URL(String(config.alertWebhookUrl || ''));
+        if (
+          candidate.protocol === 'https:'
+          && candidate.hostname
+          && !candidate.username
+          && !candidate.password
+        ) receiverEndpoint=candidate;
+      } catch {}
+      const receiverToken=String(config.alertWebhookToken || '');
+      if (!receiverEndpoint || Buffer.byteLength(receiverToken,'utf8') < 32) {
+        throw new HttpError(503,'SECURITY_ALERT_REPLAY_UNAVAILABLE','A valid HTTPS security-alert receiver and token are required before replay');
+      }
+
       try {
         const result=await adminUseCases.replaySecurityAlert({
           eventId,
