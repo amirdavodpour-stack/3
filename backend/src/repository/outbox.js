@@ -290,7 +290,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     // their completion paths. A non-locking metadata read selects that order
     // without owning the outbox row prematurely.
     const { rows: metadataRows } = await client.query(
-      `SELECT event_type,aggregate_type,aggregate_id,manual_replay_count FROM outbox_events WHERE id=$1`,
+      `SELECT event_type,aggregate_type,aggregate_id FROM outbox_events WHERE id=$1`,
       [eventId],
     );
     const eventMetadata = metadataRows[0];
@@ -325,7 +325,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     }
 
     const { rows } = await client.query(
-      `SELECT event_type,aggregate_type,aggregate_id,status,attempts,lease_token
+      `SELECT event_type,aggregate_type,aggregate_id,status,attempts,lease_token,manual_replay_count
          FROM outbox_events WHERE id=$1 FOR UPDATE`,
       [eventId],
     );
@@ -398,7 +398,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
         && terminalEvent.aggregate_type === 'user'
         && terminalEvent.aggregate_id
       ) {
-        const replayCount = Number(terminalEvent.manual_replay_count || 0);
+        const replayCount = Number(lockedEvent.manual_replay_count || 0);
         await client.query(
           `INSERT INTO outbox_events(
              id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
