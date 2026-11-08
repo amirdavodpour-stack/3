@@ -7,6 +7,7 @@ import { postExternalFundingJournalWithClient, postExternalLedgerJournalWithClie
 import { config } from '../config.js';
 import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
 export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentId, providerRef, actorId, leaseToken }) {
   return withSqlTransaction(async (client) => {
     // Match funding's user -> job -> payment -> outbox lock order. Internal
@@ -390,6 +391,146 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
       await client.query(`UPDATE payments p SET status='RELEASE_FAILED',updated_at=NOW() FROM outbox_events o WHERE o.id=$1 AND o.event_type='PAYMENT_RELEASE' AND p.id=o.aggregate_id AND p.status='RELEASE_PENDING'`, [eventId]);
     }
     return { terminal, attempts };
+  });
+}
+
+
+function outboxReplayError(code, message = code, status = 409) {
+  return Object.assign(new Error(message), { code, status });
+}
+
+const OUTBOX_REPLAY_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const OUTBOX_REPLAY_KEY_PATTERN = /^[^\\s\\x00-\\x1f\\x7f]{1,200}$/;
+
+/**
+ * Requeue one terminal refresh-token-reuse alert for the verified primary
+ * administrator. Event identity and payload are immutable; delivery remains
+ * asynchronous and uses the stable event-id-derived receiver idempotency key.
+ */
+export async function replaySecurityAlert({
+  eventId,
+  actorId,
+  sessionJti,
+  verificationMinutes = 5,
+  reason,
+  idempotencyKey,
+} = {}) {
+  const normalizedEventId = String(eventId || '').trim();
+  const normalizedActorId = String(actorId || '').trim();
+  const normalizedReason = typeof reason === 'string' ? reason.trim() : '';
+  const requestKey = typeof idempotencyKey === 'string' ? idempotencyKey : '';
+
+  if (!OUTBOX_REPLAY_UUID_PATTERN.test(normalizedEventId)) {
+    throw outboxReplayError('INVALID_EVENT_ID', 'eventId must be a UUID', 400);
+  }
+  if (!normalizedReason || normalizedReason.length < 3 || normalizedReason.length > 1000) {
+    throw outboxReplayError('INVALID_REPLAY_REASON', 'reason must contain between 3 and 1000 characters', 400);
+  }
+  if (!OUTBOX_REPLAY_KEY_PATTERN.test(requestKey)) {
+    throw outboxReplayError('INVALID_IDEMPOTENCY_KEY', 'Idempotency-Key must contain 1-200 non-whitespace characters', 400);
+  }
+
+  return withSqlTransaction(async (client) => {
+    await lockAuthorizedAdminActor(client, {
+      actorId:normalizedActorId,
+      sessionJti,
+      verificationMinutes,
+      requiredScope:'WRITE',
+      requireStepUp:true,
+      requirePrimaryAdmin:true,
+    });
+
+    const { rows } = await client.query(
+      `SELECT id,event_type,aggregate_type,aggregate_id,status,attempts,
+              locked_at,lease_token,manual_replay_count,manual_replay_idempotency_key
+         FROM outbox_events
+        WHERE id=$1
+        FOR UPDATE`,
+      [normalizedEventId],
+    );
+    const event = rows[0];
+    if (!event) throw outboxReplayError('OUTBOX_EVENT_NOT_FOUND', 'Security alert event not found', 404);
+
+    if (
+      event.event_type !== 'AUTH_REFRESH_REUSE_ALERT'
+      || event.aggregate_type !== 'user'
+      || !event.aggregate_id
+    ) {
+      throw outboxReplayError('OUTBOX_EVENT_NOT_REPLAYABLE', 'Only refresh-token-reuse security alerts can be replayed');
+    }
+
+    const replayCount = Number(event.manual_replay_count || 0);
+    if (replayCount === 1) {
+      if (event.manual_replay_idempotency_key === requestKey) {
+        return {
+          eventId:normalizedEventId,
+          status:event.status,
+          replayed:true,
+          alreadyReplayed:true,
+          replayCount:1,
+        };
+      }
+      throw outboxReplayError('OUTBOX_EVENT_ALREADY_REPLAYED', 'This security alert has already used its one manual replay');
+    }
+    if (replayCount !== 0) {
+      throw outboxReplayError('OUTBOX_REPLAY_STATE_INVALID', 'Security alert replay state is invalid');
+    }
+    if (event.status !== 'FAILED' || event.locked_at || event.lease_token) {
+      throw outboxReplayError('OUTBOX_EVENT_NOT_REPLAYABLE', 'Only terminal FAILED events without an active lease can be replayed');
+    }
+
+    const priorAttempts = Number(event.attempts || 0);
+    const { rows:updatedRows, rowCount } = await client.query(
+      `UPDATE outbox_events
+          SET status='PENDING',
+              attempts=0,
+              available_at=NOW(),
+              locked_at=NULL,
+              lease_token=NULL,
+              last_error=NULL,
+              processed_at=NULL,
+              manual_replay_count=1,
+              manual_replay_idempotency_key=$2
+        WHERE id=$1
+          AND status='FAILED'
+          AND manual_replay_count=0
+          AND locked_at IS NULL
+          AND lease_token IS NULL
+        RETURNING status,manual_replay_count`,
+      [normalizedEventId,requestKey],
+    );
+    if (rowCount !== 1 || !updatedRows[0]) {
+      throw outboxReplayError('OUTBOX_EVENT_NOT_REPLAYABLE', 'Security alert changed while replay was being authorized');
+    }
+
+    await client.query(
+      `INSERT INTO audit_logs(
+         id,action,actor_id,entity_type,entity_id,meta,created_at
+       ) VALUES(
+         gen_random_uuid(),
+         'ADMIN_SECURITY_ALERT_OUTBOX_REPLAY',
+         $1,
+         'outbox_event',
+         $2,
+         $3::jsonb,
+         NOW()
+       )`,
+      [normalizedActorId,normalizedEventId,JSON.stringify({
+        eventId:normalizedEventId,
+        reason:normalizedReason,
+        priorAttempts,
+        replayCount:1,
+        idempotencyKey:requestKey,
+      })],
+    );
+
+    return {
+      eventId:normalizedEventId,
+      status:'PENDING',
+      replayed:true,
+      alreadyReplayed:false,
+      replayCount:1,
+    };
   });
 }
 
