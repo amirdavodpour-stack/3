@@ -52,6 +52,8 @@ const validProductionEnv = {
   DATABASE_URL: 'postgres://ci:ci@example.invalid/hope',
   PUBLIC_BASE_URL: 'https://example.invalid',
   METRICS_TOKEN: 'ci-metrics-token-0123456789012345',
+  ALERT_WEBHOOK_URL: 'https://alerts.example.invalid/hope',
+  ALERT_WEBHOOK_TOKEN: 'ci-alert-webhook-token-0123456789012345',
   S3_BUCKET: 'hope-ci',
   PAYMENT_PROVIDER: 'internal',
   PAYMENT_CURRENCY: 'TOMAN',
@@ -73,6 +75,8 @@ const validProductionRuntimeEnv = {
   PUBLIC_BASE_URL: 'https://example.invalid',
   RATE_LIMIT_STORE: 'postgres',
   METRICS_TOKEN: 'ci-metrics-token-0123456789012345',
+  ALERT_WEBHOOK_URL: 'https://alerts.example.invalid/hope',
+  ALERT_WEBHOOK_TOKEN: 'ci-alert-webhook-token-0123456789012345',
   ALLOWED_CORS_ORIGINS: 'https://example.invalid',
   STORAGE_BACKEND: 's3',
   S3_BUCKET: 'hope-ci',
@@ -145,6 +149,44 @@ test('production env validator accepts a complete admin identity configuration',
   const result = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin' });
   assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
   assert.match(result.stdout, /Production environment contract PASS/);
+});
+
+test('production env validator requires an authenticated HTTPS security alert receiver', () => {
+  const cases = [
+    [{ ALERT_WEBHOOK_URL: '' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_TOKEN: '' }, 'ALERT_WEBHOOK_TOKEN'],
+    [{ ALERT_WEBHOOK_URL: 'http://alerts.example.invalid/hope' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_URL: 'https://user:pass@alerts.example.invalid/hope' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_TOKEN: 'short-token' }, 'ALERT_WEBHOOK_TOKEN'],
+  ];
+  for (const [overrides, variable] of cases) {
+    const result = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', ...overrides });
+    assert.notEqual(result.status, 0, `invalid ${variable} must block production validation`);
+    assert.match(result.stdout + '\\n' + result.stderr, new RegExp(variable));
+  }
+});
+
+test('Production runtime requires an authenticated HTTPS security alert receiver', () => {
+  const cases = [
+    [{ ALERT_WEBHOOK_URL: '' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_TOKEN: '' }, 'ALERT_WEBHOOK_TOKEN'],
+    [{ ALERT_WEBHOOK_URL: 'http://alerts.example.invalid/hope' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_URL: 'https://user:pass@alerts.example.invalid/hope' }, 'ALERT_WEBHOOK_URL'],
+    [{ ALERT_WEBHOOK_TOKEN: 'short-token' }, 'ALERT_WEBHOOK_TOKEN'],
+  ];
+  for (const [overrides, variable] of cases) {
+    const result = runProductionRuntimeConfig(overrides);
+    assert.notEqual(result.status, 0, `invalid ${variable} must block Production startup`);
+    assert.match(result.stdout + '\\n' + result.stderr, new RegExp(variable));
+  }
+});
+
+test('both production release workflows provide the required security alert receiver secrets', () => {
+  for (const [name, source] of [['production-release', workflow], ['release-validation', releaseValidationWorkflow]]) {
+    const block = source.match(/name: Validate production environment contract[\\s\\S]*?run: bash scripts\\/validate-production-env\\.sh/)?.[0] || '';
+    assert.match(block, /ALERT_WEBHOOK_URL:\\s*\\$\\{\\{\\s*secrets\\.ALERT_WEBHOOK_URL_PRODUCTION\\s*\\}\\}/, `${name} must pass ALERT_WEBHOOK_URL_PRODUCTION`);
+    assert.match(block, /ALERT_WEBHOOK_TOKEN:\\s*\\$\\{\\{\\s*secrets\\.ALERT_WEBHOOK_TOKEN_PRODUCTION\\s*\\}\\}/, `${name} must pass ALERT_WEBHOOK_TOKEN_PRODUCTION`);
+  }
 });
 
 test('production env validator rejects a disabled or missing Google owner-recovery provider', () => {
