@@ -21,6 +21,7 @@ export async function dispatchOperationalAlerts(snapshot) {
   try {
     const response = await fetch(config.alertWebhookUrl, {
       method: 'POST',
+      redirect: 'error',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${config.alertWebhookToken}` },
       body: JSON.stringify({ service: 'hope-api', version: process.env.HOPE_VERSION || '4.0.2', occurredAt: new Date().toISOString(), alerts, recentHealth: snapshot.recentHealth, latency: snapshot.latency }),
       signal: controller.signal,
