@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { traceContext, makeTraceparent } from '../src/tracing.js';
 import { businessHealth } from '../src/business_metrics.js';
 import { dispatchOperationalAlerts, dispatchSecurityAlert } from '../src/alerting.js';
+import { config } from '../src/config.js';
 
 test('traceparent is accepted and propagated with stable trace id', () => {
   const req = { headers: { traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01' } };
@@ -31,6 +32,42 @@ test('business health raises critical and warning alerts deterministically', () 
 test('disabled alert delivery is a no-op', async () => {
   const result = await dispatchOperationalAlerts({ health: { alerts: [] } });
   assert.equal(result.dispatched, false);
+});
+
+test('operational alert delivery rejects HTTP redirects before forwarding the bearer token', async () => {
+  const previousUrl = config.alertWebhookUrl;
+  const previousToken = config.alertWebhookToken;
+  const previousTimeout = config.alertWebhookTimeoutMs;
+  const previousFetch = globalThis.fetch;
+  let captured;
+
+  config.alertWebhookUrl = 'https://alerts.example.test/operations';
+  config.alertWebhookToken = 'test-operational-alert-token';
+  config.alertWebhookTimeoutMs = 500;
+  globalThis.fetch = async (url, options) => {
+    captured = { url, options };
+    return { ok: true, status: 202 };
+  };
+
+  try {
+    const result = await dispatchOperationalAlerts({
+      health: { alerts: [{ code: 'HTTP_5XX_RATE_HIGH', severity: 'critical' }] },
+      recentHealth: { requests: 10, errors5xx: 2 },
+      latency: { p95: 20, p99: 50 },
+    });
+
+    assert.deepEqual(result, { dispatched: true });
+    assert.equal(captured.url, 'https://alerts.example.test/operations');
+    assert.equal(captured.options.method, 'POST');
+    assert.equal(captured.options.headers.authorization, 'Bearer test-operational-alert-token');
+    assert.equal(captured.options.redirect, 'error');
+  } finally {
+    globalThis.fetch = previousFetch;
+    config.alertWebhookUrl = previousUrl;
+    config.alertWebhookToken = previousToken;
+    config.alertWebhookTimeoutMs = previousTimeout;
+    await dispatchOperationalAlerts({ health: { alerts: [] } });
+  }
 });
 
 
