@@ -39,7 +39,7 @@ async function withDatabaseUrl(value, callback) {
   }
 }
 
-function makeHarness({user=PRIMARY_ADMIN,verified=true}={}) {
+function makeHarness({user=PRIMARY_ADMIN,verified=true,receiverUrl='https://alerts.example.test/hope',receiverToken='integration-replay-token-with-at-least-32-bytes'}={}) {
   const calls=[];
   const verificationCalls=[];
   const repo={
@@ -74,6 +74,8 @@ function makeHarness({user=PRIMARY_ADMIN,verified=true}={}) {
       adminMfaRequired:true,
       adminPanelReadVerificationMinutes:15,
       adminPanelWriteVerificationMinutes:5,
+      alertWebhookUrl:receiverUrl,
+      alertWebhookToken:receiverToken,
     },
     adminUseCases,
     repo,
@@ -161,6 +163,26 @@ test('security alert replay rejects malformed event id, reason, missing or dupli
       (error)=>error?.status===400,
     );
     assert.equal(h.calls.length,0);
+  });
+});
+
+test('security alert replay fails closed before enqueue when the receiver configuration is missing or invalid',async()=>{
+  await withDatabaseUrl('postgresql://unit-test.invalid/hope',async()=>{
+    const invalidReceivers=[
+      {receiverUrl:''},
+      {receiverToken:''},
+      {receiverUrl:'http://alerts.example.test/hope'},
+      {receiverUrl:'https://user:pass@alerts.example.test/hope'},
+      {receiverToken:'short-token'},
+    ];
+    for(const receiver of invalidReceivers){
+      const h=makeHarness(receiver);
+      await assert.rejects(
+        h.invoke(),
+        (error)=>error?.status===503&&error?.code==='SECURITY_ALERT_REPLAY_UNAVAILABLE',
+      );
+      assert.equal(h.calls.length,0,'invalid receiver configuration must not consume the one-replay allowance');
+    }
   });
 });
 
