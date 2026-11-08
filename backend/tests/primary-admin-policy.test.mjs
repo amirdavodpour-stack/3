@@ -68,6 +68,7 @@ test('standard administrators receive operational permissions but not governance
     ADMIN_PERMISSIONS.RESOLVE_PAYOUTS,
     ADMIN_PERMISSIONS.REVOKE_SESSIONS,
     ADMIN_PERMISSIONS.SANDBOX_WALLET_CREDIT,
+    ADMIN_PERMISSIONS.REPLAY_SECURITY_ALERTS,
   ]) {
     assert.equal(permissions.includes(permission), false, permission);
   }
