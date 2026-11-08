@@ -164,7 +164,7 @@ export async function processOutboxEvent(event) {
       maxAttempts:config.outboxMaxAttempts,
       leaseToken:event.lease_token,
     });
-    if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT' && failureResult?.terminal) {
+    if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT' && failureResult?.terminal && !failureResult?.alreadyFailed) {
       logEvent({
         level:'error',
         action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
