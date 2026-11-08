@@ -67,3 +67,18 @@ test('Android Gradle workflows pin Temurin JDK 17 before Flutter and emulator bu
     assert.ok(javaStep.includes('java-version: "17"'));
   }
 });
+
+
+test('one-shot Android runtime evidence explicitly allows PR #49 on its current branch', () => {
+  const runtime = fs.readFileSync(path.join(root, '.github/workflows/hope-ui-runtime-evidence.yml'), 'utf8');
+  const jobStart = runtime.indexOf('  critical-screens-runtime-evidence:');
+  const jobEnd = runtime.indexOf('\n    concurrency:', jobStart);
+  assert.ok(jobStart >= 0 && jobEnd > jobStart, 'runtime evidence job condition must be addressable');
+  const condition = runtime.slice(jobStart,jobEnd);
+  assert.match(condition,/github\.head_ref == 'fix\/hopev2-refresh-reuse-alerting-20261107' && github\.event\.pull_request\.number == 49/,
+    'PR #49 must be explicitly allowlisted for its deliberate one-shot runtime capture');
+  assert.match(condition,/github\.event\.action == 'edited'/,
+    'PR title marker remains a deliberate one-shot trigger rather than every-push runtime execution');
+  assert.match(condition,/contains\(github\.event\.pull_request\.title, '\[runtime-capture-fa\]'\)/,
+    'the one-shot capture must require its explicit locale marker');
+});
