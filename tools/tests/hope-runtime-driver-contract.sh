@@ -76,6 +76,20 @@ grep_fixed -Fq -- 'hopeScreenshotFreshFramesRemaining > 1' android/app/src/main/
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- 'HOPE_SCREENSHOT_TIMEOUT:phase=' android/app/src/main/kotlin/com/hope/marketplace/MainActivity.kt
 grep_fixed -Fq -- 'stableAtBottomFrames < 2' "$test_file"
+# The late Profile target must use the proven multi-offset swipe strategy.
+# A center-only scrollUntilVisible gesture can fail to advance from an interactive
+# settings surface even though the page scroll-end path can advance safely.
+audited_target_capture_block="$(sed -n '/Future<void> _captureRuntimeScreenshot(/,/bool _runtimeNeedsScrollEnd(String marker)/p' "$test_file")"
+profile_target_reveal_block="$(sed -n '/if (shouldRevealProfileTarget) {/,/if (auditedTarget.evaluate().isEmpty) {/p' <<<"$audited_target_capture_block")"
+if [[ -z "$profile_target_reveal_block" ]] || ! grep_fixed -Fq -- '_dragScrollableTowardEndWithFallbackOffsets(' <<<"$profile_target_reveal_block"; then
+  echo "FAIL: Profile T10 target reveal must use the proven multi-offset vertical swipe helper." >&2
+  exit 1
+fi
+if ! grep_fixed -Fq -- 'selectedState.position.extentAfter' <<<"$profile_target_reveal_block"; then
+  echo "FAIL: Profile T10 target reveal must stop only after the lazy target is materialized or the scroll extent is exhausted." >&2
+  exit 1
+fi
+
 grep_fixed -Fq -- 'stableFrames=$stableAtBottomFrames' "$test_file"
 
 for forbidden in revertFlutterImage HOPE_SCREENSHOT_SYNC_ROOT HOPE_ADB_SCREENSHOT_CAPTURE files/hope-screen-sync- test-complete.ready completion_request= 'adb exec-out screencap -p' 'run-as com.hope.marketplace'; do
