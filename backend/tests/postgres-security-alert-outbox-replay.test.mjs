@@ -10,13 +10,15 @@ if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
   throw new Error('REQUIRE_INTEGRATION=1 but DATABASE_URL is missing');
 }
 
-const [dbModule, repository, migrationModule] = enabled
+const [dbModule, repository, migrationModule, outboxHandlers, configModule] = enabled
   ? await Promise.all([
       import('../src/db.js'),
       import('../src/repository.js'),
       import('../src/db/migrations/053_security_alert_outbox_manual_replay.js').catch(() => null),
+      import('../src/outbox_handlers.js'),
+      import('../src/config.js'),
     ])
-  : [null, null, null];
+  : [null, null, null, null, null];
 
 if (enabled) await dbModule.initDatabase();
 const pool = enabled ? dbModule.getPool() : null;
@@ -490,6 +492,79 @@ test('migration 053 enforces the one-replay counter and rejects malformed persis
     assert.equal(rows[0].manual_replay_idempotency_key,null);
   } finally {
     await cleanup(event.id,admin.id);
+  }
+});
+
+test('terminal refresh-reuse delivery failure persists FAILED and emits its structured JSON error event', {
+  skip:!enabled || !hasReplay || typeof outboxHandlers?.processOutboxEvent !== 'function',
+  timeout:30_000,
+}, async () => {
+  const leaseToken=uuid();
+  const event=await createFailedEvent({
+    status:'PROCESSING',
+    attempts:8,
+    leaseToken,
+    lockedAt:new Date(),
+  });
+  const config=configModule.config;
+  const originalConfig={
+    alertWebhookUrl:config.alertWebhookUrl,
+    alertWebhookToken:config.alertWebhookToken,
+    outboxMaxAttempts:config.outboxMaxAttempts,
+  };
+  const originalWrite=process.stdout.write;
+  const captured=[];
+  try {
+    await pool.query(
+      'UPDATE outbox_events SET payload=$2::jsonb WHERE id=$1',
+      [event.id,JSON.stringify({
+        ...event.payload,
+        alertCode:'AUTH_REFRESH_REUSE_DETECTED',
+        tokenFamilyId:uuid(),
+      })],
+    );
+    config.alertWebhookUrl='';
+    config.alertWebhookToken='';
+    config.outboxMaxAttempts=8;
+
+    process.stdout.write=(chunk,encoding,callback)=>{
+      captured.push(Buffer.isBuffer(chunk)?chunk.toString():String(chunk));
+      const done=typeof encoding==='function'?encoding:callback;
+      if(typeof done==='function') done();
+      return true;
+    };
+
+    const {rows:beforeRows}=await pool.query(
+      'SELECT * FROM outbox_events WHERE id=$1',
+      [event.id],
+    );
+    const result=await outboxHandlers.processOutboxEvent(beforeRows[0]);
+    assert.equal(result.terminal,true);
+    assert.equal(result.attempts,8);
+
+    const {rows:afterRows}=await pool.query(
+      'SELECT status,attempts,locked_at,lease_token FROM outbox_events WHERE id=$1',
+      [event.id],
+    );
+    assert.equal(afterRows[0].status,'FAILED');
+    assert.equal(Number(afterRows[0].attempts),8);
+    assert.equal(afterRows[0].locked_at,null);
+    assert.equal(afterRows[0].lease_token,null);
+
+    const records=captured.join('').split('\n').filter(Boolean).map((line)=>JSON.parse(line));
+    const terminal=records.find((record)=>record.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE');
+    assert.ok(terminal,'terminal Outbox delivery must produce the structured error event');
+    assert.equal(terminal.level,'error');
+    assert.equal(terminal.eventId,event.id);
+    assert.equal(terminal.eventType,'AUTH_REFRESH_REUSE_ALERT');
+    assert.equal(terminal.attempts,8);
+    assert.equal(terminal.runbook,'docs/runbooks/auth-refresh-token-reuse.md');
+    assert.equal(Object.hasOwn(terminal,'tokenFamilyId'),false);
+    assert.equal(Object.hasOwn(terminal,'email'),false);
+  } finally {
+    process.stdout.write=originalWrite;
+    Object.assign(config,originalConfig);
+    await cleanup(event.id,null);
   }
 });
 
