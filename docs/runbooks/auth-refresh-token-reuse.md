@@ -61,13 +61,17 @@ The alert is delivered through the configured HTTPS `ALERT_WEBHOOK_URL` using th
 
 If delivery is unconfigured or fails, the outbox retries with bounded backoff and records terminal failure after the configured attempt limit. Restore receiver configuration through the approved owner-operated procedure, then reconcile/replay any terminal failed alert under the normal operational controls. No Production configuration or secret is changed by this runbook.
 
-## Terminal failure log signal and paging boundary
+## Terminal failure signal and paging boundary
 
-When an `AUTH_REFRESH_REUSE_ALERT` reaches terminal `FAILED` state, the Outbox worker emits a structured JSON log entry with:
+When an `AUTH_REFRESH_REUSE_ALERT` reaches terminal `FAILED` state, `failOutboxEvent()` inserts a second `SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL` outbox event in the **same PostgreSQL transaction** that changes the source event to `FAILED`. If the signal insert fails, the transaction rolls back and the source event remains retryable; a process crash after commit cannot erase the pending signal.
+
+The signal is independently claimed and processed by the Outbox worker. Before acknowledging the signal event as `DONE`, the worker writes a structured JSON log with:
 - `level: error`
 - `action: OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE`
-- `eventId`, `eventType`, `attempts`, and the runbook path
+- `eventId`: the original failed refresh-reuse event ID
+- `signalId`: the durable signal outbox event ID (stable across retries)
+- `eventType`, `attempts`, `replayCount`, and the runbook path
 
-The event deliberately excludes the token-family ID, email address, refresh token, token hash, and webhook credentials. It is emitted only after `failOutboxEvent()` confirms the event is terminal; transient failed attempts remain the separate `OUTBOX_FAILED` warning and increment the general security failure counters.
+The signal payload deliberately excludes the token-family ID, email address, refresh token, token hash, and webhook credentials. Its unique dedupe key is scoped to the source event and manual-replay generation. A crash after writing the log but before acknowledging the signal may cause the same log to be emitted again; downstream collectors must deduplicate by `signalId`. This is durable at-least-once log emission, not exactly-once paging.
 
 This log entry is an operational signal, not proof of an independent page or receiver delivery. Route the exact action name through an independently managed log collector and paging monitor, then verify collector ingestion and alert delivery in a non-Production environment. Do not rely on `categoryFailures.security` alone for paging: it counts failed attempts, including retries that may later succeed. The independent log sink/pager and its end-to-end verification are not yet confirmed for this deployment.
