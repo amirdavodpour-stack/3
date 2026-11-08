@@ -432,6 +432,39 @@ test('a stale worker failure callback cannot overwrite a replay after a new leas
   }
 });
 
+test('migration 053 enforces the one-replay counter and rejects malformed persisted request keys', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const admin = await createAdmin();
+  const event = await createFailedEvent();
+  try {
+    await assert.rejects(
+      pool.query(
+        'UPDATE outbox_events SET manual_replay_count=2,manual_replay_idempotency_key=$2 WHERE id=$1',
+        [event.id,'too-many-replays'],
+      ),
+      /outbox_manual_replay_consistency_check/,
+    );
+    await assert.rejects(
+      pool.query(
+        'UPDATE outbox_events SET manual_replay_count=1,manual_replay_idempotency_key=$2 WHERE id=$1',
+        [event.id,'key with whitespace'],
+      ),
+      /outbox_manual_replay_consistency_check/,
+    );
+    const {rows} = await pool.query(
+      'SELECT status,manual_replay_count,manual_replay_idempotency_key FROM outbox_events WHERE id=$1',
+      [event.id],
+    );
+    assert.equal(rows[0].status,'FAILED');
+    assert.equal(Number(rows[0].manual_replay_count),0);
+    assert.equal(rows[0].manual_replay_idempotency_key,null);
+  } finally {
+    await cleanup(event.id,admin.id);
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
