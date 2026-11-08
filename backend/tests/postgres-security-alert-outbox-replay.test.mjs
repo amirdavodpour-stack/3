@@ -119,7 +119,9 @@ test('migration 053 refuses rollback after any manual replay has been used', {
     migrationModule.migration.down(client),
     /cannot be rolled back after a security alert replay has been used/i,
   );
-  assert.equal(statements.length,1,'the migration must refuse before dropping any schema objects');
+  assert.equal(statements.length,2,'the migration must lock the Outbox table before checking replay evidence');
+  assert.match(statements[0],/LOCK TABLE outbox_events IN ACCESS EXCLUSIVE MODE/);
+  assert.match(statements[1],/SELECT COUNT\(\)::int AS used_count/);
 });
 
 test('repository exposes a dedicated security-alert replay operation', {
