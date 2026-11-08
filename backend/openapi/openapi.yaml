@@ -392,6 +392,512 @@ paths:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: User status updated}, '400': {description: Invalid status}, '403': {description: Forbidden}}}
   /admin/audit:
     get: {security: [{bearerAuth: []}], responses: {'200': {description: Audit event list}, '403': {description: Forbidden}}}
+  /admin/security-alerts/{eventId}/replay:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Replay one terminal refresh-token-reuse security alert as the verified primary administrator
+      parameters:
+        - {name: eventId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 200, pattern: '^[^\\s]+  /admin/jobs/{id}/moderate:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Opportunity moderation result}, '403': {description: Forbidden}, '409': {description: Opportunity is locked by lifecycle state}}}
+  /admin/applications/{id}/shortlist:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Application shortlisted}, '403': {description: Forbidden}}}
+  /admin/applications/{id}/select:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Candidate forwarded to employer}, '409': {description: Invalid application state}}}
+  /admin/applications/{id}/reject:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Application rejected}, '409': {description: Invalid application state}}}
+  /jobs/{id}/candidates:
+    get: {security: [{bearerAuth: []}], responses: {'200': {description: Forwarded candidates with identity minimized}}}
+  /jobs/{id}/candidates/{applicationId}/interview:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Interview stage}}}
+  /jobs/{id}/candidates/{applicationId}/offer:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Offer stage}}}
+  /jobs/{id}/candidates/{applicationId}/hire:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Candidate hired}, '409': {description: Another candidate is already hired}}}
+  /payments/jobs/{jobId}:
+    get: {security: [{bearerAuth: []}], parameters: [{name: jobId, in: path, required: true, schema: {type: string}}], responses: {'200': {description: Payment status}}}
+  /payments/fund/{jobId}:
+    post: {security: [{bearerAuth: []}], parameters: [{name: jobId, in: path, required: true, schema: {type: string}}], responses: {'201': {description: Funded}, '200': {description: Idempotent replay}, '409': {description: State conflict}}}
+  /payments/release/{jobId}:
+    post: {security: [{bearerAuth: []}], responses: {'200': {description: Released}, '409': {description: Payment state conflict}}}
+  /messaging/conversations:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List conversations visible to the authenticated participant
+      responses:
+        '200':
+          description: Participant-safe inbox with previews, unread counts, and per-user organization preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatConversation'}
+        '401': {description: Authentication required}
+  /messaging/conversations/{conversationId}:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: Read a conversation and its messages
+      responses:
+        '200':
+          description: Conversation history, including attachment metadata and read receipts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [conversation, messages]
+                    properties:
+                      conversation: {$ref: '#/components/schemas/ChatConversation'}
+                      messages:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatMessage'}
+        '404': {description: Conversation not found or not visible to the participant}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Send a text, attachment, or voice message to an open conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: {type: string, maxLength: 4000}
+                messageType: {type: string, enum: [TEXT, ATTACHMENT, VOICE], default: TEXT}
+                attachments:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: object
+                    required: [key]
+                    properties:
+                      key: {type: string}
+                      filename: {type: string, maxLength: 255}
+              anyOf:
+                - {required: [message]}
+                - {required: [attachments]}
+      responses:
+        '201':
+          description: Created message with associated attachments and initial read receipts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatMessage'}
+        '400': {description: Invalid message, attachment, or message type}
+        '403': {description: Conversation is closed or caller is not a participant}
+        '404': {description: Conversation not found}
+  /messaging/conversations/{conversationId}/read:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Mark incoming messages in a conversation as read
+      responses:
+        '200':
+          description: Read receipt insertion result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [conversationId, readCount, readAt]
+                    properties:
+                      conversationId: {type: string, format: uuid}
+                      readCount: {type: integer, minimum: 0}
+                      readAt: {type: string, format: date-time}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/conversations/{conversationId}/presence:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: List recent participant presence and typing state
+      responses:
+        '200':
+          description: Online participants; typing state is time-bounded by the server
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items: {$ref: '#/components/schemas/ChatPresence'}
+        '404': {description: Conversation not found or not visible to the participant}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Update the authenticated participant's online and typing state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                online: {type: boolean, default: true}
+                typing: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Presence state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatPresenceUpdate'}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/conversations/{conversationId}/preferences:
+    parameters:
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      security: [{bearerAuth: []}]
+      summary: Update the authenticated participant's pin, importance, or archive preference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                isPinned: {type: boolean}
+                isImportant: {type: boolean}
+                isArchived: {type: boolean}
+      responses:
+        '200':
+          description: Updated per-user conversation preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/ChatConversationPreferences'}
+        '400': {description: Conversation preferences must be boolean}
+        '404': {description: Conversation not found or not visible to the participant}
+  /messaging/attachments/{attachmentId}/content:
+    parameters:
+      - {name: attachmentId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      security: [{bearerAuth: []}]
+      summary: Download an attachment after participant authorization
+      responses:
+        '200':
+          description: Private binary attachment content
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
+        '404': {description: Attachment not found or not visible to the participant}
+  /storage/upload:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Upload one private chat attachment or voice-note source file
+      description: >
+        Multipart upload accepts only validated PDF, PNG, JPEG, WebP, plain text,
+        M4A/MP4 audio, MP3, and WAV data. The server validates content signatures,
+        rejects MIME/signature mismatches, and enforces the configured maximum upload size.
+        When a multipart client reports application/octet-stream, the server may infer
+        a supported MIME only from an allowlisted filename extension and still validates
+        the file signature.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Private upload stored and associated with the authenticated uploader
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {$ref: '#/components/schemas/ChatUpload'}
+        '400': {description: Missing, empty, or malformed multipart file}
+        '401': {description: Authentication required}
+        '413': {description: File exceeds the configured upload size limit}
+        '415': {description: Unsupported type, mismatched extension, or invalid file signature}
+  /storage/presign:
+    post:
+      security: [{bearerAuth: []}]
+      description: >-
+        In S3 mode, the response includes `requiredHeaders` for the presigned
+        PUT. Send `If-None-Match: *` with that request. The condition makes the
+        URL single-write: subsequent PUTs to the same key fail instead of
+        replacing the object that was validated and attached to a message.
+      responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}
+  /storage/complete:
+    post: {security: [{bearerAuth: []}], responses: {'201': {description: Completed upload}, '200': {description: Idempotent existing upload}, '403': {description: Invalid or unauthorized upload intent}, '410': {description: Expired intent}, '415': {description: Content type mismatch}}}
+
+  /payments/refund/{jobId}:
+    post:
+      summary: Request a full payment refund before work release
+  /payments/financials/{jobId}:
+    get:
+      summary: Get participant-safe payment breakdown and ledger
+  /payments/webhook:
+    post:
+      summary: Receive a signed payment-provider webhook
+  /admin/finance/summary:
+    get:
+      summary: Get platform financial summary
+
+  /jobs/mine:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List the authenticated provider's jobs
+      responses:
+        '200': {description: Provider jobs}
+  /providers/me:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Get the authenticated provider profile
+      responses:
+        '200': {description: Provider profile, content: {application/json: {schema: {$ref: '#/components/schemas/ProviderProfile'}}}}
+  /notifications:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List authenticated-user notifications
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0}}
+      responses:
+        '200': {description: Notification page, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationPage'}}}}
+  /notifications/{id}/read:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Mark a notification as read
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Notification, content: {application/json: {schema: {$ref: '#/components/schemas/Notification'}}}}
+  /notifications/read-all:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Mark all notifications as read
+      responses:
+        '200': {description: Updated notification count}
+  /notifications/preferences:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Get notification preferences
+      responses:
+        '200': {description: Notification preferences}
+    put:
+      security: [{bearerAuth: []}]
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: {type: boolean}}
+      responses:
+        '200': {description: Updated notification preferences, content: {application/json: {schema: {$ref: '#/components/schemas/NotificationPreferences'}}}}
+  /wallet/me:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Get authenticated user's wallet
+      responses:
+        '200': {description: Wallet, content: {application/json: {schema: {type: object, properties: {wallet: {$ref: '#/components/schemas/Wallet'}, currency: {type: string}}}}}}
+  /wallet/transactions:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List wallet transactions
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Wallet transactions page, content: {application/json: {schema: {$ref: '#/components/schemas/WalletTransactionsPage'}}}}
+  /wallet/payouts:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List wallet payouts
+      responses:
+        '200': {description: Wallet payouts, content: {application/json: {schema: {$ref: '#/components/schemas/PayoutList'}}}}
+  /wallet/transfer:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Transfer wallet funds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destinationWalletId, amount, idempotencyKey]
+              properties:
+                destinationWalletId: {type: string}
+                amount: {type: string}
+                idempotencyKey: {type: string}
+      responses:
+        '200': {description: Transfer result}
+        '409': {description: Wallet or idempotency conflict}
+  /wallet/withdraw:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Request a wallet payout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, idempotencyKey]
+              properties:
+                amount: {type: string}
+                idempotencyKey: {type: string}
+      responses:
+        '202': {description: Payout accepted, content: {application/json: {schema: {type: object, properties: {payout: {$ref: '#/components/schemas/Payout'}, currency: {type: string}, status: {type: string}}}}}}
+        '409': {description: Wallet or idempotency conflict}
+  /wallet/top-up:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Top up the wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, idempotencyKey]
+              properties:
+                amount: {type: string}
+                idempotencyKey: {type: string}
+      responses:
+        '200': {description: Top-up result}
+        '409': {description: Wallet or idempotency conflict}
+  /saved-searches:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List saved searches
+      responses:
+        '200': {description: Saved searches}
+    put:
+      security: [{bearerAuth: []}]
+      summary: Create or update a saved search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, name]
+              properties:
+                id: {type: string}
+                name: {type: string}
+                query: {type: string}
+                kind: {type: string}
+                visibility: {type: string}
+                city: {type: string}
+                category: {type: string}
+                updatedAt: {type: string}
+      responses:
+        '200': {description: Saved search}
+    delete:
+      description: Not implemented; deletion is addressed by the item route.
+      responses:
+        '405': {description: Method not allowed}
+  /saved-searches/{id}:
+    delete:
+      security: [{bearerAuth: []}]
+      summary: Delete a saved search
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Deleted}
+  /admin/jobs:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List jobs for admin moderation
+      responses:
+        '200': {description: Admin jobs}
+  /admin/jobs/{id}:
+    delete:
+      security: [{bearerAuth: []}]
+      summary: Delete an admin-visible job
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Deleted}
+  /admin/applications:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List applications for admin review
+      responses:
+        '200': {description: Admin applications}
+
+  /notifications/devices:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List registered notification devices
+      responses:
+        '200': {description: Notification devices}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Register a notification device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        '200': {description: Device registration result}
+  /notifications/devices/{deviceId}:
+    delete:
+      security: [{bearerAuth: []}]
+      summary: Unregister a notification device
+      parameters:
+        - {name: deviceId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Device unregistered}
+}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: {type: string, minLength: 3, maxLength: 1000}
+      responses:
+        '200': {description: Replay queued, or same-key idempotent result}
+        '400': {description: Invalid event ID, reason, or idempotency key}
+        '403': {description: Requires verified primary admin and current-session WRITE step-up}
+        '404': {description: Security alert event not found}
+        '409': {description: Event is not replayable or its one replay has already been used}
+        '503': {description: PostgreSQL replay operation unavailable}
   /admin/jobs/{id}/moderate:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Opportunity moderation result}, '403': {description: Forbidden}, '409': {description: Opportunity is locked by lifecycle state}}}
   /admin/applications/{id}/shortlist:
