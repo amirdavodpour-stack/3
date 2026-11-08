@@ -1,5 +1,7 @@
 # Security-alert Outbox Replay Implementation Plan
 
+Status: IN PROGRESS — approved design; implementation and regression verification underway on PR #49.
+
 > **For agentic workers:** Use superpowers:executing-plans inline. This project has no available local worktree executor at this time; use the existing authorized PR #49 branch and commit isolated TDD steps through GitHub. Preserve the PR stack.
 
 **Goal:** Enable one durable, retry-safe manual replay for terminally FAILED refresh-token-reuse alerts, limited to the verified primary administrator, with reason-required transactional audit.
@@ -36,7 +38,7 @@
 - Modify: `backend/src/repository/outbox.js`
 - Modify: `backend/src/repository/admin_authorization.js`
 - Create: `backend/tests/postgres-security-alert-outbox-replay.test.mjs`
-- Modify: `backend/tests/migration-sequence-contract.test.mjs`
+- Modify: `backend/tools/run-chat-postgres-isolated.mjs`
 - Modify: `backend/package.json` (migration check and PostgreSQL test script)
 
 **Interfaces:**
@@ -44,12 +46,12 @@
 - `lockAuthorizedAdminActor(client, {actorId, sessionJti, verificationMinutes, requiredScope:'WRITE', requirePrimaryAdmin:true})`
 - Migration adds `manual_replay_count SMALLINT NOT NULL DEFAULT 0 CHECK (manual_replay_count IN (0,1))`, `manual_replay_idempotency_key TEXT NULL`, and consistency constraint. Down refuses once count is 1.
 
-- [ ] Write PostgreSQL tests for first replay, immutable identity preservation, same-key idempotent repeat, different-key conflict, non-security rejection, wrong aggregate rejection, invalid states, active lease, role/identity/session/scope denial, concurrent requests, audit failure rollback, migration count guard and rollback refusal.
-- [ ] Run only the new PostgreSQL test file and confirm expected failures due to missing migration/repository API.
-- [ ] Implement migration 053 and repository transaction. Lock/revalidate active primary actor first, then Outbox row. Validate all arguments in repository as well as Route. Commit the event update and audit insert in one transaction. Never touch financial aggregate rows.
-- [ ] Run the new PostgreSQL test file; then run migration sequence and Outbox contract tests.
-- [ ] Update package scripts so `check:migrations` validates 053 and `test:postgres` includes the new integration test.
-- [ ] Commit: `feat(security): add primary-admin security alert replay repository`.
+- [x] Write PostgreSQL tests for first replay, immutable identity preservation, same-key idempotent repeat, different-key conflict, non-security rejection, wrong aggregate rejection, invalid states, active lease, role/identity/session/scope denial, concurrent requests, audit failure rollback, migration count guard and rollback refusal. RED was observed on the test-only cursor: run 42456459566 had the expected missing migration/repository API failures.
+- [x] Run only the new PostgreSQL test file and confirm expected failures due to missing migration/repository API.
+- [x] Implement migration 053 and repository transaction. Lock/revalidate active primary actor first, then Outbox row. Validate all arguments in repository as well as Route. Commit the event update and audit insert in one transaction. Never touch financial aggregate rows. Migration uses a table-level exclusive lock before rollback evidence checks; additional suspended-actor and stale-completion tests are included.
+- [x] Run the new PostgreSQL test file through the real isolated PostgreSQL workflow and run migration/Outbox contracts. Baseline implementation passed 128/128 on run 42456644944; subsequent strict key/constraint tests passed on run 42456978425. Latest race-guard additions are being revalidated in run 42457210916.
+- [x] Update package scripts so `check:migrations` validates 053 and `test:postgres` includes the new integration test; the isolated runner also includes the new test file.
+- [x] Commit the focused migration, authorization helper and repository changes on the existing PR #49 branch (separate commits retained for auditability).
 
 ### Task 2: Admin permission and API route
 
@@ -67,11 +69,11 @@
 - Route: `POST /admin/security-alerts/:eventId/replay`.
 - Headers: exactly one `Idempotency-Key`; body: `{reason}`.
 
-- [ ] Write route and permission tests before implementation: primary admin allowed; operational admin and non-admin denied; unlinked owner denied; missing step-up, wrong session and READ-only step-up denied; malformed UUID/key/reason rejected; legacy in-memory mode returns unavailable; repository failures map to safe HTTP errors.
-- [ ] Run the new route tests and confirm failures are caused by missing permission/route/use-case, not test setup.
-- [ ] Implement the permission and route. Reuse existing route-level WRITE step-up. Revalidate primary owner and step-up again inside the repository transaction. Reject any fallback to legacy storage.
-- [ ] Run route tests, primary-admin policy tests, and admin transaction authorization tests.
-- [ ] Commit: `feat(admin): restrict security alert replay to verified primary admin`.
+- [x] Write route and permission tests before implementation and observe RED: run 42456701852 failed four new route scenarios with `Admin route not found`, while the remaining Backend Fast tests ran. Coverage includes primary admin, operational-admin denial, current WRITE step-up, malformed inputs and PostgreSQL-only behavior.
+- [x] Confirm route RED was caused by the missing endpoint, not test setup.
+- [x] Implement the permission, use-case, repository port and route. Reuse existing route-level WRITE step-up. Revalidate primary owner and step-up again inside the repository transaction. Reject any fallback to legacy storage.
+- [x] Run route tests, primary-admin policy tests and admin transaction authorization in Backend Fast; the route suite and security audit passed on run 42456823282. Additional OpenAPI contract assertions are being revalidated on the current run.
+- [x] Commit permission, use-case, port and route changes to PR #49 in focused commits.
 
 ### Task 3: Workflow wiring, runbook, full regression and review
 
@@ -80,11 +82,11 @@
 - Modify: `docs/runbooks/auth-refresh-token-reuse.md`
 - Modify CI workflow only if current workflow omits the migration/test scripts.
 
-- [ ] Add contract assertions that replay does not dispatch a provider synchronously, preserves receiver key and does not make FAILED financial events eligible.
-- [ ] Document the supported replay operation, preconditions, required evidence, idempotency behavior, safe verification and incident response; do not document manual SQL as an operator workaround.
-- [ ] Inspect workflow coverage and include the new tests in existing PostgreSQL/Superwave gates where needed.
-- [ ] Run focused new tests and required regression suites: Outbox, admin authorization/MFA, migration sequence, PostgreSQL auth/outbox integration, payment/financial invariants, and the full backend test suite.
-- [ ] Inspect exact diff, run package checks, record all CI job/log evidence, and request independent review if a valid reviewer integration is available. Do not merge.
+- [x] Add contract assertions that replay is narrow, transactional, and does not dispatch the provider synchronously; preserve the existing receiver key and exclude financial event types.
+- [x] Document the supported replay operation, preconditions, required evidence, idempotency behavior, safe verification and incident response in the runbook and OpenAPI contract; do not document manual SQL as an operator workaround.
+- [x] Inspect workflow coverage and include the new PostgreSQL tests in the isolated PostgreSQL runner, route tests in Backend Fast, and migration 053 in `check:migrations`.
+- [ ] Finish the latest PostgreSQL/Superwave runs, then run remaining relevant Admin MFA, financial invariants and full backend/offline regressions. Do not repeat already-green suites without a code change.
+- [ ] Complete the exact diff review and record terminal CI evidence. Strix review is blocked by missing GitHub SCM installation; keep independent review WAITING. Do not merge.
 - [ ] Commit: `test(security): cover alert replay operations and runbook` (or a docs-specific commit if the changes separate cleanly).
 
 ## Execution and acceptance
