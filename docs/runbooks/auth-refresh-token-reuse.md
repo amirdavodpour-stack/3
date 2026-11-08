@@ -31,6 +31,7 @@ Eligibility is intentionally narrow:
 - Payment, refund, payout, wallet, notification and every other event type are permanently ineligible for this operation.
 - A verified primary administrator must have current-session WRITE step-up (including the configured MFA policy).
 - Supply a reason between 3 and 1000 characters and exactly one `Idempotency-Key`.
+- Before enqueueing, the API also requires a configured HTTPS receiver URL without embedded credentials and a webhook token of at least 32 UTF-8 bytes. A missing or invalid local configuration returns `503 SECURITY_ALERT_REPLAY_UNAVAILABLE` without consuming the one-replay allowance. This preflight does not establish receiver reachability or durable idempotency; a separate non-Production delivery/readback test is still mandatory.
 
 Request:
 
