@@ -289,7 +289,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const rawKey=Array.isArray(distinctKeys)
         ? (distinctKeys.length===1 ? distinctKeys[0] : null)
         : (req.headers?.['idempotency-key'] ?? req.headers?.['Idempotency-Key']);
-      if (typeof rawKey !== 'string' || rawKey.length < 1 || rawKey.length > 200 || /[\\s\\x00-\\x1f\\x7f]/.test(rawKey)) {
+      if (typeof rawKey !== 'string' || rawKey.length < 1 || rawKey.length > 200 || /[\s\x00-\x1f\x7f]/.test(rawKey)) {
         throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY','Exactly one Idempotency-Key containing 1-200 non-whitespace characters is required');
       }
 
