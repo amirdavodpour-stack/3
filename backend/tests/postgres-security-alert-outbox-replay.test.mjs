@@ -121,7 +121,7 @@ test('migration 053 refuses rollback after any manual replay has been used', {
   );
   assert.equal(statements.length,2,'the migration must lock the Outbox table before checking replay evidence');
   assert.match(statements[0],/LOCK TABLE outbox_events IN ACCESS EXCLUSIVE MODE/);
-  assert.match(statements[1],/SELECT COUNT\(\)::int AS used_count/);
+  assert.match(statements[1],/SELECT COUNT\(\*\)::int AS used_count/);
 });
 
 test('repository exposes a dedicated security-alert replay operation', {
