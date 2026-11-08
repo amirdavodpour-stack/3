@@ -1730,6 +1730,18 @@ Future<void> _captureRuntimeScreen(
         reason: 'Password Reset runtime surface must contain exactly one email field.');
     expect(find.byType(FilledButton), findsOneWidget,
         reason: 'Password Reset runtime surface must expose its submit action.');
+    final privacyNote =
+        find.byKey(const ValueKey('password-reset-privacy-note'));
+    expect(
+      privacyNote,
+      findsOneWidget,
+      reason: 'Password Reset must render its route-specific privacy surface.',
+    );
+    // The first Flutter test frame can update the widget tree while Android is
+    // still presenting the previous static auth surface. Commit one additional
+    // post-mount frame before requesting the native PixelCopy capture.
+    await tester.pump();
+    print('HOPE_RUNTIME_PASSWORD_RESET_FRAME_COMMITTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
