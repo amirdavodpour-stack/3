@@ -115,3 +115,23 @@ test('refresh-reuse security alerts share high priority with critical payment ou
   assert.match(priorityClause,/PAYMENT_CREATE_HOLD/);
   assert.match(priorityClause,/PAYMENT_RELEASE/);
 });
+
+
+test('manual outbox replay is primary-admin-only, security-alert-only, idempotent and never dispatches synchronously', () => {
+  const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
+  const authorization = fs.readFileSync(new URL('../src/repository/admin_authorization.js', import.meta.url), 'utf8');
+  const start = outbox.indexOf('export async function replaySecurityAlert(');
+  const end = outbox.indexOf('export async function completeOutboxEvent(',start);
+  assert.ok(start >= 0 && end > start, 'dedicated replay repository method must exist');
+  const replay = outbox.slice(start,end);
+  assert.match(replay,/requirePrimaryAdmin:\s*true/);
+  assert.match(replay,/requiredScope:\s*'WRITE'/);
+  assert.match(replay,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(replay,/aggregate_type !== 'user'/);
+  assert.match(replay,/status !== 'FAILED'/);
+  assert.match(replay,/manual_replay_count=1/);
+  assert.match(replay,/manual_replay_idempotency_key=\$2/);
+  assert.match(replay,/ADMIN_SECURITY_ALERT_OUTBOX_REPLAY/);
+  assert.doesNotMatch(replay,/dispatchSecurityAlert|fetch\s*\(/);
+  assert.match(authorization,/requirePrimaryAdmin && !canonicalOwner/);
+});
