@@ -2,7 +2,7 @@ import { config } from './config.js';
 import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, completeOutboxEvent, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
-import { logEvent, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
+import { logEvent, logEventAndWait, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
 import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 import { dispatchSecurityAlert } from './alerting.js';
@@ -134,7 +134,7 @@ export async function processOutboxEvent(event) {
 
       // Write before completing the durable signal. A crash after this write
       // can cause a duplicate, so downstream collectors dedupe by signalId.
-      logEvent({
+      await logEventAndWait({
         level:'error',
         action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
         eventId:sourceEventId,
