@@ -118,8 +118,33 @@ printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(Tex
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "password-reset-\$localeMarker"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq 'await _captureRuntimeScreenshot(marker, tester: tester)'
-if printf '%s\n' "$password_reset_capture_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
-  echo "FAIL: PasswordReset runtime capture must remain direct after surface preparation" >&2
+
+password_reset_privacy_block="$(printf '%s\n' "$password_reset_capture_block" | sed -n '/final privacyNote =/,/^[[:space:]]*);/p')"
+printf '%s\n' "$password_reset_privacy_block" | grep -Fq "find.byKey(const ValueKey('password-reset-privacy-note'))"
+printf '%s\n' "$password_reset_privacy_block" | grep -Fq 'findsOneWidget'
+
+password_reset_privacy_line="$(grep -nF 'final privacyNote =' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+password_reset_pump_line="$(grep -nF 'await tester.pump();' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+password_reset_pump_count="$(grep -Fc 'await tester.pump();' <<<"$password_reset_capture_block" || true)"
+password_reset_frame_line="$(grep -nF 'HOPE_RUNTIME_PASSWORD_RESET_FRAME_COMMITTED:$marker' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+password_reset_target_line="$(grep -nF 'HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+password_reset_direct_line="$(grep -nF 'HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+password_reset_capture_line="$(grep -nF 'await _captureRuntimeScreenshot(marker, tester: tester);' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1 || true)"
+
+if [[ "$password_reset_pump_count" != "1" || -z "$password_reset_privacy_line" ||
+      -z "$password_reset_pump_line" || -z "$password_reset_frame_line" ||
+      -z "$password_reset_target_line" || -z "$password_reset_direct_line" ||
+      -z "$password_reset_capture_line" ||
+      "$password_reset_privacy_line" -ge "$password_reset_pump_line" ||
+      "$password_reset_pump_line" -ge "$password_reset_frame_line" ||
+      "$password_reset_frame_line" -ge "$password_reset_target_line" ||
+      "$password_reset_target_line" -ge "$password_reset_direct_line" ||
+      "$password_reset_direct_line" -ge "$password_reset_capture_line" ]]; then
+  echo "FAIL: PasswordReset requires exactly one committed post-mount frame after its privacy surface and before native capture." >&2
+  exit 1
+fi
+if printf '%s\n' "$password_reset_capture_block" | grep -Eq 'Future<void>\.delayed|pumpAndSettle|tester\.runAsync|while[[:space:]]*\(|for[[:space:]]*\('; then
+  echo "FAIL: PasswordReset capture must not use timed, unbounded or looping settles." >&2
   exit 1
 fi
 grep -Fq 'system-images/android-35/default/x86_64' ".github/workflows/hope-ui-runtime-evidence.yml"
