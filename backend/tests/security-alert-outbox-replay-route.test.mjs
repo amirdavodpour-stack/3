@@ -149,6 +149,14 @@ test('security alert replay rejects malformed event id, reason, missing or dupli
       (error)=>error?.status===400,
     );
     await assert.rejects(
+      h.invoke({'idempotency-key':'k'.repeat(201)},{reason:REASON}),
+      (error)=>error?.status===400,
+    );
+    await assert.rejects(
+      h.invoke({'idempotency-key':IDEMPOTENCY_KEY},{reason:'r'.repeat(1001)}),
+      (error)=>error?.status===400,
+    );
+    await assert.rejects(
       h.invoke({'idempotency-key':IDEMPOTENCY_KEY},{reason:REASON},['admin','security-alerts','not-a-uuid','replay']),
       (error)=>error?.status===400,
     );
