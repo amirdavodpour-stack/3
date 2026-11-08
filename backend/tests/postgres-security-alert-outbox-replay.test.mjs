@@ -525,15 +525,26 @@ test('terminal refresh-reuse failure persists a restart-safe paging signal befor
   };
   const originalWrite=process.stdout.write;
   const captured=[];
+  let completeTerminalSignalWrite=null;
+  let resolveTerminalSignalWriteStarted;
+  const terminalSignalWriteStarted=new Promise((resolve)=>{resolveTerminalSignalWriteStarted=resolve;});
   try {
     config.alertWebhookUrl='';
     config.alertWebhookToken='';
     config.outboxMaxAttempts=8;
 
     process.stdout.write=(chunk,encoding,callback)=>{
-      captured.push(Buffer.isBuffer(chunk)?chunk.toString():String(chunk));
+      const line=Buffer.isBuffer(chunk)?chunk.toString():String(chunk);
+      captured.push(line);
       const done=typeof encoding==='function'?encoding:callback;
-      if(typeof done==='function') done();
+      let record=null;
+      try { record=JSON.parse(line); } catch {}
+      if(record?.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE'){
+        completeTerminalSignalWrite=done;
+        resolveTerminalSignalWriteStarted();
+      }else if(typeof done==='function'){
+        done();
+      }
       return true;
     };
 
@@ -582,7 +593,16 @@ test('terminal refresh-reuse failure persists a restart-safe paging signal befor
     assert.equal(claimedSignalRows[0].status,'PROCESSING');
     assert.equal(claimedSignalRows[0].lease_token,signalLeaseToken);
 
-    const signalResult=await outboxHandlers.processOutboxEvent(claimedSignalRows[0]);
+    const signalPromise=outboxHandlers.processOutboxEvent(claimedSignalRows[0]);
+    await terminalSignalWriteStarted;
+    assert.equal(typeof completeTerminalSignalWrite,'function','the signal worker must await the stdout write callback');
+    const {rows:signalBeforeFlushRows}=await pool.query(
+      'SELECT status FROM outbox_events WHERE id=$1',
+      [signalEvent.id],
+    );
+    assert.equal(signalBeforeFlushRows[0].status,'PROCESSING','the durable signal cannot be acknowledged before stdout flush');
+    completeTerminalSignalWrite();
+    const signalResult=await signalPromise;
     assert.equal(signalResult.processed,true);
 
     const {rows:completedSignalRows}=await pool.query(
