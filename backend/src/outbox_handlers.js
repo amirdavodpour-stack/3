@@ -118,6 +118,35 @@ export async function processOutboxEvent(event) {
         eventId:event.id,
         alertCode:payload.alertCode,
       });
+    } else if (event.event_type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL') {
+      const sourceEventId=String(payload.sourceEventId || '');
+      const validUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (
+        event.aggregate_type !== 'outbox_event'
+        || String(event.aggregate_id || '') !== sourceEventId
+        || !validUuid.test(sourceEventId)
+        || payload.sourceEventType !== 'AUTH_REFRESH_REUSE_ALERT'
+        || !Number.isSafeInteger(Number(payload.attempts))
+        || Number(payload.attempts) < 1
+      ) {
+        throw new Error('SECURITY_ALERT_TERMINAL_SIGNAL_INVALID');
+      }
+
+      // Write before completing the durable signal. A crash after this write
+      // can cause a duplicate, so downstream collectors dedupe by signalId.
+      logEvent({
+        level:'error',
+        action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
+        eventId:sourceEventId,
+        signalId:event.id,
+        eventType:payload.sourceEventType,
+        attempts:Number(payload.attempts),
+        replayCount:Number(payload.replayCount || 0),
+        runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+      });
+      const completed=await completeOutboxEvent({eventId:event.id,leaseToken:event.lease_token});
+      if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_SIGNAL_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
+      recordOutboxProcessed();
     } else if (event.event_type === 'NOTIFICATION_DISPATCH') {
       const channel = payload.channel;
       if (channel === 'IN_APP') {
@@ -164,16 +193,6 @@ export async function processOutboxEvent(event) {
       maxAttempts:config.outboxMaxAttempts,
       leaseToken:event.lease_token,
     });
-    if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT' && failureResult?.terminal && !failureResult?.alreadyFailed) {
-      logEvent({
-        level:'error',
-        action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
-        eventId:event.id,
-        eventType:event.event_type,
-        attempts:Number(failureResult.attempts || 0),
-        runbook:'docs/runbooks/auth-refresh-token-reuse.md',
-      });
-    }
     return failureResult;
   }
 }
