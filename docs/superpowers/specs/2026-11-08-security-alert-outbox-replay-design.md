@@ -39,6 +39,9 @@ Provide a narrow, auditable recovery operation for a terminally failed refresh-t
 
 ### API and authorization
 
+- Before the one-replay state transition, the route must fail closed unless the configured receiver URL is valid HTTPS without embedded credentials and the configured receiver token is at least 32 UTF-8 bytes. Missing/invalid receiver configuration must return 503 without calling the repository or consuming the one-replay allowance.
+- This local configuration preflight is necessary but not sufficient: it does not prove endpoint reachability, receiver durability, or idempotent readback. Those remain external non-Production release gates.
+
 - Route: `POST /admin/security-alerts/:eventId/replay`.
 - Route validates `eventId` as UUID, reason as trimmed text between 3 and 1000 characters, and requires one bounded `Idempotency-Key` value (1–200 characters; reject whitespace/control characters).
 - Route requires `ADMIN_PERMISSIONS.REPLAY_SECURITY_ALERTS` and `assertPrimaryAdmin(me)`. The permission is intentionally absent from the operational-admin permission subset.
