@@ -162,7 +162,7 @@ test('production env validator requires an authenticated HTTPS security alert re
   for (const [overrides, variable] of cases) {
     const result = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', ...overrides });
     assert.notEqual(result.status, 0, `invalid ${variable} must block production validation`);
-    assert.match(result.stdout + '\\n' + result.stderr, new RegExp(variable));
+    assert.match(result.stdout + '\n' + result.stderr, new RegExp(variable));
   }
 });
 
@@ -177,15 +177,15 @@ test('Production runtime requires an authenticated HTTPS security alert receiver
   for (const [overrides, variable] of cases) {
     const result = runProductionRuntimeConfig(overrides);
     assert.notEqual(result.status, 0, `invalid ${variable} must block Production startup`);
-    assert.match(result.stdout + '\\n' + result.stderr, new RegExp(variable));
+    assert.match(result.stdout + '\n' + result.stderr, new RegExp(variable));
   }
 });
 
 test('both production release workflows provide the required security alert receiver secrets', () => {
   for (const [name, source] of [['production-release', workflow], ['release-validation', releaseValidationWorkflow]]) {
-    const block = source.match(/name: Validate production environment contract[\\s\\S]*?run: bash scripts\\/validate-production-env\\.sh/)?.[0] || '';
-    assert.match(block, /ALERT_WEBHOOK_URL:\\s*\\$\\{\\{\\s*secrets\\.ALERT_WEBHOOK_URL_PRODUCTION\\s*\\}\\}/, `${name} must pass ALERT_WEBHOOK_URL_PRODUCTION`);
-    assert.match(block, /ALERT_WEBHOOK_TOKEN:\\s*\\$\\{\\{\\s*secrets\\.ALERT_WEBHOOK_TOKEN_PRODUCTION\\s*\\}\\}/, `${name} must pass ALERT_WEBHOOK_TOKEN_PRODUCTION`);
+    const block = source.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
+    assert.match(block, /ALERT_WEBHOOK_URL:\s*\$\{\{\s*secrets\.ALERT_WEBHOOK_URL_PRODUCTION\s*\}\}/, `${name} must pass ALERT_WEBHOOK_URL_PRODUCTION`);
+    assert.match(block, /ALERT_WEBHOOK_TOKEN:\s*\$\{\{\s*secrets\.ALERT_WEBHOOK_TOKEN_PRODUCTION\s*\}\}/, `${name} must pass ALERT_WEBHOOK_TOKEN_PRODUCTION`);
   }
 });
 
