@@ -400,7 +400,7 @@ function outboxReplayError(code, message = code, status = 409) {
 }
 
 const OUTBOX_REPLAY_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const OUTBOX_REPLAY_KEY_PATTERN = /^[^\\s\\x00-\\x1f\\x7f]{1,200}$/;
+const OUTBOX_REPLAY_KEY_PATTERN = /^[^\s\x00-\x1f\x7f]{1,200}$/;
 
 /**
  * Requeue one terminal refresh-token-reuse alert for the verified primary
