@@ -544,6 +544,11 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
     assert.equal(result.terminal,true);
     assert.equal(result.attempts,8);
 
+    // A delayed callback from the original lease may arrive after another
+    // worker has already committed the terminal FAILED state.
+    const duplicateResult=await outboxHandlers.processOutboxEvent(beforeRows[0]);
+    assert.equal(duplicateResult.alreadyFailed,true);
+
     const {rows:afterRows}=await pool.query(
       'SELECT status,attempts,locked_at,lease_token FROM outbox_events WHERE id=$1',
       [event.id],
@@ -554,7 +559,9 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
     assert.equal(afterRows[0].lease_token,null);
 
     const records=captured.join('').split('\n').filter(Boolean).map((line)=>JSON.parse(line));
-    const terminal=records.find((record)=>record.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE');
+    const terminalRecords=records.filter((record)=>record.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE');
+    assert.equal(terminalRecords.length,1,'a late callback must not emit a duplicate terminal page');
+    const terminal=terminalRecords[0];
     assert.ok(terminal,'terminal Outbox delivery must produce the structured error event');
     assert.equal(terminal.level,'error');
     assert.equal(terminal.eventId,event.id);
