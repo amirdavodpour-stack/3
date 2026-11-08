@@ -1,7 +1,7 @@
 # Security-alert Outbox Replay — Design
 
 Date: 2026-11-08
-Status: Draft for owner approval
+Status: APPROVED — implementation underway
 Repository: `amirdavodpour-stack/3`
 Target branch: `fix/hopev2-refresh-reuse-alerting-20261107`
 Design baseline: PR #49 HEAD `db69e01ffa38a5cca4eacf4d7b85baea869bcf13`
@@ -50,13 +50,13 @@ Provide a narrow, auditable recovery operation for a terminally failed refresh-t
 Add migration `053_security_alert_outbox_manual_replay` with:
 - `manual_replay_count SMALLINT NOT NULL DEFAULT 0 CHECK (manual_replay_count IN (0,1))`.
 - `manual_replay_idempotency_key TEXT NULL`.
-- A consistency constraint: count zero requires a null key; count one requires a non-empty key.
+- A consistency constraint: count zero requires a null key; count one requires a 1–200 character key with no whitespace/control characters.
 
-The migration must not rewrite event identity or payload. Its down migration may remove the new columns/constraint only when no event has `manual_replay_count = 1`; otherwise it must refuse rollback because doing so would erase evidence and re-enable replay.
+The migration must not rewrite event identity or payload. Its down migration must take `ACCESS EXCLUSIVE` on `outbox_events` before counting replay evidence, then may remove the new columns/constraint only when no event has `manual_replay_count = 1`. This lock ordering serializes rollback against a concurrent replay; otherwise a count-before-DDL race could erase newly committed evidence. After any use, rollback is refused because doing so would erase evidence and re-enable replay.
 
 ### Transaction and state transition
 
-Repository operation (illustrative contract): `replayFailedSecurityAlert({eventId, actorId, sessionJti, verificationMinutes, reason, idempotencyKey})`.
+Repository operation: `replaySecurityAlert({eventId, actorId, sessionJti, verificationMinutes, reason, idempotencyKey})`.
 
 Within one SQL transaction:
 1. Lock and revalidate the acting admin using the existing canonical admin-actor lock helper, with an explicit primary-admin requirement and `requiredScope: 'WRITE'`.
@@ -82,7 +82,7 @@ A failure of the audit insert must roll back the requeue. Concurrent requests se
 
 RED tests must be added and observed failing before implementation. At minimum:
 
-1. Only primary admin with current-session WRITE step-up can replay; operational admin, inactive admin, unverified primary identity and missing/expired/wrong-session step-up are denied.
+1. Only active verified primary admin with current-session WRITE step-up can replay; operational admin, suspended/non-admin actor, unverified primary identity and missing/expired/wrong-session step-up are denied.
 2. Missing/malformed event UUID, missing/short/oversized/control-character idempotency key, and missing/short/oversized reason are rejected.
 3. Only `AUTH_REFRESH_REUSE_ALERT` / `user` aggregate events are eligible; payment/payout/refund/other event types always fail closed.
 4. PENDING, PROCESSING, DONE, and FAILED-with-active-lease events cannot be newly replayed.
@@ -91,7 +91,7 @@ RED tests must be added and observed failing before implementation. At minimum:
 7. Concurrent different-key requests result in exactly one successful initial replay and one conflict.
 8. Audit is inserted atomically with the transition; injected audit failure leaves the event FAILED and count zero.
 9. The new migration enforces a maximum count of one and refuses down migration after any replay evidence exists.
-10. A stale worker lease callback cannot regress or overwrite the replayed event after it is reclaimed.
+10. Stale worker completion and failure callbacks cannot regress or overwrite the replayed event after a new lease is assigned.
 11. Existing financial Outbox completion/failure and payment state-machine contract tests remain green.
 
 ## Security and operational review
@@ -108,6 +108,6 @@ RED tests must be added and observed failing before implementation. At minimum:
 - No merge, rebase, force-push, branch retarget, Main/Production write, Production secret access, deployment or live database mutation.
 - Release remains NOT CERTIFIED until all documented certification and runtime evidence gates pass.
 
-## Approval requested
+## Approval and execution record
 
-Approve this exact design before implementation. In particular, confirm the dedicated route, PostgreSQL-only behavior, new migration 053, persisted per-event idempotency key, and fail-closed exclusion of every non-security Outbox event.
+The owner approved the policy direction on 2026-11-08: primary-admin-only, at most one manual replay per event, mandatory operator reason, and audit in the same transaction. The owner further authorized autonomous engineering decisions within the project's existing safety boundaries; no further approval is required for implementation details consistent with this specification. Implementation is underway on the existing PR #49 branch. Production deployment, Production secret/configuration changes and PR merge remain unauthorized.
