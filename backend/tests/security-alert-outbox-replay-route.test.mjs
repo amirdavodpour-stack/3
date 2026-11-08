@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { createAdminRoutes } from '../src/routes/admin_routes.js';
 import { HttpError } from '../src/api/http_error.js';
@@ -164,4 +165,20 @@ test('replay API fails closed when PostgreSQL persistence is unavailable',async(
     );
     assert.equal(h.calls.length,0);
   });
+});
+
+
+test('OpenAPI documents the narrow primary-admin replay request contract',async()=>{
+  const source=await readFile(new URL('../openapi/openapi.yaml',import.meta.url),'utf8');
+  const start=source.indexOf('  /admin/security-alerts/{eventId}/replay:');
+  const end=source.indexOf('  /admin/jobs/{id}/moderate:',start);
+  assert.ok(start>=0&&end>start,'dedicated security alert replay path must be documented');
+  const operation=source.slice(start,end);
+  assert.match(operation,/security:\s*\[\{bearerAuth:\s*\[\]\}\]/);
+  assert.match(operation,/name: Idempotency-Key/);
+  assert.match(operation,/in: header/);
+  assert.match(operation,/requestBody:/);
+  assert.match(operation,/reason: \{type: string, minLength: 3, maxLength: 1000\}/);
+  assert.match(operation,/'403': \{description: Requires verified primary admin/);
+  assert.match(operation,/'409': \{description: Event is not replayable/);
 });
