@@ -77,6 +77,7 @@ async function createFailedEvent({
 
 async function cleanup(eventId, actorId) {
   if (eventId) {
+    await pool.query("DELETE FROM outbox_events WHERE event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL' AND payload->>'sourceEventId'=$1",[eventId]).catch(() => {});
     await pool.query('DELETE FROM audit_logs WHERE entity_id=$1',[eventId]).catch(() => {});
     await pool.query('DELETE FROM outbox_events WHERE id=$1',[eventId]).catch(() => {});
   }
@@ -501,7 +502,7 @@ test('migration 053 enforces the one-replay counter and rejects malformed persis
   }
 });
 
-test('terminal refresh-reuse delivery failure persists FAILED and emits its structured JSON error event', {
+test('terminal refresh-reuse failure persists a restart-safe paging signal before the worker emits it', {
   skip:!enabled || !hasReplay || typeof outboxHandlers?.processOutboxEvent !== 'function',
   timeout:30_000,
 }, async () => {
@@ -540,31 +541,76 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
       'SELECT * FROM outbox_events WHERE id=$1',
       [event.id],
     );
-    const result=await outboxHandlers.processOutboxEvent(beforeRows[0]);
-    assert.equal(result.terminal,true);
-    assert.equal(result.attempts,8);
+    const failedResult=await outboxHandlers.processOutboxEvent(beforeRows[0]);
+    assert.equal(failedResult.terminal,true);
+    assert.equal(failedResult.attempts,8);
 
-    // A delayed callback from the original lease may arrive after another
-    // worker has already committed the terminal FAILED state.
+    // The parent FAILED commit must atomically leave a durable signal event.
+    // A process may die immediately after that commit and before stdout.
+    const {rows:signalRows}=await pool.query(
+      `SELECT * FROM outbox_events
+        WHERE event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'
+          AND payload->>'sourceEventId'=$1`,
+      [event.id],
+    );
+    assert.equal(signalRows.length,1,'terminal FAILED transition must enqueue exactly one durable paging signal');
+    const signalEvent=signalRows[0];
+    assert.equal(signalEvent.status,'PENDING');
+    assert.equal(signalEvent.payload.sourceEventId,event.id);
+    assert.equal(signalEvent.payload.sourceEventType,'AUTH_REFRESH_REUSE_ALERT');
+    assert.equal(Number(signalEvent.payload.attempts),8);
+
+    const beforeRestartRecords=captured.join('').split('\n').filter(Boolean).map((line)=>JSON.parse(line));
+    assert.equal(
+      beforeRestartRecords.filter((record)=>record.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE').length,
+      0,
+      'the original worker must leave the signal pending until the durable signal event is processed',
+    );
+
+    // Simulate a worker restart: claim the persisted signal and process it.
+    const signalLeaseToken=uuid();
+    await pool.query(
+      `UPDATE outbox_events
+          SET status='PROCESSING',locked_at=NOW(),lease_token=$2
+        WHERE id=$1 AND status='PENDING'`,
+      [signalEvent.id,signalLeaseToken],
+    );
+    const {rows:claimedSignalRows}=await pool.query(
+      'SELECT * FROM outbox_events WHERE id=$1',
+      [signalEvent.id],
+    );
+    assert.equal(claimedSignalRows[0].status,'PROCESSING');
+    assert.equal(claimedSignalRows[0].lease_token,signalLeaseToken);
+
+    const signalResult=await outboxHandlers.processOutboxEvent(claimedSignalRows[0]);
+    assert.equal(signalResult.processed,true);
+
+    const {rows:completedSignalRows}=await pool.query(
+      'SELECT status,processed_at FROM outbox_events WHERE id=$1',
+      [signalEvent.id],
+    );
+    assert.equal(completedSignalRows[0].status,'DONE');
+    assert.ok(completedSignalRows[0].processed_at);
+
+    // A delayed callback for the original lease must not create another signal.
     const duplicateResult=await outboxHandlers.processOutboxEvent(beforeRows[0]);
     assert.equal(duplicateResult.alreadyFailed,true);
 
-    const {rows:afterRows}=await pool.query(
-      'SELECT status,attempts,locked_at,lease_token FROM outbox_events WHERE id=$1',
+    const {rows:finalSignalRows}=await pool.query(
+      `SELECT id FROM outbox_events
+        WHERE event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'
+          AND payload->>'sourceEventId'=$1`,
       [event.id],
     );
-    assert.equal(afterRows[0].status,'FAILED');
-    assert.equal(Number(afterRows[0].attempts),8);
-    assert.equal(afterRows[0].locked_at,null);
-    assert.equal(afterRows[0].lease_token,null);
+    assert.equal(finalSignalRows.length,1);
 
     const records=captured.join('').split('\n').filter(Boolean).map((line)=>JSON.parse(line));
     const terminalRecords=records.filter((record)=>record.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE');
-    assert.equal(terminalRecords.length,1,'a late callback must not emit a duplicate terminal page');
+    assert.equal(terminalRecords.length,1,'a single persisted signal must emit one terminal page during normal processing');
     const terminal=terminalRecords[0];
-    assert.ok(terminal,'terminal Outbox delivery must produce the structured error event');
     assert.equal(terminal.level,'error');
     assert.equal(terminal.eventId,event.id);
+    assert.equal(terminal.signalId,signalEvent.id,'downstream collectors need a stable deduplication identity');
     assert.equal(terminal.eventType,'AUTH_REFRESH_REUSE_ALERT');
     assert.equal(terminal.attempts,8);
     assert.equal(terminal.runbook,'docs/runbooks/auth-refresh-token-reuse.md');
@@ -576,7 +622,6 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
     await cleanup(event.id,null);
   }
 });
-
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
