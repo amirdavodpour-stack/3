@@ -323,6 +323,11 @@ test('replay rejects missing, invalid, stale-session and non-primary actors unde
       repository.replaySecurityAlert(replayArgs(admin,event,undefined,{eventId:'not-a-uuid'})),
       (error) => error?.code === 'INVALID_EVENT_ID',
     );
+    await pool.query("UPDATE users SET status='SUSPENDED' WHERE id=$1",[admin.id]);
+    await assert.rejects(
+      repository.replaySecurityAlert(replayArgs(admin,event)),
+      (error) => error?.code === 'ADMIN_REQUIRED',
+    );
     const {rows} = await pool.query('SELECT status,manual_replay_count FROM outbox_events WHERE id=$1',[event.id]);
     assert.equal(rows[0].status,'FAILED');
     assert.equal(Number(rows[0].manual_replay_count),0);
@@ -415,6 +420,12 @@ test('a stale worker failure callback cannot overwrite a replay after a new leas
         WHERE id=$1 AND status='PENDING'`,
       [event.id,newLease],
     );
+    const completed = await repository.completeOutboxEvent({
+      eventId:event.id,
+      leaseToken:staleLease,
+    });
+    assert.equal(completed.completed,false);
+    assert.equal(completed.reason,'STALE_LEASE');
     const result = await repository.failOutboxEvent({
       eventId:event.id,
       error:'late callback from original delivery attempt',
