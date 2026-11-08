@@ -30,6 +30,8 @@ export const migration = {
     `);
   },
   async down(client) {
+    // Serialize rollback against replay writes before inspecting persistent evidence.
+    await client.query('LOCK TABLE outbox_events IN ACCESS EXCLUSIVE MODE');
     const { rows } = await client.query(
       `SELECT COUNT(*)::int AS used_count
          FROM outbox_events
