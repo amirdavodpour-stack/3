@@ -55,9 +55,15 @@ async function createFailedEvent({
   attempts = 4,
   leaseToken = null,
   lockedAt = null,
+  payloadOverrides = {},
 } = {}) {
   const id = uuid();
-  const payload = { accountId:aggregateId, alertCode:'AUTH_REFRESH_REUSE', occurredAt:new Date().toISOString() };
+  const payload = {
+    accountId:aggregateId,
+    alertCode:'AUTH_REFRESH_REUSE',
+    occurredAt:new Date().toISOString(),
+    ...payloadOverrides,
+  };
   const dedupeKey = 'replay-test:' + id;
   await pool.query(
     `INSERT INTO outbox_events(
@@ -505,6 +511,10 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
     attempts:8,
     leaseToken,
     lockedAt:new Date(),
+    payloadOverrides:{
+      alertCode:'AUTH_REFRESH_REUSE_DETECTED',
+      tokenFamilyId:uuid(),
+    },
   });
   const config=configModule.config;
   const originalConfig={
@@ -515,14 +525,6 @@ test('terminal refresh-reuse delivery failure persists FAILED and emits its stru
   const originalWrite=process.stdout.write;
   const captured=[];
   try {
-    await pool.query(
-      'UPDATE outbox_events SET payload=$2::jsonb WHERE id=$1',
-      [event.id,JSON.stringify({
-        ...event.payload,
-        alertCode:'AUTH_REFRESH_REUSE_DETECTED',
-        tokenFamilyId:uuid(),
-      })],
-    );
     config.alertWebhookUrl='';
     config.alertWebhookToken='';
     config.outboxMaxAttempts=8;
