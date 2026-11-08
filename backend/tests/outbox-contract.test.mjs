@@ -135,3 +135,11 @@ test('manual outbox replay is primary-admin-only, security-alert-only, idempoten
   assert.doesNotMatch(replay,/dispatchSecurityAlert|fetch\s*\(/);
   assert.match(authorization,/requirePrimaryAdmin && !canonicalOwner/);
 });
+
+test('terminal refresh-reuse alert delivery failures emit a machine-readable error event', () => {
+  assert.match(handlers, /const failureResult = await failOutboxEvent/);
+  assert.match(handlers, /failureResult\\?\\.terminal/);
+  assert.match(handlers, /OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE/);
+  assert.match(handlers, /level:'error'/);
+  assert.match(handlers, /runbook:'docs\\/runbooks\\/auth-refresh-token-reuse\\.md'/);
+});
