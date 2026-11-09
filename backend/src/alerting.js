@@ -8,7 +8,7 @@ function fingerprint(alerts) {
   return alerts.map((a) => `${a.code}:${a.severity}`).sort().join('|');
 }
 
-export async function dispatchOperationalAlerts(snapshot) {
+export async function dispatchOperationalAlerts(snapshot, { onDeliveryFailure } = {}) {
   if (!config.alertWebhookUrl) return { dispatched: false, reason: 'disabled' };
   const alerts = Array.isArray(snapshot?.health?.alerts) ? snapshot.health.alerts.filter(Boolean) : [];
   if (!alerts.length) { lastFingerprint = ''; return { dispatched: false, reason: 'no-alerts' }; }
@@ -31,6 +31,11 @@ export async function dispatchOperationalAlerts(snapshot) {
     lastSentAt = now;
     return { dispatched: true };
   } catch (error) {
+    try {
+      onDeliveryFailure?.();
+    } catch {
+      // Failure reporting must not obscure the original delivery failure result.
+    }
     return { dispatched: false, reason: 'delivery-failed', error: error.message };
   } finally { clearTimeout(timer); }
 }
