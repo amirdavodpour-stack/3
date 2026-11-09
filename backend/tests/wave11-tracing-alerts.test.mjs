@@ -71,6 +71,52 @@ test('operational alert delivery rejects HTTP redirects before forwarding the be
 });
 
 
+
+test('operational alert delivery failures notify without forwarding error details to the callback', async () => {
+  const previousUrl = config.alertWebhookUrl;
+  const previousToken = config.alertWebhookToken;
+  const previousTimeout = config.alertWebhookTimeoutMs;
+  const previousFetch = globalThis.fetch;
+  const failureMessage =
+    'redirect rejected https://redirect.example.test/target?token=redirect-secret';
+  let callbackCount = 0;
+  let callbackArguments = null;
+
+  config.alertWebhookUrl = 'https://alerts.example.test/operations?key=destination-secret';
+  config.alertWebhookToken = 'test-operational-alert-token';
+  config.alertWebhookTimeoutMs = 500;
+  globalThis.fetch = async () => {
+    throw new Error(failureMessage);
+  };
+
+  try {
+    const result = await dispatchOperationalAlerts({
+      health: { alerts: [{ code: 'HTTP_5XX_RATE_HIGH', severity: 'critical' }] },
+      recentHealth: { requests: 10, errors5xx: 2 },
+      latency: { p95: 20, p99: 50 },
+    }, {
+      onDeliveryFailure: (...args) => {
+        callbackCount += 1;
+        callbackArguments = args;
+      },
+    });
+
+    assert.deepEqual(result, {
+      dispatched: false,
+      reason: 'delivery-failed',
+      error: failureMessage,
+    });
+    assert.equal(callbackCount, 1);
+    assert.deepEqual(callbackArguments, []);
+  } finally {
+    globalThis.fetch = previousFetch;
+    config.alertWebhookUrl = previousUrl;
+    config.alertWebhookToken = previousToken;
+    config.alertWebhookTimeoutMs = previousTimeout;
+    await dispatchOperationalAlerts({ health: { alerts: [] } });
+  }
+});
+
 function refreshReuseAlertEvent() {
   return {
     id:'5a2fd1d8-ae0e-4f53-ae67-4d7723db9db1',
