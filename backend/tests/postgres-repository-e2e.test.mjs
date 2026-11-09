@@ -8,6 +8,7 @@ const enabled = Boolean(process.env.DATABASE_URL);
 if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) throw new Error('REQUIRE_INTEGRATION=1 but DATABASE_URL is missing');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-pg-e2e-'));
 process.env.NODE_ENV = 'test';
+process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 
 const { createServer } = await import('../src/app.js');
@@ -37,8 +38,16 @@ async function register(email, displayName = email) {
     method: 'POST',
     body: JSON.stringify({email, password:'pass123456789', displayName}),
   });
-  assert.equal(response.status, 201);
-  return response.body.data;
+  assert.equal(response.status, 202);
+  assert.equal(response.body.data.verificationRequired, true);
+  assert.ok(response.body.data.verificationCode);
+  const verified = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code:response.body.data.verificationCode}),
+  });
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.data.emailVerified, true);
+  return verified.body.data;
 }
 
 function auth(token, extra = {}) {
