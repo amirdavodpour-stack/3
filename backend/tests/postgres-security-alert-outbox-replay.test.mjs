@@ -729,6 +729,89 @@ test('terminal signal insert failure rolls back the parent FAILED transition', {
   }
 });
 
+test('terminal signal failure telemetry cannot prevent durable FAILED transition', {
+  skip:!enabled || !hasReplay || typeof outboxHandlers?.processOutboxEvent !== 'function',
+  timeout:30_000,
+}, async () => {
+  const sourceEventId=uuid();
+  const leaseToken=uuid();
+  const signal=await createFailedEvent({
+    eventType:'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL',
+    aggregateType:'outbox_event',
+    aggregateId:sourceEventId,
+    status:'PROCESSING',
+    attempts:1,
+    leaseToken,
+    lockedAt:new Date(),
+    payloadOverrides:{
+      sourceEventId,
+      sourceEventType:'AUTH_REFRESH_REUSE_ALERT',
+      attempts:8,
+      replayCount:0,
+      runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+    },
+  });
+  const config=configModule.config;
+  const originalMaxAttempts=config.outboxMaxAttempts;
+  const originalWrite=process.stdout.write;
+  let terminalSignalWriteRejected=false;
+  let failureTelemetryWriteThrew=false;
+  try {
+    config.outboxMaxAttempts=1;
+    process.stdout.write=(chunk,encoding,callback)=>{
+      const done=typeof encoding==='function'?encoding:callback;
+      let record=null;
+      try { record=JSON.parse(Buffer.isBuffer(chunk)?chunk.toString():String(chunk)); } catch {}
+      if(record?.action==='OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE'){
+        terminalSignalWriteRejected=true;
+        if(typeof done==='function') done(new Error('injected terminal signal stdout callback failure'));
+        return false;
+      }
+      failureTelemetryWriteThrew=true;
+      throw new Error('injected outbox failure telemetry write failure');
+    };
+
+    const {rows:beforeRows}=await pool.query(
+      'SELECT * FROM outbox_events WHERE id=$1',
+      [signal.id],
+    );
+    let result;
+    let processingError;
+    try {
+      result=await outboxHandlers.processOutboxEvent(beforeRows[0]);
+    } catch(error) {
+      processingError=error;
+    }
+
+    const {rows:afterRows}=await pool.query(
+      'SELECT status,attempts,locked_at,lease_token,last_error FROM outbox_events WHERE id=$1',
+      [signal.id],
+    );
+    assert.equal(terminalSignalWriteRejected,true,'the terminal signal stdout callback failure must be injected');
+    assert.equal(failureTelemetryWriteThrew,true,'the follow-up failure telemetry write must also throw');
+    assert.equal(processingError,undefined,'telemetry failure must not escape before durable failure handling');
+    assert.equal(result?.terminal,true,'the signal must reach the configured terminal-attempt state');
+    assert.equal(result?.attempts,1);
+    assert.equal(afterRows[0].status,'FAILED','the lease-checked database failure transition must still commit');
+    assert.equal(Number(afterRows[0].attempts),1);
+    assert.equal(afterRows[0].locked_at,null);
+    assert.equal(afterRows[0].lease_token,null);
+    assert.equal(afterRows[0].last_error,'injected terminal signal stdout callback failure');
+
+    const {rows:recursiveSignals}=await pool.query(
+      `SELECT id FROM outbox_events
+        WHERE event_type='SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'
+          AND payload->>'sourceEventId'=$1`,
+      [signal.id],
+    );
+    assert.equal(recursiveSignals.length,0,'terminal signal failure must not enqueue another terminal signal');
+  } finally {
+    process.stdout.write=originalWrite;
+    config.outboxMaxAttempts=originalMaxAttempts;
+    await cleanup(signal.id,null);
+  }
+});
+
 after(async () => {
   if (enabled) await dbModule.db.close();
 });
