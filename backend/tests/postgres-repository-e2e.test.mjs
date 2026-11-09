@@ -9,6 +9,8 @@ if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) throw new Error('REQUIR
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-pg-e2e-'));
 process.env.NODE_ENV = 'test';
 process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
+process.env.AUTH_RATE_LIMIT_MAX = '1000';
+process.env.GENERAL_RATE_LIMIT_MAX = '5000';
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 
 const { createServer } = await import('../src/app.js');

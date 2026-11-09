@@ -4,7 +4,8 @@ import fs from 'node:fs';
 
 const funding = fs.readFileSync(new URL('../src/repository/payment_funding.js', import.meta.url), 'utf8');
 const webhooks = fs.readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
-const outbox = fs.readFileSync(new URL('../src/outbox_handlers.js', import.meta.url), 'utf8');
+const outboxHandlers = fs.readFileSync(new URL('../src/outbox_handlers.js', import.meta.url), 'utf8');
+const outboxRepository = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
 const externalLedger = fs.readFileSync(new URL('../src/repository/external_payment_ledger.js', import.meta.url), 'utf8');
 const provider = fs.readFileSync(new URL('../src/payment_provider.js', import.meta.url), 'utf8');
 const config = fs.readFileSync(new URL('../src/config.js', import.meta.url), 'utf8');
@@ -19,10 +20,10 @@ test('payment funding posts its canonical ledger only after provider hold confir
   // The external provider confirmation posts the canonical funding journal
   // through the shared, balanced and idempotent provider-ledger boundary.
   assert.match(externalLedger, /entries:\s*fundingJournal\(breakdown\)/);
-  assert.match(outbox, /postExternalFundingJournalWithClient/);
-  assert.match(outbox, /paymentProvider\.createHold/);
-  assert.match(outbox, /completePaymentCreateHoldOutbox/);
-  assert.match(outbox, /postInternalPaymentHoldWithClient/);
+  assert.match(outboxRepository, /postExternalFundingJournalWithClient/);
+  assert.match(outboxHandlers, /paymentProvider\.createHold/);
+  assert.match(outboxHandlers, /completePaymentCreateHoldOutbox/);
+  assert.match(outboxRepository, /postInternalPaymentHoldWithClient/);
 
   // Signed provider callbacks use the same external ledger boundary; internal
   // payments use the dedicated wallet-ledger operations instead.
