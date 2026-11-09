@@ -5392,8 +5392,196 @@ test('PostgreSQL refresh-token reuse revokes the user session and clears admin-p
   assert.equal(audit[0].action,'AUTH_REFRESH_REUSE_DETECTED');
   assert.equal(audit[0].entity_type,'user');
   assert.equal(audit[0].meta?.tokenFamilyId,familyId);
+
+  const { rows: queuedAlerts } = await pool.query(
+    `SELECT event_type,aggregate_type,aggregate_id,dedupe_key,payload,status
+       FROM outbox_events
+      WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+        AND aggregate_id=$1
+        AND payload->>'tokenFamilyId'=$2`,
+    [userId,familyId],
+  );
+  assert.equal(queuedAlerts.length,1,
+    'refresh reuse must enqueue one durable operational alert in the revocation transaction');
+  assert.equal(queuedAlerts[0].aggregate_type,'user');
+  assert.equal(queuedAlerts[0].aggregate_id,userId);
+  assert.equal(queuedAlerts[0].payload?.alertCode,'AUTH_REFRESH_REUSE_DETECTED');
+  assert.equal(queuedAlerts[0].payload?.tokenFamilyId,familyId);
+  assert.match(queuedAlerts[0].dedupe_key,/^auth-refresh-reuse:/);
+  assert.equal(queuedAlerts[0].status,'PENDING');
+
+  const repeatedReuse = await rotateRefreshToken(oldTokenHash,null,familyId);
+  assert.equal(repeatedReuse?.kind,'reuse');
+  const { rows: deduplicatedAlerts } = await pool.query(
+    `SELECT id FROM outbox_events
+      WHERE event_type='AUTH_REFRESH_REUSE_ALERT'
+        AND aggregate_id=$1
+        AND dedupe_key LIKE $2`,
+    [userId,`auth-refresh-reuse:${userId}:%`],
+  );
+  assert.equal(deduplicatedAlerts.length,1,
+    'repeated reuse against the same account/window must not flood duplicate alerts');
 });
 
+
+
+async function insertLeasedRefreshReuseAlertEvent(pool, { eventId, leaseToken, tokenFamilyId }) {
+  const { rows } = await pool.query(
+    `INSERT INTO outbox_events(
+       id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,
+       available_at,locked_at,lease_token,created_at
+     )
+     VALUES(
+       $1,'AUTH_REFRESH_REUSE_ALERT','user',$2,$3,$4::jsonb,'PROCESSING',1,
+       NOW(),NOW(),$5,NOW()
+     )
+     RETURNING *`,
+    [
+      eventId,
+      fixture.ownerId,
+      `security-alert-worker-test:${eventId}`,
+      JSON.stringify({
+        alertCode: 'AUTH_REFRESH_REUSE_DETECTED',
+        tokenFamilyId,
+        refreshToken: 'integration-private-refresh-token',
+        email: 'worker-test-private@example.test',
+      }),
+      leaseToken,
+    ],
+  );
+  assert.equal(rows.length, 1);
+  return rows[0];
+}
+
+test('PostgreSQL outbox worker delivers refresh-reuse security alerts and completes the active lease', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const eventId = crypto.randomUUID();
+  const leaseToken = crypto.randomUUID();
+  const tokenFamilyId = crypto.randomUUID();
+  const previousFetch = globalThis.fetch;
+  const previousUrl = appConfig.alertWebhookUrl;
+  const previousToken = appConfig.alertWebhookToken;
+  const previousTimeout = appConfig.alertWebhookTimeoutMs;
+  let request = null;
+
+  appConfig.alertWebhookUrl = 'https://alerts.integration.test/security';
+  appConfig.alertWebhookToken = 'integration-only-webhook-token';
+  appConfig.alertWebhookTimeoutMs = 1000;
+  globalThis.fetch = async (url, options) => {
+    request = { url: String(url), options };
+    return { ok: true, status: 202 };
+  };
+
+  try {
+    const event = await insertLeasedRefreshReuseAlertEvent(pool, {
+      eventId,
+      leaseToken,
+      tokenFamilyId,
+    });
+    await processOutboxEvent(event);
+
+    assert.ok(request, 'the outbox worker must invoke the configured receiver');
+    assert.equal(request.url, 'https://alerts.integration.test/security');
+    assert.equal(request.options.method, 'POST');
+    assert.equal(request.options.redirect, 'error');
+    assert.equal(request.options.headers.authorization, 'Bearer integration-only-webhook-token');
+    assert.equal(request.options.headers['idempotency-key'], `hope-outbox:${eventId}`);
+
+    const sentBody = JSON.parse(request.options.body);
+    assert.deepEqual(sentBody, {
+      service: 'hope-api',
+      eventType: 'SECURITY_ALERT',
+      occurredAt: new Date(event.created_at).toISOString(),
+      alert: {
+        code: 'AUTH_REFRESH_REUSE_DETECTED',
+        severity: 'page',
+        actorUserId: fixture.ownerId,
+        tokenFamilyId,
+        runbook: 'docs/runbooks/auth-refresh-token-reuse.md',
+      },
+    });
+    assert.equal(request.options.body.includes('integration-private-refresh-token'), false);
+    assert.equal(request.options.body.includes('worker-test-private@example.test'), false);
+
+    const { rows } = await pool.query(
+      `SELECT status,processed_at,locked_at,lease_token,last_error
+         FROM outbox_events WHERE id=$1`,
+      [eventId],
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, 'DONE');
+    assert.ok(rows[0].processed_at, 'successful receiver response must commit processed_at');
+    assert.equal(rows[0].locked_at, null);
+    assert.equal(rows[0].lease_token, null);
+    assert.equal(rows[0].last_error, null);
+  } finally {
+    globalThis.fetch = previousFetch;
+    appConfig.alertWebhookUrl = previousUrl;
+    appConfig.alertWebhookToken = previousToken;
+    appConfig.alertWebhookTimeoutMs = previousTimeout;
+    await pool.query('DELETE FROM outbox_events WHERE id=$1', [eventId]).catch(() => {});
+  }
+});
+
+test('PostgreSQL outbox worker retains a refresh-reuse alert for retry after receiver HTTP 503', {
+  skip: !enabled,
+  timeout: 30000,
+}, async () => {
+  const pool = dbModule.getPool();
+  const eventId = crypto.randomUUID();
+  const leaseToken = crypto.randomUUID();
+  const tokenFamilyId = crypto.randomUUID();
+  const previousFetch = globalThis.fetch;
+  const previousUrl = appConfig.alertWebhookUrl;
+  const previousToken = appConfig.alertWebhookToken;
+  const previousTimeout = appConfig.alertWebhookTimeoutMs;
+  let requestCount = 0;
+
+  appConfig.alertWebhookUrl = 'https://alerts.integration.test/security';
+  appConfig.alertWebhookToken = 'integration-only-webhook-token';
+  appConfig.alertWebhookTimeoutMs = 1000;
+  globalThis.fetch = async () => {
+    requestCount += 1;
+    return { ok: false, status: 503 };
+  };
+
+  try {
+    const event = await insertLeasedRefreshReuseAlertEvent(pool, {
+      eventId,
+      leaseToken,
+      tokenFamilyId,
+    });
+    const outcome = await processOutboxEvent(event);
+
+    assert.equal(requestCount, 1);
+    assert.equal(outcome?.terminal, false,
+      'a transient receiver error must return the outbox event to bounded retry');
+    assert.equal(outcome?.attempts, 1);
+
+    const { rows } = await pool.query(
+      `SELECT status,attempts,available_at,locked_at,lease_token,last_error
+         FROM outbox_events WHERE id=$1`,
+      [eventId],
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, 'PENDING');
+    assert.equal(rows[0].attempts, 1);
+    assert.ok(new Date(rows[0].available_at).getTime() > Date.now(),
+      'retry must be scheduled for a future attempt');
+    assert.equal(rows[0].locked_at, null);
+    assert.equal(rows[0].lease_token, null);
+    assert.equal(rows[0].last_error, 'SECURITY_ALERT_WEBHOOK_HTTP_503');
+  } finally {
+    globalThis.fetch = previousFetch;
+    appConfig.alertWebhookUrl = previousUrl;
+    appConfig.alertWebhookToken = previousToken;
+    appConfig.alertWebhookTimeoutMs = previousTimeout;
+    await pool.query('DELETE FROM outbox_events WHERE id=$1', [eventId]).catch(() => {});
+  }
+});
 
 
 test('PostgreSQL linking a Google identity clears existing admin-panel verification', { skip: !enabled }, async () => {

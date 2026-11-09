@@ -63,6 +63,16 @@ if [[ -z "$register_ready_line" || -z "$register_capture_line" || "$register_rea
   echo "FAIL: Register capture must wait for the Google CTA to be fully painted before requesting its one fresh frame." >&2
   exit 1
 fi
+
+password_reset_capture_block="$(sed -n '/^  if (child is PasswordResetPage) {/,/^  if (child is WalletPage) {/p' "$test_file")"
+password_reset_target_line="$(grep -nF "find.byKey(const ValueKey('password-reset-privacy-note'))" <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1)"
+password_reset_frame_line="$(grep -nF 'await tester.pump();' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1)"
+password_reset_capture_line="$(grep -nF 'await _captureRuntimeScreenshot(marker, tester: tester);' <<<"$password_reset_capture_block" | head -n1 | cut -d: -f1)"
+if [[ -z "$password_reset_target_line" || -z "$password_reset_frame_line" || -z "$password_reset_capture_line" ||
+      "$password_reset_target_line" -ge "$password_reset_frame_line" || "$password_reset_frame_line" -ge "$password_reset_capture_line" ]]; then
+  echo "FAIL: Password Reset must assert its route-specific privacy surface and commit a post-mount frame before native capture." >&2
+  exit 1
+fi
 grep -Fq "final freshFrameCount = _runtimeFreshFrameCount(marker);" "$test_file"
 grep -Fq "forceFreshFrame: freshFrameCount > 0," "$test_file"
 # Inspect only the invokeMethod payload. A whole-file grep is insufficient because

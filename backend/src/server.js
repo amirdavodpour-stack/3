@@ -23,7 +23,11 @@ server.on('clientError', (error, socket) => {
 const outboxWorker = startOutboxWorker();
 const reconciliationWorker = startReconciliationWorker();
 const storageCleanupWorker = startStorageCleanupWorker();
-const alertTimer = setInterval(() => { dispatchOperationalAlerts(metricsSnapshot()).catch((error) => console.error('[alerting] error:', error.message)); }, 30000);
+const alertTimer = setInterval(() => {
+  dispatchOperationalAlerts(metricsSnapshot(), {
+    onDeliveryFailure: () => console.error('[alerting] operational webhook delivery failed'),
+  }).catch((error) => console.error('[alerting] error:', error.message));
+}, 30000);
 alertTimer.unref();
 server.listen(config.port, config.host, () => {
   console.log(`HOPE API listening on ${config.host}:${config.port}`);

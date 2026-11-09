@@ -8,7 +8,7 @@ const RECENT_WINDOW_MS = 5 * 60 * 1000;
 const RECENT_SAMPLE_CAP = 5000;
 const ROUTE_STATS_CAP = 1000;
 const ROUTE_OTHER_KEY = '__other__';
-const metrics = { requests: 0, errors4xx: 0, errors5xx: 0, authRateLimited: 0, requestDurationMsTotal: 0, requestDurationMsMax: 0, requestDurationBuckets: { lt50:0, lt100:0, lt250:0, lt500:0, gte500:0 }, routeStats: new Map(), outboxProcessed: 0, outboxFailed: 0, categoryFailures: { payment: 0, push: 0, email: 0, s3: 0 }, startedAt: Date.now() };
+const metrics = { requests: 0, errors4xx: 0, errors5xx: 0, authRateLimited: 0, requestDurationMsTotal: 0, requestDurationMsMax: 0, requestDurationBuckets: { lt50:0, lt100:0, lt250:0, lt500:0, gte500:0 }, routeStats: new Map(), outboxProcessed: 0, outboxFailed: 0, categoryFailures: { payment: 0, push: 0, email: 0, s3: 0, security: 0 }, startedAt: Date.now() };
 // Bounded reservoir of recent request durations, used only to compute
 // approximate P50/P95/P99. Capped so memory stays flat under sustained load.
 let latencySamples = [];
@@ -104,3 +104,17 @@ export function metricsSnapshot() {
   };
 }
 export function logEvent(event) { process.stdout.write(JSON.stringify({ time: new Date().toISOString(), service: 'hope-api', ...event }) + '\n'); }
+
+export function logEventAndWait(event) {
+  const line = JSON.stringify({ time: new Date().toISOString(), service: 'hope-api', ...event }) + '\n';
+  return new Promise((resolve, reject) => {
+    try {
+      process.stdout.write(line, (error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

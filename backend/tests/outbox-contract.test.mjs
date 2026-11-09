@@ -77,3 +77,88 @@ test('release audit is committed with settlement transaction', () => {
   assert.match(repo, /INSERT INTO audit_logs\(id,action,actor_id,entity_type,entity_id,meta,created_at\)/);
   assert.match(repo, /PAYMENT_RELEASE/);
 });
+
+
+test('refresh-reuse security alert is created transactionally and completed under its active outbox lease', () => {
+  const auth = fs.readFileSync(new URL('../src/repository/auth.js', import.meta.url), 'utf8');
+  const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
+  const alerting = fs.readFileSync(new URL('../src/alerting.js', import.meta.url), 'utf8');
+
+  const rotateStart = auth.indexOf('export async function rotateRefreshToken(');
+  const rotateEnd = auth.indexOf('export async function revokeRefreshFamily(',rotateStart);
+  const rotate = auth.slice(rotateStart,rotateEnd);
+  const reuseStart = rotate.indexOf('if (r.revoked_at)');
+  const reuseEnd = rotate.indexOf('if (Number(r.session_version)',reuseStart);
+  const reuse = rotate.slice(reuseStart,reuseEnd);
+  assert.match(rotate,/return withSqlTransaction/);
+  assert.match(reuse,/AUTH_REFRESH_REUSE_DETECTED/);
+  assert.match(reuse,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(reuse,/ON CONFLICT\(dedupe_key\) DO NOTHING/);
+
+  assert.match(outbox,/export async function completeOutboxEvent/);
+  assert.match(outbox,/lease_token=\$2/);
+  assert.match(alerting,/AUTH_REFRESH_REUSE_DETECTED/);
+  assert.match(alerting,/idempotency-key/);
+  assert.match(alerting,/redirect:\s*'error'/);
+});
+
+
+test('refresh-reuse security alerts share high priority with critical payment outbox events', () => {
+  const claimStart = repo.indexOf('export async function claimOutboxEvent(');
+  const orderStart = repo.indexOf('ORDER BY CASE', claimStart);
+  const orderEnd = repo.indexOf('END,', orderStart);
+  assert.ok(claimStart >= 0 && orderStart > claimStart && orderEnd > orderStart,
+    'claimOutboxEvent must expose a bounded priority clause');
+  const priorityClause = repo.slice(orderStart,orderEnd);
+  assert.match(priorityClause,/AUTH_REFRESH_REUSE_ALERT/,
+    'refresh-reuse alerts must not queue behind routine notifications');
+  assert.match(priorityClause,/SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/,
+    'durable security paging signals must share critical security alert priority');
+  assert.match(priorityClause,/PAYMENT_CREATE_HOLD/);
+  assert.match(priorityClause,/PAYMENT_RELEASE/);
+});
+
+
+
+test('terminal security paging signal failures are included in security failure telemetry', () => {
+  const categoryStart=handlers.indexOf('function failureCategory(');
+  const categoryEnd=handlers.indexOf('\n}\n',categoryStart);
+  assert.ok(categoryStart>=0&&categoryEnd>categoryStart,'outbox handler must define failure categorization');
+  const classifier=handlers.slice(categoryStart,categoryEnd);
+  assert.match(classifier,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(classifier,/SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/);
+  assert.match(classifier,/return 'security'/);
+});
+
+test('manual outbox replay is primary-admin-only, security-alert-only, idempotent and never dispatches synchronously', () => {
+  const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
+  const authorization = fs.readFileSync(new URL('../src/repository/admin_authorization.js', import.meta.url), 'utf8');
+  const start = outbox.indexOf('export async function replaySecurityAlert(');
+  const end = outbox.indexOf('export async function completeOutboxEvent(',start);
+  assert.ok(start >= 0 && end > start, 'dedicated replay repository method must exist');
+  const replay = outbox.slice(start,end);
+  assert.match(replay,/requirePrimaryAdmin:\s*true/);
+  assert.match(replay,/requiredScope:\s*'WRITE'/);
+  assert.match(replay,/AUTH_REFRESH_REUSE_ALERT/);
+  assert.match(replay,/aggregate_type !== 'user'/);
+  assert.match(replay,/status !== 'FAILED'/);
+  assert.match(replay,/manual_replay_count=1/);
+  assert.match(replay,/manual_replay_idempotency_key=\$2/);
+  assert.match(replay,/ADMIN_SECURITY_ALERT_OUTBOX_REPLAY/);
+  assert.doesNotMatch(replay,/dispatchSecurityAlert|fetch\s*\(/);
+  assert.match(authorization,/requirePrimaryAdmin && !canonicalOwner/);
+});
+
+test('terminal refresh-reuse alert delivery failures enqueue and emit a durable machine-readable signal', () => {
+  assert.match(repo, /SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/);
+  assert.match(repo, /INSERT INTO outbox_events/);
+  assert.match(repo, /ON CONFLICT\(dedupe_key\) DO NOTHING/);
+  assert.match(repo, /security-alert-terminal-failure:/);
+  assert.match(handlers, /event\.event_type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'/);
+  assert.match(handlers, /await logEventAndWait/);
+  assert.match(handlers, /signalId:event\.id/);
+  assert.match(handlers, /OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE/);
+  assert.match(handlers, /level:'error'/);
+  assert.match(handlers, /runbook:'docs\/runbooks\/auth-refresh-token-reuse\.md'/);
+  assert.doesNotMatch(handlers, /failureResult\?\.terminal/);
+});;

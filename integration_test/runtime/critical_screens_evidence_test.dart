@@ -1152,13 +1152,40 @@ Future<void> _captureRuntimeScreenshot(
         skipOffstage: false,
       );
       try {
-        await tester.scrollUntilVisible(
-          auditedTarget,
-          selectedState.position.viewportDimension * 0.68,
-          scrollable: scrollableFinder,
-          maxScrolls: 30,
-        );
-        await tester.pump();
+        if (shouldRevealProfileTarget) {
+          // Use the same safe multi-offset swipe strategy that already proves
+          // this Profile ListView can reach its scroll end. A single centered
+          // drag can land on an interactive settings control and never advance.
+          var profileRevealSweeps = 0;
+          var profileRevealSwipes = 0;
+          while (auditedTarget.evaluate().isEmpty &&
+              selectedState.position.extentAfter > 1.0 &&
+              profileRevealSweeps < 30) {
+            profileRevealSweeps++;
+            final advanced = await _dragScrollableTowardEndWithFallbackOffsets(
+              tester,
+              scrollableFinder,
+              selectedState,
+              recordSwipe: () => profileRevealSwipes++,
+            );
+            if (!advanced) break;
+            await tester.pump();
+          }
+          print(
+            'HOPE_T10_PROFILE_TARGET_REVEAL:$marker:'
+            'sweeps=$profileRevealSweeps:swipes=$profileRevealSwipes:'
+            'remaining=${selectedState.position.extentAfter}:'
+            'materialized=${auditedTarget.evaluate().isNotEmpty}',
+          );
+        } else {
+          await tester.scrollUntilVisible(
+            auditedTarget,
+            selectedState.position.viewportDimension * 0.68,
+            scrollable: scrollableFinder,
+            maxScrolls: 30,
+          );
+          await tester.pump();
+        }
       } catch (_) {
         await restoreAuditedTargetScroll();
         rethrow;
@@ -1703,6 +1730,18 @@ Future<void> _captureRuntimeScreen(
         reason: 'Password Reset runtime surface must contain exactly one email field.');
     expect(find.byType(FilledButton), findsOneWidget,
         reason: 'Password Reset runtime surface must expose its submit action.');
+    final privacyNote =
+        find.byKey(const ValueKey('password-reset-privacy-note'));
+    expect(
+      privacyNote,
+      findsOneWidget,
+      reason: 'Password Reset must render its route-specific privacy surface.',
+    );
+    // The first Flutter test frame can update the widget tree while Android is
+    // still presenting the previous static auth surface. Commit one additional
+    // post-mount frame before requesting the native PixelCopy capture.
+    await tester.pump();
+    print('HOPE_RUNTIME_PASSWORD_RESET_FRAME_COMMITTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);

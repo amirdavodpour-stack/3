@@ -32,7 +32,7 @@ test('metrics expose latency percentiles and per-category failure counters', () 
   assert.ok('p50' in after.latency && 'p95' in after.latency && 'p99' in after.latency);
   assert.ok(after.latency.p99 >= after.latency.p50);
   assert.ok(after.categoryFailures.payment >= before.categoryFailures.payment);
-  assert.ok(['payment', 'push', 'email', 's3'].every(k => typeof after.categoryFailures[k] === 'number'));
+  assert.ok(['payment', 'push', 'email', 's3', 'security'].every(k => typeof after.categoryFailures[k] === 'number'));
 });
 
 test('metrics include bounded process memory telemetry and uptime', () => {
@@ -91,3 +91,10 @@ test('observability exposes bounded slow-route summaries', () => {
   assert.match(source, /slowRequests/);
   assert.match(source, /slice\(0,10\)/);
 });
+
+test('server scheduler reports operational webhook delivery failures without logging secret details', () => {
+  const source = fs.readFileSync(new URL('../src/server.js', import.meta.url), 'utf8');
+  assert.match(source, /dispatchOperationalAlerts\(metricsSnapshot\(\),\s*\{/);
+  assert.match(source, /onDeliveryFailure:\s*\(\)\s*=>\s*console\.error\('\[alerting\] operational webhook delivery failed'\)/);
+});
+

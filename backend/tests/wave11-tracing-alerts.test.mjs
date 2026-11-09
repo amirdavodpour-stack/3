@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { traceContext, makeTraceparent } from '../src/tracing.js';
 import { businessHealth } from '../src/business_metrics.js';
-import { dispatchOperationalAlerts } from '../src/alerting.js';
+import { dispatchOperationalAlerts, dispatchSecurityAlert } from '../src/alerting.js';
+import { config } from '../src/config.js';
 
 test('traceparent is accepted and propagated with stable trace id', () => {
   const req = { headers: { traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01' } };
@@ -31,4 +32,161 @@ test('business health raises critical and warning alerts deterministically', () 
 test('disabled alert delivery is a no-op', async () => {
   const result = await dispatchOperationalAlerts({ health: { alerts: [] } });
   assert.equal(result.dispatched, false);
+});
+
+test('operational alert delivery rejects HTTP redirects before forwarding the bearer token', async () => {
+  const previousUrl = config.alertWebhookUrl;
+  const previousToken = config.alertWebhookToken;
+  const previousTimeout = config.alertWebhookTimeoutMs;
+  const previousFetch = globalThis.fetch;
+  let captured;
+
+  config.alertWebhookUrl = 'https://alerts.example.test/operations';
+  config.alertWebhookToken = 'test-operational-alert-token';
+  config.alertWebhookTimeoutMs = 500;
+  globalThis.fetch = async (url, options) => {
+    captured = { url, options };
+    return { ok: true, status: 202 };
+  };
+
+  try {
+    const result = await dispatchOperationalAlerts({
+      health: { alerts: [{ code: 'HTTP_5XX_RATE_HIGH', severity: 'critical' }] },
+      recentHealth: { requests: 10, errors5xx: 2 },
+      latency: { p95: 20, p99: 50 },
+    });
+
+    assert.deepEqual(result, { dispatched: true });
+    assert.equal(captured.url, 'https://alerts.example.test/operations');
+    assert.equal(captured.options.method, 'POST');
+    assert.equal(captured.options.headers.authorization, 'Bearer test-operational-alert-token');
+    assert.equal(captured.options.redirect, 'error');
+  } finally {
+    globalThis.fetch = previousFetch;
+    config.alertWebhookUrl = previousUrl;
+    config.alertWebhookToken = previousToken;
+    config.alertWebhookTimeoutMs = previousTimeout;
+    await dispatchOperationalAlerts({ health: { alerts: [] } });
+  }
+});
+
+
+
+test('operational alert delivery failures notify without forwarding error details to the callback', async () => {
+  const previousUrl = config.alertWebhookUrl;
+  const previousToken = config.alertWebhookToken;
+  const previousTimeout = config.alertWebhookTimeoutMs;
+  const previousFetch = globalThis.fetch;
+  const failureMessage =
+    'redirect rejected https://redirect.example.test/target?token=redirect-secret';
+  let callbackCount = 0;
+  let callbackArguments = null;
+
+  config.alertWebhookUrl = 'https://alerts.example.test/operations?key=destination-secret';
+  config.alertWebhookToken = 'test-operational-alert-token';
+  config.alertWebhookTimeoutMs = 500;
+  globalThis.fetch = async () => {
+    throw new Error(failureMessage);
+  };
+
+  try {
+    const result = await dispatchOperationalAlerts({
+      health: { alerts: [{ code: 'OPERATIONAL_ALERT_FAILURE_TEST', severity: 'critical' }] },
+      recentHealth: { requests: 10, errors5xx: 2 },
+      latency: { p95: 20, p99: 50 },
+    }, {
+      onDeliveryFailure: (...args) => {
+        callbackCount += 1;
+        callbackArguments = args;
+        throw new Error('test logger failure');
+      },
+    });
+
+    assert.deepEqual(result, {
+      dispatched: false,
+      reason: 'delivery-failed',
+      error: failureMessage,
+    });
+    assert.equal(callbackCount, 1);
+    assert.deepEqual(callbackArguments, []);
+  } finally {
+    globalThis.fetch = previousFetch;
+    config.alertWebhookUrl = previousUrl;
+    config.alertWebhookToken = previousToken;
+    config.alertWebhookTimeoutMs = previousTimeout;
+    await dispatchOperationalAlerts({ health: { alerts: [] } });
+  }
+});
+
+function refreshReuseAlertEvent() {
+  return {
+    id:'5a2fd1d8-ae0e-4f53-ae67-4d7723db9db1',
+    event_type:'AUTH_REFRESH_REUSE_ALERT',
+    aggregate_type:'user',
+    aggregate_id:'a2f91b32-4d92-4f3f-9bc6-2bb3efaa9b91',
+    created_at:'2026-11-07T18:00:00.000Z',
+    payload:{
+      alertCode:'AUTH_REFRESH_REUSE_DETECTED',
+      tokenFamilyId:'f4cc39f3-12c8-4d17-89e8-4b1aefe4b22d',
+      refreshToken:'must-not-be-forwarded',
+      email:'private@example.test',
+    },
+  };
+}
+
+test('refresh reuse security alerts use stable outbox idempotency and allowlisted metadata only', async () => {
+  let captured;
+  const event=refreshReuseAlertEvent();
+  const result=await dispatchSecurityAlert(event,{
+    url:'https://alerts.example.test/security',
+    token:'test-alert-token',
+    timeoutMs:500,
+    fetchImpl:async (url,options) => {
+      captured={url,options};
+      return {ok:true,status:202};
+    },
+  });
+
+  assert.deepEqual(result,{dispatched:true});
+  assert.equal(captured.url,'https://alerts.example.test/security');
+  assert.equal(captured.options.method,'POST');
+  assert.equal(captured.options.headers.authorization,'Bearer test-alert-token');
+  assert.equal(captured.options.headers['idempotency-key'],`hope-outbox:${event.id}`);
+  const body=JSON.parse(captured.options.body);
+  assert.deepEqual(body,{
+    service:'hope-api',
+    eventType:'SECURITY_ALERT',
+    occurredAt:'2026-11-07T18:00:00.000Z',
+    alert:{
+      code:'AUTH_REFRESH_REUSE_DETECTED',
+      severity:'page',
+      actorUserId:event.aggregate_id,
+      tokenFamilyId:event.payload.tokenFamilyId,
+      runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+    },
+  });
+  assert.doesNotMatch(JSON.stringify(body),/must-not-be-forwarded|private@example\.test/);
+});
+
+test('refresh reuse security alert delivery fails on non-success responses for outbox retry', async () => {
+  await assert.rejects(
+    dispatchSecurityAlert(refreshReuseAlertEvent(),{
+      url:'https://alerts.example.test/security',
+      token:'test-alert-token',
+      timeoutMs:500,
+      fetchImpl:async () => ({ok:false,status:503}),
+    }),
+    /SECURITY_ALERT_WEBHOOK_HTTP_503/,
+  );
+});
+
+test('refresh reuse security alert delivery fails closed when no configured receiver exists', async () => {
+  await assert.rejects(
+    dispatchSecurityAlert(refreshReuseAlertEvent(),{
+      url:'',
+      token:'',
+      fetchImpl:async () => { throw new Error('fetch must not be called'); },
+    }),
+    /SECURITY_ALERT_WEBHOOK_NOT_CONFIGURED/,
+  );
 });
