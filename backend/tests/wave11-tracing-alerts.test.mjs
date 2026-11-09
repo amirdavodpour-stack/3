@@ -91,7 +91,7 @@ test('operational alert delivery failures notify without forwarding error detail
 
   try {
     const result = await dispatchOperationalAlerts({
-      health: { alerts: [{ code: 'HTTP_5XX_RATE_HIGH', severity: 'critical' }] },
+      health: { alerts: [{ code: 'OPERATIONAL_ALERT_FAILURE_TEST', severity: 'critical' }] },
       recentHealth: { requests: 10, errors5xx: 2 },
       latency: { p95: 20, p99: 50 },
     }, {
