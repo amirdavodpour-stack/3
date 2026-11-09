@@ -59,7 +59,7 @@ After the request, correlate the event ID with the audit row and the subsequent 
 
 The alert is delivered through the configured HTTPS `ALERT_WEBHOOK_URL` using the existing `ALERT_WEBHOOK_TOKEN`. Delivery is at-least-once; the receiver must honor the stable `Idempotency-Key` to suppress duplicate retries. The webhook payload contains only the account ID, token-family ID, event time and alert code. Never send, log or request a raw refresh token, password, email address or bearer credential.
 
-If delivery is unconfigured or fails, the outbox retries with bounded backoff and records terminal failure after the configured attempt limit. Restore receiver configuration through the approved owner-operated procedure, then reconcile/replay any terminal failed alert under the normal operational controls. No Production configuration or secret is changed by this runbook.
+If delivery is unconfigured or fails, the outbox retries with bounded backoff and records terminal failure after the configured attempt limit. Restore receiver configuration through the approved owner-operated procedure. The existing manual replay route applies only to the original `AUTH_REFRESH_REUSE_ALERT` event with the `user` aggregate, after receiver idempotency is verified, under primary-administrator WRITE step-up. A `SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL` is not replayable through that route; detect and escalate it through an independently approved dead-letter/pager recovery procedure. Do not replay terminal signals through the source-alert route or mutate them directly with SQL. No Production configuration or secret is changed by this runbook.
 
 ## Terminal failure signal and paging boundary
 
