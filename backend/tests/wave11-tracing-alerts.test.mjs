@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { assertAllowedAlertEndpoint, isPublicAlertAddress, resolvePublicAlertAddresses, createPinnedHttpsAgent, dispatchAlertWebhook } from '../src/alert_egress.js';
 import assert from 'node:assert/strict';
 import { traceContext, makeTraceparent } from '../src/tracing.js';
 import { businessHealth } from '../src/business_metrics.js';
@@ -189,4 +190,159 @@ test('refresh reuse security alert delivery fails closed when no configured rece
     }),
     /SECURITY_ALERT_WEBHOOK_NOT_CONFIGURED/,
   );
+});
+
+
+test('alert egress allowlist requires an exact canonical HTTPS FQDN, port, and path', () => {
+  const allowed = ['https://alerts.example.test/security'];
+  assert.equal(
+    assertAllowedAlertEndpoint('https://alerts.example.test/security', allowed).href,
+    'https://alerts.example.test/security',
+  );
+  for (const rejected of [
+    'https://other.example.test/security',
+    'https://alerts.example.test/operations',
+    'https://alerts.example.test:8443/security',
+    'http://alerts.example.test/security',
+    'https://user:pass@alerts.example.test/security',
+    'https://127.0.0.1/security',
+    'https://alerts.example.test/security?token=secret',
+    'https://alerts.example.test/security#fragment',
+    'https://alerts.example.test/a/../security',
+  ]) {
+    assert.throws(() => assertAllowedAlertEndpoint(rejected, allowed));
+  }
+  assert.throws(() => assertAllowedAlertEndpoint('https://alerts.example.test/security', []));
+  assert.throws(() => assertAllowedAlertEndpoint('https://alerts.example.test/security', ['https://*.example.test/security']));
+});
+
+test('alert egress accepts only globally routable unicast IP addresses', () => {
+  for (const address of ['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111']) {
+    assert.equal(isPublicAlertAddress(address), true, address);
+  }
+  for (const address of [
+    '0.0.0.0', '10.1.2.3', '100.64.0.1', '127.0.0.1', '169.254.1.1',
+    '172.16.0.1', '192.168.1.1', '192.0.2.1', '198.18.0.1',
+    '198.51.100.2', '203.0.113.2', '224.0.0.1', '240.0.0.1',
+    '::', '::1', '::ffff:8.8.8.8', '64:ff9b::808:808', 'fc00::1',
+    'fe80::1', 'ff02::1', '2001:db8::1', '2002::1',
+  ]) {
+    assert.equal(isPublicAlertAddress(address), false, address);
+  }
+});
+
+test('alert egress rejects DNS answers containing any private or special-use address', async () => {
+  await assert.rejects(
+    resolvePublicAlertAddresses('alerts.example.test', async () => [
+      { address: '8.8.8.8', family: 4 },
+      { address: '10.0.0.9', family: 4 },
+    ]),
+  );
+  await assert.rejects(
+    resolvePublicAlertAddresses('alerts.example.test', async () => [
+      { address: '2606:4700:4700::1111', family: 6 },
+      { address: '::ffff:8.8.8.8', family: 6 },
+    ]),
+  );
+  await assert.rejects(resolvePublicAlertAddresses('alerts.example.test', async () => []));
+});
+
+test('pinned HTTPS agent preserves the original TLS hostname and verifies the actual peer address', async () => {
+  const { EventEmitter } = await import('node:events');
+  const socket = new EventEmitter();
+  socket.remoteAddress = '8.8.8.8';
+  socket.authorized = true;
+  socket.destroy = () => { socket.destroyed = true; };
+  let tlsOptions;
+  const agent = createPinnedHttpsAgent({
+    hostname: 'alerts.example.test',
+    port: 443,
+    address: { address: '8.8.8.8', family: 4 },
+    tlsConnect: (options) => { tlsOptions = options; return socket; },
+  });
+  const connected = new Promise((resolve, reject) => {
+    agent.createConnection({}, (error, connectedSocket) => error ? reject(error) : resolve(connectedSocket));
+    socket.emit('secureConnect');
+  });
+  assert.equal(await connected, socket);
+  assert.equal(tlsOptions.host, '8.8.8.8');
+  assert.equal(tlsOptions.servername, 'alerts.example.test');
+  assert.equal(tlsOptions.rejectUnauthorized, true);
+  agent.destroy();
+});
+
+test('pinned HTTPS agent refuses a socket whose peer differs from the validated DNS address', async () => {
+  const { EventEmitter } = await import('node:events');
+  const socket = new EventEmitter();
+  socket.remoteAddress = '1.1.1.1';
+  socket.authorized = true;
+  socket.destroy = () => { socket.destroyed = true; };
+  const agent = createPinnedHttpsAgent({
+    hostname: 'alerts.example.test',
+    port: 443,
+    address: { address: '8.8.8.8', family: 4 },
+    tlsConnect: () => socket,
+  });
+  const result = new Promise((resolve) => {
+    agent.createConnection({}, (error) => resolve(error));
+    socket.emit('secureConnect');
+  });
+  const error = await result;
+  assert.match(error.message, /peer address/i);
+  assert.equal(socket.destroyed, true);
+  agent.destroy();
+});
+
+test('alert egress fails closed until allowlist and an explicitly authorized direct route exist', async () => {
+  let resolutionCount = 0;
+  let requestCount = 0;
+  const base = {
+    url: 'https://alerts.example.test/security',
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    body: '{}',
+    allowedEndpoints: [],
+    egressMode: '',
+    directEgressAcknowledged: false,
+    resolveHost: async () => { resolutionCount += 1; return [{ address: '8.8.8.8', family: 4 }]; },
+    requestImpl: async () => { requestCount += 1; return { statusCode: 202 }; },
+  };
+  await assert.rejects(dispatchAlertWebhook(base), /allowlist/i);
+  await assert.rejects(dispatchAlertWebhook({ ...base, allowedEndpoints: [base.url] }), /egress mode/i);
+  await assert.rejects(dispatchAlertWebhook({ ...base, allowedEndpoints: [base.url], egressMode: 'direct' }), /direct egress.*authorized/i);
+  assert.equal(resolutionCount, 0);
+  assert.equal(requestCount, 0);
+});
+
+test('alert egress validates every DNS answer and passes a pinned agent to the HTTPS transport', async () => {
+  let captured;
+  const url = 'https://alerts.example.test/security';
+  const result = await dispatchAlertWebhook({
+    url,
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    body: '{"event":"test"}',
+    idempotencyKey: 'hope-outbox:test-id',
+    allowedEndpoints: [url],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: async (hostname) => {
+      assert.equal(hostname, 'alerts.example.test');
+      return [
+        { address: '8.8.8.8', family: 4 },
+        { address: '1.1.1.1', family: 4 },
+      ];
+    },
+    requestImpl: async (endpoint, options) => {
+      captured = { endpoint: endpoint.href, options };
+      return { statusCode: 202, ok: true };
+    },
+  });
+  assert.deepEqual(result, { statusCode: 202, ok: true });
+  assert.equal(captured.endpoint, url);
+  assert.equal(captured.options.method, 'POST');
+  assert.equal(captured.options.headers.authorization, 'Bearer test-alert-token');
+  assert.equal(captured.options.headers['idempotency-key'], 'hope-outbox:test-id');
+  assert.equal(captured.options.agent.options.keepAlive, false);
+  captured.options.agent.destroy();
 });
