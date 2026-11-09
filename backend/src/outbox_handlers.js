@@ -183,10 +183,16 @@ export async function processOutboxEvent(event) {
     }
     return { processed:true };
   } catch (error) {
-    recordOutboxFailed();
-    const category = failureCategory(event);
-    if (category) recordCategoryFailure(category);
-    logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
+    // Metrics and log output are best-effort. A broken telemetry sink must
+    // never prevent the lease-checked durable outbox failure transition.
+    try {
+      recordOutboxFailed();
+      const category = failureCategory(event);
+      if (category) recordCategoryFailure(category);
+      logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
+    } catch {
+      // The database outbox state and last_error remain the recovery authority.
+    }
     const failureResult = await failOutboxEvent({
       eventId:event.id,
       error:error?.message || error,
