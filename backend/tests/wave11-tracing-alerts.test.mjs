@@ -98,6 +98,7 @@ test('operational alert delivery failures notify without forwarding error detail
       onDeliveryFailure: (...args) => {
         callbackCount += 1;
         callbackArguments = args;
+        throw new Error('test logger failure');
       },
     });
 
