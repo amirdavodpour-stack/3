@@ -163,6 +163,42 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
     // Wallet operations that create/change account funds lock the same user row before the wallet.
     await assertNoFinancialObligations(client, userId);
 
+    // Cancel only notification delivery work while the recipient row is locked.
+    // Worker dispatch takes the same user lock before the Outbox row, so either
+    // the bounded send commits first or this cancellation commits first.
+    const { rowCount: cancelledNotificationEvents } = await client.query(
+      `UPDATE outbox_events
+          SET status='CANCELLED',
+              processed_at=NOW(),
+              locked_at=NULL,
+              lease_token=NULL,
+              last_error='RECIPIENT_ERASED'
+        WHERE event_type='NOTIFICATION_DISPATCH'
+          AND aggregate_type='notification'
+          AND payload->>'userId'=$1
+          AND status IN ('PENDING','PROCESSING')`,
+      [userId],
+    );
+    if (cancelledNotificationEvents > 0) {
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(
+           gen_random_uuid(),
+           'NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE',
+           NULL,
+           'user',
+           $1,
+           $2::jsonb,
+           NOW()
+         )`,
+        [userId,JSON.stringify({
+          eventCount:cancelledNotificationEvents,
+          reason:'ACCOUNT_ERASURE',
+          eventType:'NOTIFICATION_DISPATCH',
+        })],
+      );
+    }
+
     // Serialize deletion cleanup with every association path that locks the upload
     // before adding an evidence/chat reference. Candidate keys are computed while
     // these row locks are held, not in a stale pre-delete query in the route.

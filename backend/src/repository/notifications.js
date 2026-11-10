@@ -106,6 +106,189 @@ export async function getUserEmail(userId) {
   return rows[0]?.email || null;
 }
 
+async function cancelNotificationOutboxWithClient(client, { eventId, leaseToken, userId, channel, reason }) {
+  const { rowCount } = await client.query(
+    `UPDATE outbox_events
+        SET status='CANCELLED',
+            processed_at=NOW(),
+            locked_at=NULL,
+            lease_token=NULL,
+            last_error=$3
+      WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
+    [eventId, leaseToken, reason],
+  );
+  if (rowCount !== 1) return { processed:false, stale:true, reason:'STALE_LEASE' };
+
+  await client.query(
+    `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+     VALUES(
+       gen_random_uuid(),
+       $1,
+       NULL,
+       'user',
+       $2,
+       $3::jsonb,
+       NOW()
+     )`,
+    [
+      reason === 'ACCOUNT_ERASED'
+        ? 'NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE'
+        : 'NOTIFICATION_OUTBOX_CANCELLED_SUPPRESSED',
+      userId || null,
+      JSON.stringify({ eventCount:1, reason, channel }),
+    ],
+  );
+  return { processed:true, cancelled:true, reason, targetCount:0 };
+}
+
+async function completeNotificationOutboxWithClient(client, { eventId, leaseToken }) {
+  const { rowCount } = await client.query(
+    `UPDATE outbox_events
+        SET status='DONE',
+            processed_at=NOW(),
+            locked_at=NULL,
+            lease_token=NULL,
+            last_error=NULL
+      WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
+    [eventId, leaseToken],
+  );
+  return rowCount === 1
+    ? { processed:true, delivered:true }
+    : { processed:false, stale:true, reason:'STALE_LEASE' };
+}
+
+/**
+ * Serialize notification delivery with account erasure.
+ *
+ * Lock order is user FOR SHARE -> Outbox row FOR UPDATE, matching the
+ * erasure transaction's user FOR NO KEY UPDATE -> Outbox update order.
+ * The recipient lock intentionally remains held across the bounded provider
+ * attempt so erasure cannot commit while a new dispatch is being submitted.
+ */
+export async function dispatchNotificationOutbox(event, deliverTargets, { providerConfigured = true } = {}) {
+  const eventId = String(event?.id || '');
+  const payload = event?.payload || {};
+  const userId = String(payload.userId || '');
+  const notificationId = String(payload.notificationId || '');
+  const channel = String(payload.channel || '').toUpperCase();
+  const leaseToken = event?.lease_token;
+
+  if (!eventId || !userId || !notificationId || !leaseToken) {
+    throw new Error('NOTIFICATION_OUTBOX_EVENT_INVALID');
+  }
+  if (!['IN_APP','PUSH','EMAIL'].includes(channel)) {
+    throw new Error('NOTIFICATION_CHANNEL_UNSUPPORTED');
+  }
+  if (channel !== 'IN_APP' && providerConfigured && typeof deliverTargets !== 'function') {
+    throw new Error('NOTIFICATION_DELIVERY_CALLBACK_REQUIRED');
+  }
+
+  return withSqlTransaction(async (client) => {
+    // Always acquire the recipient barrier before the event row. Account
+    // erasure takes the same user-first order and therefore cannot deadlock
+    // against a worker holding the notification event.
+    const { rows: userRows } = await client.query(
+      `SELECT id,email,status FROM users WHERE id=$1 FOR SHARE`,
+      [userId],
+    );
+    const recipient = userRows[0] || null;
+
+    const { rows: eventRows } = await client.query(
+      `SELECT event_type,aggregate_type,aggregate_id,status,lease_token
+         FROM outbox_events
+        WHERE id=$1
+        FOR UPDATE`,
+      [eventId],
+    );
+    const current = eventRows[0];
+    if (!current) return { processed:false, stale:true, reason:'OUTBOX_NOT_FOUND' };
+    if (current.status === 'CANCELLED') {
+      return { processed:true, cancelled:true, reason:'ALREADY_CANCELLED', targetCount:0 };
+    }
+    if (current.status === 'DONE') {
+      return { processed:true, alreadyDone:true, delivered:true };
+    }
+    if (
+      current.event_type !== 'NOTIFICATION_DISPATCH'
+      || current.aggregate_type !== 'notification'
+      || String(current.aggregate_id || '') !== notificationId
+    ) {
+      return { processed:false, stale:true, reason:'OUTBOX_IDENTITY_MISMATCH' };
+    }
+    if (current.status !== 'PROCESSING') {
+      return { processed:false, stale:true, reason:'INVALID_OUTBOX_STATE' };
+    }
+    if (String(current.lease_token || '') !== String(leaseToken)) {
+      return { processed:false, stale:true, reason:'STALE_LEASE' };
+    }
+
+    if (!recipient || String(recipient.status || '').toUpperCase() === 'DELETED') {
+      return cancelNotificationOutboxWithClient(client, {
+        eventId, leaseToken, userId, channel, reason:'ACCOUNT_ERASED',
+      });
+    }
+
+    const { rows: notificationRows } = await client.query(
+      `SELECT id FROM notifications WHERE id=$1 AND user_id=$2 FOR KEY SHARE`,
+      [notificationId, userId],
+    );
+    if (!notificationRows[0]) {
+      return cancelNotificationOutboxWithClient(client, {
+        eventId, leaseToken, userId, channel, reason:'NOTIFICATION_MISSING',
+      });
+    }
+
+    if (channel === 'IN_APP') {
+      const completed = await completeNotificationOutboxWithClient(client, { eventId, leaseToken });
+      return { ...completed, channel, targetCount:completed.processed ? 1 : 0 };
+    }
+
+    if (channel === 'EMAIL' && String(recipient.email || '').trim().toLowerCase().endsWith('@invalid.local')) {
+      return cancelNotificationOutboxWithClient(client, {
+        eventId, leaseToken, userId, channel, reason:'EMAIL_RECIPIENT_INVALIDATED',
+      });
+    }
+
+    if (!providerConfigured) {
+      const completed = await completeNotificationOutboxWithClient(client, { eventId, leaseToken });
+      return { ...completed, providerNotConfigured:true, channel, targetCount:0 };
+    }
+
+    let targets = [];
+    if (channel === 'PUSH') {
+      const { rows } = await client.query(
+        `SELECT id,user_id,platform,token,enabled,created_at,updated_at
+           FROM notification_devices
+          WHERE user_id=$1 AND enabled=true
+          ORDER BY updated_at DESC`,
+        [userId],
+      );
+      targets = rows.map((row) => ({
+        id:row.id,
+        userId:row.user_id,
+        platform:row.platform,
+        token:row.token,
+        enabled:row.enabled,
+        createdAt:row.created_at?.toISOString?.() ?? row.created_at,
+        updatedAt:row.updated_at?.toISOString?.() ?? row.updated_at,
+      }));
+    } else if (recipient.email) {
+      targets = [{ email:recipient.email }];
+    }
+
+    if (!targets.length) {
+      const completed = await completeNotificationOutboxWithClient(client, { eventId, leaseToken });
+      return { ...completed, noTarget:true, channel, targetCount:0 };
+    }
+
+    // deliverTargets delegates to deliverNotification, whose configured
+    // timeout/retry budget bounds how long the recipient barrier is held.
+    await deliverTargets({ channel, targets, notificationId, userId });
+    const completed = await completeNotificationOutboxWithClient(client, { eventId, leaseToken });
+    return { ...completed, channel, targetCount:targets.length };
+  });
+}
+
 export async function disableNotificationDevice(id,userId) {
   const {rows}=await requirePool().query(`UPDATE notification_devices SET enabled=false,updated_at=NOW() WHERE id=$1 AND user_id=$2 RETURNING *`,[id,userId]);
   const r=rows[0];
@@ -114,6 +297,15 @@ export async function disableNotificationDevice(id,userId) {
 
 export async function queueNotificationWithClient(client,{userId,type,title,body,data={},dedupeKey=null,channels=['IN_APP']}) {
   if(!userId) return {created:false,reason:'NO_RECIPIENT'};
+  // Lock the recipient before creating content or an Outbox event. A matching
+  // account-erasure transaction takes FOR NO KEY UPDATE on this row first.
+  const { rows: recipientRows } = await client.query(
+    `SELECT id,status FROM users WHERE id=$1 FOR SHARE`,
+    [userId],
+  );
+  if (!recipientRows[0] || String(recipientRows[0].status || '').toUpperCase() === 'DELETED') {
+    return { created:false, reason:'RECIPIENT_UNAVAILABLE' };
+  }
   const id=crypto.randomUUID();
   if(dedupeKey){
     const {rows:existing}=await client.query(`SELECT * FROM notifications WHERE user_id=$1 AND (data->>'dedupeKey')=$2 ORDER BY created_at DESC LIMIT 1`,[userId,dedupeKey]);
