@@ -31,8 +31,13 @@ function invoke(overrides = {}) {
     calls.push({ url: url.href, ...options });
     return fakeResponse(200, { incident: incident() });
   };
+  const respond = (statusCode, body = {}) => async (url, options) => {
+    calls.push({ url: url.href, ...options });
+    return fakeResponse(statusCode, body);
+  };
   return {
     calls,
+    respond,
     run: (options = {}) => readPagerDutyIncident({
       incidentId: INCIDENT_ID,
       readOnlyToken: TOKEN,
@@ -64,7 +69,8 @@ test('PagerDuty readback is a single GET to the fixed API host with dedicated re
       createdAt: '2026-11-10T12:00:00Z',
       updatedAt: '2026-11-10T12:02:00Z',
       resolvedAt: null,
-      humanAcknowledged: true,
+      userAcknowledged: true,
+      humanAcknowledged: false,
       acknowledgements: [{ at: '2026-11-10T12:01:00Z', userId: 'PUSER123' }],
       resolved: false,
     },
@@ -72,16 +78,23 @@ test('PagerDuty readback is a single GET to the fixed API host with dedicated re
 });
 test('incident existence, human ACK and resolution remain separate independent states', async () => {
   const noAck = invoke();
-  const pending = await noAck.run({ requestImpl: async () => fakeResponse(200, { incident: incident({ status: 'triggered', acknowledgements: [] }) }) });
+  const pending = await noAck.run({ requestImpl: noAck.respond(200, { incident: incident({ status: 'triggered', acknowledgements: [] }) }) });
   assert.equal(pending.incidentExists, true);
+  assert.equal(pending.incident.userAcknowledged, false);
   assert.equal(pending.incident.humanAcknowledged, false);
   assert.equal(pending.incident.resolved, false);
 
+  const human = invoke();
+  const acknowledged = await human.run({ humanAcknowledgerIds: ['PUSER123'] });
+  assert.equal(acknowledged.incident.userAcknowledged, true);
+  assert.equal(acknowledged.incident.humanAcknowledged, true);
+
   const resolved = invoke();
-  const done = await resolved.run({ requestImpl: async () => fakeResponse(200, { incident: incident({
+  const done = await resolved.run({ requestImpl: resolved.respond(200, { incident: incident({
     status: 'resolved', resolved_at: '2026-11-10T12:10:00Z', acknowledgements: [],
   }) }) });
   assert.equal(done.incidentExists, true);
+  assert.equal(done.incident.userAcknowledged, false);
   assert.equal(done.incident.humanAcknowledged, false);
   assert.equal(done.incident.resolved, true);
   assert.equal(done.incident.resolvedAt, '2026-11-10T12:10:00Z');
@@ -94,6 +107,7 @@ test('automated or malformed acknowledgers do not count as human ACK', async () 
       { at: 'invalid', acknowledger: { id: '', type: 'user_reference' } },
     ],
   }) }) });
+  assert.equal(result.incident.userAcknowledged, false);
   assert.equal(result.incident.humanAcknowledged, false);
   assert.deepEqual(result.incident.acknowledgements, []);
 });
@@ -118,13 +132,13 @@ test('only the canonical PagerDuty API base is accepted and every DNS answer mus
 });
 test('404 does not claim an incident was created and does not retry', async () => {
   const h = invoke();
-  await assert.rejects(h.run({ requestImpl: async () => fakeResponse(404, { error: 'not found' }) }), /PAGERDUTY_INCIDENT_NOT_FOUND/);
+  await assert.rejects(h.run({ requestImpl: h.respond(404, { error: 'not found' }) }), /PAGERDUTY_INCIDENT_NOT_FOUND/);
   assert.equal(h.calls.length, 1);
 });
 test('401, 403 and 429 are surfaced as readback errors without write fallback or retry', async () => {
   for (const [status, code] of [[401, 'PAGERDUTY_READONLY_AUTH_FAILED'], [403, 'PAGERDUTY_READONLY_FORBIDDEN'], [429, 'PAGERDUTY_READONLY_RATE_LIMITED']]) {
     const h = invoke();
-    await assert.rejects(h.run({ requestImpl: async () => fakeResponse(status, {}) }), new RegExp(code));
+    await assert.rejects(h.run({ requestImpl: h.respond(status, {}) }), new RegExp(code));
     assert.equal(h.calls.length, 1);
     assert.equal(h.calls[0].method, 'GET');
   }
