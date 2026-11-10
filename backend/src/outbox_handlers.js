@@ -233,7 +233,8 @@ export async function processOutboxEvent(event) {
           channel,
           reason:result.reason || 'STALE',
         });
-      }    } else {
+      }
+    } else {
       throw new Error(`UNSUPPORTED_OUTBOX_EVENT:${event.event_type}`);
     }
     return { processed:true };
