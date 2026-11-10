@@ -10,6 +10,8 @@ on:
       - "backend/package-lock.json"
       - "backend/cloudflare-collector/**"
       - "backend/tests/cloudflare-collector.test.mjs"
+      - "backend/tests/pagerduty-incident-readback.test.mjs"
+      - "backend/src/pagerduty_incident_readback.js"
       - "backend/tests/outbox-contract.test.mjs"
       - "backend/tests/wave11-tracing-alerts.test.mjs"
       - "backend/tests/security-alert-outbox-replay-route.test.mjs"
