@@ -130,6 +130,22 @@ test('migration 054 admits CANCELLED as a distinct Outbox terminal status',{skip
   }
 });
 
+test('only notification Outbox events may use the CANCELLED terminal status',{skip:!enabled,timeout:30_000},async()=>{
+  const eventId=uuid();
+  await assert.rejects(
+    pool.query(
+      `INSERT INTO outbox_events(
+         id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,
+         attempts,available_at,created_at
+       ) VALUES(
+         $1,'PAYMENT_RELEASE','payment',$2,$3,'{}'::jsonb,'CANCELLED',0,NOW(),NOW()
+       )`,
+      [eventId,uuid(),`cancelled-payment-must-be-rejected:${eventId}`],
+    ),
+    (error)=>error?.code==='23514' && error?.constraint==='outbox_events_status_check',
+  );
+});
+
 test('account erasure cancels only PENDING and PROCESSING notification events, clears leases, audits counts, and preserves immutable payloads',{skip:!enabled,timeout:30_000},async()=>{
   const userId=await createUser();
   const notificationId=await createNotification(userId);

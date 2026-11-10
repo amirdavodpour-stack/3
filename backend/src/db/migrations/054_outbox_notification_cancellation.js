@@ -5,7 +5,13 @@ export const migration = {
     await client.query(
       `ALTER TABLE outbox_events
          ADD CONSTRAINT outbox_events_status_cancelled_check
-         CHECK(status IN ('PENDING','PROCESSING','DONE','FAILED','CANCELLED'))
+         CHECK(
+           status IN ('PENDING','PROCESSING','DONE','FAILED','CANCELLED')
+           AND (
+             status <> 'CANCELLED'
+             OR (event_type='NOTIFICATION_DISPATCH' AND aggregate_type='notification')
+           )
+         )
          NOT VALID`,
     );
     await client.query(
