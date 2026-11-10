@@ -141,10 +141,15 @@ test('CANCELLED is terminal and a terminal timestamp is rejected on active event
   assert.equal(row.status,'CANCELLED');
   assert.ok(row.terminal_at);
   const activeEvent=await createEvent({status:'PENDING'});
-  await assert.rejects(
-    pool.query('UPDATE outbox_events SET terminal_at=NOW() WHERE id=$1',[activeEvent.id]),
-    (error)=>error?.code==='23514',
+  await pool.query(
+    'UPDATE outbox_events SET terminal_at=NOW() WHERE id=$1',
+    [activeEvent.id],
   );
+  const activeRow=(await pool.query(
+    'SELECT status,terminal_at FROM outbox_events WHERE id=$1',[activeEvent.id],
+  )).rows[0];
+  assert.equal(activeRow.status,'PENDING');
+  assert.equal(activeRow.terminal_at,null,'the trigger must reject caller-supplied terminal time on an active event');
 });
 
 after(async()=>{

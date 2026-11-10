@@ -17,7 +17,7 @@ test('migration 055 installs a universal Outbox terminal clock without historica
   assert.match(migration,/ADD COLUMN IF NOT EXISTS terminal_at TIMESTAMPTZ/);
   assert.match(migration,/CREATE OR REPLACE FUNCTION hope_set_outbox_terminal_at/);
   assert.match(migration,/BEFORE INSERT OR UPDATE ON outbox_events/);
-  assert.match(migration,/terminal_at IS NULL OR status IN \('DONE','FAILED','CANCELLED'\)/);
+  assert.match(migration,/terminal_at IS NULL\s+OR status IN \('DONE','FAILED','CANCELLED'\)/);
   assert.doesNotMatch(migration,/UPDATE\s+outbox_events\s+SET\s+terminal_at/i,
     'legacy terminal timestamps must remain unknown rather than being inferred from processed_at');
 });
