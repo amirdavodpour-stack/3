@@ -284,7 +284,6 @@ export async function dispatchAlertWebhook({
     authorization: 'Bearer ' + token,
   };
   headers['idempotency-key'] = String(idempotencyKey);
-  };
   try {
     return await withTimeout(
       () => requestImpl(endpoint, {
