@@ -72,7 +72,7 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
   assert.match(privacyRepo,/NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE/);
   assert.match(notificationsRepo,/SELECT id,status FROM users WHERE id=\$1 FOR SHARE/);
   assert.match(notificationsRepo,/RECIPIENT_UNAVAILABLE/);
-  assert.match(applicationsRepo,/SELECT id,status FROM users WHERE id=\\$1 FOR SHARE/);
+  assert.match(applicationsRepo,/SELECT id,status FROM users WHERE id=\$1 FOR SHARE/);
   assert.ok(applicationsRepo.indexOf('FOR SHARE') < applicationsRepo.indexOf('FOR UPDATE'));
   assert.match(cancellationMigration,/CANCELLED/);
   assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
