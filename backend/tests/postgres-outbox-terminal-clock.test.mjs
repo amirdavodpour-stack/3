@@ -135,8 +135,8 @@ test('generic completion sets terminal_at and repeated DONE callbacks preserve i
 });
 
 test('CANCELLED is terminal and a terminal timestamp is rejected on active events',{skip:!enabled,timeout:30_000},async()=>{
-  const event=await createEvent({status:'PENDING'});
-  await pool.query("UPDATE outbox_events SET status='CANCELLED' WHERE id=$1",[event.id]);
+  const event=await createEvent({status:'PENDING',eventType:'NOTIFICATION_DISPATCH'});
+  await pool.query("UPDATE outbox_events SET aggregate_type='notification',status='CANCELLED' WHERE id=$1",[event.id]);
   let row=(await pool.query('SELECT status,terminal_at FROM outbox_events WHERE id=$1',[event.id])).rows[0];
   assert.equal(row.status,'CANCELLED');
   assert.ok(row.terminal_at);

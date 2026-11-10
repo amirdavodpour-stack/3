@@ -47,6 +47,7 @@ jobs:
         working-directory: backend
         run: |
           npm run check
+          node --test tests/outbox-terminal-clock-contract.test.mjs
           npm run test:fast
 
   postgres17:
