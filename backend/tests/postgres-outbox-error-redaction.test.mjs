@@ -43,11 +43,11 @@ async function createPayoutFixture() {
   const holdId = uuid();
   const eventId = uuid();
   const leaseToken = uuid();
-  const idempotencyKey = `outbox-redaction-payout:\${payoutId}`;
+  const idempotencyKey = 'outbox-redaction-payout:' + payoutId;
   await pool.query(
     `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
      VALUES($1,$2,'integration-only-hash','Outbox redaction test','USER','ACTIVE',0,NOW())`,
-    [userId,`outbox-redaction-\${userId}@example.test`],
+    [userId,'outbox-redaction-' + userId + '@example.test'],
   );
   await pool.query(
     `INSERT INTO wallet_accounts(id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at)
