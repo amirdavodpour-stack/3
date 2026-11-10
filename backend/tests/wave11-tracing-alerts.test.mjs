@@ -35,61 +35,56 @@ test('disabled alert delivery is a no-op', async () => {
   assert.equal(result.dispatched, false);
 });
 
-test('operational alert delivery rejects HTTP redirects before forwarding the bearer token', async () => {
+test('operational alerts use the exact allowlisted pinned HTTPS transport', async () => {
   const previousUrl = config.alertWebhookUrl;
   const previousToken = config.alertWebhookToken;
   const previousTimeout = config.alertWebhookTimeoutMs;
-  const previousFetch = globalThis.fetch;
   let captured;
-
-  config.alertWebhookUrl = 'https://alerts.example.test/operations';
+  const url = 'https://alerts.example.test/operations';
+  config.alertWebhookUrl = url;
   config.alertWebhookToken = 'test-operational-alert-token';
   config.alertWebhookTimeoutMs = 500;
-  globalThis.fetch = async (url, options) => {
-    captured = { url, options };
-    return { ok: true, status: 202 };
-  };
-
   try {
     const result = await dispatchOperationalAlerts({
       health: { alerts: [{ code: 'HTTP_5XX_RATE_HIGH', severity: 'critical' }] },
       recentHealth: { requests: 10, errors5xx: 2 },
       latency: { p95: 20, p99: 50 },
+    }, {
+      egressOptions: {
+        allowedEndpoints: [url],
+        egressMode: 'direct',
+        directEgressAcknowledged: true,
+        resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+        requestImpl: async (endpoint, options) => {
+          captured = { url: endpoint.href, options };
+          return { ok: true, statusCode: 202 };
+        },
+      },
     });
-
     assert.deepEqual(result, { dispatched: true });
-    assert.equal(captured.url, 'https://alerts.example.test/operations');
+    assert.equal(captured.url, url);
     assert.equal(captured.options.method, 'POST');
     assert.equal(captured.options.headers.authorization, 'Bearer test-operational-alert-token');
-    assert.equal(captured.options.redirect, 'error');
+    assert.equal(captured.options.agent.options.keepAlive, false);
+    assert.equal(captured.options.headers['idempotency-key'], 'hope-operational:HTTP_5XX_RATE_HIGH:critical');
   } finally {
-    globalThis.fetch = previousFetch;
     config.alertWebhookUrl = previousUrl;
     config.alertWebhookToken = previousToken;
     config.alertWebhookTimeoutMs = previousTimeout;
-    await dispatchOperationalAlerts({ health: { alerts: [] } });
   }
 });
 
-
-
-test('operational alert delivery failures notify without forwarding error details to the callback', async () => {
+test('operational alert failures do not leak endpoint, response or credential details', async () => {
   const previousUrl = config.alertWebhookUrl;
   const previousToken = config.alertWebhookToken;
   const previousTimeout = config.alertWebhookTimeoutMs;
-  const previousFetch = globalThis.fetch;
-  const failureMessage =
-    'redirect rejected https://redirect.example.test/target?token=redirect-secret';
+  const failureMessage = 'redirect rejected https://redirect.example.test/target?token=redirect-secret';
   let callbackCount = 0;
   let callbackArguments = null;
-
-  config.alertWebhookUrl = 'https://alerts.example.test/operations?key=destination-secret';
+  const url = 'https://alerts.example.test/operations';
+  config.alertWebhookUrl = url;
   config.alertWebhookToken = 'test-operational-alert-token';
   config.alertWebhookTimeoutMs = 500;
-  globalThis.fetch = async () => {
-    throw new Error(failureMessage);
-  };
-
   try {
     const result = await dispatchOperationalAlerts({
       health: { alerts: [{ code: 'OPERATIONAL_ALERT_FAILURE_TEST', severity: 'critical' }] },
@@ -101,21 +96,22 @@ test('operational alert delivery failures notify without forwarding error detail
         callbackArguments = args;
         throw new Error('test logger failure');
       },
+      egressOptions: {
+        allowedEndpoints: [url],
+        egressMode: 'direct',
+        directEgressAcknowledged: true,
+        resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+        requestImpl: async () => { throw new Error(failureMessage); },
+      },
     });
-
-    assert.deepEqual(result, {
-      dispatched: false,
-      reason: 'delivery-failed',
-      error: failureMessage,
-    });
+    assert.deepEqual(result, { dispatched: false, reason: 'delivery-failed' });
     assert.equal(callbackCount, 1);
     assert.deepEqual(callbackArguments, []);
+    assert.doesNotMatch(JSON.stringify(result), /redirect-secret|redirect\.example\.test/);
   } finally {
-    globalThis.fetch = previousFetch;
     config.alertWebhookUrl = previousUrl;
     config.alertWebhookToken = previousToken;
     config.alertWebhookTimeoutMs = previousTimeout;
-    await dispatchOperationalAlerts({ health: { alerts: [] } });
   }
 });
 
@@ -137,45 +133,60 @@ function refreshReuseAlertEvent() {
 
 test('refresh reuse security alerts use stable outbox idempotency and allowlisted metadata only', async () => {
   let captured;
-  const event=refreshReuseAlertEvent();
-  const result=await dispatchSecurityAlert(event,{
-    url:'https://alerts.example.test/security',
-    token:'test-alert-token',
-    timeoutMs:500,
-    fetchImpl:async (url,options) => {
-      captured={url,options};
-      return {ok:true,status:202};
+  const event = refreshReuseAlertEvent();
+  const url = 'https://alerts.example.test/security';
+  const result = await dispatchSecurityAlert(event, {
+    url,
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    egressOptions: {
+      allowedEndpoints: [url],
+      egressMode: 'direct',
+      directEgressAcknowledged: true,
+      resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+      requestImpl: async (endpoint, options) => {
+        captured = { url: endpoint.href, options };
+        return { ok: true, statusCode: 202 };
+      },
     },
   });
 
-  assert.deepEqual(result,{dispatched:true});
-  assert.equal(captured.url,'https://alerts.example.test/security');
-  assert.equal(captured.options.method,'POST');
-  assert.equal(captured.options.headers.authorization,'Bearer test-alert-token');
-  assert.equal(captured.options.headers['idempotency-key'],`hope-outbox:${event.id}`);
-  const body=JSON.parse(captured.options.body);
-  assert.deepEqual(body,{
-    service:'hope-api',
-    eventType:'SECURITY_ALERT',
-    occurredAt:'2026-11-07T18:00:00.000Z',
-    alert:{
-      code:'AUTH_REFRESH_REUSE_DETECTED',
-      severity:'page',
-      actorUserId:event.aggregate_id,
-      tokenFamilyId:event.payload.tokenFamilyId,
-      runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+  assert.deepEqual(result, { dispatched: true });
+  assert.equal(captured.url, url);
+  assert.equal(captured.options.method, 'POST');
+  assert.equal(captured.options.headers.authorization, 'Bearer test-alert-token');
+  assert.equal(captured.options.headers['idempotency-key'], 'hope-outbox:' + event.id);
+  const body = JSON.parse(captured.options.body);
+  assert.deepEqual(body, {
+    service: 'hope-api',
+    eventType: 'SECURITY_ALERT',
+    occurredAt: '2026-11-07T18:00:00.000Z',
+    alert: {
+      code: 'AUTH_REFRESH_REUSE_DETECTED',
+      severity: 'page',
+      actorUserId: event.aggregate_id,
+      tokenFamilyId: event.payload.tokenFamilyId,
+      runbook: 'docs/runbooks/auth-refresh-token-reuse.md',
     },
   });
-  assert.doesNotMatch(JSON.stringify(body),/must-not-be-forwarded|private@example\.test/);
+  assert.doesNotMatch(JSON.stringify(body), /must-not-be-forwarded|private@example\.test/);
+  captured.options.agent.destroy();
 });
 
 test('refresh reuse security alert delivery fails on non-success responses for outbox retry', async () => {
+  const url = 'https://alerts.example.test/security';
   await assert.rejects(
-    dispatchSecurityAlert(refreshReuseAlertEvent(),{
-      url:'https://alerts.example.test/security',
-      token:'test-alert-token',
-      timeoutMs:500,
-      fetchImpl:async () => ({ok:false,status:503}),
+    dispatchSecurityAlert(refreshReuseAlertEvent(), {
+      url,
+      token: 'test-alert-token',
+      timeoutMs: 500,
+      egressOptions: {
+        allowedEndpoints: [url],
+        egressMode: 'direct',
+        directEgressAcknowledged: true,
+        resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+        requestImpl: async () => ({ ok: false, statusCode: 503 }),
+      },
     }),
     /SECURITY_ALERT_WEBHOOK_HTTP_503/,
   );
@@ -183,10 +194,12 @@ test('refresh reuse security alert delivery fails on non-success responses for o
 
 test('refresh reuse security alert delivery fails closed when no configured receiver exists', async () => {
   await assert.rejects(
-    dispatchSecurityAlert(refreshReuseAlertEvent(),{
-      url:'',
-      token:'',
-      fetchImpl:async () => { throw new Error('fetch must not be called'); },
+    dispatchSecurityAlert(refreshReuseAlertEvent(), {
+      url: '',
+      token: '',
+      egressOptions: {
+        requestImpl: async () => { throw new Error('request must not be called'); },
+      },
     }),
     /SECURITY_ALERT_WEBHOOK_NOT_CONFIGURED/,
   );

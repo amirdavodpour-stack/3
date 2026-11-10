@@ -21,6 +21,19 @@ if (fs.existsSync(pubspecPath)) {
 }
 export const HOPE_VERSION = hopeVersion;
 
+const stringArrayEnv = (name) => {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return [];
+  let value;
+  try { value = JSON.parse(raw); } catch {
+    throw new Error(name + ' must be a JSON array of exact endpoint URLs');
+  }
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !item.trim())) {
+    throw new Error(name + ' must be a JSON array of non-empty strings');
+  }
+  return value;
+};
+
 const positiveIntegerEnv = (name, fallback, { min = 1, max = 2147483647 } = {}) => {
   const raw = process.env[name];
   const value = raw == null || raw === '' ? fallback : Number(raw);
@@ -120,6 +133,9 @@ export const config = {
   alertWebhookUrl: process.env.ALERT_WEBHOOK_URL || '',
   alertWebhookToken: process.env.ALERT_WEBHOOK_TOKEN || '',
   alertWebhookTimeoutMs: positiveIntegerEnv('ALERT_WEBHOOK_TIMEOUT_MS', 3000, { min: 500, max: 30000 }),
+  alertWebhookAllowedEndpoints: stringArrayEnv('ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON'),
+  alertWebhookEgressMode: process.env.ALERT_EGRESS_MODE || '',
+  alertWebhookDirectEgressAcknowledged: process.env.ALERT_DIRECT_EGRESS_ACKNOWLEDGED === 'true',
 };
 
 if (process.env.NODE_ENV === 'production') {
