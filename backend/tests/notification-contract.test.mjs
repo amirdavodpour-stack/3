@@ -77,3 +77,23 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
   assert.match(cancellationMigration,/CANCELLED/);
   assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
 });
+
+
+test('new notification Outbox events use a content-free v2 payload and dispatch reads canonical database content',()=>{
+  const producerStart=notificationsRepo.indexOf('export async function queueNotificationWithClient(');
+  const producer=notificationsRepo.slice(producerStart);
+  assert.match(producer,/const eventPayload = \\{\\s*schemaVersion:\\s*2,\\s*channel\\s*\\}/s);
+  assert.match(producer,/JSON\\.stringify\\(eventPayload\\)/);
+
+  const dispatchStart=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
+  const dispatch=notificationsRepo.slice(dispatchStart);
+  assert.match(dispatch,/SELECT id,user_id,type,title,body,data FROM notifications/);
+  assert.match(dispatch,/notification:\\s*notification/);
+
+  const notificationHandlerStart=handlers.indexOf("} else if (event.event_type === 'NOTIFICATION_DISPATCH')");
+  const notificationHandler=handlers.slice(notificationHandlerStart);
+  assert.match(notificationHandler,/notification\\.title/);
+  assert.match(notificationHandler,/notification\\.body/);
+  assert.match(notificationHandler,/notification\\.data/);
+  assert.doesNotMatch(notificationHandler,/payload\\.(title|body|data|userId|notificationId)/);
+});
