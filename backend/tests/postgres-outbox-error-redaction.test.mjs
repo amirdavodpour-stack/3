@@ -219,8 +219,15 @@ test('legacy payout failure_message is not returned by user payout reads',{skip:
 test('idempotent payout request never returns legacy raw failure_message to the wallet route',{skip:!enabled,timeout:30_000},async()=>{
   const fixture = await createPayoutFixture();
   const legacySecret = 'legacy failure body with Bearer token and payout@example.test';
+  const failed = await outbox.failOutboxEvent({
+    eventId:fixture.eventId,
+    error:new Error(legacySecret),
+    maxAttempts:1,
+    leaseToken:fixture.leaseToken,
+  });
+  assert.equal(failed.terminal,true);
   await pool.query(
-    "UPDATE payouts SET status='FAILED',failure_message=$2 WHERE id=$1",
+    'UPDATE payouts SET failure_message=$2 WHERE id=$1',
     [fixture.payoutId,legacySecret],
   );
   const payout = await payoutsRepo.requestPayoutAtomic({
