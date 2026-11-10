@@ -22,15 +22,15 @@ const pool = enabled ? dbModule.getPool() : null;
 const uuid = () => crypto.randomUUID();
 const createdEventIds = [];
 
-async function createEvent({status='PENDING',attempts=0,leaseToken=null,eventType='OUTBOX_TERMINAL_CLOCK_TEST'}={}) {
+async function createEvent({status='PENDING',attempts=0,leaseToken=null,eventType='OUTBOX_TERMINAL_CLOCK_TEST',aggregateType='test_resource'}={}) {
   const id=uuid();
   const key='terminal-clock-test:'+id;
   await pool.query(
     `INSERT INTO outbox_events(
        id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,
        attempts,available_at,locked_at,lease_token,created_at
-     ) VALUES($1,$2,'test_resource',NULL,$3,'{}'::jsonb,$4,$5,NOW(),$6,$7,NOW())`,
-    [id,eventType,key,status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
+     ) VALUES($1,$2,$3,NULL,$4,'{}'::jsonb,$5,$6,NOW(),$7,$8,NOW())`,
+    [id,eventType,aggregateType,key,status,attempts,status==='PROCESSING'?new Date():null,leaseToken],
   );
   createdEventIds.push(id);
   return {id,leaseToken};
@@ -134,9 +134,9 @@ test('generic completion sets terminal_at and repeated DONE callbacks preserve i
   assert.equal(afterRow.terminal_at.toISOString(),before.terminal_at.toISOString());
 });
 
-test('CANCELLED is terminal and a terminal timestamp is rejected on active events',{skip:!enabled,timeout:30_000},async()=>{
-  const event=await createEvent({status:'PENDING',eventType:'NOTIFICATION_DISPATCH'});
-  await pool.query("UPDATE outbox_events SET aggregate_type='notification',status='CANCELLED' WHERE id=$1",[event.id]);
+test('CANCELLED is terminal and callers cannot rewrite terminal_at on active events',{skip:!enabled,timeout:30_000},async()=>{
+  const event=await createEvent({status:'PENDING',eventType:'NOTIFICATION_DISPATCH',aggregateType:'notification'});
+  await pool.query("UPDATE outbox_events SET status='CANCELLED' WHERE id=$1",[event.id]);
   let row=(await pool.query('SELECT status,terminal_at FROM outbox_events WHERE id=$1',[event.id])).rows[0];
   assert.equal(row.status,'CANCELLED');
   assert.ok(row.terminal_at);
