@@ -157,30 +157,30 @@ export async function processOutboxEvent(event) {
           : '';
       const result = await dispatchNotificationOutbox(
         event,
-        async ({ channel: deliveryChannel, targets }) => {
+        async ({ channel: deliveryChannel, targets, notification }) => {
           for (const target of targets) {
             const body = deliveryChannel === 'PUSH'
               ? {
-                  notificationId:payload.notificationId,
-                  userId:payload.userId,
+                  notificationId:notification.id,
+                  userId:notification.userId,
                   token:target.token,
                   platform:target.platform,
-                  title:payload.title,
-                  body:payload.body,
-                  data:payload.data || {},
+                  title:notification.title,
+                  body:notification.body,
+                  data:notification.data || {},
                 }
               : {
-                  notificationId:payload.notificationId,
-                  userId:payload.userId,
+                  notificationId:notification.id,
+                  userId:notification.userId,
                   to:target.email,
-                  subject:payload.title,
-                  text:payload.body,
-                  data:payload.data || {},
+                  subject:notification.title,
+                  text:notification.body,
+                  data:notification.data || {},
                 };
             await deliverNotification({
               url,
               payload:body,
-              idempotencyKey:`notification:${payload.notificationId}:${deliveryChannel}:${target.token || target.email}`,
+              idempotencyKey:\`notification:\${notification.id}:\${deliveryChannel}:\${target.token || target.email}\`,
             });
           }
         },
@@ -193,7 +193,7 @@ export async function processOutboxEvent(event) {
           level:'info',
           action:'NOTIFICATION_DISPATCH_CANCELLED',
           eventId:event.id,
-          notificationId:payload.notificationId,
+          notificationId:event.aggregate_id,
           channel,
           reason:result.reason,
         });
@@ -203,7 +203,7 @@ export async function processOutboxEvent(event) {
           level:'info',
           action:'NOTIFICATION_PROVIDER_NOT_CONFIGURED',
           eventId:event.id,
-          notificationId:payload.notificationId,
+          notificationId:event.aggregate_id,
           channel,
         });
       } else if (result.noTarget) {
@@ -212,7 +212,7 @@ export async function processOutboxEvent(event) {
           level:'info',
           action:'NOTIFICATION_NO_TARGET',
           eventId:event.id,
-          notificationId:payload.notificationId,
+          notificationId:event.aggregate_id,
           channel,
         });
       } else if (result.processed) {
@@ -221,7 +221,7 @@ export async function processOutboxEvent(event) {
           level:'info',
           action:'NOTIFICATION_DELIVERED',
           eventId:event.id,
-          notificationId:payload.notificationId,
+          notificationId:event.aggregate_id,
           channel,
           targetCount:result.targetCount || 0,
         });
@@ -233,8 +233,7 @@ export async function processOutboxEvent(event) {
           channel,
           reason:result.reason || 'STALE',
         });
-      }
-    } else {
+      }    } else {
       throw new Error(`UNSUPPORTED_OUTBOX_EVENT:${event.event_type}`);
     }
     return { processed:true };
