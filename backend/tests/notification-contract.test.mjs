@@ -77,3 +77,49 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
   assert.match(cancellationMigration,/CANCELLED/);
   assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
 });
+
+
+test('new notification Outbox events use content-free v2 payloads',()=>{
+  const start=notificationsRepo.indexOf('export async function queueNotificationWithClient(');
+  const end=notificationsRepo.indexOf('\nexport async function queueNotification(',start);
+  assert.ok(start>=0&&end>start,'notification producer must exist');
+  const producer=notificationsRepo.slice(start,end);
+  assert.match(producer,/schemaVersion\s*:\s*2/);
+  assert.match(producer,/JSON\.stringify\(outboxPayload\)/);
+  const payloadStart=producer.indexOf('const outboxPayload');
+  const payloadEnd=producer.indexOf(';',payloadStart);
+  assert.ok(payloadStart>=0&&payloadEnd>payloadStart,'producer must build an explicit v2 payload');
+  const payloadBuilder=producer.slice(payloadStart,payloadEnd);
+  assert.match(payloadBuilder,/channel/);
+  assert.doesNotMatch(payloadBuilder,/\b(userId|type|title|body|data|email|token)\b/,
+    'Outbox v2 must not duplicate recipient identifiers or notification content');
+});
+
+test('notification worker hydrates canonical content from the database after the recipient and Outbox locks',()=>{
+  const start=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
+  const end=notificationsRepo.indexOf('\nexport async function disableNotificationDevice(',start);
+  assert.ok(start>=0&&end>start,'notification Outbox dispatcher must exist');
+  const dispatch=notificationsRepo.slice(start,end);
+  const ownerLookup=dispatch.indexOf('SELECT user_id FROM notifications WHERE id=$1');
+  const recipientLock=dispatch.indexOf('SELECT id,email,status FROM users WHERE id=$1 FOR SHARE');
+  const eventLock=dispatch.indexOf('FROM outbox_events');
+  const contentHydration=dispatch.indexOf('SELECT id,user_id,type,title,body,data FROM notifications');
+  assert.ok(ownerLookup>=0,'dispatcher must resolve the recipient from the canonical notification row');
+  assert.ok(recipientLock>ownerLookup,'recipient barrier must be acquired after the non-locking owner lookup');
+  assert.ok(eventLock>recipientLock,'recipient lock must precede the Outbox row lock');
+  assert.ok(contentHydration>eventLock,'notification content must be read only after both locks');
+  assert.match(dispatch,/deliverTargets\(\{\s*channel,\s*targets,\s*notificationId,\s*userId,\s*notification\s*\}\)/s);
+});
+
+test('notification provider dispatch uses hydrated content and preserves legacy v1 event compatibility',()=>{
+  const start=handlers.indexOf("} else if (event.event_type === 'NOTIFICATION_DISPATCH') {");
+  const end=handlers.indexOf("\n    } else {",start);
+  assert.ok(start>=0&&end>start,'notification Outbox handler must exist');
+  const branch=handlers.slice(start,end);
+  assert.match(branch,/title:notification\.title/);
+  assert.match(branch,/body:notification\.body/);
+  assert.match(branch,/data:notification\.data/);
+  assert.doesNotMatch(branch,/payload\.(?:userId|title|body|data|notificationId)/,
+    'provider delivery must not trust duplicated v1 content or recipient fields');
+  assert.match(notificationsRepo,/String\(event\?\.aggregate_id\s*\|\|\s*payload\.notificationId/);
+});
