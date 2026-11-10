@@ -180,7 +180,7 @@ export async function processOutboxEvent(event) {
             await deliverNotification({
               url,
               payload:body,
-              idempotencyKey:\`notification:\${notification.id}:\${deliveryChannel}:\${target.token || target.email}\`,
+              idempotencyKey:`notification:${notification.id}:${deliveryChannel}:${target.token || target.email}`,
             });
           }
         },
