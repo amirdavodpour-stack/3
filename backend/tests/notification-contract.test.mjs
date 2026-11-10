@@ -87,8 +87,8 @@ test('new notification Outbox events use a content-free v2 payload and dispatch 
 
   const dispatchStart=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
   const dispatch=notificationsRepo.slice(dispatchStart);
-  assert.match(dispatch,/SELECT id,user_id,type,title,body,data FROM notifications/);
-  assert.match(dispatch,/notification:\s*notification/);
+  assert.match(dispatch,/SELECT id,user_id,type,title,body,data\s+FROM notifications/);
+  assert.match(dispatch,/await deliverTargets\(\{[^}]*notificationId, userId, notification/s);
 
   const notificationHandlerStart=handlers.indexOf("} else if (event.event_type === 'NOTIFICATION_DISPATCH')");
   const notificationHandler=handlers.slice(notificationHandlerStart);
