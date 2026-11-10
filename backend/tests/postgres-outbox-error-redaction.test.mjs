@@ -217,24 +217,31 @@ test('legacy payout failure_message is not returned by user payout reads',{skip:
 });
 
 test('idempotent payout request never returns legacy raw failure_message to the wallet route',{skip:!enabled,timeout:30_000},async()=>{
-  const fixture = await createPayoutFixture();
+  const userId = uuid();
+  const walletId = uuid();
+  const payoutId = uuid();
+  const idempotencyKey = 'legacy-idempotent-payout:' + payoutId;
   const legacySecret = 'legacy failure body with Bearer token and payout@example.test';
-  const failed = await outbox.failOutboxEvent({
-    eventId:fixture.eventId,
-    error:new Error(legacySecret),
-    maxAttempts:1,
-    leaseToken:fixture.leaseToken,
-  });
-  assert.equal(failed.terminal,true);
   await pool.query(
-    'UPDATE payouts SET failure_message=$2 WHERE id=$1',
-    [fixture.payoutId,legacySecret],
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at)
+     VALUES($1,$2,'integration-only-hash','Legacy payout response test','USER','ACTIVE',0,NOW())`,
+    [userId,`legacy-payout-${userId}@example.test`],
   );
-  const payout = await payoutsRepo.requestPayoutAtomic({
-    userId:fixture.userId,
-    amount:'500',
-    idempotencyKey:'outbox-redaction-payout:' + fixture.payoutId,
-  });
+  await pool.query(
+    `INSERT INTO wallet_accounts(id,user_id,currency,available_balance,locked_balance,status,created_at,updated_at)
+     VALUES($1,$2,'TOMAN',0,0,'ACTIVE',NOW(),NOW())`,
+    [walletId,userId],
+  );
+  // Model an existing historical row as it was originally persisted. Insert-time
+  // fixture data avoids weakening the terminal payout immutability trigger.
+  await pool.query(
+    `INSERT INTO payouts(
+       id,wallet_id,user_id,amount,currency,status,provider,idempotency_key,
+       failure_code,failure_message,created_at,updated_at,completed_at
+     ) VALUES($1,$2,$3,500,'TOMAN','FAILED','internal',$4,'LEGACY_PROVIDER_FAILURE',$5,NOW(),NOW(),NOW())`,
+    [payoutId,walletId,userId,idempotencyKey,legacySecret],
+  );
+  const payout = await payoutsRepo.requestPayoutAtomic({userId,amount:'500',idempotencyKey});
   assert.equal('failure_message' in payout,false);
   assert.equal('failureMessage' in payout,false);
   assert.equal(JSON.stringify(payout).includes(legacySecret),false);
