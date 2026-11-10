@@ -77,7 +77,8 @@ PagerDuty documents the incident GET operation as requiring the \`incidents.read
 
 The readback returns separate evidence:
 - \`incidentExists\`: the requested incident was returned by PagerDuty.
-- \`humanAcknowledged\`: at least one acknowledgement contains a user-reference actor and valid timestamp; an \`acknowledged\` status alone is not enough.
+- `userAcknowledged`: at least one acknowledgement contains a PagerDuty user-reference actor and valid timestamp.
+- `humanAcknowledged`: only true when that user-reference ID is explicitly present in a separately trusted `humanAcknowledgerIds` mapping. A user reference alone is not proof of a natural person; service/bot accounts are not treated as human. The mapping defaults to empty.
 - \`resolved\`: incident status is \`resolved\` and a valid \`resolved_at\` timestamp is present.
 
 A 404 is not evidence of incident creation. 401/403/429 are surfaced distinctly; no automatic retry or write fallback occurs. Collector receipt, PagerDuty incident existence, human ACK and resolution remain separate. The module is not wired to Outbox handlers or alert dispatch. Tests inject a mock request implementation and make no PagerDuty network call.

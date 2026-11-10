@@ -15,7 +15,7 @@ function validTimestamp(value) {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
-function normalizeIncident(incident, requestedId) {
+function normalizeIncident(incident, requestedId, humanAcknowledgerIds) {
   if (!incident || typeof incident !== 'object' || Array.isArray(incident)) {
     throw new Error('PAGERDUTY_INCIDENT_RESPONSE_INVALID');
   }
@@ -46,6 +46,9 @@ function normalizeIncident(incident, requestedId) {
     })
     : [];
   const resolvedAt = validTimestamp(incident.resolved_at) ? incident.resolved_at : null;
+  const humanActors = new Set(humanAcknowledgerIds);
+  const userAcknowledged = acknowledgements.length > 0;
+  const humanAcknowledged = acknowledgements.some((entry) => humanActors.has(entry.userId));
 
   return {
     id,
@@ -54,7 +57,10 @@ function normalizeIncident(incident, requestedId) {
     createdAt: incident.created_at,
     updatedAt: validTimestamp(incident.updated_at) ? incident.updated_at : null,
     resolvedAt,
-    humanAcknowledged: acknowledgements.length > 0,
+    userAcknowledged,
+    // A PagerDuty user reference may represent a service/bot account. Do not
+    // label it human without an explicit trusted actor-ID mapping.
+    humanAcknowledged,
     acknowledgements,
     resolved: incident.status === 'resolved' && resolvedAt !== null,
   };
@@ -106,6 +112,7 @@ export async function readPagerDutyIncident({
   incidentId,
   readOnlyToken,
   allowedApiBases = [],
+  humanAcknowledgerIds = [],
   timeoutMs = DEFAULT_TIMEOUT_MS,
   resolveHost,
   requestImpl = performPinnedGet,
@@ -116,6 +123,11 @@ export async function readPagerDutyIncident({
   }
   if (typeof readOnlyToken !== 'string' || readOnlyToken.length === 0) {
     throw new Error('PAGERDUTY_READONLY_CREDENTIAL_REQUIRED');
+  }
+  if (!Array.isArray(humanAcknowledgerIds) || humanAcknowledgerIds.some((id) =>
+    typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(id)
+  )) {
+    throw new Error('PAGERDUTY_HUMAN_ACTOR_ALLOWLIST_INVALID');
   }
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 500 || timeoutMs > 30000) {
     throw new Error('PAGERDUTY_READBACK_TIMEOUT_INVALID');
@@ -174,7 +186,7 @@ export async function readPagerDutyIncident({
     } catch {
       throw new Error('PAGERDUTY_INCIDENT_RESPONSE_INVALID');
     }
-    const normalized = normalizeIncident(payload?.incident, lookupId);
+    const normalized = normalizeIncident(payload?.incident, lookupId, humanAcknowledgerIds);
     return {
       readbackStatus: 'verified',
       incidentExists: true,
