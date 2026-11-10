@@ -359,3 +359,81 @@ test('alert egress validates every DNS answer and passes a pinned agent to the H
   assert.equal(captured.options.agent.options.keepAlive, false);
   captured.options.agent.destroy();
 });
+
+
+test('alert egress requires a bounded printable idempotency key before DNS or transport', async () => {
+  let resolutionCount = 0;
+  let requestCount = 0;
+  const url = 'https://alerts.example.test/security';
+  const base = {
+    url,
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    body: '{}',
+    allowedEndpoints: [url],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: async () => {
+      resolutionCount += 1;
+      return [{ address: '8.8.8.8', family: 4 }];
+    },
+    requestImpl: async () => {
+      requestCount += 1;
+      return { ok: true, statusCode: 202 };
+    },
+  };
+
+  for (const idempotencyKey of [undefined, '', 123, 'contains whitespace', 'contains\\nnewline', 'x'.repeat(201)]) {
+    await assert.rejects(
+      dispatchAlertWebhook({ ...base, idempotencyKey }),
+      /ALERT_EGRESS_IDEMPOTENCY_KEY_INVALID/,
+    );
+  }
+  assert.equal(resolutionCount, 0, 'invalid idempotency must fail before DNS');
+  assert.equal(requestCount, 0, 'invalid idempotency must fail before transport');
+});
+
+test('alert egress bounds DNS resolution by the configured delivery timeout', async () => {
+  let requestCount = 0;
+  let finishDns;
+  const pendingDns = new Promise((resolve) => { finishDns = resolve; });
+  const url = 'https://alerts.example.test/security';
+
+  const delivery = dispatchAlertWebhook({
+    url,
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    body: '{}',
+    idempotencyKey: 'hope-outbox:bounded-dns-test',
+    allowedEndpoints: [url],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: () => pendingDns,
+    requestImpl: async () => {
+      requestCount += 1;
+      return { ok: true, statusCode: 202 };
+    },
+  });
+
+  await assert.rejects(delivery, /ALERT_EGRESS_DNS_TIMEOUT/);
+  assert.equal(requestCount, 0, 'transport must not start after DNS exhausts the delivery budget');
+  finishDns([{ address: '8.8.8.8', family: 4 }]);
+});
+
+test('alert egress bounds transport time after DNS resolution', async () => {
+  const url = 'https://alerts.example.test/security';
+  const delivery = dispatchAlertWebhook({
+    url,
+    token: 'test-alert-token',
+    timeoutMs: 500,
+    body: '{}',
+    idempotencyKey: 'hope-outbox:bounded-transport-test',
+    allowedEndpoints: [url],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+    requestImpl: () => new Promise(() => {}),
+  });
+
+  await assert.rejects(delivery, /ALERT_EGRESS_TIMEOUT/);
+});
