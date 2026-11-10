@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 
 process.env.NODE_ENV = 'test';
+// Use only the synthetic in-process wallet payout adapter in this isolated test database.
+process.env.PAYMENT_PROVIDER ||= 'internal';
 const enabled = Boolean(process.env.DATABASE_URL);
 if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
   throw new Error('REQUIRE_INTEGRATION=1 but DATABASE_URL is missing');
