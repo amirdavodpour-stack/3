@@ -1,0 +1,92 @@
+name: HOPEv2 Outbox Error Redaction
+
+on:
+  push:
+    branches:
+      - fix/hopev2-outbox-error-redaction-20261111
+    paths:
+      - ".github/workflows/hopev2-outbox-error-redaction.yml"
+      - "backend/src/outbox_failure_metadata.js"
+      - "backend/src/outbox_handlers.js"
+      - "backend/src/repository/outbox.js"
+      - "backend/src/repository/payouts.js"
+      - "backend/src/repository/payment_funding.js"
+      - "backend/src/repository/payment_refunds.js"
+      - "backend/src/repository/notifications.js"
+      - "backend/src/repository/privacy.js"
+      - "backend/src/db/migrations/056_outbox_error_redaction.js"
+      - "backend/tests/outbox-error-redaction-contract.test.mjs"
+      - "backend/tests/outbox-failure-metadata.test.mjs"
+      - "backend/tests/postgres-outbox-error-redaction.test.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-outbox-error-redaction-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  node24:
+    name: Node 24 error redaction contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run syntax and focused contract checks
+        working-directory: backend
+        run: |
+          npm run check
+          node --test tests/outbox-error-redaction-contract.test.mjs tests/outbox-failure-metadata.test.mjs
+          npm run test:fast
+
+  postgres17:
+    name: PostgreSQL 17 error redaction integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      REQUIRE_INTEGRATION: "1"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run PostgreSQL 17 error redaction tests
+        working-directory: backend
+        run: |
+          node --test --test-concurrency=1 tests/postgres-outbox-error-redaction.test.mjs
