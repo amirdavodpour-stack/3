@@ -83,6 +83,14 @@ export function isPublicAlertAddress(address) {
   return !IPV6_DENY.some(([base, prefix]) => inCidr(parsed.value, base, prefix, 128));
 }
 
+function isValidFqdn(hostname) {
+  if (typeof hostname !== 'string' || hostname.length > 253) return false;
+  const labels = hostname.split('.');
+  return labels.length >= 2 && labels.every((label) =>
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label)
+  );
+}
+
 function validCanonicalEndpoint(value) {
   if (typeof value !== 'string' || !value || value.includes('\\')) return null;
   let endpoint;
@@ -107,8 +115,7 @@ function validCanonicalEndpoint(value) {
     try { return decodeURIComponent(segment); } catch { return null; }
   });
   if (decodedSegments.some((segment) => segment === null || segment === '.' || segment === '..')) return null;
-  if (!endpoint.hostname.includes('.') || endpoint.hostname.startsWith('.') || endpoint.hostname.endsWith('.')) return null;
-  if (endpoint.hostname.includes('*')) return null;
+  if (!isValidFqdn(endpoint.hostname)) return null;
   return endpoint;
 }
 
