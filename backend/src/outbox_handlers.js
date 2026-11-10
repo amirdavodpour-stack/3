@@ -7,6 +7,7 @@ import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './rep
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 import { dispatchSecurityAlert } from './alerting.js';
 import { dispatchNotificationOutbox } from './repository/notifications.js';
+import { normalizeOutboxFailureMetadata } from './outbox_failure_metadata.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
@@ -70,7 +71,7 @@ export async function processOutboxEvent(event) {
             action:'OUTBOX_PAYOUT_UNKNOWN_PERSISTENCE_FAILED',
             eventId:event.id,
             payoutId:payload.payoutId,
-            error:error?.message || String(error),
+            errorCode:'PAYOUT_UNKNOWN_PERSISTENCE_FAILED',
           });
           return { processed:false, unknown:true, persistencePending:true };
         }
@@ -245,13 +246,21 @@ export async function processOutboxEvent(event) {
       recordOutboxFailed();
       const category = failureCategory(event);
       if (category) recordCategoryFailure(category);
-      logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
+      const failureMetadata = normalizeOutboxFailureMetadata({
+        eventType:event.event_type,payload:event.payload || {},error,
+        retryable:Number(event.attempts || 0) < config.outboxMaxAttempts,
+      });
+      logEvent({
+        level:'warn',action:'OUTBOX_FAILED',eventId:event.id,eventType:event.event_type,
+        failureCode:failureMetadata.code,failureCategory:failureMetadata.category,
+        retryable:failureMetadata.retryable,httpStatus:failureMetadata.httpStatus,
+      });
     } catch {
-      // The database outbox state and last_error remain the recovery authority.
+      // The database Outbox state and structured failure metadata remain the recovery authority.
     }
     const failureResult = await failOutboxEvent({
       eventId:event.id,
-      error:error?.message || error,
+      error,
       maxAttempts:config.outboxMaxAttempts,
       leaseToken:event.lease_token,
     });
