@@ -23,7 +23,7 @@ export const migration = {
       BEGIN
         IF TG_OP = 'INSERT' THEN
           IF NEW.status IN ('DONE','FAILED','CANCELLED') THEN
-            NEW.terminal_at := COALESCE(NEW.terminal_at, NOW());
+            NEW.terminal_at := NOW();
           ELSE
             NEW.terminal_at := NULL;
           END IF;
