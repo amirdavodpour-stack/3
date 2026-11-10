@@ -447,3 +447,31 @@ test('alert egress bounds transport time after DNS resolution', async () => {
 
   await assert.rejects(withTestDeadline(delivery), /ALERT_EGRESS_TIMEOUT/);
 });
+
+
+test('alert egress rejects malformed DNS labels and overlong FQDNs', () => {
+  const overlongLabel = 'a'.repeat(64);
+  const overlongHostname = [
+    'a'.repeat(63),
+    'b'.repeat(63),
+    'c'.repeat(63),
+    'd'.repeat(63),
+    'e'.repeat(10),
+  ].join('.');
+  const rejected = [
+    'https://alerts_bad.example.test/security',
+    'https://-alerts.example.test/security',
+    'https://alerts-.example.test/security',
+    'https://alerts..example.test/security',
+    `https://${overlongLabel}.example.test/security`,
+    `https://${overlongHostname}/security`,
+  ];
+
+  for (const endpoint of rejected) {
+    assert.throws(
+      () => assertAllowedAlertEndpoint(endpoint, [endpoint]),
+      /ALERT_EGRESS_ENDPOINT_INVALID/,
+      endpoint,
+    );
+  }
+});
