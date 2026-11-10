@@ -187,24 +187,24 @@ export async function dispatchNotificationOutbox(event, deliverTargets, { provid
     // Discover the recipient without locking, then take the recipient barrier
     // before the Outbox row, matching account erasure's lock order.
     const { rows: identityRows } = await client.query(
-      \`SELECT user_id FROM notifications WHERE id=$1\`,
+      `SELECT user_id FROM notifications WHERE id=$1`,
       [notificationId],
     );
     const userId = String(identityRows[0]?.user_id || '');
     let recipient = null;
     if (userId) {
       const { rows: userRows } = await client.query(
-        \`SELECT id,email,status FROM users WHERE id=$1 FOR SHARE\`,
+        `SELECT id,email,status FROM users WHERE id=$1 FOR SHARE`,
         [userId],
       );
       recipient = userRows[0] || null;
     }
 
     const { rows: eventRows } = await client.query(
-      \`SELECT event_type,aggregate_type,aggregate_id,status,lease_token
+      `SELECT event_type,aggregate_type,aggregate_id,status,lease_token
          FROM outbox_events
         WHERE id=$1
-        FOR UPDATE\`,
+        FOR UPDATE`,
       [eventId],
     );
     const current = eventRows[0];
@@ -241,10 +241,10 @@ export async function dispatchNotificationOutbox(event, deliverTargets, { provid
     }
 
     const { rows: notificationRows } = await client.query(
-      \`SELECT id,user_id,type,title,body,data
+      `SELECT id,user_id,type,title,body,data
          FROM notifications
         WHERE id=$1 AND user_id=$2
-        FOR KEY SHARE\`,
+        FOR KEY SHARE`,
       [notificationId, userId],
     );
     const notificationRow = notificationRows[0];
@@ -281,10 +281,10 @@ export async function dispatchNotificationOutbox(event, deliverTargets, { provid
     let targets = [];
     if (channel === 'PUSH') {
       const { rows } = await client.query(
-        \`SELECT id,user_id,platform,token,enabled,created_at,updated_at
+        `SELECT id,user_id,platform,token,enabled,created_at,updated_at
            FROM notification_devices
           WHERE user_id=$1 AND enabled=true
-          ORDER BY updated_at DESC\`,
+          ORDER BY updated_at DESC`,
         [userId],
       );
       targets = rows.map((row) => ({
