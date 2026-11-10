@@ -6,6 +6,19 @@ import tls from 'node:tls';
 const DEFAULT_TIMEOUT_MS = 3000;
 const MAX_REQUEST_BYTES = 64 * 1024;
 const MAX_RESPONSE_BYTES = 16 * 1024;
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+
+function withTimeout(operation, timeoutMs, errorCode, onTimeout) {
+  let timer;
+  const operationPromise = Promise.resolve().then(operation);
+  const timeoutPromise = new Promise((resolve, reject) => {
+    timer = setTimeout(() => {
+      try { onTimeout?.(); } catch { /* Timeout outcome remains authoritative. */ }
+      reject(new Error(errorCode));
+    }, timeoutMs);
+  });
+  return Promise.race([operationPromise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
 
 function parseIpv4(address) {
   if (net.isIP(address) !== 4) return null;
@@ -248,32 +261,47 @@ export async function dispatchAlertWebhook({
     throw new Error('ALERT_EGRESS_TIMEOUT_INVALID');
   }
   if (typeof requestImpl !== 'function') throw new Error('ALERT_EGRESS_TRANSPORT_UNAVAILABLE');
+  if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_KEY_PATTERN.test(idempotencyKey)) {
+    throw new Error('ALERT_EGRESS_IDEMPOTENCY_KEY_INVALID');
+  }
 
-  const records = await resolvePublicAlertAddresses(endpoint.hostname, resolveHost);
+  // The configured budget covers DNS plus the HTTPS request, not just socket activity.
+  const deliveryStartedAt = Date.now();
+  const records = await withTimeout(
+    () => resolvePublicAlertAddresses(endpoint.hostname, resolveHost),
+    timeoutMs,
+    'ALERT_EGRESS_DNS_TIMEOUT',
+  );
+  const remainingTimeoutMs = timeoutMs - (Date.now() - deliveryStartedAt);
+  if (remainingTimeoutMs <= 0) throw new Error('ALERT_EGRESS_TIMEOUT');
+
   // Pin one member of the already-validated answer set. Never re-resolve at connect time.
   const pinnedAddress = records[0];
   const agent = createPinnedHttpsAgent({ hostname: endpoint.hostname, port: 443, address: pinnedAddress });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  timer.unref?.();
   const headers = {
     'content-type': 'application/json',
     authorization: 'Bearer ' + token,
+    'idempotency-key': idempotencyKey,
   };
-  if (idempotencyKey) headers['idempotency-key'] = String(idempotencyKey);
   try {
-    return await requestImpl(endpoint, {
-      method: 'POST',
-      headers,
-      body,
-      agent,
-      signal: controller.signal,
-      timeoutMs,
-    });
-  } catch {
+    return await withTimeout(
+      () => requestImpl(endpoint, {
+        method: 'POST',
+        headers,
+        body,
+        agent,
+        signal: controller.signal,
+        timeoutMs: remainingTimeoutMs,
+      }),
+      remainingTimeoutMs,
+      'ALERT_EGRESS_TIMEOUT',
+      () => controller.abort(),
+    );
+  } catch (error) {
+    if (error?.message === 'ALERT_EGRESS_TIMEOUT') throw error;
     throw new Error('ALERT_EGRESS_DELIVERY_FAILED');
   } finally {
-    clearTimeout(timer);
     agent.destroy();
   }
 }

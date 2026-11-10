@@ -393,6 +393,16 @@ test('alert egress requires a bounded printable idempotency key before DNS or tr
   assert.equal(requestCount, 0, 'invalid idempotency must fail before transport');
 });
 
+function withTestDeadline(promise, timeoutMs = 1000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error('TEST_GUARD_TIMEOUT')), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 test('alert egress bounds DNS resolution by the configured delivery timeout', async () => {
   let requestCount = 0;
   let finishDns;
@@ -415,7 +425,7 @@ test('alert egress bounds DNS resolution by the configured delivery timeout', as
     },
   });
 
-  await assert.rejects(delivery, /ALERT_EGRESS_DNS_TIMEOUT/);
+  await assert.rejects(withTestDeadline(delivery), /ALERT_EGRESS_DNS_TIMEOUT/);
   assert.equal(requestCount, 0, 'transport must not start after DNS exhausts the delivery budget');
   finishDns([{ address: '8.8.8.8', family: 4 }]);
 });
@@ -435,5 +445,5 @@ test('alert egress bounds transport time after DNS resolution', async () => {
     requestImpl: () => new Promise(() => {}),
   });
 
-  await assert.rejects(delivery, /ALERT_EGRESS_TIMEOUT/);
+  await assert.rejects(withTestDeadline(delivery), /ALERT_EGRESS_TIMEOUT/);
 });
