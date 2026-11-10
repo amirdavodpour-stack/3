@@ -79,7 +79,7 @@ async function createPayoutFixture() {
        id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,
        attempts,available_at,locked_at,lease_token,created_at
      ) VALUES($1,'PAYOUT_EXECUTE','payout',$2,$3,$4::jsonb,'PROCESSING',1,NOW(),NOW(),$5,NOW())`,
-    [eventId,payoutId,`PAYOUT_EXECUTE:\${payoutId}`,JSON.stringify({
+    [eventId,payoutId,'PAYOUT_EXECUTE:' + payoutId,JSON.stringify({
       payoutId,userId,amount:'500',currency:'TOMAN',idempotencyKey,operationId,
     }),leaseToken],
   );
