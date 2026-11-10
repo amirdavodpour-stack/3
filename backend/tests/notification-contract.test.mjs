@@ -13,6 +13,7 @@ const notificationRoutes=fs.readFileSync(new URL('../src/routes/notification_rou
 const mobile=fs.readFileSync(new URL('../../lib/features/notifications/notifications_page.dart',import.meta.url),'utf8');
 const notificationRepo=fs.readFileSync(new URL('../../lib/core/notifications/notification_repository.dart',import.meta.url),'utf8');
 const notificationModel=fs.readFileSync(new URL('../../lib/core/notifications/notification.dart',import.meta.url),'utf8');
+const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
 
 test('notification persistence has user isolation and preference defaults',()=>{
   assert.match(schema,/CREATE TABLE IF NOT EXISTS notifications/);
@@ -96,4 +97,11 @@ test('new notification Outbox events use a content-free v2 payload and dispatch 
   assert.match(notificationHandler,/notification\.body/);
   assert.match(notificationHandler,/notification\.data/);
   assert.doesNotMatch(notificationHandler,/payload\.(title|body|data|userId|notificationId)/);
+});
+
+
+test('account erasure identifies notification Outbox rows through canonical aggregate identity',()=>{
+  const deletion=privacyRepo.slice(privacyRepo.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion,/EXISTS\\s*\\(\\s*SELECT 1 FROM notifications n\\s+WHERE n\\.id=outbox_events\\.aggregate_id\\s+AND n\\.user_id=\\$1/s);
+  assert.doesNotMatch(deletion,/payload->>'userId'/);
 });

@@ -172,6 +172,60 @@ test('legacy v1 dispatch ignores copied payload content and remains database-bac
   }
 });
 
+
+test('account erasure cancels new content-free v2 notification Outbox events by canonical aggregate identity',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  let notificationId=null;
+  let eventIds=[];
+  try {
+    const result=await repository.queueNotification({
+      userId,
+      type:'OUTBOX_V2_ERASURE_TEST',
+      title:'Private title retained only in notification row',
+      body:'Private body retained only in notification row',
+      data:{sensitiveMarker:'do-not-copy-to-outbox'},
+      channels:['IN_APP','PUSH'],
+    });
+    notificationId=result.notification.id;
+    const before=await pool.query(
+      "SELECT id,status,payload,lease_token FROM outbox_events WHERE event_type='NOTIFICATION_DISPATCH' AND aggregate_id=$1 ORDER BY payload->>'channel'",
+      [notificationId],
+    );
+    eventIds=before.rows.map(row=>row.id);
+    assert.equal(before.rowCount,2);
+    for(const row of before.rows) {
+      assert.deepEqual(row.payload,{schemaVersion:2,channel:row.payload.channel});
+    }
+
+    const erased=await repository.deleteUserPrivacyBundle(userId,{
+      email:`deleted+${userId}@invalid.local`,
+      passwordHash:'integration-only-erased-account-hash',
+    });
+    assert.equal(erased.deleted,true);
+
+    const afterRows=await pool.query(
+      'SELECT id,status,processed_at,lease_token,payload FROM outbox_events WHERE id=ANY($1::uuid[]) ORDER BY id',
+      [eventIds],
+    );
+    assert.equal(afterRows.rowCount,2);
+    for(const row of afterRows.rows) {
+      assert.equal(row.status,'CANCELLED');
+      assert.ok(row.processed_at);
+      assert.equal(row.lease_token,null);
+      const original=before.rows.find(item=>item.id===row.id);
+      assert.deepEqual(row.payload,original.payload,'erasure must preserve immutable v2 Outbox payload');
+    }
+    const audit=await pool.query(
+      "SELECT meta FROM audit_logs WHERE action='NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE' AND entity_id=$1",
+      [userId],
+    );
+    assert.equal(audit.rowCount,1);
+    assert.equal(audit.rows[0].meta.eventCount,2);
+  } finally {
+    await cleanup(userId,notificationId?[notificationId]:[],eventIds);
+  }
+});
+
 after(async()=>{
   if(enabled) await dbModule.db.close();
 });
