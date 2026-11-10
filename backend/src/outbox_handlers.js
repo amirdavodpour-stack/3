@@ -1,11 +1,12 @@
 import { config } from './config.js';
-import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, completeOutboxEvent, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
+import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, completeOutboxEvent, failOutboxEvent } from './repository.js';
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
 import { logEvent, logEventAndWait, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
 import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 import { dispatchSecurityAlert } from './alerting.js';
+import { dispatchNotificationOutbox } from './repository/notifications.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
@@ -148,35 +149,90 @@ export async function processOutboxEvent(event) {
       if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_SIGNAL_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
       recordOutboxProcessed();
     } else if (event.event_type === 'NOTIFICATION_DISPATCH') {
-      const channel = payload.channel;
-      if (channel === 'IN_APP') {
-        recordOutboxProcessed();
-        logEvent({ level:'info', action:'NOTIFICATION_DELIVERED', eventId:event.id, notificationId:payload.notificationId, channel });
-      } else {
-        const url = channel === 'PUSH' ? config.notificationPushUrl : channel === 'EMAIL' ? config.notificationEmailUrl : '';
-        if (!url) {
-          recordOutboxProcessed();
-          logEvent({ level:'info', action:'NOTIFICATION_PROVIDER_NOT_CONFIGURED', eventId:event.id, notificationId:payload.notificationId, channel });
-        } else {
-          const targets = channel === 'PUSH' ? await listNotificationDevices(payload.userId) : [{ email: await getUserEmail(payload.userId) }];
-          if (!targets.length || (channel === 'EMAIL' && !targets[0].email)) {
-            recordOutboxProcessed();
-            logEvent({ level:'info', action:'NOTIFICATION_NO_TARGET', eventId:event.id, notificationId:payload.notificationId, channel });
-          } else {
-            for (const target of targets) {
-              const body = channel === 'PUSH'
-                ? { notificationId:payload.notificationId, userId:payload.userId, token:target.token, platform:target.platform, title:payload.title, body:payload.body, data:payload.data || {} }
-                : { notificationId:payload.notificationId, userId:payload.userId, to:target.email, subject:payload.title, text:payload.body, data:payload.data || {} };
-              await deliverNotification({
-                url,
-                payload: body,
-                idempotencyKey: `notification:${payload.notificationId}:${channel}:${target.token || target.email}`,
-              });
-            }
-            recordOutboxProcessed();
-            logEvent({ level:'info', action:'NOTIFICATION_DELIVERED', eventId:event.id, notificationId:payload.notificationId, channel, targetCount:targets.length });
+      const channel = String(payload.channel || '').toUpperCase();
+      const url = channel === 'PUSH'
+        ? config.notificationPushUrl
+        : channel === 'EMAIL'
+          ? config.notificationEmailUrl
+          : '';
+      const result = await dispatchNotificationOutbox(
+        event,
+        async ({ channel: deliveryChannel, targets }) => {
+          for (const target of targets) {
+            const body = deliveryChannel === 'PUSH'
+              ? {
+                  notificationId:payload.notificationId,
+                  userId:payload.userId,
+                  token:target.token,
+                  platform:target.platform,
+                  title:payload.title,
+                  body:payload.body,
+                  data:payload.data || {},
+                }
+              : {
+                  notificationId:payload.notificationId,
+                  userId:payload.userId,
+                  to:target.email,
+                  subject:payload.title,
+                  text:payload.body,
+                  data:payload.data || {},
+                };
+            await deliverNotification({
+              url,
+              payload:body,
+              idempotencyKey:`notification:${payload.notificationId}:${deliveryChannel}:${target.token || target.email}`,
+            });
           }
-        }
+        },
+        { providerConfigured:channel === 'IN_APP' || Boolean(url) },
+      );
+
+      if (result.cancelled) {
+        recordOutboxProcessed();
+        logEvent({
+          level:'info',
+          action:'NOTIFICATION_DISPATCH_CANCELLED',
+          eventId:event.id,
+          notificationId:payload.notificationId,
+          channel,
+          reason:result.reason,
+        });
+      } else if (result.providerNotConfigured) {
+        recordOutboxProcessed();
+        logEvent({
+          level:'info',
+          action:'NOTIFICATION_PROVIDER_NOT_CONFIGURED',
+          eventId:event.id,
+          notificationId:payload.notificationId,
+          channel,
+        });
+      } else if (result.noTarget) {
+        recordOutboxProcessed();
+        logEvent({
+          level:'info',
+          action:'NOTIFICATION_NO_TARGET',
+          eventId:event.id,
+          notificationId:payload.notificationId,
+          channel,
+        });
+      } else if (result.processed) {
+        recordOutboxProcessed();
+        logEvent({
+          level:'info',
+          action:'NOTIFICATION_DELIVERED',
+          eventId:event.id,
+          notificationId:payload.notificationId,
+          channel,
+          targetCount:result.targetCount || 0,
+        });
+      } else {
+        logEvent({
+          level:'debug',
+          action:'NOTIFICATION_DISPATCH_STALE',
+          eventId:event.id,
+          channel,
+          reason:result.reason || 'STALE',
+        });
       }
     } else {
       throw new Error(`UNSUPPORTED_OUTBOX_EVENT:${event.event_type}`);

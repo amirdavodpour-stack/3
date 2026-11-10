@@ -150,6 +150,10 @@ test('account erasure cancels only PENDING and PROCESSING notification events, c
   const before=await pool.query('SELECT id,payload FROM outbox_events WHERE id=ANY($1::uuid[]) ORDER BY id',[eventIds]);
   try {
     await erase(userId);
+    const latePendingFailure=await repository.failOutboxEvent({eventId:pending.id,error:'late worker failure after erasure',maxAttempts:1});
+    const lateProcessingFailure=await repository.failOutboxEvent({eventId:processing.id,error:'late worker failure after erasure',maxAttempts:1});
+    assert.equal(latePendingFailure.alreadyCancelled,true);
+    assert.equal(lateProcessingFailure.alreadyCancelled,true);
     const {rows}=await pool.query(
       'SELECT id,event_type,status,locked_at,lease_token,processed_at,payload FROM outbox_events WHERE id=ANY($1::uuid[]) ORDER BY id',
       [eventIds],
@@ -174,7 +178,7 @@ test('account erasure cancels only PENDING and PROCESSING notification events, c
       [userId],
     );
     assert.equal(audit.rowCount,1);
-    assert.equal(audit.rows[0].entity_type,'USER');
+    assert.equal(audit.rows[0].entity_type,'user');
     assert.equal(audit.rows[0].meta.eventCount,2);
     assert.equal(JSON.stringify(audit.rows[0].meta).includes('Private notification body'),false);
   } finally {
@@ -201,6 +205,44 @@ test('a stale PUSH recipient snapshot cannot dispatch after account erasure comm
   } finally {
     globalThis.fetch=originalFetch;
     await cleanup(userId,[event.id],[notificationId]);
+  }
+});
+
+test('notification producer waits for account erasure and then refuses the deleted recipient',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  const blocker=await pool.connect();
+  let producerSettled=false;
+  let producerPromise;
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM users WHERE id=$1 FOR NO KEY UPDATE',[userId]);
+    producerPromise=repository.queueNotification({
+      userId,
+      type:'TEST_AFTER_ERASURE',
+      title:'Must not persist',
+      body:'Must not persist',
+      data:{privateMarker:'producer-race'},
+      channels:['IN_APP','PUSH','EMAIL'],
+    }).then(result=>{producerSettled=true;return result;});
+    await new Promise(resolve=>setTimeout(resolve,100));
+    assert.equal(producerSettled,false,'producer must wait behind the erasure recipient lock');
+    await blocker.query(`UPDATE users SET status='DELETED',email=$2 WHERE id=$1`,[userId,`deleted+${userId}@invalid.local`]);
+    await blocker.query('COMMIT');
+    const result=await producerPromise;
+    assert.equal(result.created,false);
+    assert.equal(result.reason,'RECIPIENT_UNAVAILABLE');
+    const notifications=await pool.query('SELECT id FROM notifications WHERE user_id=$1',[userId]);
+    const events=await pool.query(
+      `SELECT id FROM outbox_events WHERE event_type='NOTIFICATION_DISPATCH' AND payload->>'userId'=$1`,
+      [userId],
+    );
+    assert.equal(notifications.rowCount,0);
+    assert.equal(events.rowCount,0);
+  } finally {
+    await blocker.query('ROLLBACK').catch(()=>{});
+    blocker.release();
+    await producerPromise?.catch(()=>{});
+    await cleanup(userId,[],[]);
   }
 });
 

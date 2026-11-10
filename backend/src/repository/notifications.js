@@ -114,6 +114,15 @@ export async function disableNotificationDevice(id,userId) {
 
 export async function queueNotificationWithClient(client,{userId,type,title,body,data={},dedupeKey=null,channels=['IN_APP']}) {
   if(!userId) return {created:false,reason:'NO_RECIPIENT'};
+  // Lock the recipient before creating content or an Outbox event. A matching
+  // account-erasure transaction takes FOR NO KEY UPDATE on this row first.
+  const { rows: recipientRows } = await client.query(
+    `SELECT id,status FROM users WHERE id=$1 FOR SHARE`,
+    [userId],
+  );
+  if (!recipientRows[0] || String(recipientRows[0].status || '').toUpperCase() === 'DELETED') {
+    return { created:false, reason:'RECIPIENT_UNAVAILABLE' };
+  }
   const id=crypto.randomUUID();
   if(dedupeKey){
     const {rows:existing}=await client.query(`SELECT * FROM notifications WHERE user_id=$1 AND (data->>'dedupeKey')=$2 ORDER BY created_at DESC LIMIT 1`,[userId,dedupeKey]);
