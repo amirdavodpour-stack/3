@@ -140,8 +140,9 @@ test('CANCELLED is terminal and a terminal timestamp is rejected on active event
   let row=(await pool.query('SELECT status,terminal_at FROM outbox_events WHERE id=$1',[event.id])).rows[0];
   assert.equal(row.status,'CANCELLED');
   assert.ok(row.terminal_at);
+  const activeEvent=await createEvent({status:'PENDING'});
   await assert.rejects(
-    pool.query('UPDATE outbox_events SET terminal_at=NOW() WHERE id=$1',[event.id]),
+    pool.query('UPDATE outbox_events SET terminal_at=NOW() WHERE id=$1',[activeEvent.id]),
     (error)=>error?.code==='23514',
   );
 });
