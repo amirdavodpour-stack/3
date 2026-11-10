@@ -62,7 +62,7 @@ test('mobile notifications are repository-backed and typed',()=>{
 });
 
 
-const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
+
 const applicationsRepo=fs.readFileSync(new URL('../src/repository/applications.js',import.meta.url),'utf8');
 const outboxRepo=fs.readFileSync(new URL('../src/repository/outbox.js',import.meta.url),'utf8');
 const cancellationMigration=fs.readFileSync(new URL('../src/db/migrations/054_outbox_notification_cancellation.js',import.meta.url),'utf8');
@@ -102,6 +102,6 @@ test('new notification Outbox events use a content-free v2 payload and dispatch 
 
 test('account erasure identifies notification Outbox rows through canonical aggregate identity',()=>{
   const deletion=privacyRepo.slice(privacyRepo.indexOf('export async function deleteUserPrivacyBundle'));
-  assert.match(deletion,/EXISTS\\s*\\(\\s*SELECT 1 FROM notifications n\\s+WHERE n\\.id=outbox_events\\.aggregate_id\\s+AND n\\.user_id=\\$1/s);
+  assert.match(deletion,/EXISTS\s*\(\s*SELECT 1 FROM notifications n\s+WHERE n\.id=outbox_events\.aggregate_id\s+AND n\.user_id=\$1/s);
   assert.doesNotMatch(deletion,/payload->>'userId'/);
 });
