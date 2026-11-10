@@ -12,6 +12,9 @@ const MAX_AMOUNT = 9_000_000_000_000_000n;
 const INTERNAL_CURRENCY = 'TOMAN';
 const PAYOUT_PROVIDER = 'internal';
 
+// Only fields required by the wallet response are returned; legacy failure_message is private.
+const PAYOUT_RESPONSE_COLUMNS = 'id,wallet_id,user_id,amount,currency,status,provider,provider_ref,idempotency_key,failure_code,failure_category,failure_retryable,failure_http_status,created_at,updated_at,completed_at';
+
 async function appendPayoutReversalEntry(client, {
   walletId, payoutId, amount, operationId, balanceAfter, failureCode,
 }) {
@@ -50,7 +53,7 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
   }
 
   return withSqlTransaction(async (client) => {
-    const existing = await client.query(`SELECT * FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
+    const existing = await client.query(`SELECT ${PAYOUT_RESPONSE_COLUMNS} FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
     if (existing.rows[0]) {
       const p = existing.rows[0];
       if (BigInt(String(p.amount)) !== value) throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { code:'IDEMPOTENCY_CONFLICT' });
@@ -66,7 +69,7 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
     // Re-check the idempotency resource after acquiring the wallet lock. A concurrent
     // request can pass the initial lookup before the winner inserts its payout; this
     // second read turns that race into a deterministic replay instead of a unique-key 500.
-    const concurrent = await client.query(`SELECT * FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
+    const concurrent = await client.query(`SELECT ${PAYOUT_RESPONSE_COLUMNS} FROM payouts WHERE user_id=$1 AND idempotency_key=$2 FOR UPDATE`, [userId, key]);
     if (concurrent.rows[0]) {
       const p = concurrent.rows[0];
       if (BigInt(String(p.amount)) !== value) throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { code:'IDEMPOTENCY_CONFLICT' });
@@ -84,7 +87,7 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
     await client.query(`INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,idempotency_key,created_at,updated_at) VALUES($1,$2,$3,$4,'TOMAN','RESERVED',$5,$6,NOW(),NOW())`, [payoutId,wallet.id,userId,value,PAYOUT_PROVIDER,key]);
     await client.query(`INSERT INTO journals(operation_id,journal_type,currency,status,posted_at) VALUES($1,'PAYOUT','TOMAN','CREATED',NULL)`, [operationId]);
     await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value.toString(),currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
-    const { rows } = await client.query(`SELECT * FROM payouts WHERE id=$1`, [payoutId]);
+    const { rows } = await client.query(`SELECT ${PAYOUT_RESPONSE_COLUMNS} FROM payouts WHERE id=$1`, [payoutId]);
     return rows[0];
   });
 }

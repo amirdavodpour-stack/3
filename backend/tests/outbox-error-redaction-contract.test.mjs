@@ -77,6 +77,17 @@ test('payout reads never expose historical raw failure_message values', () => {
   assert.match(unknown, /failure_code AS "failureCode"/);
 });
 
+test('payout request returns an explicit safe projection on existing, concurrent and new request paths', () => {
+  const start = payouts.indexOf('export async function requestPayoutAtomic(');
+  const end = payouts.indexOf('\nexport async function markPayoutUnknown(', start);
+  assert.ok(start >= 0 && end > start, 'payout request repository method must exist');
+  const request = payouts.slice(start, end);
+  assert.match(payouts, /const PAYOUT_RESPONSE_COLUMNS =/);
+  assert.equal(request.split('SELECT ${PAYOUT_RESPONSE_COLUMNS}').length - 1, 3);
+  assert.doesNotMatch(request, /SELECT\s+\*\s+FROM\s+payouts/i);
+  assert.doesNotMatch(request, /failure_message/i);
+});
+
 test('worker failure logging does not emit raw exception messages or response bodies', () => {
   const start = handlers.indexOf('} catch (error) {', handlers.indexOf("event.event_type === 'NOTIFICATION_DISPATCH'"));
   assert.ok(start >= 0, 'Outbox catch block must exist');
