@@ -35,3 +35,13 @@ test('generic Outbox retry, completion and security replay continue to use the s
   assert.match(outbox,/export async function replaySecurityAlert/);
   assert.match(outbox,/status='PENDING'/);
 });
+
+
+test('terminal clock INSERT branch always uses database time and never trusts caller-supplied timestamps',()=>{
+  const insertStart=migration.indexOf("IF TG_OP = 'INSERT' THEN");
+  const insertEnd=migration.indexOf('RETURN NEW;',insertStart);
+  assert.ok(insertStart>=0&&insertEnd>insertStart,'migration must define INSERT trigger behavior');
+  const insertBranch=migration.slice(insertStart,insertEnd);
+  assert.match(insertBranch,/NEW\.terminal_at\s*:=\s*NOW\(\)/);
+  assert.doesNotMatch(insertBranch,/COALESCE\(NEW\.terminal_at/);
+});

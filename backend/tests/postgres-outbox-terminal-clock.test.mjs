@@ -152,6 +152,35 @@ test('CANCELLED is terminal and callers cannot rewrite terminal_at on active eve
   assert.equal(activeRow.terminal_at,null,'the trigger must reject caller-supplied terminal time on an active event');
 });
 
+
+test('terminal rows inserted with caller-supplied timestamps receive the database terminal time',{skip:!enabled,timeout:30_000},async()=>{
+  const forgedTimestamps=[
+    new Date('2000-01-01T00:00:00.000Z'),
+    new Date('2099-12-31T23:59:59.000Z'),
+  ];
+  for(const forged of forgedTimestamps){
+    const id=uuid();
+    const dedupeKey='terminal-clock-insert-authority:'+id;
+    createdEventIds.push(id);
+    await pool.query(
+      `INSERT INTO outbox_events(
+         id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,
+         attempts,available_at,created_at,terminal_at
+       ) VALUES($1,'OUTBOX_TERMINAL_CLOCK_INSERT_TEST','test_resource',NULL,$2,'{}'::jsonb,'DONE',0,NOW(),NOW(),$3)`,
+      [id,dedupeKey,forged],
+    );
+    const row=(await pool.query(
+      'SELECT status,terminal_at FROM outbox_events WHERE id=$1',[id],
+    )).rows[0];
+    assert.equal(row.status,'DONE');
+    assert.ok(row.terminal_at);
+    assert.notEqual(row.terminal_at.toISOString(),forged.toISOString(),
+      'terminal_at must be assigned by the database, not accepted from an INSERT caller');
+    assert.ok(Math.abs(Date.now()-row.terminal_at.getTime())<60_000,
+      'terminal_at must represent the database insert time');
+  }
+});
+
 after(async()=>{
   if(enabled) {
     if(createdEventIds.length) {
