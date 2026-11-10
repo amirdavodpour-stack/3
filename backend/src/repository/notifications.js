@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { normalizeOutboxFailureMetadata } from '../outbox_failure_metadata.js';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 
@@ -107,15 +108,20 @@ export async function getUserEmail(userId) {
 }
 
 async function cancelNotificationOutboxWithClient(client, { eventId, leaseToken, userId, channel, reason }) {
+  const failureMetadata = normalizeOutboxFailureMetadata({eventType:'NOTIFICATION_DISPATCH',payload:{channel},error:reason,retryable:false});
   const { rowCount } = await client.query(
     `UPDATE outbox_events
         SET status='CANCELLED',
             processed_at=NOW(),
             locked_at=NULL,
             lease_token=NULL,
-            last_error=$3
+            last_error=NULL,
+            last_error_code=$3,
+            last_error_category=$4,
+            last_error_retryable=$5,
+            last_error_http_status=$6
       WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
-    [eventId, leaseToken, reason],
+    [eventId, leaseToken, failureMetadata.code, failureMetadata.category, failureMetadata.retryable, failureMetadata.httpStatus],
   );
   if (rowCount !== 1) return { processed:false, stale:true, reason:'STALE_LEASE' };
 
@@ -148,7 +154,7 @@ async function completeNotificationOutboxWithClient(client, { eventId, leaseToke
             processed_at=NOW(),
             locked_at=NULL,
             lease_token=NULL,
-            last_error=NULL
+            last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL
       WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
     [eventId, leaseToken],
   );

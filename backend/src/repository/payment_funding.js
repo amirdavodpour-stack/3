@@ -47,7 +47,7 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
         const {rows:ev}=await client.query(`
           INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
           VALUES(gen_random_uuid(),'PAYMENT_CREATE_HOLD','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
-          ON CONFLICT(dedupe_key) DO UPDATE SET status='PENDING',available_at=NOW(),locked_at=NULL,last_error=NULL,processed_at=NULL
+          ON CONFLICT(dedupe_key) DO UPDATE SET status='PENDING',available_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL,processed_at=NULL
           RETURNING *`,
           [existing.id, `PAYMENT_CREATE_HOLD:${existing.id}`, JSON.stringify({ jobId, ownerId:payerId, paymentId:existing.id, amount:financialNumber(existing.currency, existing.employer_charge || existing.amount), baseAmount:financialNumber(existing.currency, existing.base_amount || existing.amount), currency:existing.currency || config.paymentCurrency, idempotencyKey:existing.idempotencyKey || idempotencyKey || `payment:${existing.id}` })]);
         return { payment:{...existing,status:'HOLD_PENDING',updatedAt:createdAt.toISOString?.() ?? createdAt}, job, outboxEvent:{id:ev[0].id,status:ev[0].status}, retry:true };

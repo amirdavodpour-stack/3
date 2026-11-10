@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { normalizeOutboxFailureMetadata } from '../outbox_failure_metadata.js';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { config } from '../config.js';
@@ -166,20 +167,20 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
     if (!alreadyUnknown) {
       await client.query(
         `UPDATE payouts
-            SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW()
+            SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=NULL,failure_category='payout',failure_retryable=FALSE,failure_http_status=NULL,updated_at=NOW()
           WHERE id=$1`,
-        [payoutId, String(reason).slice(0, 1000)],
+        [payoutId],
       );
       await client.query(
         `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
          VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
-        [payoutId, JSON.stringify({ eventId, reason, reconciliationReason })],
+        [payoutId, JSON.stringify({ eventId, reason:'PROVIDER_UNKNOWN', reconciliationReason })],
       );
     }
 
     await client.query(
       `UPDATE outbox_events
-          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL
+          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL
         WHERE id=$1`,
       [eventId],
     );
@@ -217,7 +218,7 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
       if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
       await client.query(`UPDATE wallet_accounts SET locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id, payout.amount]);
       await client.query(`UPDATE wallet_holds SET status='RELEASED',released_at=NOW() WHERE id=$1`, [hold.id]);
-      await client.query(`UPDATE payouts SET status='SUCCEEDED',provider_ref=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId, String(providerRef).trim()]);
+      await client.query(`UPDATE payouts SET status='SUCCEEDED',provider_ref=$2,failure_code=NULL,failure_message=NULL,failure_category=NULL,failure_retryable=NULL,failure_http_status=NULL,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId, String(providerRef).trim()]);
       await client.query(`UPDATE financial_operations SET status='SUCCEEDED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
       await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) SELECT gen_random_uuid(),j.id,'PAYOUT',$1,'WORKER_PAYABLE',$2,0,'TOMAN',NOW() FROM journals j WHERE j.operation_id=$3 AND j.journal_type='PAYOUT'`, [payoutId,payout.amount,hold.financial_operation_id]);
       await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) SELECT gen_random_uuid(),j.id,'PAYOUT',$1,'PROVIDER_CLEARING',0,$2,'TOMAN',NOW() FROM journals j WHERE j.operation_id=$3 AND j.journal_type='PAYOUT'`, [payoutId,payout.amount,hold.financial_operation_id]);
@@ -239,7 +240,7 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
         failureCode: 'UNKNOWN_RESOLVED_FAILED',
       });
       await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
-      await client.query(`UPDATE payouts SET status='FAILED',failure_code='UNKNOWN_RESOLVED_FAILED',failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId, reason ? String(reason).slice(0,1000) : 'Unknown payout resolved as failed']);
+      await client.query(`UPDATE payouts SET status='FAILED',failure_code='UNKNOWN_RESOLVED_FAILED',failure_message=NULL,failure_category='payout',failure_retryable=FALSE,failure_http_status=NULL,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId]);
       await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
       await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
     }
@@ -274,7 +275,7 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
     const { rows: pr } = await client.query(`SELECT p.*,w.id AS wallet_id FROM payouts p JOIN wallet_accounts w ON w.id=p.wallet_id WHERE p.id=$1 FOR UPDATE`, [payoutId]);
     const payout = pr[0];
     if (!payout) return {completed:false,reason:'PAYOUT_NOT_FOUND'};
-    if (payout.status==='SUCCEEDED') { await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]); return {completed:true,alreadyDone:true}; }
+    if (payout.status==='SUCCEEDED') { await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`,[eventId]); return {completed:true,alreadyDone:true}; }
     if (payout.status!=='RESERVED' && payout.status!=='PROCESSING') return {completed:false,reason:'INVALID_PAYOUT_STATE'};
 
     const { rows: holdRows } = await client.query(`SELECT * FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE`, [payout.id]);
@@ -291,20 +292,23 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
     await client.query(`INSERT INTO ledger_entries(id,journal_id,reference_type,reference_id,account,debit,credit,currency,created_at) VALUES($1,(SELECT id FROM journals WHERE operation_id=$2 AND journal_type='PAYOUT'), 'PAYOUT',$3,'PROVIDER_CLEARING',0,$4,'TOMAN',NOW())`, [crypto.randomUUID(),hold.financial_operation_id,payoutId,payout.amount]);
     await client.query(`UPDATE journals j SET status='POSTED',posted_at=NOW() WHERE j.operation_id=(SELECT id FROM financial_operations WHERE id=$1 LIMIT 1) AND j.journal_type='PAYOUT' AND j.status='CREATED'`, [hold.financial_operation_id]);
     await client.query(`UPDATE financial_operations SET status='SUCCEEDED',completed_at=COALESCE(completed_at,NOW()) WHERE id=$1`, [hold.financial_operation_id]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);
+    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`,[eventId]);
     return {completed:true,alreadyDone:false};
   });
 }
 
-export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
+export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR', failureMetadata = null }) {
     const { rows: ev } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!ev[0]) return {completed:false,reason:'OUTBOX_NOT_FOUND'};
     if (leaseToken && String(ev[0].lease_token)!==String(leaseToken)) return {completed:false,reason:'STALE_LEASE'};
     const { rows: pr } = await client.query(`SELECT p.*,w.id AS wallet_id FROM payouts p JOIN wallet_accounts w ON w.id=p.wallet_id WHERE p.id=$1 FOR UPDATE`, [payoutId]);
     const payout = pr[0];
     if (!payout) return {completed:false,reason:'PAYOUT_NOT_FOUND'};
+    const diagnostic = failureMetadata || normalizeOutboxFailureMetadata({
+      eventType:'PAYOUT_EXECUTE',payload:ev[0].payload || {},error:error ?? failureCode,retryable:false,
+    });
     if (payout.status==='FAILED') {
-      await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=$2 WHERE id=$1`,[eventId,String(error).slice(0,2000)]);
+      await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL,last_error_code=$2,last_error_category=$3,last_error_retryable=$4,last_error_http_status=$5 WHERE id=$1`,[eventId,diagnostic.code,diagnostic.category,diagnostic.retryable,diagnostic.httpStatus]);
       return {completed:true,alreadyFailed:true};
     }
     if (!['RESERVED','PROCESSING'].includes(payout.status)) return {completed:false,reason:'INVALID_PAYOUT_STATE'};
@@ -325,22 +329,22 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
       amount: payout.amount,
       operationId: hold.financial_operation_id,
       balanceAfter: restoredWallets[0].available_balance,
-      failureCode,
+      failureCode:diagnostic.code,
     });
     await client.query(`UPDATE wallet_holds SET status='CANCELLED',released_at=NOW() WHERE id=$1`, [hold.id]);
-    await client.query(`UPDATE payouts SET status='FAILED',failure_code=$3,failure_message=$2,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,String(error).slice(0,1000),String(failureCode || 'PROVIDER_ERROR')]);
+    await client.query(`UPDATE payouts SET status='FAILED',failure_code=$2,failure_message=NULL,failure_category=$3,failure_retryable=$4,failure_http_status=$5,updated_at=NOW(),completed_at=NOW() WHERE id=$1`, [payoutId,diagnostic.code,diagnostic.category,diagnostic.retryable,diagnostic.httpStatus]);
     await client.query(`UPDATE financial_operations SET status='FAILED',completed_at=NOW() WHERE id=$1`, [hold.financial_operation_id]);
     await client.query(`UPDATE journals SET status='FAILED' WHERE operation_id=$1 AND journal_type='PAYOUT' AND status='CREATED'`, [hold.financial_operation_id]);
-    await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=NOW(),locked_at=NULL,last_error=$2 WHERE id=$1`,[eventId,String(error).slice(0,2000)]);
+    await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=NOW(),locked_at=NULL,lease_token=NULL,last_error=NULL,last_error_code=$2,last_error_category=$3,last_error_retryable=$4,last_error_http_status=$5 WHERE id=$1`,[eventId,diagnostic.code,diagnostic.category,diagnostic.retryable,diagnostic.httpStatus]);
   return {completed:true,alreadyFailed:false};
 }
 
-export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
-  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode }));
+export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR', failureMetadata = null }) {
+  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode, failureMetadata }));
 }
 
 export async function getPayoutForUser(userId,payoutId) {
-  const {rows}=await requirePool().query(`SELECT * FROM payouts WHERE id=$1 AND user_id=$2`,[payoutId,userId]);
+  const {rows}=await requirePool().query(`SELECT id,wallet_id AS "walletId",user_id AS "userId",amount,currency,provider,status,provider_ref AS "providerRef",idempotency_key AS "idempotencyKey",failure_code AS "failureCode",failure_category AS "failureCategory",failure_retryable AS "failureRetryable",failure_http_status AS "failureHttpStatus",created_at AS "createdAt",updated_at AS "updatedAt",completed_at AS "completedAt" FROM payouts WHERE id=$1 AND user_id=$2`,[payoutId,userId]);
   return rows[0]||null;
 }
 
@@ -358,7 +362,9 @@ export async function listPayoutsForUser(userId, { limit = 50 } = {}) {
            provider_ref AS "providerRef",
            idempotency_key AS "idempotencyKey",
            failure_code AS "failureCode",
-           failure_message AS "failureMessage",
+           failure_category AS "failureCategory",
+           failure_retryable AS "failureRetryable",
+           failure_http_status AS "failureHttpStatus",
            created_at AS "createdAt",
            updated_at AS "updatedAt",
            completed_at AS "completedAt"
@@ -382,7 +388,9 @@ export async function listUnknownPayouts({ limit = 50 } = {}) {
            p.status,
            p.provider_ref AS "providerRef",
            p.failure_code AS "failureCode",
-           p.failure_message AS "failureMessage",
+           p.failure_category AS "failureCategory",
+           failure_retryable AS "failureRetryable",
+           failure_http_status AS "failureHttpStatus",
            p.created_at AS "createdAt",
            p.updated_at AS "updatedAt",
            COALESCE((
