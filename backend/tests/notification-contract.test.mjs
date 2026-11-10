@@ -59,3 +59,14 @@ test('mobile notifications are repository-backed and typed',()=>{
   assert.match(mobile,/loadNotificationPreferences/);
   assert.match(mobile,/updateNotificationPreferences/);
 });
+
+
+const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
+const cancellationMigration=fs.readFileSync(new URL('../src/db/migrations/054_outbox_notification_cancellation.js',import.meta.url),'utf8');
+
+test('notification Outbox dispatch uses explicit cancellation and an account-erasure recipient barrier',()=>{
+  assert.match(notificationsRepo,/export async function dispatchNotificationOutbox/);
+  assert.match(handlers,/dispatchNotificationOutbox/);
+  assert.match(privacyRepo,/NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE/);
+  assert.match(cancellationMigration,/CANCELLED/);
+});
