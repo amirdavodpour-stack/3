@@ -102,6 +102,6 @@ test('new notification Outbox events use a content-free v2 payload and dispatch 
 
 test('account erasure identifies notification Outbox rows through canonical aggregate identity',()=>{
   const deletion=privacyRepo.slice(privacyRepo.indexOf('export async function deleteUserPrivacyBundle'));
-  assert.match(deletion,/EXISTS\s*\(\s*SELECT 1 FROM notifications n\s+WHERE n\.id=outbox_events\.aggregate_id\s+AND n\.user_id=\$1/s);
+  assert.match(deletion,/EXISTS\s*\(\s*SELECT 1\s+FROM notifications n\s+WHERE n\.id=outbox_events\.aggregate_id\s+AND n\.user_id=\$1/s);
   assert.doesNotMatch(deletion,/payload->>'userId'/);
 });
