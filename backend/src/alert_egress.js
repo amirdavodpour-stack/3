@@ -282,7 +282,8 @@ export async function dispatchAlertWebhook({
   const headers = {
     'content-type': 'application/json',
     authorization: 'Bearer ' + token,
-    'idempotency-key': idempotencyKey,
+  };
+  headers['idempotency-key'] = String(idempotencyKey);
   };
   try {
     return await withTimeout(
