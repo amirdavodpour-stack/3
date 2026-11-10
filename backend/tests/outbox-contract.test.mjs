@@ -83,6 +83,7 @@ test('refresh-reuse security alert is created transactionally and completed unde
   const auth = fs.readFileSync(new URL('../src/repository/auth.js', import.meta.url), 'utf8');
   const outbox = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
   const alerting = fs.readFileSync(new URL('../src/alerting.js', import.meta.url), 'utf8');
+  const alertEgress = fs.readFileSync(new URL('../src/alert_egress.js', import.meta.url), 'utf8');
 
   const rotateStart = auth.indexOf('export async function rotateRefreshToken(');
   const rotateEnd = auth.indexOf('export async function revokeRefreshFamily(',rotateStart);
@@ -98,8 +99,12 @@ test('refresh-reuse security alert is created transactionally and completed unde
   assert.match(outbox,/export async function completeOutboxEvent/);
   assert.match(outbox,/lease_token=\$2/);
   assert.match(alerting,/AUTH_REFRESH_REUSE_DETECTED/);
-  assert.match(alerting,/idempotency-key/);
-  assert.match(alerting,/redirect:\s*'error'/);
+  // The alerting layer owns the stable semantic idempotency key; the pinned
+  // transport layer owns HTTP header mapping and rejects non-2xx responses.
+  assert.match(alerting,/idempotencyKey:\s*'hope-outbox:'\s*\+\s*eventId/);
+  assert.match(alertEgress,/headers\['idempotency-key'\]\s*=\s*String\(idempotencyKey\)/);
+  assert.match(alertEgress,/https\.request\(endpoint,/);
+  assert.match(alerting,/if \(!response\?\.ok\)/);
 });
 
 
