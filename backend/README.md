@@ -118,3 +118,14 @@ CI must additionally run the Flutter `analyze`/`test`/build jobs against
 the same commit. See `docs/CONFIGURATION-CONTRACT.md`,
 `RELEASE-VALIDATION.md`, and `RELEASE-CHECKLIST.md` for the authoritative
 release contract.
+
+## PagerDuty incident readback (source-only, GET-only)
+
+The backend includes `src/pagerduty_incident_readback.js`, an isolated method-scoped helper for `GET /incidents/{id}` against the fixed official API host `https://api.pagerduty.com/`. It is not wired into Outbox handlers, request routes, or alert dispatch. No PagerDuty credential is configured and no live PagerDuty request has been sent.
+
+The caller must supply a dedicated account API token explicitly configured as read-only, plus an explicit allowlist containing `https://api.pagerduty.com/`. The generic HOPE outbound alert allowlist remains independent and empty until the actual receiver FQDN is separately approved. The readback uses the PagerDuty `Token token=<API_KEY>` header and API v2 Accept header. Scoped OAuth alternatives require `incidents.read`, but this helper intentionally accepts only the dedicated read-only account API token format. See the [Get an incident API reference](https://docs.pagerduty.com/developer/api/reference/rest/incidents/get-incident) and [Authentication](https://docs.pagerduty.com/developer/authentication).
+
+Returned evidence separates incident existence, `userAcknowledged`, `humanAcknowledged`, and resolution. A user-reference acknowledgement is not necessarily a human; `humanAcknowledged` is true only for actor IDs explicitly supplied through the trusted `humanAcknowledgerIds` mapping, which defaults to empty. `resolved` requires status `resolved` plus a valid `resolved_at` timestamp. A 404 is not evidence that an incident was created; 401, 403 and 429 are surfaced separately. No automatic retry, POST, ACK, resolve, or write fallback exists.
+
+Collector receipt, PagerDuty incident existence, human acknowledgement and resolution remain separate states. HOPE Outbox stays the retry/source-of-truth authority. Tests inject a mock request implementation only; they make no external PagerDuty calls.
+

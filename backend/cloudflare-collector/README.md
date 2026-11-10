@@ -67,18 +67,3 @@ Tests use Node's SQLite-compatible local database and a D1 fake with transaction
 The Wrangler template has a placeholder D1 ID, disables `workers_dev` and preview URLs, and contains a cron template that is not active until authorized deployment. Worker FQDN, route, D1, secrets, DNS, cron and outbound allowlist remain unknown/unconfigured. No resource creation, secret creation, DNS/route change, deploy, PagerDuty traffic or allowlist entry is authorized here.
 
 Cloudflare references: https://developers.cloudflare.com/d1/worker-api/d1-database/ ; https://developers.cloudflare.com/d1/platform/pricing/ ; https://developers.cloudflare.com/d1/platform/limits/ ; https://developers.cloudflare.com/d1/observability/debug-d1/ ; https://developers.cloudflare.com/workers/observability/logs/workers-logs/ ; https://developers.cloudflare.com/workers/observability/traces/ ; https://developers.cloudflare.com/observability/pricing/ .
-
-
-## PagerDuty incident readback — isolated GET-only boundary
-
-A separate source module, \`src/pagerduty_incident_readback.js\`, is reserved for method-scoped incident readback. It supports exactly one \`GET /incidents/{id}\` against the fixed PagerDuty API base. It requires a dedicated account API token explicitly configured as read-only and an explicit caller-supplied allowlist containing \`https://api.pagerduty.com/\`. The normal alert/Collector outbound allowlist remains empty; no PagerDuty endpoint or credential is enabled by default.
-
-PagerDuty documents the incident GET operation as requiring the \`incidents.read\` scope for scoped OAuth and the \`Token token=<API_KEY>\` header format for API tokens. A token must be a dedicated read-only account API token, not a user API token inheriting broader permissions. See https://docs.pagerduty.com/developer/api/reference/rest/incidents/get-incident and https://docs.pagerduty.com/developer/authentication.
-
-The readback returns separate evidence:
-- \`incidentExists\`: the requested incident was returned by PagerDuty.
-- `userAcknowledged`: at least one acknowledgement contains a PagerDuty user-reference actor and valid timestamp.
-- `humanAcknowledged`: only true when that user-reference ID is explicitly present in a separately trusted `humanAcknowledgerIds` mapping. A user reference alone is not proof of a natural person; service/bot accounts are not treated as human. The mapping defaults to empty.
-- \`resolved\`: incident status is \`resolved\` and a valid \`resolved_at\` timestamp is present.
-
-A 404 is not evidence of incident creation. 401/403/429 are surfaced distinctly; no automatic retry or write fallback occurs. Collector receipt, PagerDuty incident existence, human ACK and resolution remain separate. The module is not wired to Outbox handlers or alert dispatch. Tests inject a mock request implementation and make no PagerDuty network call.

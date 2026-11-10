@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/hopev2-collector-node24.yml"
       - "backend/package.json"
+      - "backend/README.md"
       - "backend/package-lock.json"
       - "backend/cloudflare-collector/**"
       - "backend/tests/cloudflare-collector.test.mjs"
