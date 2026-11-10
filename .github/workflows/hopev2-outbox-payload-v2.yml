@@ -41,7 +41,7 @@ jobs:
         working-directory: backend
         run: |
           npm run check
-          npm run test:notifications
+          npm run test:fast
 
   postgres17:
     name: PostgreSQL 17 notification payload integration
