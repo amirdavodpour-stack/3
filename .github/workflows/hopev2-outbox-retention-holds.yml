@@ -37,7 +37,7 @@ jobs:
       - name: Install locked dependencies
         working-directory: backend
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run syntax and full backend fast suite (RED expected before implementation)
+      - name: Run syntax and full backend fast suite
         working-directory: backend
         run: |
           npm run check
@@ -77,6 +77,6 @@ jobs:
       - name: Install locked dependencies
         working-directory: backend
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run PostgreSQL 17 acceptance tests (RED expected before implementation)
+      - name: Run PostgreSQL 17 acceptance tests
         working-directory: backend
         run: node --test --test-concurrency=1 tests/postgres-outbox-retention-holds.test.mjs
