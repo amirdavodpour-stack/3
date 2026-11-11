@@ -226,6 +226,59 @@ test('account erasure cancels new content-free v2 notification Outbox events by 
   }
 });
 
+
+test('dispatch rejects unsupported notification Outbox schema versions before delivery',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  let notificationId=null;
+  let eventId=null;
+  let delivered=false;
+  try {
+    const notification=await createNotification(userId);
+    notificationId=notification.id;
+    const event=await createEvent(notificationId,{schemaVersion:3,channel:'PUSH'});
+    eventId=event.id;
+
+    await assert.rejects(
+      notificationsRepo.dispatchNotificationOutbox(event,async()=>{delivered=true;}),
+      (error)=>error?.message==='NOTIFICATION_OUTBOX_SCHEMA_UNSUPPORTED',
+    );
+    assert.equal(delivered,false);
+    const {rows}=await pool.query('SELECT status FROM outbox_events WHERE id=$1',[eventId]);
+    assert.equal(rows[0]?.status,'PROCESSING');
+  } finally {
+    await cleanup(userId,notificationId?[notificationId]:[],eventId?[eventId]:[]);
+  }
+});
+
+test('v2 notification Outbox payload rejects copied content and recipient fields',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  let notificationId=null;
+  let eventId=null;
+  let delivered=false;
+  try {
+    const notification=await createNotification(userId);
+    notificationId=notification.id;
+    const event=await createEvent(notificationId,{
+      schemaVersion:2,
+      channel:'PUSH',
+      userId,
+      title:'must not be carried in v2',
+      body:'must not be carried in v2',
+    });
+    eventId=event.id;
+
+    await assert.rejects(
+      notificationsRepo.dispatchNotificationOutbox(event,async()=>{delivered=true;}),
+      (error)=>error?.message==='NOTIFICATION_OUTBOX_V2_PAYLOAD_INVALID',
+    );
+    assert.equal(delivered,false);
+    const {rows}=await pool.query('SELECT status FROM outbox_events WHERE id=$1',[eventId]);
+    assert.equal(rows[0]?.status,'PROCESSING');
+  } finally {
+    await cleanup(userId,notificationId?[notificationId]:[],eventId?[eventId]:[]);
+  }
+});
+
 after(async()=>{
   if(enabled) await dbModule.db.close();
 });
