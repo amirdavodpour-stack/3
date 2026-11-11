@@ -392,6 +392,76 @@ paths:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: User status updated}, '400': {description: Invalid status}, '403': {description: Forbidden}}}
   /admin/audit:
     get: {security: [{bearerAuth: []}], responses: {'200': {description: Audit event list}, '403': {description: Forbidden}}}
+  /admin/privacy/outbox-retention/dry-run:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Inspect sanitized Outbox retention blockers without mutation
+      parameters:
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 100}}
+        - {name: maxRows, in: query, schema: {type: integer, minimum: 1, maximum: 1000, default: 500}}
+      responses:
+        '200': {description: Bounded sanitized dry-run; candidates remain ineligible until retention periods are approved}
+        '400': {description: Invalid pageSize or maxRows}
+        '403': {description: Requires audit permission and current-session READ verification}
+        '503': {description: PostgreSQL retention inventory is unavailable}
+  /admin/privacy/outbox-retention/holds:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Create an immutable Outbox event or aggregate preservation hold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target, holdKind, reasonCode]
+              properties:
+                target:
+                  oneOf:
+                    - type: object
+                      required: [kind, eventId]
+                      properties:
+                        kind: {type: string, enum: [EVENT]}
+                        eventId: {type: string, format: uuid}
+                    - type: object
+                      required: [kind, aggregateType, aggregateId]
+                      properties:
+                        kind: {type: string, enum: [AGGREGATE]}
+                        aggregateType: {type: string, enum: [notification, payment, payout, user, outbox_event]}
+                        aggregateId: {type: string, format: uuid}
+                holdKind: {type: string, enum: [LEGAL, ADMIN]}
+                reasonCode:
+                  type: string
+                  enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]
+      responses:
+        '201': {description: Immutable hold created}
+        '400': {description: Invalid target, hold kind or reasonCode}
+        '403': {description: Requires verified Primary Admin and current-session WRITE step-up}
+        '404': {description: Outbox event or aggregate target not found}
+        '503': {description: PostgreSQL retention storage is unavailable}
+  /admin/privacy/outbox-retention/holds/{holdId}/release:
+    post:
+      security: [{bearerAuth: []}]
+      parameters:
+        - {name: holdId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reasonCode]
+              properties:
+                reasonCode:
+                  type: string
+                  enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]
+      responses:
+        '200': {description: Immutable hold release recorded}
+        '400': {description: Invalid holdId or reasonCode}
+        '403': {description: Requires verified Primary Admin and current-session WRITE step-up}
+        '404': {description: Hold not found}
+        '409': {description: Hold has already been released}
+        '503': {description: PostgreSQL retention storage is unavailable}
   /admin/security-alerts/{eventId}/replay:
     post:
       security: [{bearerAuth: []}]
