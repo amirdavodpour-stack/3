@@ -353,7 +353,7 @@ test('OpenAPI documents Outbox retention routes without any delete or TTL operat
   const releaseStart=source.indexOf('  /admin/privacy/outbox-retention/holds/{holdId}/release:');
   assert.ok(dryRunStart>=0&&holdsStart>dryRunStart&&releaseStart>holdsStart,
     'Outbox retention GET/create/release endpoints must be documented');
-  assert.doesNotMatch(source,//admin/privacy/outbox-retention/purge|/admin/privacy/outbox-retention/archive|ttl/i);
+  assert.doesNotMatch(source,/\\/admin\\/privacy\\/outbox-retention\\/purge|\\/admin\\/privacy\\/outbox-retention\\/archive|ttl/i);
   const holdOperation=source.slice(holdsStart,releaseStart);
   assert.match(holdOperation,/reasonCode/);
   assert.doesNotMatch(holdOperation,/reason: {type: string/);
