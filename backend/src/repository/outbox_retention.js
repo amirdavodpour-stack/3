@@ -125,7 +125,21 @@ async function aggregateTargetExistsWithClient(client, aggregateType, aggregateI
  * locks, and revalidate after waiting. Hold creation and every future
  * candidate/archive/purge caller must use this same gate.
  */
+async function requireReadCommittedRetentionGate(client) {
+  const { rows } = await client.query(
+    "SELECT current_setting('transaction_isolation') AS isolation_level",
+  );
+  if (String(rows[0]?.isolation_level || '').toLowerCase() !== 'read committed') {
+    fail(
+      'OUTBOX_RETENTION_GATE_REQUIRES_READ_COMMITTED',
+      'Outbox hold candidate gates require READ COMMITTED so advisory-lock waits cannot reuse a stale snapshot',
+      409,
+    );
+  }
+}
+
 export async function lockOutboxRetentionTargetWithClient(client, target) {
+  await requireReadCommittedRetentionGate(client);
   const normalized = normalizeTarget(target);
   if (normalized.kind === 'EVENT') {
     const before = await findOutboxEventIdentityWithClient(client,normalized.eventId);

@@ -41,7 +41,7 @@ test('hold creation and release have append-only actor/reason evidence', () => {
 test('hold creation and future purge candidate checks share deterministic target locks', () => {
   assert.match(retention, /pg_advisory_xact_lock/);
   assert.match(retention, /lockOutboxRetentionTargetWithClient/);
-  assert.match(retention, /current_setting\\('transaction_isolation'\\)/,
+  assert.match(retention, /current_setting\('transaction_isolation'\)/,
     'candidate gate must fail closed rather than inspect holds through a stale repeatable-read snapshot');
   const create = retention.slice(
     retention.indexOf('export async function createOutboxRetentionHoldWithClient('),
