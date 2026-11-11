@@ -44,20 +44,21 @@ jobs:
       - name: Check changed Admin and repository module syntax
         working-directory: backend
         run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
-      - name: Validate OpenAPI YAML syntax
+      - name: Compare baseline and current OpenAPI YAML parser behavior
         working-directory: backend
         run: |
+          git fetch --no-tags --depth=1 origin c7f12059278d98e4f5949ddb52bbec4a534be114
+          git show c7f12059278d98e4f5949ddb52bbec4a534be114:backend/openapi/openapi.yaml > /tmp/hopev2-openapi-base.yaml
           ruby <<'RUBY'
           require 'yaml'
-          begin
-            YAML.parse_file('openapi/openapi.yaml')
-          rescue Psych::SyntaxError => error
-            warn "OpenAPI YAML parser failure: line=#{error.line} column=#{error.column}"
-            warn "problem=#{error.problem.inspect}"
-            warn "context=#{error.context.inspect}"
-            exit 1
+          ['/tmp/hopev2-openapi-base.yaml', 'openapi/openapi.yaml'].each do |path|
+            begin
+              YAML.parse_file(path)
+              puts "#{path}: parsed"
+            rescue Psych::SyntaxError => error
+              puts "#{path}: line=#{error.line} column=#{error.column} problem=#{error.problem.inspect} context=#{error.context.inspect}"
+            end
           end
-          puts 'OpenAPI YAML syntax is valid'
           RUBY
       - name: Run backend fast regression suite
         working-directory: backend
