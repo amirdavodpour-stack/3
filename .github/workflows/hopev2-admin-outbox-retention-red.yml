@@ -46,7 +46,19 @@ jobs:
         run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
       - name: Validate OpenAPI YAML syntax
         working-directory: backend
-        run: ruby -e "require 'yaml'; YAML.parse_file('openapi/openapi.yaml')"
+        run: |
+          ruby <<'RUBY'
+          require 'yaml'
+          begin
+            YAML.parse_file('openapi/openapi.yaml')
+          rescue Psych::SyntaxError => error
+            warn "OpenAPI YAML parser failure: line=#{error.line} column=#{error.column}"
+            warn "problem=#{error.problem.inspect}"
+            warn "context=#{error.context.inspect}"
+            exit 1
+          end
+          puts 'OpenAPI YAML syntax is valid'
+          RUBY
       - name: Run backend fast regression suite
         working-directory: backend
         run: npm run test:fast
