@@ -161,6 +161,9 @@ export async function reserveOutboxDedupeKeyWithClient(client, {
       conflictPolicy,
       digestVersion:DIGEST_VERSION,
       keyDigest:digest,
+      eventType,
+      aggregateType,
+      aggregateId,
     };
   }
 
@@ -172,6 +175,9 @@ export async function reserveOutboxDedupeKeyWithClient(client, {
       conflictPolicy,
       digestVersion:DIGEST_VERSION,
       keyDigest:digest,
+      eventType,
+      aggregateType,
+      aggregateId,
     };
   }
 
@@ -185,6 +191,9 @@ export async function reserveOutboxDedupeKeyWithClient(client, {
     conflictPolicy,
     digestVersion:DIGEST_VERSION,
     keyDigest:digest,
+      eventType,
+      aggregateType,
+      aggregateId,
   };
 }
 
@@ -206,8 +215,28 @@ export async function insertReservedOutboxEventWithClient(client, {
   if (!reservation?.created || !reservation.eventId || !reservation.keyDigest) {
     throw dedupeError('OUTBOX_DEDUPE_RESERVATION_REQUIRED', 500);
   }
-  if (reservation.conflictPolicy !== outboxDedupePolicyForEventType(eventType)) {
-    throw dedupeError('OUTBOX_DEDUPE_POLICY_MISMATCH');
+  assertRequestedIdentity({
+    eventId:reservation.eventId,
+    eventType,
+    aggregateType,
+    aggregateId,
+    dedupeKey,
+    conflictPolicy:reservation.conflictPolicy,
+  });
+  if (Number(reservation.digestVersion) !== DIGEST_VERSION) {
+    throw dedupeError('OUTBOX_DEDUPE_DIGEST_VERSION_CONFLICT');
+  }
+  if (
+    reservation.eventType !== eventType
+    || reservation.aggregateType !== aggregateType
+    || !sameId(reservation.aggregateId, aggregateId)
+  ) {
+    throw dedupeError('OUTBOX_DEDUPE_IDENTITY_CONFLICT');
+  }
+  const requestedDigest=createOutboxDedupeDigest(dedupeKey);
+  const reservedDigest=Buffer.from(reservation.keyDigest);
+  if (reservedDigest.length !== 32 || !reservedDigest.equals(requestedDigest)) {
+    throw dedupeError('OUTBOX_DEDUPE_IDENTITY_CONFLICT');
   }
 
   const { rows } = await client.query(

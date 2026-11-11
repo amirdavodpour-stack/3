@@ -74,6 +74,16 @@ test('registry reservation fails closed for identity mismatch, orphan and archiv
   assert.match(registry, /aggregate_id/);
 });
 
+test('reserved insertion is bound to the reservation identity and versioned key digest', () => {
+  assert.match(registry, /reservation\.eventType\s*!==\s*eventType/);
+  assert.match(registry, /reservation\.aggregateType\s*!==\s*aggregateType/);
+  assert.match(registry, /reservation\.aggregateId/);
+  assert.match(registry, /reservation\.digestVersion/);
+  assert.match(registry, /reservation\.keyDigest/);
+  assert.match(registry, /requestedDigest\s*=\s*createOutboxDedupeDigest\(dedupeKey\)/);
+  assert.match(registry, /reservedDigest\.equals\(requestedDigest\)/);
+});
+
 test('registry declares event-class-specific create-only, first-wins and status-gated requeue policies', () => {
   for (const policy of ['CREATE_ONLY','FIRST_WINS','STATUS_GATED_REQUEUE']) {
     assert.ok(registry.includes(policy), 'missing policy ' + policy);
