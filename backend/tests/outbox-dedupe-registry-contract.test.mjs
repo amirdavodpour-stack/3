@@ -53,7 +53,7 @@ test('migration backfills every existing non-null Outbox key to its original eve
   assert.match(migration, /SELECT[\s\S]*FROM\s+outbox_events/i);
   assert.match(migration, /WHERE\s+dedupe_key\s+IS\s+NOT\s+NULL/i);
   assert.match(migration, /original_event_id[\s\S]*id/i);
-  assert.match(migration, /ON CONFLICT\s*\(\s*key_digest\s*\)\s+DO NOTHING/i);
+  assert.doesNotMatch(migration, /ON CONFLICT\s*\(\s*key_digest\s*\)[\s\S]*?DO NOTHING/i, 'a digest/identity conflict during backfill must fail closed, never silently skip a legacy mapping');
 });
 
 test('registry hashes exact key bytes with a domain-separated versioned SHA-256 digest', () => {

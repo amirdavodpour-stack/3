@@ -107,22 +107,61 @@ test('registry schema has the required identity fields and contains no raw key o
   assert.equal(columns.has('payload'),false,'registry must not duplicate event payload');
 });
 
-test('migration backfill preserves every current non-null key to its original event UUID and identity',{
-  skip:!enabled,
+test('migration 057 backfills seeded legacy rows to their original event UUIDs and preserves payload and identity',{
+  skip:!enabled || !migrationModule?.migration,
   timeout:30_000,
 },async()=>{
-  const {rows}=await pool.query("SELECT id,dedupe_key,event_type,aggregate_type,aggregate_id FROM outbox_events WHERE dedupe_key IS NOT NULL");
-  for(const event of rows){
-    const {rows:registryRows}=await pool.query(
-      "SELECT original_event_id,event_type,aggregate_type,aggregate_id,state FROM outbox_dedupe_registry WHERE key_digest=$1",
-      [digestKey(event.dedupe_key)],
+  const client=await pool.connect();
+  const paymentId=uuid();
+  const notificationId=uuid();
+  const paymentEventId=uuid();
+  const notificationEventId=uuid();
+  const paymentKey='legacy-payment-release:'+paymentId;
+  const notificationKey='legacy-notification:'+notificationId+':PUSH';
+  const paymentPayload={paymentId,ownerId:uuid(),amount:125,currency:'TOMAN',idempotencyKey:'legacy-payment-key'};
+  const notificationPayload={notificationId,userId:uuid(),title:'legacy private title',body:'legacy private body'};
+  try{
+    await client.query('BEGIN');
+    await client.query("CREATE TEMP TABLE outbox_events(id UUID PRIMARY KEY,event_type TEXT NOT NULL,aggregate_type TEXT NOT NULL,aggregate_id UUID NULL,dedupe_key TEXT NULL UNIQUE,payload JSONB NOT NULL DEFAULT '{}'::jsonb,status TEXT NOT NULL DEFAULT 'PENDING',attempts INTEGER NOT NULL DEFAULT 0,available_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()) ON COMMIT PRESERVE ROWS");
+    await client.query(
+      "INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'DONE',3,NOW(),NOW()),($5,'NOTIFICATION_DISPATCH','notification',$6,$7,$8::jsonb,'CANCELLED',1,NOW(),NOW())",
+      [paymentEventId,paymentId,paymentKey,JSON.stringify(paymentPayload),notificationEventId,notificationId,notificationKey,JSON.stringify(notificationPayload)],
     );
-    assert.equal(registryRows.length,1,'every existing non-null Outbox key must be backfilled');
-    assert.equal(registryRows[0].original_event_id,event.id);
-    assert.equal(registryRows[0].event_type,event.event_type);
-    assert.equal(registryRows[0].aggregate_type,event.aggregate_type);
-    assert.equal(registryRows[0].aggregate_id,event.aggregate_id);
-    assert.equal(registryRows[0].state,'ACTIVE');
+
+    await migrationModule.migration.up(client);
+
+    const {rows}=await client.query(
+      "SELECT key_digest,digest_version,original_event_id,event_type,aggregate_type,aggregate_id,conflict_policy,state FROM outbox_dedupe_registry ORDER BY original_event_id",
+    );
+    assert.equal(rows.length,2,'every seeded non-null legacy dedupe key must be backfilled');
+    const payment=rows.find(row=>row.original_event_id===paymentEventId);
+    const notification=rows.find(row=>row.original_event_id===notificationEventId);
+    assert.ok(payment);
+    assert.ok(notification);
+    assert.deepEqual(payment.key_digest,digestKey(paymentKey));
+    assert.deepEqual(notification.key_digest,digestKey(notificationKey));
+    assert.equal(Number(payment.digest_version),1);
+    assert.equal(Number(notification.digest_version),1);
+    assert.equal(payment.event_type,'PAYMENT_RELEASE');
+    assert.equal(payment.aggregate_type,'payment');
+    assert.equal(payment.aggregate_id,paymentId);
+    assert.equal(notification.event_type,'NOTIFICATION_DISPATCH');
+    assert.equal(notification.aggregate_type,'notification');
+    assert.equal(notification.aggregate_id,notificationId);
+    assert.equal(payment.state,'ACTIVE');
+    assert.equal(notification.state,'ACTIVE');
+
+    const {rows:originalRows}=await client.query(
+      "SELECT id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts FROM outbox_events ORDER BY id",
+    );
+    assert.equal(originalRows.length,2);
+    assert.deepEqual(originalRows.find(row=>row.id===paymentEventId).payload,paymentPayload);
+    assert.deepEqual(originalRows.find(row=>row.id===notificationEventId).payload,notificationPayload);
+    assert.equal(originalRows.find(row=>row.id===paymentEventId).status,'DONE');
+    assert.equal(originalRows.find(row=>row.id===notificationEventId).status,'CANCELLED');
+  }finally{
+    await client.query('ROLLBACK').catch(()=>{});
+    client.release();
   }
 });
 
