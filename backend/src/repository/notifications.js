@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { normalizeOutboxFailureMetadata } from '../outbox_failure_metadata.js';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 
 const notificationFromRow = (r) => ({
   id: r.id,
@@ -345,9 +346,25 @@ export async function queueNotificationWithClient(client,{userId,type,title,body
   const payload={...data,dedupeKey:dedupeKey||undefined,channels:notifyChannels};
   const {rows}=await client.query(`INSERT INTO notifications(id,user_id,type,title,body,data,created_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW()) RETURNING *`,[id,userId,type,title,body,JSON.stringify(payload)]);
   for(const channel of notifyChannels.filter(Boolean)){
-    const eventId=crypto.randomUUID();
-    const eventPayload = { schemaVersion:2, channel };
-    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'NOTIFICATION_DISPATCH','notification',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW()) ON CONFLICT(dedupe_key) DO NOTHING`,[eventId,id,`NOTIFICATION:${id}:${channel}`,JSON.stringify(eventPayload)]);
+    const eventDedupeKey='NOTIFICATION:'+id+':'+channel;
+    const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+      eventId:crypto.randomUUID(),
+      eventType:'NOTIFICATION_DISPATCH',
+      aggregateType:'notification',
+      aggregateId:id,
+      dedupeKey:eventDedupeKey,
+      conflictPolicy:'FIRST_WINS',
+    });
+    if(reservation.created){
+      await insertReservedOutboxEventWithClient(client,{
+        reservation,
+        eventType:'NOTIFICATION_DISPATCH',
+        aggregateType:'notification',
+        aggregateId:id,
+        dedupeKey:eventDedupeKey,
+        payload:{schemaVersion:2,channel},
+      });
+    }
   }
   return {notification:notificationFromRow(rows[0]),created:true};
 }

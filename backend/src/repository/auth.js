@@ -1,6 +1,8 @@
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { userFromRow } from './mappers.js';
+import crypto from 'node:crypto';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 
 const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
 export async function insertRefreshToken(token, expectedSessionVersion) {
@@ -93,25 +95,31 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
       // Keep security alert intent atomic with family revocation and its audit.
       // The account/window key bounds alert storms while preserving the first
       // family identifier for triage. The worker uses an idempotent delivery key.
-      await client.query(
-        `INSERT INTO outbox_events(
-           id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
-           status,attempts,available_at,created_at
-         ) VALUES(
-           gen_random_uuid(),'AUTH_REFRESH_REUSE_ALERT','user',$1::uuid,
-           'auth-refresh-reuse:' || ($1::uuid)::text || ':' ||
-             floor(extract(epoch FROM NOW()) / 300)::bigint::text,
-           $2::jsonb,'PENDING',0,NOW(),NOW()
-         )
-         ON CONFLICT(dedupe_key) DO NOTHING`,
-        [
-          userId,
-          JSON.stringify({
+      const {rows:windowRows}=await client.query(
+        'SELECT floor(extract(epoch FROM NOW()) / 300)::bigint AS bucket',
+      );
+      const dedupeKey='auth-refresh-reuse:'+userId+':'+windowRows[0].bucket;
+      const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+        eventId:crypto.randomUUID(),
+        eventType:'AUTH_REFRESH_REUSE_ALERT',
+        aggregateType:'user',
+        aggregateId:userId,
+        dedupeKey,
+        conflictPolicy:'FIRST_WINS',
+      });
+      if(reservation.created){
+        await insertReservedOutboxEventWithClient(client,{
+          reservation,
+          eventType:'AUTH_REFRESH_REUSE_ALERT',
+          aggregateType:'user',
+          aggregateId:userId,
+          dedupeKey,
+          payload:{
             alertCode:'AUTH_REFRESH_REUSE_DETECTED',
             tokenFamilyId:r.family_id,
-          }),
-        ],
-      );
+          },
+        });
+      }
       return { kind:'reuse' };
     }
 

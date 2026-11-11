@@ -9,6 +9,7 @@ const worker = fs.readFileSync(new URL('../src/outbox_worker.js', import.meta.ur
 const handlers = fs.readFileSync(new URL('../src/outbox_handlers.js', import.meta.url), 'utf8');
 const app = fs.readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
 const paymentRoutes = fs.readFileSync(new URL('../src/routes/payment_routes.js', import.meta.url), 'utf8');
+const dedupeRegistry = fs.readFileSync(new URL('../src/repository/outbox_dedupe_registry.js', import.meta.url), 'utf8');
 
 test('outbox worker uses bounded parallel consumers instead of a single global busy gate', () => {
   assert.match(worker, /outboxWorkerConcurrency/);
@@ -42,7 +43,10 @@ test('create-hold completion is idempotent and terminal failures unlock an expli
 });
 test('payment release is queued with a database uniqueness guard', () => {
   assert.match(repo, /export async function enqueuePaymentRelease/);
-  assert.match(repo, /ON CONFLICT\(dedupe_key\)/);
+  assert.match(repo, /reserveOutboxDedupeKeyWithClient/);
+  assert.match(repo, /conflictPolicy:'STATUS_GATED_REQUEUE'/);
+  assert.match(repo, /OUTBOX_DEDUPE_ORPHANED/);
+  assert.match(dedupeRegistry, /ON CONFLICT\(dedupe_key\) DO NOTHING/);
   assert.match(repo, /SELECT \* FROM jobs WHERE id=\$1 FOR UPDATE/);
   assert.match(repo, /SELECT \* FROM payments WHERE id=\$1 AND job_id=\$2 FOR UPDATE/);
 });
@@ -93,7 +97,9 @@ test('refresh-reuse security alert is created transactionally and completed unde
   assert.match(rotate,/return withSqlTransaction/);
   assert.match(reuse,/AUTH_REFRESH_REUSE_DETECTED/);
   assert.match(reuse,/AUTH_REFRESH_REUSE_ALERT/);
-  assert.match(reuse,/ON CONFLICT\(dedupe_key\) DO NOTHING/);
+  assert.match(reuse,/reserveOutboxDedupeKeyWithClient/);
+  assert.match(reuse,/insertReservedOutboxEventWithClient/);
+  assert.match(reuse,/conflictPolicy:'FIRST_WINS'/);
 
   assert.match(outbox,/export async function completeOutboxEvent/);
   assert.match(outbox,/lease_token=\$2/);
@@ -151,8 +157,11 @@ test('manual outbox replay is primary-admin-only, security-alert-only, idempoten
 
 test('terminal refresh-reuse alert delivery failures enqueue and emit a durable machine-readable signal', () => {
   assert.match(repo, /SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL/);
-  assert.match(repo, /INSERT INTO outbox_events/);
-  assert.match(repo, /ON CONFLICT\(dedupe_key\) DO NOTHING/);
+  assert.match(repo, /reserveOutboxDedupeKeyWithClient/);
+  assert.match(repo, /insertReservedOutboxEventWithClient/);
+  assert.match(repo, /conflictPolicy:'FIRST_WINS'/);
+  assert.match(dedupeRegistry, /INSERT INTO outbox_events/);
+  assert.match(dedupeRegistry, /ON CONFLICT\(dedupe_key\) DO NOTHING/);
   assert.match(repo, /security-alert-terminal-failure:/);
   assert.match(handlers, /event\.event_type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL'/);
   assert.match(handlers, /await logEventAndWait/);

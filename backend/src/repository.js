@@ -26,3 +26,5 @@ export * from './repository/reconciliation.js';
 export * from './repository/human_chat.js';
 export * from './repository/admin_mfa.js';
 export * from './repository/chat_retention.js';
+
+export * from './repository/outbox_dedupe_registry.js';

@@ -6,6 +6,7 @@ import { releaseJournal, payoutJournal, refundJournal, calculatePaymentBreakdown
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { findPaymentByIdempotency } from './payment_queries.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 
 function financialNumber(currency, value) {
   return String(currency || config.paymentCurrency).toUpperCase() === 'TOMAN' ? String(value ?? '0') : Number(value ?? 0);
@@ -44,13 +45,42 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
           await client.query(`UPDATE jobs SET status='FUNDED',provider_id=COALESCE(provider_id,$2),updated_at=$3 WHERE id=$1`, [jobId, existing.payeeId, createdAt]);
         }
         await client.query(`UPDATE payments SET status='HOLD_PENDING',funding_previous_job_status=COALESCE(funding_previous_job_status,$3),idempotency_key=COALESCE(NULLIF(idempotency_key,''),NULLIF($4,'')),updated_at=$2 WHERE id=$1`, [existing.id,createdAt,recoveryStatus === 'FUNDED' ? null : recoveryStatus,idempotencyKey || null]);
-        const {rows:ev}=await client.query(`
-          INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
-          VALUES(gen_random_uuid(),'PAYMENT_CREATE_HOLD','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
-          ON CONFLICT(dedupe_key) DO UPDATE SET status='PENDING',available_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL,processed_at=NULL
-          RETURNING *`,
-          [existing.id, `PAYMENT_CREATE_HOLD:${existing.id}`, JSON.stringify({ jobId, ownerId:payerId, paymentId:existing.id, amount:financialNumber(existing.currency, existing.employer_charge || existing.amount), baseAmount:financialNumber(existing.currency, existing.base_amount || existing.amount), currency:existing.currency || config.paymentCurrency, idempotencyKey:existing.idempotencyKey || idempotencyKey || `payment:${existing.id}` })]);
-        return { payment:{...existing,status:'HOLD_PENDING',updatedAt:createdAt.toISOString?.() ?? createdAt}, job, outboxEvent:{id:ev[0].id,status:ev[0].status}, retry:true };
+        const dedupeKey='PAYMENT_CREATE_HOLD:'+existing.id;
+        const eventPayload={
+          jobId,
+          ownerId:payerId,
+          paymentId:existing.id,
+          amount:financialNumber(existing.currency, existing.employer_charge || existing.amount),
+          baseAmount:financialNumber(existing.currency, existing.base_amount || existing.amount),
+          currency:existing.currency || config.paymentCurrency,
+          idempotencyKey:existing.idempotencyKey || idempotencyKey || ('payment:'+existing.id),
+        };
+        const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+          eventId:crypto.randomUUID(),
+          eventType:'PAYMENT_CREATE_HOLD',
+          aggregateType:'payment',
+          aggregateId:existing.id,
+          dedupeKey,
+          conflictPolicy:'STATUS_GATED_REQUEUE',
+        });
+        const ev=reservation.created
+          ? await insertReservedOutboxEventWithClient(client,{
+              reservation,
+              eventType:'PAYMENT_CREATE_HOLD',
+              aggregateType:'payment',
+              aggregateId:existing.id,
+              dedupeKey,
+              payload:eventPayload,
+            })
+          : await (async()=>{
+              const {rows}=await client.query(
+                "UPDATE outbox_events SET status='PENDING',available_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL,processed_at=NULL WHERE id=$1 RETURNING *",
+                [reservation.eventId],
+              );
+              if(!rows[0]) throw Object.assign(new Error('OUTBOX_DEDUPE_ORPHANED'),{code:'OUTBOX_DEDUPE_ORPHANED'});
+              return {...reservation,event:rows[0]};
+            })();
+        return { payment:{...existing,status:'HOLD_PENDING',updatedAt:createdAt.toISOString?.() ?? createdAt}, job, outboxEvent:{id:ev.event.id,status:ev.event.status}, retry:true };
       }
       return {payment:existing,job,outboxEvent:null,created:false};
     }
@@ -77,12 +107,34 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
     // External cash/escrow entries are only posted after the provider confirms
     // its hold in completePaymentCreateHoldOutbox. A pending/failed hold must
     // not create a recognized funding journal.
-    const {rows:ev}=await client.query(`
-      INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
-      VALUES(gen_random_uuid(),'PAYMENT_CREATE_HOLD','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
-      RETURNING *`,
-      [id, `PAYMENT_CREATE_HOLD:${id}`, JSON.stringify({ jobId, ownerId:payerId, paymentId:id, amount:financialNumber(fees.currency, fees.employerCharge), baseAmount:financialNumber(fees.currency, fees.baseAmount), currency:fees.currency, idempotencyKey:idempotencyKey || `payment:${id}` })]);
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_FUND',$2,'payment',$3,$4::jsonb,$5)`, [crypto.randomUUID(), payerId, id, JSON.stringify({jobId,outboxEventId:ev[0].id}), createdAt]);
-    return {payment:paymentFromRow(rows[0]),job:jobFromRow(job2[0]),outboxEvent:{id:ev[0].id,status:ev[0].status},created:true};
+    const dedupeKey='PAYMENT_CREATE_HOLD:'+id;
+    const eventPayload={
+      jobId,
+      ownerId:payerId,
+      paymentId:id,
+      amount:financialNumber(fees.currency, fees.employerCharge),
+      baseAmount:financialNumber(fees.currency, fees.baseAmount),
+      currency:fees.currency,
+      idempotencyKey:idempotencyKey || ('payment:'+id),
+    };
+    const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+      eventId:crypto.randomUUID(),
+      eventType:'PAYMENT_CREATE_HOLD',
+      aggregateType:'payment',
+      aggregateId:id,
+      dedupeKey,
+      conflictPolicy:'STATUS_GATED_REQUEUE',
+    });
+    if(!reservation.created) throw Object.assign(new Error('OUTBOX_DEDUPE_IDENTITY_CONFLICT'),{code:'OUTBOX_DEDUPE_IDENTITY_CONFLICT'});
+    const ev=await insertReservedOutboxEventWithClient(client,{
+      reservation,
+      eventType:'PAYMENT_CREATE_HOLD',
+      aggregateType:'payment',
+      aggregateId:id,
+      dedupeKey,
+      payload:eventPayload,
+    });
+    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_FUND',$2,'payment',$3,$4::jsonb,$5)`, [crypto.randomUUID(), payerId, id, JSON.stringify({jobId,outboxEventId:ev.event.id}), createdAt]);
+    return {payment:paymentFromRow(rows[0]),job:jobFromRow(job2[0]),outboxEvent:{id:ev.event.id,status:ev.event.status},created:true};
   });
 }
