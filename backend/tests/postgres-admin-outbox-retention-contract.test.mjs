@@ -340,6 +340,67 @@ test('ledger, journal, refund, reconciliation, wallet, and transfer aggregates a
   }
 });
 
+
+test('financial class matching trims stored event and aggregate values before any generic inventory exposure',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const paddedFinancialEvent=await createOutboxEvent({
+    eventType:' PAYMENT_REFUND ',
+    aggregateType:'notification',
+  });
+  const paddedFinancialAggregate=await createOutboxEvent({
+    eventType:'OPERATIONAL_EVENT',
+    aggregateType:' ledger ',
+  });
+
+  await assert.rejects(
+    repository.createOutboxRetentionHold({
+      ...admin,
+      target:{kind:'EVENT',eventId:paddedFinancialEvent.id},
+      holdKind:'ADMIN',
+      reasonCode:'ADMIN_REVIEW',
+    }),
+    (error)=>error?.code==='OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED',
+  );
+  await assert.rejects(
+    repository.createOutboxRetentionHold({
+      ...admin,
+      target:{kind:'EVENT',eventId:paddedFinancialAggregate.id},
+      holdKind:'ADMIN',
+      reasonCode:'ADMIN_REVIEW',
+    }),
+    (error)=>error?.code==='OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED',
+  );
+  await assert.rejects(
+    repository.createOutboxRetentionHold({
+      ...admin,
+      target:{
+        kind:'AGGREGATE',
+        aggregateType:' ledger ',
+        aggregateId:paddedFinancialAggregate.aggregateId,
+      },
+      holdKind:'ADMIN',
+      reasonCode:'ADMIN_REVIEW',
+    }),
+    (error)=>error?.code==='OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED',
+  );
+
+  const result=await repository.buildOutboxRetentionDryRun({
+    ...admin,
+    pageSize:100,
+    maxRows:1000,
+  });
+  assert.equal(
+    result.items.some((item)=>item.eventType===' PAYMENT_REFUND '),
+    false,
+    'whitespace-wrapped financial event names must not enter generic retention inventory',
+  );
+  assert.equal(
+    result.items.some((item)=>item.aggregateType===' ledger '),
+    false,
+    'whitespace-wrapped financial aggregate names must not enter generic retention inventory',
+  );
+});
+
 after(async()=>{
   if (enabled) await dbModule.db.close();
 });
