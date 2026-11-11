@@ -41,6 +41,12 @@ jobs:
       - name: Execute isolated Admin route contract tests
         working-directory: backend
         run: node --test --test-concurrency=1 tests/admin-outbox-retention-routes.test.mjs
+      - name: Check changed Admin and repository module syntax
+        working-directory: backend
+        run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
+      - name: Run backend fast regression suite
+        working-directory: backend
+        run: npm run test:fast
 
   postgres17-retention-contract:
     name: PostgreSQL 17 financial exclusion and audit contract
