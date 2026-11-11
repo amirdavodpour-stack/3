@@ -574,7 +574,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       }
       const body=await readBody(req);
       assertOutboxRetentionObject(body,['reasonCode'],'INVALID_OUTBOX_RETENTION_BODY');
-      const reasonCode=String(body.reasonCode || '').trim().toUpperCase();
+      const reasonCode=requireOutboxRetentionString(body.reasonCode,'INVALID_RETENTION_REASON_CODE','reasonCode').trim().toUpperCase();
       if (!outboxRetentionReasonCodes.has(reasonCode)) {
         throw new HttpError(400,'INVALID_RETENTION_REASON_CODE','A supported reasonCode is required');
       }
