@@ -519,8 +519,8 @@ export async function buildOutboxRetentionDryRun({
       `SELECT COUNT(*)::int AS total
          FROM outbox_events o
         WHERE ($1::timestamptz IS NULL OR (o.created_at,o.id) <= ($1::timestamptz,$2::uuid))
-          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'`,
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'`,
       [snapshot.createdAt,snapshot.id],
     );
 
@@ -573,8 +573,8 @@ export async function buildOutboxRetentionDryRun({
          FROM outbox_events o
         WHERE ($1::timestamptz IS NULL OR (o.created_at, o.id) > ($1::timestamptz,$2::uuid))
           AND ($3::timestamptz IS NULL OR (o.created_at,o.id) <= ($3::timestamptz,$4::uuid))
-          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
         ORDER BY o.created_at ASC,o.id ASC
         LIMIT $5`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id,limit],
@@ -594,8 +594,8 @@ export async function buildOutboxRetentionDryRun({
              FROM outbox_events o
             WHERE (o.created_at,o.id) > ($1::timestamptz,$2::uuid)
               AND (o.created_at,o.id) <= ($3::timestamptz,$4::uuid)
-          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
          ) AS has_more`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id],
       );

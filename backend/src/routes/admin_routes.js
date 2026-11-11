@@ -437,7 +437,6 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         me.id,
         'outbox_retention_inventory',
         'dry-run',
-        'Read-only Outbox retention eligibility assessment',
         {
           scanned:Number(plan?.scanned || 0),
           totalCount:Number(plan?.totalCount || 0),
