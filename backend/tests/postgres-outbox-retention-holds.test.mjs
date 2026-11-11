@@ -13,12 +13,13 @@ const modules = enabled
   ? await Promise.all([
       import('../src/db.js'),
       import('../src/repository.js'),
-      import('../src/repository/outbox_retention.js'),
     ])
   : [];
 const dbModule = modules[0];
 const repository = modules[1];
-const retention = modules[2];
+// The new repository methods are intentionally unresolved on the RED baseline.
+// Reuse the facade for helper-boundary checks so the test reaches assertion failures.
+const retention = repository;
 if (enabled) await dbModule.initDatabase();
 const pool = enabled ? dbModule.getPool() : null;
 const uuid = () => crypto.randomUUID();
