@@ -468,7 +468,23 @@ paths:
     post:
       security: [{bearerAuth: []}]
       summary: Create a legal or administrative Outbox preservation hold
-      description: Requires verified Primary Admin and current-session WRITE step-up. Not idempotent; clients must not blindly retry an ambiguous request. Financial records are never valid targets.
+      description: >-
+        Requires verified Primary Admin and current-session WRITE step-up.
+        A single Idempotency-Key (1–200 UTF-8 bytes, no whitespace/control
+        characters) identifies one hold intent. Same-actor retries with the
+        same normalized payload return the original 201 response and set
+        Idempotency-Replayed: true; reusing the key with a different payload
+        returns 409. The key is scoped to the authenticated actor and is not
+        an authentication credential. Financial records are never valid targets.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Reuse the same high-entropy key for retries of one intended hold.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
       requestBody:
         required: true
         content:
@@ -497,13 +513,18 @@ paths:
                 reasonCode: {type: string, enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]}
       responses:
         '201':
-          description: Created immutable hold evidence
+          description: Created hold or replayed original immutable hold evidence
+          headers:
+            Idempotency-Replayed:
+              description: Present with value true when the original result was replayed.
+              schema: {type: string, enum: ['true']}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/OutboxRetentionHold'}
-        '400': {description: Invalid input or financial target excluded}
+        '400': {description: Missing or malformed Idempotency-Key, invalid input, or financial target excluded}
         '403': {description: Verified Primary Admin and current-session WRITE step-up required}
         '404': {description: Target not found}
+        '409': {description: Idempotency-Key was already used by this actor for a different normalized payload}
         '503': {description: Outbox retention repository is unavailable}
   /admin/outbox-retention/holds/{holdId}/release:
     post:

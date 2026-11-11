@@ -615,3 +615,51 @@ test('financial exclusion uses the same ASCII edge-whitespace rules for count, p
   )),false);
   assert.equal(after.truncated,false,'financial rows after the last eligible cursor must not make has_more true');
 });
+
+
+test('idempotent replay revalidates current WRITE session and cannot use a stale JTI',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const event=await createOutboxEvent();
+  const idempotencyKey=`stale-session-replay-${uuid()}`;
+  const input={
+    ...admin,target:{kind:'EVENT',eventId:event.id},
+    holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST',idempotencyKey,
+  };
+  const first=await createHold(input);
+  await pool.query(
+    'UPDATE users SET admin_panel_verified_session_jti=$2,admin_panel_verified_at=NOW(),admin_panel_verified_scope=\'WRITE\' WHERE id=$1',
+    [admin.actorId,uuid()],
+  );
+  await assert.rejects(
+    createHold(input),
+    error=>error?.code==='ADMIN_PANEL_LOCKED' && error?.status===403,
+  );
+  assert.equal(await holdCountForEvent(event.id),1);
+  assert.equal(await countHoldAuditRows(first.id),1);
+});
+
+test('idempotency mappings reject UPDATE and DELETE as immutable evidence',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const event=await createOutboxEvent();
+  const idempotencyKey=`immutable-map-${uuid()}`;
+  const hold=await createHold({
+    ...admin,target:{kind:'EVENT',eventId:event.id},
+    holdKind:'ADMIN',reasonCode:'ADMIN_REVIEW',idempotencyKey,
+  });
+  await assert.rejects(
+    pool.query(
+      'UPDATE admin_outbox_retention_hold_idempotency SET request_digest=$3 WHERE actor_id=$1 AND key_digest=$2',
+      [admin.actorId,idempotencyKeyDigest(idempotencyKey),crypto.randomBytes(32)],
+    ),
+    error=>error?.code==='55000' && String(error.message).includes('OUTBOX_RETENTION_LEDGER_IMMUTABLE'),
+  );
+  await assert.rejects(
+    pool.query(
+      'DELETE FROM admin_outbox_retention_hold_idempotency WHERE actor_id=$1 AND key_digest=$2',
+      [admin.actorId,idempotencyKeyDigest(idempotencyKey)],
+    ),
+    error=>error?.code==='55000' && String(error.message).includes('OUTBOX_RETENTION_LEDGER_IMMUTABLE'),
+  );
+  assert.equal(await countIdempotencyRows(admin.actorId,idempotencyKey),1);
+  assert.equal(await countHoldAuditRows(hold.id),1);
+});

@@ -11,7 +11,10 @@ on:
       - "backend/tests/postgres-admin-outbox-retention-contract.test.mjs"
       - "backend/src/routes/admin_routes.js"
       - "backend/src/repository/outbox_retention.js"
+      - "backend/src/db/migrations/059_admin_outbox_hold_idempotency.js"
+      - "backend/src/http.js"
       - "backend/openapi/openapi.yaml"
+      - "backend/package.json"
       - "backend/package-lock.json"
 
 permissions:
@@ -43,7 +46,7 @@ jobs:
         run: node --test --test-concurrency=1 tests/admin-outbox-retention-routes.test.mjs
       - name: Check changed Admin and repository module syntax
         working-directory: backend
-        run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
+        run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js && node --check src/db/migrations/059_admin_outbox_hold_idempotency.js && node --check src/http.js
       - name: Validate added Outbox OpenAPI YAML fragments
         working-directory: backend
         run: |

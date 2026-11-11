@@ -4,6 +4,10 @@ import { withSqlTransaction } from '../db.js';
 import { lockAuthorizedAdminActor } from './admin_authorization.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const IDEMPOTENCY_KEY_DIGEST_DOMAIN = 'hopev2:admin-outbox-retention-hold:create:v1\0';
+const IDEMPOTENCY_REQUEST_DIGEST_DOMAIN = 'hopev2:admin-outbox-retention-hold:request:v1\0';
+const OUTBOX_EDGE_WHITESPACE_PATTERN = /^[ \t\n\v\f\r]+|[ \t\n\v\f\r]+$/g;
+const FINANCIAL_SQL_EDGE_WHITESPACE = "' ' || CHR(9) || CHR(10) || CHR(11) || CHR(12) || CHR(13)";
 const HOLD_KINDS = new Set(['LEGAL','ADMIN']);
 const AGGREGATE_TYPES = new Set(['notification','payment','payout','user','outbox_event']);
 const REASON_CODES = new Set([
@@ -49,9 +53,13 @@ const FINANCIAL_EVENT_TYPE_PATTERN = new RegExp(FINANCIAL_EVENT_TYPE_PATTERN_SOU
 const FINANCIAL_AGGREGATE_TYPES_SQL =
   `(${[...FINANCIAL_AGGREGATE_TYPES].map((value) => `'${value}'`).join(',')})`;
 
+function trimOutboxEdgeWhitespace(value) {
+  return String(value ?? '').replace(OUTBOX_EDGE_WHITESPACE_PATTERN,'');
+}
+
 function isFinancialOutboxClass(eventType, aggregateType) {
-  const normalizedEventType = String(eventType || '').trim().toUpperCase();
-  const normalizedAggregateType = String(aggregateType || '').trim().toLowerCase();
+  const normalizedEventType = trimOutboxEdgeWhitespace(eventType).toUpperCase();
+  const normalizedAggregateType = trimOutboxEdgeWhitespace(aggregateType).toLowerCase();
   return FINANCIAL_AGGREGATE_TYPES.has(normalizedAggregateType)
     || FINANCIAL_EVENT_TYPE_PATTERN.test(normalizedEventType);
 }
@@ -64,30 +72,38 @@ function fail(code, message, status = 400) {
 }
 
 function requireUuid(value, field) {
-  const normalized = String(value ?? '').trim();
+  if (typeof value !== 'string') fail('INVALID_RETENTION_TARGET', `${field} must be a UUID`);
+  const normalized = value.trim().toLowerCase();
   if (!UUID_PATTERN.test(normalized)) fail('INVALID_RETENTION_TARGET', `${field} must be a UUID`);
   return normalized;
 }
 
 function normalizeReasonCode(value) {
-  const code = String(value ?? '').trim().toUpperCase();
+  if (typeof value !== 'string') fail('INVALID_RETENTION_REASON_CODE', 'A supported reason code is required');
+  const code = value.trim().toUpperCase();
   if (!REASON_CODES.has(code)) fail('INVALID_RETENTION_REASON_CODE', 'A supported reason code is required');
   return code;
 }
 
 function normalizeHoldKind(value) {
-  const kind = String(value ?? '').trim().toUpperCase();
+  if (typeof value !== 'string') fail('INVALID_RETENTION_HOLD_KIND', 'Hold kind must be LEGAL or ADMIN');
+  const kind = value.trim().toUpperCase();
   if (!HOLD_KINDS.has(kind)) fail('INVALID_RETENTION_HOLD_KIND', 'Hold kind must be LEGAL or ADMIN');
   return kind;
 }
 
 function normalizeTarget(target = {}) {
-  const kind = String(target.kind ?? '').trim().toUpperCase();
+  if (!target || typeof target !== 'object' || Array.isArray(target)) {
+    fail('INVALID_RETENTION_TARGET','A valid Outbox retention target is required');
+  }
+  if (typeof target.kind !== 'string') fail('INVALID_RETENTION_TARGET','Target kind must be EVENT or AGGREGATE');
+  const kind = target.kind.trim().toUpperCase();
   if (kind === 'EVENT') {
     return { kind, eventId:requireUuid(target.eventId,'eventId') };
   }
   if (kind === 'AGGREGATE') {
-    const aggregateType = String(target.aggregateType ?? '').trim().toLowerCase();
+    if (typeof target.aggregateType !== 'string') fail('INVALID_RETENTION_TARGET','Unsupported aggregate type');
+    const aggregateType = target.aggregateType.trim().toLowerCase();
     if (isFinancialOutboxClass('',aggregateType)) {
       fail('OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED', 'Financial records are excluded from generic Outbox retention', 400);
     }
@@ -253,17 +269,103 @@ function holdView(row) {
   };
 }
 
+function normalizeIdempotencyKey(value) {
+  if (value===undefined || value===null) fail('IDEMPOTENCY_KEY_REQUIRED','Idempotency-Key is required');
+  if (
+    typeof value!=='string'
+    || Buffer.byteLength(value,'utf8')<1
+    || Buffer.byteLength(value,'utf8')>200
+    || /[\p{White_Space}\p{Cc}]/u.test(value)
+  ) {
+    fail('INVALID_IDEMPOTENCY_KEY','Idempotency-Key must be 1–200 UTF-8 bytes without whitespace or control characters');
+  }
+  return value;
+}
+
+function idempotencyKeyDigest(key) {
+  return crypto.createHash('sha256')
+    .update(IDEMPOTENCY_KEY_DIGEST_DOMAIN,'utf8')
+    .update(key,'utf8')
+    .digest();
+}
+
+function idempotencyRequestDigest(identity,holdKind,reasonCode) {
+  const target = identity.kind==='EVENT'
+    ? {kind:'EVENT',eventId:identity.eventId}
+    : {kind:'AGGREGATE',aggregateType:identity.aggregateType,aggregateId:identity.aggregateId};
+  const canonical = JSON.stringify({version:1,target,holdKind,reasonCode});
+  return crypto.createHash('sha256')
+    .update(IDEMPOTENCY_REQUEST_DIGEST_DOMAIN,'utf8')
+    .update(canonical,'utf8')
+    .digest();
+}
+
+function idempotencyError(code,status,message) {
+  return Object.assign(new Error(message),{code,status});
+}
+
 export async function createOutboxRetentionHoldWithClient(client, {
   actorId,
   sessionJti,
   target,
   holdKind,
   reasonCode,
+  idempotencyKey,
 } = {}) {
+  // Revalidate authentication, Primary Admin identity and current WRITE step-up
+  // for every attempt, including a safe replay.
   const actor = await requireWriteAdminWithClient(client,{actorId,sessionJti});
+  const key = normalizeIdempotencyKey(idempotencyKey);
+  const normalizedTarget = normalizeTarget(target);
   const kind = normalizeHoldKind(holdKind);
   const reason = normalizeReasonCode(reasonCode);
-  const identity = await lockOutboxRetentionTargetWithClient(client,target);
+  const keyDigest = idempotencyKeyDigest(key);
+  const requestDigest = idempotencyRequestDigest(normalizedTarget,kind,reason);
+  const holdId = crypto.randomUUID();
+
+  // Deferred FK makes the claim and immutable evidence one transaction even
+  // though the unique actor/key mapping is reserved before the hold row.
+  const { rows: claimedRows } = await client.query(
+    `INSERT INTO admin_outbox_retention_hold_idempotency(
+       actor_id,key_digest,request_digest,hold_id,created_at
+     )
+     VALUES($1,$2,$3,$4,NOW())
+     ON CONFLICT(actor_id,key_digest) DO NOTHING
+     RETURNING hold_id`,
+    [actor,keyDigest,requestDigest,holdId],
+  );
+
+  if (claimedRows.length===0) {
+    const { rows: existingRows } = await client.query(
+      `SELECT request_digest,hold_id
+         FROM admin_outbox_retention_hold_idempotency
+        WHERE actor_id=$1 AND key_digest=$2
+        FOR UPDATE`,
+      [actor,keyDigest],
+    );
+    const existing = existingRows[0];
+    if (!existing) {
+      throw idempotencyError('OUTBOX_RETENTION_IDEMPOTENCY_RECORD_INVALID',500,'Outbox retention idempotency evidence is inconsistent');
+    }
+    const storedRequestDigest = Buffer.from(existing.request_digest || []);
+    if (storedRequestDigest.length!==32 || !storedRequestDigest.equals(requestDigest)) {
+      fail('IDEMPOTENCY_KEY_REUSED','Idempotency-Key was already used for a different hold request',409);
+    }
+    const { rows: originalHolds } = await client.query(
+      `SELECT id,target_kind,hold_kind,reason_code,created_at
+         FROM outbox_retention_holds
+        WHERE id=$1`,
+      [existing.hold_id],
+    );
+    if (!originalHolds[0]) {
+      throw idempotencyError('OUTBOX_RETENTION_IDEMPOTENCY_RECORD_INVALID',500,'Outbox retention idempotency evidence is inconsistent');
+    }
+    return {...holdView(originalHolds[0]),replayed:true};
+  }
+
+  // Only a new intent needs the live target lock; a replay may still return
+  // the original DTO after future archival and never recreates a released hold.
+  const identity = await lockOutboxRetentionTargetWithClient(client,normalizedTarget);
   if (isFinancialOutboxClass(identity.eventType,identity.aggregateType)) {
     fail('OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED', 'Financial records are excluded from generic Outbox retention', 400);
   }
@@ -271,11 +373,10 @@ export async function createOutboxRetentionHoldWithClient(client, {
     `INSERT INTO outbox_retention_holds(
        id,target_kind,event_id,aggregate_type,aggregate_id,hold_kind,reason_code,created_by,created_at
      )
-     VALUES(
-       gen_random_uuid(),$1,$2,$3,$4,$5,$6,$7,NOW()
-     )
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,NOW())
      RETURNING id,target_kind,hold_kind,reason_code,created_at`,
     [
+      holdId,
       identity.kind,
       identity.kind === 'EVENT' ? identity.eventId : null,
       identity.aggregateType,
@@ -291,14 +392,10 @@ export async function createOutboxRetentionHoldWithClient(client, {
     [
       actor,
       rows[0].id,
-      JSON.stringify({
-        targetKind:identity.kind,
-        holdKind:kind,
-        reasonCode:reason,
-      }),
+      JSON.stringify({targetKind:identity.kind,holdKind:kind,reasonCode:reason}),
     ],
   );
-  return holdView(rows[0]);
+  return {...holdView(rows[0]),replayed:false};
 }
 
 export async function createOutboxRetentionHold(input = {}) {
@@ -519,8 +616,8 @@ export async function buildOutboxRetentionDryRun({
       `SELECT COUNT(*)::int AS total
          FROM outbox_events o
         WHERE ($1::timestamptz IS NULL OR (o.created_at,o.id) <= ($1::timestamptz,$2::uuid))
-          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'`,
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'`,
       [snapshot.createdAt,snapshot.id],
     );
 
@@ -536,6 +633,7 @@ export async function buildOutboxRetentionDryRun({
            o.event_type,
            o.aggregate_type,
            o.status,
+           o.created_at::text AS cursor_created_at,
            o.created_at,
            o.terminal_at,
            (
@@ -573,8 +671,8 @@ export async function buildOutboxRetentionDryRun({
          FROM outbox_events o
         WHERE ($1::timestamptz IS NULL OR (o.created_at, o.id) > ($1::timestamptz,$2::uuid))
           AND ($3::timestamptz IS NULL OR (o.created_at,o.id) <= ($3::timestamptz,$4::uuid))
-          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
         ORDER BY o.created_at ASC,o.id ASC
         LIMIT $5`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id,limit],
@@ -583,7 +681,7 @@ export async function buildOutboxRetentionDryRun({
       pagesRead += 1;
       items.push(...rows.map(classifyOutboxRow));
       const last = rows[rows.length-1];
-      lastCreatedAt = last.created_at;
+      lastCreatedAt = last.cursor_created_at;
       lastId = last.id;
     }
 
@@ -594,8 +692,8 @@ export async function buildOutboxRetentionDryRun({
              FROM outbox_events o
             WHERE (o.created_at,o.id) > ($1::timestamptz,$2::uuid)
               AND (o.created_at,o.id) <= ($3::timestamptz,$4::uuid)
-          AND BTRIM(LOWER(COALESCE(o.aggregate_type,''))) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
-          AND BTRIM(UPPER(COALESCE(o.event_type,''))) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
+          AND BTRIM(LOWER(COALESCE(o.aggregate_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND BTRIM(UPPER(COALESCE(o.event_type,'')), ${FINANCIAL_SQL_EDGE_WHITESPACE}) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
          ) AS has_more`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id],
       );

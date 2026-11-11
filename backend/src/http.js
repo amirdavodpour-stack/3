@@ -84,6 +84,7 @@ export function setCors(res, req) {
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Idempotency-Key');
+  res.setHeader('Access-Control-Expose-Headers', 'Idempotency-Replayed');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Max-Age', '86400');
 }

@@ -30,11 +30,52 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     }
   }
 
+  function requireOutboxRetentionString(value, code, field) {
+    if (typeof value !== 'string') {
+      throw new HttpError(400,code,`${field} must be a string`);
+    }
+    return value;
+  }
+
+  function readOutboxRetentionIdempotencyKey(req) {
+    const matches=[];
+    if (Array.isArray(req?.rawHeaders)) {
+      for (let index=0;index<req.rawHeaders.length;index+=2) {
+        if (String(req.rawHeaders[index] || '').toLowerCase()==='idempotency-key') {
+          matches.push(req.rawHeaders[index+1]);
+        }
+      }
+    } else {
+      for (const [name,value] of Object.entries(req?.headers || {})) {
+        if (name.toLowerCase()==='idempotency-key') matches.push(value);
+      }
+    }
+    if (matches.length===0) {
+      throw new HttpError(400,'IDEMPOTENCY_KEY_REQUIRED','Idempotency-Key header is required');
+    }
+    if (matches.length!==1) {
+      throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY','Exactly one Idempotency-Key header is required');
+    }
+    const key=matches[0];
+    if (
+      typeof key!=='string'
+      || Buffer.byteLength(key,'utf8')<1
+      || Buffer.byteLength(key,'utf8')>200
+      || /[\p{White_Space}\p{Cc}]/u.test(key)
+    ) {
+      throw new HttpError(400,'INVALID_IDEMPOTENCY_KEY','Idempotency-Key must be 1–200 UTF-8 bytes without whitespace or control characters');
+    }
+    return key;
+  }
+
   function mapOutboxRetentionError(error) {
     const mapping={
       INVALID_RETENTION_TARGET:400,
       INVALID_RETENTION_REASON_CODE:400,
       INVALID_RETENTION_HOLD_KIND:400,
+      IDEMPOTENCY_KEY_REQUIRED:400,
+      INVALID_IDEMPOTENCY_KEY:400,
+      IDEMPOTENCY_KEY_REUSED:409,
       OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED:400,
       OUTBOX_RETENTION_TARGET_NOT_FOUND:404,
       OUTBOX_RETENTION_HOLD_ALREADY_RELEASED:409,
@@ -460,25 +501,26 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         throw new HttpError(503,'OUTBOX_RETENTION_UNAVAILABLE','Outbox retention holds are unavailable');
       }
 
+      const idempotencyKey=readOutboxRetentionIdempotencyKey(req);
       const body=await readBody(req);
       assertOutboxRetentionObject(body,['target','holdKind','reasonCode'],'INVALID_OUTBOX_RETENTION_BODY');
       const rawTarget=body.target;
       if (!rawTarget || typeof rawTarget !== 'object' || Array.isArray(rawTarget)) {
         throw new HttpError(400,'INVALID_RETENTION_TARGET','A valid Outbox retention target is required');
       }
-      const targetKind=String(rawTarget.kind || '').trim().toUpperCase();
+      const targetKind=requireOutboxRetentionString(rawTarget.kind,'INVALID_RETENTION_TARGET','target.kind').trim().toUpperCase();
       let target;
       if (targetKind==='EVENT') {
         assertOutboxRetentionObject(rawTarget,['kind','eventId'],'INVALID_RETENTION_TARGET');
-        const eventId=String(rawTarget.eventId || '').trim();
+        const eventId=requireOutboxRetentionString(rawTarget.eventId,'INVALID_RETENTION_TARGET','target.eventId').trim();
         if (!outboxRetentionUuidPattern.test(eventId)) {
           throw new HttpError(400,'INVALID_RETENTION_TARGET','eventId must be a UUID');
         }
         target={kind:'EVENT',eventId};
       } else if (targetKind==='AGGREGATE') {
         assertOutboxRetentionObject(rawTarget,['kind','aggregateType','aggregateId'],'INVALID_RETENTION_TARGET');
-        const aggregateType=String(rawTarget.aggregateType || '').trim().toLowerCase();
-        const aggregateId=String(rawTarget.aggregateId || '').trim();
+        const aggregateType=requireOutboxRetentionString(rawTarget.aggregateType,'INVALID_RETENTION_TARGET','target.aggregateType').trim().toLowerCase();
+        const aggregateId=requireOutboxRetentionString(rawTarget.aggregateId,'INVALID_RETENTION_TARGET','target.aggregateId').trim();
         if (!aggregateType || !outboxRetentionUuidPattern.test(aggregateId)) {
           throw new HttpError(400,'INVALID_RETENTION_TARGET','aggregateType and a UUID aggregateId are required');
         }
@@ -487,11 +529,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         throw new HttpError(400,'INVALID_RETENTION_TARGET','Target kind must be EVENT or AGGREGATE');
       }
 
-      const holdKind=String(body.holdKind || '').trim().toUpperCase();
+      const holdKind=requireOutboxRetentionString(body.holdKind,'INVALID_RETENTION_HOLD_KIND','holdKind').trim().toUpperCase();
       if (!['LEGAL','ADMIN'].includes(holdKind)) {
         throw new HttpError(400,'INVALID_RETENTION_HOLD_KIND','holdKind must be LEGAL or ADMIN');
       }
-      const reasonCode=String(body.reasonCode || '').trim().toUpperCase();
+      const reasonCode=requireOutboxRetentionString(body.reasonCode,'INVALID_RETENTION_REASON_CODE','reasonCode').trim().toUpperCase();
       if (!outboxRetentionReasonCodes.has(reasonCode)) {
         throw new HttpError(400,'INVALID_RETENTION_REASON_CODE','A supported reasonCode is required');
       }
@@ -504,11 +546,13 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           target,
           holdKind,
           reasonCode,
+          idempotencyKey,
         });
       } catch(error) {
         throw mapOutboxRetentionError(error);
       }
       if (!hold) throw new HttpError(404,'OUTBOX_RETENTION_TARGET_NOT_FOUND','Outbox retention target was not found');
+      if (hold.replayed===true) res.setHeader('Idempotency-Replayed','true');
       return sendJson(res,201,{
         id:String(hold.id),
         targetKind:hold.targetKind,
