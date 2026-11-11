@@ -279,6 +279,44 @@ test('a TOMBSTONED dedupe key cannot create a new Outbox event UUID',{
   }
 });
 
+
+test('insert helper rejects event identity that differs from its reserved registry identity',{
+  skip:!enabled || !hasReservation || typeof repository?.insertReservedOutboxEventWithClient!=='function',
+  timeout:30_000,
+},async()=>{
+  const dedupeKey='dedupe-insert-identity-mismatch:'+uuid();
+  const aggregateId=uuid();
+  const candidateEventId=uuid();
+  const digest=digestKey(dedupeKey);
+  try{
+    await assert.rejects(
+      dbModule.withSqlTransaction(async(client)=>{
+        const reservation=await repository.reserveOutboxDedupeKeyWithClient(client,{
+          eventId:candidateEventId,
+          eventType:'PAYMENT_RELEASE',
+          aggregateType:'payment',
+          aggregateId,
+          dedupeKey,
+          conflictPolicy:'STATUS_GATED_REQUEUE',
+        });
+        assert.equal(reservation.created,true);
+        return repository.insertReservedOutboxEventWithClient(client,{
+          reservation,
+          eventType:'PAYMENT_REFUND',
+          aggregateType:'payment',
+          aggregateId,
+          dedupeKey,
+          payload:{paymentId:aggregateId},
+        });
+      }),
+      error=>error?.code==='OUTBOX_DEDUPE_IDENTITY_CONFLICT',
+    );
+  }finally{
+    await pool.query('DELETE FROM outbox_events WHERE dedupe_key=$1',[dedupeKey]).catch(()=>{});
+    await pool.query('DELETE FROM outbox_dedupe_registry WHERE key_digest=$1',[digest]).catch(()=>{});
+  }
+});
+
 after(async()=>{
   if(enabled) await dbModule.db.close();
 });
