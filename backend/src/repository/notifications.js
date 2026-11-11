@@ -169,9 +169,19 @@ export async function dispatchNotificationOutbox(event, deliverTargets, { provid
   const eventId = String(event?.id || '');
   const payload = event?.payload || {};
   const notificationId = String(event?.aggregate_id || '');
+  const schemaVersion = payload.schemaVersion === undefined ? 1 : payload.schemaVersion;
   const channel = String(payload.channel || '').toUpperCase();
   const leaseToken = event?.lease_token;
 
+  if (schemaVersion !== 1 && schemaVersion !== 2) {
+    throw new Error('NOTIFICATION_OUTBOX_SCHEMA_UNSUPPORTED');
+  }
+  if (
+    schemaVersion === 2
+    && Object.keys(payload).some((key) => !['schemaVersion','channel'].includes(key))
+  ) {
+    throw new Error('NOTIFICATION_OUTBOX_V2_PAYLOAD_INVALID');
+  }
   if (!eventId || !notificationId || !leaseToken) {
     throw new Error('NOTIFICATION_OUTBOX_EVENT_INVALID');
   }
