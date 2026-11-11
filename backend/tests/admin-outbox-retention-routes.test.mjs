@@ -158,6 +158,19 @@ test('Outbox dry-run is a session-bound READ endpoint with sanitized inventory a
   ]);
   assert.equal(h.audit[0]?.[0],'ADMIN_OUTBOX_RETENTION_DRY_RUN');
   assert.equal(h.audit[0]?.[1],OPS_ADMIN.id);
+  assert.equal(h.audit[0]?.length,5,'createAudit must be called with its canonical five-argument signature');
+  assert.deepEqual(h.audit[0]?.[4],{
+    scanned:DRY_RUN.scanned,
+    totalCount:DRY_RUN.totalCount,
+    pagesRead:DRY_RUN.pagesRead,
+    truncated:DRY_RUN.truncated,
+    retentionPolicyConfigured:DRY_RUN.retentionPolicyConfigured,
+    wouldMutate:DRY_RUN.wouldMutate,
+    mutationCount:DRY_RUN.mutationCount,
+    providerCalls:DRY_RUN.providerCalls,
+    payloadIncluded:DRY_RUN.payloadIncluded,
+    piiIncluded:DRY_RUN.piiIncluded,
+  });
   assert.equal(JSON.stringify(response.data).includes(EVENT_ID),false);
 });
 
