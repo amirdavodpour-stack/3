@@ -44,21 +44,24 @@ jobs:
       - name: Check changed Admin and repository module syntax
         working-directory: backend
         run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
-      - name: Compare baseline and current OpenAPI YAML parser behavior
+      - name: Validate added Outbox OpenAPI YAML fragments
         working-directory: backend
         run: |
-          git fetch --no-tags --depth=1 origin c7f12059278d98e4f5949ddb52bbec4a534be114
-          git show c7f12059278d98e4f5949ddb52bbec4a534be114:backend/openapi/openapi.yaml > /tmp/hopev2-openapi-base.yaml
           ruby <<'RUBY'
           require 'yaml'
-          ['/tmp/hopev2-openapi-base.yaml', 'openapi/openapi.yaml'].each do |path|
-            begin
-              YAML.parse_file(path)
-              puts "#{path}: parsed"
-            rescue Psych::SyntaxError => error
-              puts "#{path}: line=#{error.line} column=#{error.column} problem=#{error.problem.inspect} context=#{error.context.inspect}"
-            end
-          end
+          lines = File.readlines('openapi/openapi.yaml')
+          schema_start = lines.index { |line| line.start_with?('    OutboxRetentionDryRunItem:') }
+          paths_start = lines.index { |line| line == "  /admin/outbox-retention/dry-run:\n" }
+          paths_end = lines.index { |line| line == "  /admin/audit:\n" }
+          raise 'Outbox retention OpenAPI schema anchor is missing' unless schema_start
+          raise 'Outbox retention OpenAPI path anchor is missing' unless paths_start && paths_end && paths_end > paths_start
+          paths_marker = lines.index { |line| line == "paths:\n" }
+          raise 'OpenAPI top-level paths marker is missing' unless paths_marker && paths_marker > schema_start
+          schema_fragment = "components:\n  schemas:\n" + lines[schema_start...paths_marker].join
+          paths_fragment = "paths:\n" + lines[paths_start...paths_end].join
+          YAML.parse(schema_fragment)
+          YAML.parse(paths_fragment)
+          puts 'Added Outbox retention OpenAPI schema and paths fragments parse successfully'
           RUBY
       - name: Run backend fast regression suite
         working-directory: backend
