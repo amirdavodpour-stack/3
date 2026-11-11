@@ -49,10 +49,10 @@ async function createNotification(userId) {
   return id;
 }
 
-async function createEvent({userId,notificationId,channel,status='PROCESSING'}) {
+async function createEvent({userId,notificationId,channel,status='PROCESSING',payload:payloadOverride=null}) {
   const id = uuid();
   const leaseToken = status === 'PROCESSING' ? uuid() : null;
-  const payload = {
+  const payload = payloadOverride ?? {
     notificationId,
     userId,
     type:'TEST',
@@ -337,4 +337,73 @@ test('worker recipient barrier serializes delivery before account-erasure commit
 
 after(async()=>{
   if (enabled) await dbModule.db.close();
+});
+
+test('new notification producers persist schema v2 Outbox payloads without recipient or message content',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  let eventIds=[];
+  let notificationIds=[];
+  try {
+    const queued=await repository.queueNotification({
+      userId,
+      type:'V2_PRIVATE_TEST',
+      title:'Private v2 title',
+      body:'Private v2 body',
+      data:{privateMarker:'must-stay-in-notification-row'},
+      channels:['IN_APP','PUSH'],
+    });
+    assert.equal(queued.created,true);
+    const notificationId=queued.notification.id;
+    notificationIds=[notificationId];
+    const result=await pool.query(
+      "SELECT id,payload FROM outbox_events WHERE event_type='NOTIFICATION_DISPATCH' AND aggregate_type='notification' AND aggregate_id=$1 ORDER BY id",
+      [notificationId],
+    );
+    const rows=result.rows;
+    eventIds=rows.map(row=>row.id);
+    assert.equal(rows.length,2);
+    assert.deepEqual(rows.map(row=>row.payload.channel).sort(),['IN_APP','PUSH']);
+    for(const row of rows){
+      assert.deepEqual(row.payload,{schemaVersion:2,channel:row.payload.channel});
+      for(const forbidden of ['userId','notificationId','type','title','body','data']){
+        assert.equal(Object.hasOwn(row.payload,forbidden),false,'v2 Outbox payload must not contain '+forbidden);
+      }
+    }
+  } finally {
+    await cleanup(userId,eventIds,notificationIds);
+  }
+});
+
+test('schema v2 notification dispatch resolves recipient and content from the notification row without a provider call',{skip:!enabled,timeout:30_000},async()=>{
+  const userId=await createUser();
+  const notificationId=await createNotification(userId);
+  const token=await createDevice(userId);
+  const event=await createEvent({
+    userId,
+    notificationId,
+    channel:'PUSH',
+    payload:{schemaVersion:2,channel:'PUSH'},
+  });
+  let delivery=null;
+  try {
+    const result=await repository.dispatchNotificationOutbox(event,async(input)=>{delivery=input;});
+    assert.equal(result.delivered,true);
+    assert.equal(delivery.channel,'PUSH');
+    assert.equal(delivery.targets.length,1);
+    assert.equal(delivery.targets[0].token,token);
+    assert.deepEqual(delivery.notification,{
+      id:notificationId,
+      userId,
+      type:'TEST',
+      title:'Private notification title',
+      body:'Private notification body',
+      data:{privateMarker:'immutable-payload-test'},
+    });
+    const {rows}=await pool.query('SELECT status,payload FROM outbox_events WHERE id=$1',[event.id]);
+    assert.equal(rows[0].status,'DONE');
+    assert.deepEqual(rows[0].payload,{schemaVersion:2,channel:'PUSH'},
+      'the immutable v2 Outbox payload remains reference-only after delivery');
+  } finally {
+    await cleanup(userId,[event.id],[notificationId]);
+  }
 });

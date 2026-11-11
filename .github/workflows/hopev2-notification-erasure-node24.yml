@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/hopev2-notification-erasure-cancellation-20261110
+      - fix/hopev2-notification-outbox-v2-20261111
     paths:
       - ".github/workflows/hopev2-notification-erasure-node24.yml"
       - "backend/package.json"

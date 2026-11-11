@@ -77,3 +77,42 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
   assert.match(cancellationMigration,/CANCELLED/);
   assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
 });
+
+test('new notification Outbox rows use content-free schema v2 payloads',()=>{
+  const producerStart=notificationsRepo.indexOf('for(const channel of notifyChannels.filter(Boolean)){');
+  const producerEnd=notificationsRepo.indexOf('\n  return {notification:notificationFromRow(rows[0]),created:true};',producerStart);
+  assert.ok(producerStart>=0&&producerEnd>producerStart,'notification producer must enqueue channel-specific Outbox events');
+  const producer=notificationsRepo.slice(producerStart,producerEnd);
+  assert.match(producer,/JSON\.stringify\(\{\s*schemaVersion\s*:\s*2\s*,\s*channel\s*\}\)/);
+  assert.doesNotMatch(producer,/JSON\.stringify\(\{[^}]*\b(?:notificationId|userId|type|title|body|data)\b/);
+});
+
+test('notification schema v2 resolves recipient and content from the canonical row after acquiring the recipient barrier',()=>{
+  const dispatchStart=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
+  assert.ok(dispatchStart>=0,'notification Outbox dispatcher must exist');
+  const dispatch=notificationsRepo.slice(dispatchStart);
+  assert.match(dispatch,/const schemaVersion\s*=\s*Number\(payload\.schemaVersion\s*\?\?\s*1\)/);
+  assert.ok(dispatch.includes('SELECT user_id FROM notifications WHERE id=$1'));
+  assert.ok(dispatch.includes('SELECT id,email,status FROM users WHERE id=$1 FOR SHARE'));
+  assert.match(dispatch,/SELECT id,user_id,type,title,body,data[\s\S]*FROM notifications[\s\S]*FOR KEY SHARE/);
+  assert.ok(dispatch.includes('deliverTargets({ channel, targets, notification })'));
+  assert.ok(
+    dispatch.indexOf('SELECT user_id FROM notifications WHERE id=$1')
+      < dispatch.indexOf('SELECT id,email,status FROM users WHERE id=$1 FOR SHARE')
+      && dispatch.indexOf('SELECT id,email,status FROM users WHERE id=$1 FOR SHARE')
+      < dispatch.indexOf('FROM outbox_events'),
+    'v2 identity lookup must precede recipient lock, which must precede Outbox row lock',
+  );
+});
+
+test('notification dispatch handlers use database-resolved content and never read v2 content from the Outbox payload',()=>{
+  const dispatchStart=handlers.indexOf("} else if (event.event_type === 'NOTIFICATION_DISPATCH') {");
+  const dispatchEnd=handlers.indexOf("UNSUPPORTED_OUTBOX_EVENT",dispatchStart);
+  assert.ok(dispatchStart>=0&&dispatchEnd>dispatchStart,'notification dispatch handler branch must exist');
+  const dispatch=handlers.slice(dispatchStart,dispatchEnd);
+  assert.match(dispatch,/notification\.title/);
+  assert.match(dispatch,/notification\.body/);
+  assert.match(dispatch,/notification\.data/);
+  assert.match(dispatch,/notification\.userId/);
+  assert.doesNotMatch(dispatch,/payload\.(?:userId|title|body|data)/);
+});
