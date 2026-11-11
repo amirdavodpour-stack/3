@@ -257,6 +257,19 @@ test('release response is projected to a safe DTO without actor identifiers',asy
   assert.equal('actorId' in response.data,false);
 });
 
+test('hold release rejects array reason codes rather than coercing them to strings',async()=>{
+  const h=makeHarness({user:PRIMARY_ADMIN});
+  await assert.rejects(
+    h.invoke(
+      'POST',
+      ['admin','outbox-retention','holds',HOLD_ID,'release'],
+      {reasonCode:['CASE_CLOSED']},
+    ),
+    error=>error?.status===400,
+  );
+  assert.equal(h.calls.length,0,'invalid reasonCode must not reach the release repository');
+});
+
 test('hold requests reject caller-supplied identity fields, invalid UUIDs and unsupported reasons',async()=>{
   const h=makeHarness({user:PRIMARY_ADMIN});
   await assert.rejects(
