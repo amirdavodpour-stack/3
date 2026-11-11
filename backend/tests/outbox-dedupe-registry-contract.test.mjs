@@ -59,7 +59,7 @@ test('migration backfills every existing non-null Outbox key to its original eve
 test('registry hashes exact key bytes with a domain-separated versioned SHA-256 digest', () => {
   assert.match(registry, /createHash\(['"]sha256['"]\)/);
   assert.match(registry, /hopev2:outbox-dedupe:v1/);
-  assert.match(registry, /digestVersion\s*[:=]\s*1/);
+  assert.match(registry, /DIGEST_VERSION\s*=\s*1/);
 });
 
 test('registry reservation fails closed for identity mismatch, orphan and archived/tombstoned keys', () => {

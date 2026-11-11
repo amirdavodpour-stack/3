@@ -134,7 +134,7 @@ export async function fundJobAtomic({jobId,payerId,payeeId,offerId=null,amount,i
       dedupeKey,
       payload:eventPayload,
     });
-    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_FUND',$2,'payment',$3,$4::jsonb,$5)`, [crypto.randomUUID(), payerId, id, JSON.stringify({jobId,outboxEventId:ev[0].id}), createdAt]);
+    await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_FUND',$2,'payment',$3,$4::jsonb,$5)`, [crypto.randomUUID(), payerId, id, JSON.stringify({jobId,outboxEventId:ev.event.id}), createdAt]);
     return {payment:paymentFromRow(rows[0]),job:jobFromRow(job2[0]),outboxEvent:{id:ev.event.id,status:ev.event.status},created:true};
   });
 }

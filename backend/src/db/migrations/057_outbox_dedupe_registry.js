@@ -27,7 +27,7 @@ export const migration = {
       "  ) OR (state='ARCHIVED' AND archived_at IS NOT NULL AND tombstoned_at IS NULL)",
       "    OR (state='TOMBSTONED' AND tombstoned_at IS NOT NULL))",
       ')',
-    ].join('\\n');
+    ].join(' ');
     await client.query(createTableSql);
     await client.query(
       'CREATE INDEX IF NOT EXISTS outbox_dedupe_registry_aggregate_idx ON outbox_dedupe_registry(aggregate_type,aggregate_id)',

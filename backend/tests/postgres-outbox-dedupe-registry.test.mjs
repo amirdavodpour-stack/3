@@ -122,6 +122,7 @@ test('migration 057 backfills seeded legacy rows to their original event UUIDs a
   const notificationPayload={notificationId,userId:uuid(),title:'legacy private title',body:'legacy private body'};
   try{
     await client.query('BEGIN');
+    await client.query('SET LOCAL search_path TO pg_temp,public');
     await client.query("CREATE TEMP TABLE outbox_events(id UUID PRIMARY KEY,event_type TEXT NOT NULL,aggregate_type TEXT NOT NULL,aggregate_id UUID NULL,dedupe_key TEXT NULL UNIQUE,payload JSONB NOT NULL DEFAULT '{}'::jsonb,status TEXT NOT NULL DEFAULT 'PENDING',attempts INTEGER NOT NULL DEFAULT 0,available_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()) ON COMMIT PRESERVE ROWS");
     await client.query(
       "INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'PAYMENT_RELEASE','payment',$2,$3,$4::jsonb,'DONE',3,NOW(),NOW()),($5,'NOTIFICATION_DISPATCH','notification',$6,$7,$8::jsonb,'CANCELLED',1,NOW(),NOW())",
@@ -280,4 +281,27 @@ test('a TOMBSTONED dedupe key cannot create a new Outbox event UUID',{
 
 after(async()=>{
   if(enabled) await dbModule.db.close();
+});
+
+test('an ARCHIVED dedupe key cannot create a replacement Outbox event UUID',{
+  skip:!enabled || !hasReservation,
+  timeout:30_000,
+},async()=>{
+  const dedupeKey='dedupe-archived:'+uuid();
+  const args={dedupeKey,eventType:'NOTIFICATION_DISPATCH',aggregateType:'notification',aggregateId:uuid(),conflictPolicy:'FIRST_WINS'};
+  let original=null;
+  try{
+    original=await reserveAndInsert(args);
+    await pool.query(
+      "UPDATE outbox_dedupe_registry SET state='ARCHIVED',archived_at=NOW() WHERE original_event_id=$1",
+      [original.eventId],
+    );
+    await pool.query('DELETE FROM outbox_events WHERE id=$1',[original.eventId]);
+    await assert.rejects(
+      reserveAndInsert(args),
+      error=>error?.code==='OUTBOX_DEDUPE_ARCHIVED',
+    );
+  }finally{
+    if(original) await cleanup(original.eventId);
+  }
 });
