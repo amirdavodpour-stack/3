@@ -668,10 +668,10 @@ test('idempotency mappings reject UPDATE and DELETE as immutable evidence',{skip
 test('immutable Outbox hold, release and idempotency evidence reject TRUNCATE',{skip:!enabled},async()=>{
   const admin=await createPrimaryAdmin();
   const event=await createOutboxEvent();
+  const idempotencyKey=`truncate-guard-${uuid()}`;
   const hold=await createHold({
     ...admin,target:{kind:'EVENT',eventId:event.id},
-    holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST',
-    idempotencyKey:`truncate-guard-${uuid()}`,
+    holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST',idempotencyKey,
   });
   await repository.releaseOutboxRetentionHold({
     ...admin,holdId:hold.id,reasonCode:'CASE_CLOSED',
@@ -696,7 +696,7 @@ test('immutable Outbox hold, release and idempotency evidence reject TRUNCATE',{
   await assertTruncateRejected('TRUNCATE TABLE outbox_retention_hold_releases');
   await assertTruncateRejected('TRUNCATE TABLE outbox_retention_holds CASCADE');
 
-  assert.equal(await countIdempotencyRows(admin.actorId,`truncate-guard`),0,'distinct digest helper sanity');
+  assert.equal(await countIdempotencyRows(admin.actorId,idempotencyKey),1);
   assert.equal(await countHoldAuditRows(hold.id),1);
   assert.equal(await holdCountForEvent(event.id),1);
   const {rows:releaseRows}=await pool.query(
