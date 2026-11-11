@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: hopev2-admin-outbox-retention-red-${{ github.ref }}
+  group: hopev2-admin-outbox-retention-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -44,6 +44,9 @@ jobs:
       - name: Check changed Admin and repository module syntax
         working-directory: backend
         run: node --check src/routes/admin_routes.js && node --check src/repository/outbox_retention.js
+      - name: Validate OpenAPI YAML syntax
+        working-directory: backend
+        run: ruby -e "require 'yaml'; YAML.parse_file('openapi/openapi.yaml')"
       - name: Run backend fast regression suite
         working-directory: backend
         run: npm run test:fast
