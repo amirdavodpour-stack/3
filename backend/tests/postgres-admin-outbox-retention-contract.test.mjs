@@ -663,3 +663,45 @@ test('idempotency mappings reject UPDATE and DELETE as immutable evidence',{skip
   assert.equal(await countIdempotencyRows(admin.actorId,idempotencyKey),1);
   assert.equal(await countHoldAuditRows(hold.id),1);
 });
+
+
+test('immutable Outbox hold, release and idempotency evidence reject TRUNCATE',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const event=await createOutboxEvent();
+  const hold=await createHold({
+    ...admin,target:{kind:'EVENT',eventId:event.id},
+    holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST',
+    idempotencyKey:`truncate-guard-${uuid()}`,
+  });
+  await repository.releaseOutboxRetentionHold({
+    ...admin,holdId:hold.id,reasonCode:'CASE_CLOSED',
+  });
+
+  async function assertTruncateRejected(sql) {
+    const client=await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await assert.rejects(
+        client.query(sql),
+        error=>error?.code==='55000'
+          && String(error.message).includes('OUTBOX_RETENTION_LEDGER_IMMUTABLE'),
+      );
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  }
+
+  await assertTruncateRejected('TRUNCATE TABLE admin_outbox_retention_hold_idempotency');
+  await assertTruncateRejected('TRUNCATE TABLE outbox_retention_hold_releases');
+  await assertTruncateRejected('TRUNCATE TABLE outbox_retention_holds CASCADE');
+
+  assert.equal(await countIdempotencyRows(admin.actorId,`truncate-guard`),0,'distinct digest helper sanity');
+  assert.equal(await countHoldAuditRows(hold.id),1);
+  assert.equal(await holdCountForEvent(event.id),1);
+  const {rows:releaseRows}=await pool.query(
+    'SELECT COUNT(*)::int AS count FROM outbox_retention_hold_releases WHERE hold_id=$1',
+    [hold.id],
+  );
+  assert.equal(releaseRows[0].count,1);
+});
