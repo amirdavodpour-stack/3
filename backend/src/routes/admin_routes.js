@@ -16,6 +16,46 @@ function isLegacyAdminPanelVerified(userId, sessionJti, requiredScope = 'READ') 
 }
 
 export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, readBody, sendJson, HttpError, enumField, adminUseCases, legacyAdmin, config, now, createAudit, withTransaction = async (fn) => fn(), findUser, getJob, notifyApplicationCandidate, paymentUseCases, URL, listUnknownPayouts, resolvePayoutUnknown, repo, processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH }) {
+  const outboxRetentionUuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const outboxRetentionReasonCodes=new Set([
+    'LEGAL_REQUEST','COURT_ORDER','REGULATORY_REQUEST','DISPUTE','FRAUD_REVIEW',
+    'SECURITY_INCIDENT','AUDIT_REQUEST','ADMIN_REVIEW','INVESTIGATION',
+    'CASE_CLOSED','HOLD_SCOPE_CHANGED',
+  ]);
+
+  function assertOutboxRetentionObject(value, allowedKeys, code) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+      || Object.keys(value).some((key)=>!allowedKeys.includes(key))) {
+      throw new HttpError(400,code,'Outbox retention request has an invalid shape');
+    }
+  }
+
+  function mapOutboxRetentionError(error) {
+    const mapping={
+      INVALID_RETENTION_TARGET:400,
+      INVALID_RETENTION_REASON_CODE:400,
+      INVALID_RETENTION_HOLD_KIND:400,
+      OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED:400,
+      OUTBOX_RETENTION_TARGET_NOT_FOUND:404,
+      OUTBOX_RETENTION_HOLD_ALREADY_RELEASED:409,
+      ADMIN_REQUIRED:403,
+      ADMIN_PERMISSION_DENIED:403,
+      PRIMARY_ADMIN_ONLY:403,
+      PRIMARY_ADMIN_IDENTITY_REQUIRED:403,
+      ADMIN_PANEL_LOCKED:403,
+    };
+    const status=mapping[error?.code];
+    if (!status) return new HttpError(500,'OUTBOX_RETENTION_OPERATION_FAILED','Outbox retention operation could not be completed');
+    const message=status===403
+      ? 'Verified primary administrator access is required'
+      : status===404
+        ? 'Outbox retention target was not found'
+        : status===409
+          ? 'Outbox retention hold state conflicts with the request'
+          : 'Outbox retention request was not accepted';
+    return new HttpError(status,error.code,message);
+  }
+
   async function enforceAuthRateLimits(req, me) {
     if (typeof rateLimitAuth !== 'function' || typeof rateLimitAuthAccount !== 'function') {
       throw new HttpError(503,'ADMIN_REAUTH_UNAVAILABLE','Admin reauthentication is unavailable');
@@ -350,6 +390,170 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         }
         throw error;
       }
+    }
+
+    if (req.method==='GET' && parts[0]==='admin' && parts[1]==='outbox-retention' && parts[2]==='dry-run' && parts.length===3) {
+      assertAdminPermission(me,ADMIN_PERMISSIONS.VIEW_AUDIT);
+      if (typeof repo.buildOutboxRetentionDryRun !== 'function') {
+        throw new HttpError(503,'OUTBOX_RETENTION_UNAVAILABLE','Outbox retention assessment is unavailable');
+      }
+
+      let requestUrl;
+      try { requestUrl=new URL(req.url || '/','http://localhost'); }
+      catch { throw new HttpError(400,'INVALID_OUTBOX_RETENTION_QUERY','Outbox retention query is invalid'); }
+      const allowedQueryKeys=new Set(['pageSize','maxRows']);
+      for (const key of requestUrl.searchParams.keys()) {
+        if (!allowedQueryKeys.has(key)) {
+          throw new HttpError(400,'INVALID_OUTBOX_RETENTION_QUERY','Only pageSize and maxRows are supported');
+        }
+      }
+      const pageSizeValues=requestUrl.searchParams.getAll('pageSize');
+      const maxRowsValues=requestUrl.searchParams.getAll('maxRows');
+      if (pageSizeValues.length>1 || maxRowsValues.length>1) {
+        throw new HttpError(400,'INVALID_OUTBOX_RETENTION_QUERY','Duplicate query parameters are not allowed');
+      }
+      const pageSize=pageSizeValues.length ? Number(pageSizeValues[0]) : 100;
+      const maxRows=maxRowsValues.length ? Number(maxRowsValues[0]) : 500;
+      if (!Number.isSafeInteger(pageSize) || pageSize<1 || pageSize>100) {
+        throw new HttpError(400,'INVALID_OUTBOX_RETENTION_PAGE_SIZE','pageSize must be an integer between 1 and 100');
+      }
+      if (!Number.isSafeInteger(maxRows) || maxRows<1 || maxRows>1000) {
+        throw new HttpError(400,'INVALID_OUTBOX_RETENTION_MAX_ROWS','maxRows must be an integer between 1 and 1000');
+      }
+
+      let plan;
+      try {
+        plan=await repo.buildOutboxRetentionDryRun({
+          actorId:me.id,
+          sessionJti:me.sessionJti,
+          pageSize,
+          maxRows,
+        });
+      } catch(error) {
+        throw mapOutboxRetentionError(error);
+      }
+      await createAudit(
+        'ADMIN_OUTBOX_RETENTION_DRY_RUN',
+        me.id,
+        'outbox_retention_inventory',
+        'dry-run',
+        'Read-only Outbox retention eligibility assessment',
+        {
+          scanned:Number(plan?.scanned || 0),
+          totalCount:Number(plan?.totalCount || 0),
+          pagesRead:Number(plan?.pagesRead || 0),
+          truncated:plan?.truncated === true,
+          retentionPolicyConfigured:plan?.retentionPolicyConfigured === true,
+          wouldMutate:plan?.wouldMutate === true,
+          mutationCount:Number(plan?.mutationCount || 0),
+          providerCalls:Number(plan?.providerCalls || 0),
+          payloadIncluded:plan?.payloadIncluded === true,
+          piiIncluded:plan?.piiIncluded === true,
+        },
+      );
+      return sendJson(res,200,plan);
+    }
+
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='outbox-retention' && parts[2]==='holds' && parts.length===3) {
+      assertAdminPermission(me,ADMIN_PERMISSIONS.MANAGE_ADMINS);
+      assertPrimaryAdmin(me);
+      if (typeof repo.createOutboxRetentionHold !== 'function') {
+        throw new HttpError(503,'OUTBOX_RETENTION_UNAVAILABLE','Outbox retention holds are unavailable');
+      }
+
+      const body=await readBody(req);
+      assertOutboxRetentionObject(body,['target','holdKind','reasonCode'],'INVALID_OUTBOX_RETENTION_BODY');
+      const rawTarget=body.target;
+      if (!rawTarget || typeof rawTarget !== 'object' || Array.isArray(rawTarget)) {
+        throw new HttpError(400,'INVALID_RETENTION_TARGET','A valid Outbox retention target is required');
+      }
+      const targetKind=String(rawTarget.kind || '').trim().toUpperCase();
+      let target;
+      if (targetKind==='EVENT') {
+        assertOutboxRetentionObject(rawTarget,['kind','eventId'],'INVALID_RETENTION_TARGET');
+        const eventId=String(rawTarget.eventId || '').trim();
+        if (!outboxRetentionUuidPattern.test(eventId)) {
+          throw new HttpError(400,'INVALID_RETENTION_TARGET','eventId must be a UUID');
+        }
+        target={kind:'EVENT',eventId};
+      } else if (targetKind==='AGGREGATE') {
+        assertOutboxRetentionObject(rawTarget,['kind','aggregateType','aggregateId'],'INVALID_RETENTION_TARGET');
+        const aggregateType=String(rawTarget.aggregateType || '').trim().toLowerCase();
+        const aggregateId=String(rawTarget.aggregateId || '').trim();
+        if (!aggregateType || !outboxRetentionUuidPattern.test(aggregateId)) {
+          throw new HttpError(400,'INVALID_RETENTION_TARGET','aggregateType and a UUID aggregateId are required');
+        }
+        target={kind:'AGGREGATE',aggregateType,aggregateId};
+      } else {
+        throw new HttpError(400,'INVALID_RETENTION_TARGET','Target kind must be EVENT or AGGREGATE');
+      }
+
+      const holdKind=String(body.holdKind || '').trim().toUpperCase();
+      if (!['LEGAL','ADMIN'].includes(holdKind)) {
+        throw new HttpError(400,'INVALID_RETENTION_HOLD_KIND','holdKind must be LEGAL or ADMIN');
+      }
+      const reasonCode=String(body.reasonCode || '').trim().toUpperCase();
+      if (!outboxRetentionReasonCodes.has(reasonCode)) {
+        throw new HttpError(400,'INVALID_RETENTION_REASON_CODE','A supported reasonCode is required');
+      }
+
+      let hold;
+      try {
+        hold=await repo.createOutboxRetentionHold({
+          actorId:me.id,
+          sessionJti:me.sessionJti,
+          target,
+          holdKind,
+          reasonCode,
+        });
+      } catch(error) {
+        throw mapOutboxRetentionError(error);
+      }
+      if (!hold) throw new HttpError(404,'OUTBOX_RETENTION_TARGET_NOT_FOUND','Outbox retention target was not found');
+      return sendJson(res,201,{
+        id:String(hold.id),
+        targetKind:hold.targetKind,
+        holdKind:hold.holdKind,
+        reasonCode:hold.reasonCode,
+        createdAt:hold.createdAt,
+      });
+    }
+
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='outbox-retention' && parts[2]==='holds' && parts[4]==='release' && parts.length===5) {
+      assertAdminPermission(me,ADMIN_PERMISSIONS.MANAGE_ADMINS);
+      assertPrimaryAdmin(me);
+      if (typeof repo.releaseOutboxRetentionHold !== 'function') {
+        throw new HttpError(503,'OUTBOX_RETENTION_UNAVAILABLE','Outbox retention hold release is unavailable');
+      }
+      const holdId=String(parts[3] || '').trim();
+      if (!outboxRetentionUuidPattern.test(holdId)) {
+        throw new HttpError(400,'INVALID_RETENTION_HOLD_ID','holdId must be a UUID');
+      }
+      const body=await readBody(req);
+      assertOutboxRetentionObject(body,['reasonCode'],'INVALID_OUTBOX_RETENTION_BODY');
+      const reasonCode=String(body.reasonCode || '').trim().toUpperCase();
+      if (!outboxRetentionReasonCodes.has(reasonCode)) {
+        throw new HttpError(400,'INVALID_RETENTION_REASON_CODE','A supported reasonCode is required');
+      }
+
+      let released;
+      try {
+        released=await repo.releaseOutboxRetentionHold({
+          actorId:me.id,
+          sessionJti:me.sessionJti,
+          holdId,
+          reasonCode,
+        });
+      } catch(error) {
+        throw mapOutboxRetentionError(error);
+      }
+      if (!released) throw new HttpError(404,'OUTBOX_RETENTION_HOLD_NOT_FOUND','Outbox retention hold was not found');
+      return sendJson(res,200,{
+        id:String(released.id),
+        released:released.released === true,
+        reasonCode:released.reasonCode,
+        releasedAt:released.releasedAt,
+      });
     }
 
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='privacy' && parts[2]==='chat-retention' && parts[3]==='dry-run' && parts.length===4) {

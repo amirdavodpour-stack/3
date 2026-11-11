@@ -19,12 +19,42 @@ const REASON_CODES = new Set([
   'CASE_CLOSED',
   'HOLD_SCOPE_CHANGED',
 ]);
-const FINANCIAL_EVENT_TYPES = new Set([
-  'PAYMENT_CREATE_HOLD',
-  'PAYMENT_RELEASE',
-  'PAYMENT_REFUND',
-  'PAYOUT_EXECUTE',
+const FINANCIAL_AGGREGATE_TYPES = new Set([
+  'payment',
+  'payout',
+  'ledger',
+  'journal',
+  'refund',
+  'reconciliation',
+  'wallet',
+  'transfer',
+  'topup',
+  'top_up',
+  'withdrawal',
+  'financial',
+  'financial_operation',
+  'financial_transaction',
+  'payment_intent',
+  'payment_refund',
+  'payout_execution',
+  'wallet_transaction',
+  'wallet_ledger',
+  'wallet_transfer',
+  'settlement',
+  'charge',
 ]);
+const FINANCIAL_EVENT_TYPE_PATTERN_SOURCE =
+  '^(?:PAYMENT|PAYOUT|LEDGER|JOURNAL|REFUND|RECONCILIATION|WALLET|TRANSFER|TOPUP|TOP_UP|WITHDRAWAL|FINANCIAL|SETTLEMENT|CHARGE)(?:_|$)';
+const FINANCIAL_EVENT_TYPE_PATTERN = new RegExp(FINANCIAL_EVENT_TYPE_PATTERN_SOURCE);
+const FINANCIAL_AGGREGATE_TYPES_SQL =
+  `(${[...FINANCIAL_AGGREGATE_TYPES].map((value) => `'${value}'`).join(',')})`;
+
+function isFinancialOutboxClass(eventType, aggregateType) {
+  const normalizedEventType = String(eventType || '').trim().toUpperCase();
+  const normalizedAggregateType = String(aggregateType || '').trim().toLowerCase();
+  return FINANCIAL_AGGREGATE_TYPES.has(normalizedAggregateType)
+    || FINANCIAL_EVENT_TYPE_PATTERN.test(normalizedEventType);
+}
 
 function fail(code, message, status = 400) {
   const error = new Error(message);
@@ -58,6 +88,9 @@ function normalizeTarget(target = {}) {
   }
   if (kind === 'AGGREGATE') {
     const aggregateType = String(target.aggregateType ?? '').trim().toLowerCase();
+    if (isFinancialOutboxClass('',aggregateType)) {
+      fail('OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED', 'Financial records are excluded from generic Outbox retention', 400);
+    }
     if (!AGGREGATE_TYPES.has(aggregateType)) fail('INVALID_RETENTION_TARGET', 'Unsupported aggregate type');
     return {
       kind,
@@ -231,6 +264,9 @@ export async function createOutboxRetentionHoldWithClient(client, {
   const kind = normalizeHoldKind(holdKind);
   const reason = normalizeReasonCode(reasonCode);
   const identity = await lockOutboxRetentionTargetWithClient(client,target);
+  if (isFinancialOutboxClass(identity.eventType,identity.aggregateType)) {
+    fail('OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED', 'Financial records are excluded from generic Outbox retention', 400);
+  }
   const { rows } = await client.query(
     `INSERT INTO outbox_retention_holds(
        id,target_kind,event_id,aggregate_type,aggregate_id,hold_kind,reason_code,created_by,created_at
@@ -247,6 +283,19 @@ export async function createOutboxRetentionHoldWithClient(client, {
       kind,
       reason,
       actor,
+    ],
+  );
+  await client.query(
+    `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+     VALUES(gen_random_uuid(),'ADMIN_OUTBOX_RETENTION_HOLD_CREATED',$1,'outbox_retention_hold',$2,$3::jsonb,NOW())`,
+    [
+      actor,
+      rows[0].id,
+      JSON.stringify({
+        targetKind:identity.kind,
+        holdKind:kind,
+        reasonCode:reason,
+      }),
     ],
   );
   return holdView(rows[0]);
@@ -302,6 +351,15 @@ export async function releaseOutboxRetentionHoldWithClient(client, {
      VALUES($1,$2,$3,NOW())
      RETURNING hold_id,released_by,reason_code,released_at`,
     [id,actor,reason],
+  );
+  await client.query(
+    `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+     VALUES(gen_random_uuid(),'ADMIN_OUTBOX_RETENTION_HOLD_RELEASED',$1,'outbox_retention_hold',$2,$3::jsonb,NOW())`,
+    [
+      actor,
+      id,
+      JSON.stringify({reasonCode:reason}),
+    ],
   );
   return {
     id:String(rows[0].hold_id),
@@ -384,7 +442,7 @@ async function requireReadOnlyAdminWithClient(client, { actorId, sessionJti } = 
 }
 
 function retentionClassFor(eventType, aggregateType) {
-  if (FINANCIAL_EVENT_TYPES.has(eventType) || ['payment','payout'].includes(aggregateType)) return 'FINANCIAL';
+  if (isFinancialOutboxClass(eventType,aggregateType)) return 'FINANCIAL';
   if (eventType.startsWith('AUTH_') || eventType.startsWith('SECURITY_')) return 'SECURITY';
   if (eventType === 'NOTIFICATION_DISPATCH') return 'NOTIFICATION';
   return 'OPERATIONAL';
@@ -460,7 +518,9 @@ export async function buildOutboxRetentionDryRun({
     const { rows: totalRows } = await client.query(
       `SELECT COUNT(*)::int AS total
          FROM outbox_events o
-        WHERE ($1::timestamptz IS NULL OR (o.created_at,o.id) <= ($1::timestamptz,$2::uuid))`,
+        WHERE ($1::timestamptz IS NULL OR (o.created_at,o.id) <= ($1::timestamptz,$2::uuid))
+          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'`,
       [snapshot.createdAt,snapshot.id],
     );
 
@@ -513,6 +573,8 @@ export async function buildOutboxRetentionDryRun({
          FROM outbox_events o
         WHERE ($1::timestamptz IS NULL OR (o.created_at, o.id) > ($1::timestamptz,$2::uuid))
           AND ($3::timestamptz IS NULL OR (o.created_at,o.id) <= ($3::timestamptz,$4::uuid))
+          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
         ORDER BY o.created_at ASC,o.id ASC
         LIMIT $5`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id,limit],
@@ -532,6 +594,8 @@ export async function buildOutboxRetentionDryRun({
              FROM outbox_events o
             WHERE (o.created_at,o.id) > ($1::timestamptz,$2::uuid)
               AND (o.created_at,o.id) <= ($3::timestamptz,$4::uuid)
+          AND LOWER(COALESCE(o.aggregate_type,'')) NOT IN ${FINANCIAL_AGGREGATE_TYPES_SQL}
+          AND UPPER(COALESCE(o.event_type,'')) !~ '${FINANCIAL_EVENT_TYPE_PATTERN_SOURCE}'
          ) AS has_more`,
         [lastCreatedAt,lastId,snapshot.createdAt,snapshot.id],
       );

@@ -305,6 +305,63 @@ components:
     UploadIntent:
       type: object
       properties: {intentId: {type: string, format: uuid}, key: {type: string}, url: {type: string, format: uri}, uploadedBy: {type: string, format: uuid}}
+    OutboxRetentionDryRunItem:
+      type: object
+      required: [eventType, aggregateType, status, createdAt, terminalAt, retentionClass, activeHoldCount, activeHoldKinds, eligible, blockers]
+      properties:
+        eventType: {type: string}
+        aggregateType: {type: string}
+        status: {type: string}
+        createdAt: {type: string, format: date-time}
+        terminalAt: {type: string, format: date-time, nullable: true}
+        retentionClass: {type: string, enum: [NOTIFICATION, OPERATIONAL, SECURITY]}
+        activeHoldCount: {type: integer, minimum: 0}
+        activeHoldKinds:
+          type: array
+          items: {type: string, enum: [LEGAL, ADMIN]}
+        eligible: {type: boolean, enum: [false]}
+        blockers:
+          type: array
+          items: {type: string, enum: [RETENTION_PERIOD_NOT_APPROVED, ACTIVE_HOLD, EVENT_NOT_TERMINAL, MISSING_TERMINAL_CLOCK]}
+    OutboxRetentionDryRun:
+      type: object
+      required: [mode, asOf, limit, maxRows, totalCount, scanned, pagesRead, truncated, retentionPolicyConfigured, wouldMutate, mutationCount, providerCalls, payloadIncluded, piiIncluded, items]
+      properties:
+        mode: {type: string, enum: [DRY_RUN]}
+        asOf: {type: string, format: date-time}
+        limit: {type: integer, minimum: 1, maximum: 100}
+        maxRows: {type: integer, minimum: 1, maximum: 1000}
+        totalCount: {type: integer, minimum: 0}
+        scanned: {type: integer, minimum: 0}
+        pagesRead: {type: integer, minimum: 0}
+        truncated: {type: boolean}
+        retentionPolicyConfigured: {type: boolean, enum: [false]}
+        wouldMutate: {type: boolean, enum: [false]}
+        mutationCount: {type: integer, enum: [0]}
+        providerCalls: {type: integer, enum: [0]}
+        payloadIncluded: {type: boolean, enum: [false]}
+        piiIncluded: {type: boolean, enum: [false]}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/OutboxRetentionDryRunItem'}
+    OutboxRetentionHold:
+      type: object
+      required: [id, targetKind, holdKind, reasonCode, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        targetKind: {type: string, enum: [EVENT, AGGREGATE]}
+        holdKind: {type: string, enum: [LEGAL, ADMIN]}
+        reasonCode: {type: string, enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]}
+        createdAt: {type: string, format: date-time}
+    OutboxRetentionHoldRelease:
+      type: object
+      required: [id, released, reasonCode, releasedAt]
+      properties:
+        id: {type: string, format: uuid}
+        released: {type: boolean, enum: [true]}
+        reasonCode: {type: string, enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]}
+        releasedAt: {type: string, format: date-time}
+
 paths:
   /ready:
     get:
@@ -390,6 +447,92 @@ paths:
     get: {security: [{bearerAuth: []}], responses: {'200': {description: User management list}, '403': {description: Forbidden}}}
   /admin/users/{id}/status:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: User status updated}, '400': {description: Invalid status}, '403': {description: Forbidden}}}
+  /admin/outbox-retention/dry-run:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Read-only, sanitized Outbox retention inventory
+      description: Requires Admin READ step-up. Financial ledger, journal, payment, refund, payout, wallet, transfer, and reconciliation classes are omitted entirely. No retention duration or mutation is applied.
+      parameters:
+        - {name: pageSize, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 100}}
+        - {name: maxRows, in: query, schema: {type: integer, minimum: 1, maximum: 1000, default: 500}}
+      responses:
+        '200':
+          description: Sanitized dry-run with no payload, PII, or financial rows
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboxRetentionDryRun'}
+        '400': {description: Invalid or duplicate query parameter}
+        '403': {description: Current-session Admin READ verification required}
+        '503': {description: Outbox retention repository is unavailable}
+  /admin/outbox-retention/holds:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Create a legal or administrative Outbox preservation hold
+      description: Requires verified Primary Admin and current-session WRITE step-up. Not idempotent; clients must not blindly retry an ambiguous request. Financial records are never valid targets.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [target, holdKind, reasonCode]
+              properties:
+                target:
+                  oneOf:
+                    - type: object
+                      additionalProperties: false
+                      required: [kind, eventId]
+                      properties:
+                        kind: {type: string, enum: [EVENT]}
+                        eventId: {type: string, format: uuid}
+                    - type: object
+                      additionalProperties: false
+                      required: [kind, aggregateType, aggregateId]
+                      properties:
+                        kind: {type: string, enum: [AGGREGATE]}
+                        aggregateType: {type: string}
+                        aggregateId: {type: string, format: uuid}
+                holdKind: {type: string, enum: [LEGAL, ADMIN]}
+                reasonCode: {type: string, enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]}
+      responses:
+        '201':
+          description: Created immutable hold evidence
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboxRetentionHold'}
+        '400': {description: Invalid input or financial target excluded}
+        '403': {description: Verified Primary Admin and current-session WRITE step-up required}
+        '404': {description: Target not found}
+        '503': {description: Outbox retention repository is unavailable}
+  /admin/outbox-retention/holds/{holdId}/release:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Release an existing Outbox preservation hold
+      description: Requires verified Primary Admin and current-session WRITE step-up. Release evidence and common Admin audit evidence commit atomically.
+      parameters:
+        - {name: holdId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reasonCode]
+              properties:
+                reasonCode: {type: string, enum: [LEGAL_REQUEST, COURT_ORDER, REGULATORY_REQUEST, DISPUTE, FRAUD_REVIEW, SECURITY_INCIDENT, AUDIT_REQUEST, ADMIN_REVIEW, INVESTIGATION, CASE_CLOSED, HOLD_SCOPE_CHANGED]}
+      responses:
+        '200':
+          description: Released hold, without internal actor identity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboxRetentionHoldRelease'}
+        '400': {description: Invalid hold ID or reason code}
+        '403': {description: Verified Primary Admin and current-session WRITE step-up required}
+        '404': {description: Hold not found}
+        '409': {description: Hold was already released}
+        '503': {description: Outbox retention repository is unavailable}
   /admin/audit:
     get: {security: [{bearerAuth: []}], responses: {'200': {description: Audit event list}, '403': {description: Forbidden}}}
   /admin/security-alerts/{eventId}/replay:
