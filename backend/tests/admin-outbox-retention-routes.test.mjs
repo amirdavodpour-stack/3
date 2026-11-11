@@ -79,6 +79,7 @@ function makeHarness({user=OPS_ADMIN,verified=true,repoOverrides={}}={}) {
         holdKind:options.holdKind,
         reasonCode:options.reasonCode,
         createdAt:CREATED_AT,
+        replayed:false,
       };
     },
     async releaseOutboxRetentionHold(options) {
@@ -109,7 +110,7 @@ function makeHarness({user=OPS_ADMIN,verified=true,repoOverrides={}}={}) {
       return candidate;
     },
     readBody:async(req)=>req.body ?? {},
-    sendJson:async(_res,status,data)=>({status,data}),
+    sendJson:async(res,status,data)=>({status,data,headers:{...(res?.headers || {})}}),
     HttpError,
     URL:globalThis.URL,
     config:{
@@ -121,12 +122,21 @@ function makeHarness({user=OPS_ADMIN,verified=true,repoOverrides={}}={}) {
     repo,
   });
 
-  const invoke=(method,parts,body={},query='')=>routes({
-    method,
-    url:'/api/v1/'+parts.join('/')+query,
-    headers:{host:'localhost','content-type':'application/json'},
-    body,
-  },{},parts);
+  const invoke=(method,parts,body={},query='',options={})=>{
+    const headers={host:'localhost','content-type':'application/json'};
+    if (!options.omitDefaultIdempotencyKey) headers['idempotency-key']='route-test-key';
+    Object.assign(headers,options.headers || {});
+    const rawHeaders=options.rawHeaders
+      || Object.entries(headers).flatMap(([name,value])=>[name,String(value)]);
+    const response={headers:{},setHeader(name,value){this.headers[name.toLowerCase()]=value;}};
+    return routes({
+      method,
+      url:'/api/v1/'+parts.join('/')+query,
+      headers,
+      rawHeaders,
+      body,
+    },response,parts);
+  };
 
   return {invoke,repo,calls,audit,verificationCalls};
 }
@@ -214,6 +224,7 @@ test('only linked primary admin can create a hold with actor and session derived
       target,
       holdKind:'LEGAL',
       reasonCode:'LEGAL_REQUEST',
+      idempotencyKey:'route-test-key',
     }],
   ]);
   assert.deepEqual(Object.keys(response.data).sort(),[
@@ -311,4 +322,93 @@ test('repository conflict is mapped to a stable public error without SQL details
       && error?.code==='OUTBOX_RETENTION_HOLD_ALREADY_RELEASED'
       && !String(error.message).includes('duplicate key'),
   );
+});
+
+
+test('hold creation requires one bounded whitespace-free Idempotency-Key header',async()=>{
+  const invalid=[
+    {omitDefaultIdempotencyKey:true},
+    {headers:{'idempotency-key':''}},
+    {headers:{'idempotency-key':'contains whitespace'}},
+    {headers:{'idempotency-key':'x'.repeat(201)}},
+    {headers:{'idempotency-key':'line\nfeed'}},
+  ];
+  for (const options of invalid) {
+    const h=makeHarness({user:PRIMARY_ADMIN});
+    await assert.rejects(
+      h.invoke('POST',['admin','outbox-retention','holds'],{
+        target:{kind:'EVENT',eventId:EVENT_ID},
+        holdKind:'LEGAL',
+        reasonCode:'LEGAL_REQUEST',
+      },'',options),
+      error=>error?.status===400,
+    );
+    assert.equal(h.calls.length,0);
+  }
+});
+
+test('hold creation rejects duplicate Idempotency-Key header instances',async()=>{
+  const h=makeHarness({user:PRIMARY_ADMIN});
+  await assert.rejects(
+    h.invoke('POST',['admin','outbox-retention','holds'],{
+      target:{kind:'EVENT',eventId:EVENT_ID},
+      holdKind:'LEGAL',
+      reasonCode:'LEGAL_REQUEST',
+    },'',{
+      rawHeaders:[
+        'host','localhost',
+        'content-type','application/json',
+        'idempotency-key','first-key',
+        'Idempotency-Key','second-key',
+      ],
+    }),
+    error=>error?.status===400,
+  );
+  assert.equal(h.calls.length,0);
+});
+
+test('hold creation replays the original safe DTO and exposes the replay header',async()=>{
+  const h=makeHarness({
+    user:PRIMARY_ADMIN,
+    repoOverrides:{
+      async createOutboxRetentionHold(options) {
+        h.calls.push(['create-hold',options]);
+        return {
+          id:HOLD_ID,
+          targetKind:options.target.kind,
+          holdKind:options.holdKind,
+          reasonCode:options.reasonCode,
+          createdAt:CREATED_AT,
+          replayed:true,
+        };
+      },
+    },
+  });
+  const response=await h.invoke('POST',['admin','outbox-retention','holds'],{
+    target:{kind:'EVENT',eventId:EVENT_ID},
+    holdKind:'LEGAL',
+    reasonCode:'LEGAL_REQUEST',
+  });
+  assert.equal(response.status,201);
+  assert.equal(response.data.id,HOLD_ID);
+  assert.equal(response.headers['idempotency-replayed'],'true');
+});
+
+test('hold request scalar fields reject arrays, objects, numbers and null rather than coercing',async()=>{
+  const invalidBodies=[
+    {target:{kind:['EVENT'],eventId:EVENT_ID},holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST'},
+    {target:{kind:'EVENT',eventId:[EVENT_ID]},holdKind:'LEGAL',reasonCode:'LEGAL_REQUEST'},
+    {target:{kind:'AGGREGATE',aggregateType:{value:'notification'},aggregateId:EVENT_ID},holdKind:'ADMIN',reasonCode:'ADMIN_REVIEW'},
+    {target:{kind:'EVENT',eventId:EVENT_ID},holdKind:['LEGAL'],reasonCode:'LEGAL_REQUEST'},
+    {target:{kind:'EVENT',eventId:EVENT_ID},holdKind:'LEGAL',reasonCode:['LEGAL_REQUEST']},
+    {target:{kind:'EVENT',eventId:EVENT_ID},holdKind:7,reasonCode:'LEGAL_REQUEST'},
+  ];
+  for (const body of invalidBodies) {
+    const h=makeHarness({user:PRIMARY_ADMIN});
+    await assert.rejects(
+      h.invoke('POST',['admin','outbox-retention','holds'],body),
+      error=>error?.status===400,
+    );
+    assert.equal(h.calls.length,0);
+  }
 });
