@@ -158,6 +158,7 @@ test('a FAILED security alert is replayed once and its original immutable identi
       assert.deepEqual(row[field],before.rows[0][field],`immutable Outbox field ${field} must not change`);
     }
     assert.equal(row.status,'PENDING');
+    assert.equal(row.terminal_at,null,'replay must close the old terminal interval');
     assert.equal(Number(row.attempts),0);
     assert.equal(row.locked_at,null);
     assert.equal(row.lease_token,null);
