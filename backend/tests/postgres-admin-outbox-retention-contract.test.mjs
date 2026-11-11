@@ -92,12 +92,16 @@ async function installAuditFailureTrigger(action) {
     END;
     $body$;
   `);
+  const allowedActions = new Set([
+    'ADMIN_OUTBOX_RETENTION_HOLD_CREATED',
+    'ADMIN_OUTBOX_RETENTION_HOLD_RELEASED',
+  ]);
+  assert.ok(allowedActions.has(action), 'audit failure trigger action must be an allowlisted test literal');
   await pool.query(
     `CREATE TRIGGER hope_test_outbox_retention_audit_failure
        BEFORE INSERT ON audit_logs
        FOR EACH ROW
-       EXECUTE FUNCTION hope_test_outbox_retention_audit_failure($1)`,
-    [action],
+       EXECUTE FUNCTION hope_test_outbox_retention_audit_failure('${action}')`,
   );
 }
 
