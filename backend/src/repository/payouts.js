@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { lockActiveWalletUsers } from '../wallet_ledger.js';
 import { isInternalWalletPayoutEnabled } from '../wallet_payout_policy.js';
 import { lockAuthorizedAdminActor } from './admin_authorization.js';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 
 const MAX_AMOUNT = 9_000_000_000_000_000n;
 
@@ -86,7 +87,24 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
     await client.query(`INSERT INTO wallet_entries(wallet_id,entry_type,direction,amount,currency,reference_type,reference_id,financial_operation_id,metadata,balance_after) VALUES($1,'PAYOUT','DEBIT',$2,'TOMAN',$3,$4,$5,$6::jsonb,$7)`, [wallet.id,value,referenceType,referenceId || payoutId,operationId,JSON.stringify({state:'RESERVED'}),(BigInt(String(wallet.available_balance))-value).toString()]);
     await client.query(`INSERT INTO payouts(id,wallet_id,user_id,amount,currency,status,provider,idempotency_key,created_at,updated_at) VALUES($1,$2,$3,$4,'TOMAN','RESERVED',$5,$6,NOW(),NOW())`, [payoutId,wallet.id,userId,value,PAYOUT_PROVIDER,key]);
     await client.query(`INSERT INTO journals(operation_id,journal_type,currency,status,posted_at) VALUES($1,'PAYOUT','TOMAN','CREATED',NULL)`, [operationId]);
-    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES(gen_random_uuid(),'PAYOUT_EXECUTE','payout',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())`, [payoutId,`PAYOUT_EXECUTE:${payoutId}`,JSON.stringify({payoutId,userId,amount:value.toString(),currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId})]);
+    const dedupeKey='PAYOUT_EXECUTE:'+payoutId;
+    const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+      eventId:crypto.randomUUID(),
+      eventType:'PAYOUT_EXECUTE',
+      aggregateType:'payout',
+      aggregateId:payoutId,
+      dedupeKey,
+      conflictPolicy:'CREATE_ONLY',
+    });
+    if(!reservation.created) throw Object.assign(new Error('OUTBOX_DEDUPE_IDENTITY_CONFLICT'),{code:'OUTBOX_DEDUPE_IDENTITY_CONFLICT'});
+    await insertReservedOutboxEventWithClient(client,{
+      reservation,
+      eventType:'PAYOUT_EXECUTE',
+      aggregateType:'payout',
+      aggregateId:payoutId,
+      dedupeKey,
+      payload:{payoutId,userId,amount:value.toString(),currency:INTERNAL_CURRENCY,idempotencyKey:key,operationId},
+    });
     const { rows } = await client.query(`SELECT ${PAYOUT_RESPONSE_COLUMNS} FROM payouts WHERE id=$1`, [payoutId]);
     return rows[0];
   });

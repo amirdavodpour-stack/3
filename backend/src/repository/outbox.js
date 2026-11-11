@@ -9,6 +9,7 @@ import { config } from '../config.js';
 import { lockActiveWalletUsers, postInternalPaymentHoldWithClient, postInternalPaymentReleaseWithClient } from '../wallet_ledger.js';
 import { failPayoutOutboxWithClient } from './payouts.js';
 import { lockAuthorizedAdminActor } from './admin_authorization.js';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentId, providerRef, actorId, leaseToken }) {
   return withSqlTransaction(async (client) => {
     // Match funding's user -> job -> payment -> outbox lock order. Internal
@@ -101,24 +102,33 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
     } else if (payment.status === 'RELEASE_FAILED') {
       await client.query(`UPDATE payments SET status='RELEASE_PENDING',updated_at=NOW() WHERE id=$1`, [paymentId]);
     }
-    const { rows } = await client.query(
-      `INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
-       VALUES(gen_random_uuid(),'PAYMENT_RELEASE','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
-       ON CONFLICT(dedupe_key) DO UPDATE SET
-         status=CASE WHEN outbox_events.status='DONE' THEN outbox_events.status ELSE 'PENDING' END,
-         attempts=CASE WHEN outbox_events.status='DONE' THEN outbox_events.attempts ELSE 0 END,
-         available_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.available_at ELSE NOW() END,
-         locked_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.locked_at ELSE NULL END,
-         last_error=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error ELSE NULL END,
-         last_error_code=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_code ELSE NULL END,
-         last_error_category=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_category ELSE NULL END,
-         last_error_retryable=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_retryable ELSE NULL END,
-         last_error_http_status=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_http_status ELSE NULL END,
-         processed_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.processed_at ELSE NULL END
-       RETURNING *`,
-      [paymentId, dedupeKey, JSON.stringify({ jobId, ownerId, paymentId, providerRef: payment.provider_ref, idempotencyKey: payment.idempotency_key || `payment-release:${paymentId}` })]
-    );
-    return { id: rows[0].id, status: rows[0].status, paymentId, jobId };
+    const eventPayload={jobId,ownerId,paymentId,providerRef:payment.provider_ref,idempotencyKey:payment.idempotency_key || ('payment-release:'+paymentId)};
+    const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+      eventId:crypto.randomUUID(),
+      eventType:'PAYMENT_RELEASE',
+      aggregateType:'payment',
+      aggregateId:paymentId,
+      dedupeKey,
+      conflictPolicy:'STATUS_GATED_REQUEUE',
+    });
+    const event=reservation.created
+      ? await insertReservedOutboxEventWithClient(client,{
+          reservation,
+          eventType:'PAYMENT_RELEASE',
+          aggregateType:'payment',
+          aggregateId:paymentId,
+          dedupeKey,
+          payload:eventPayload,
+        })
+      : await (async()=>{
+          const {rows}=await client.query(
+            "UPDATE outbox_events SET status=CASE WHEN status='DONE' THEN status ELSE 'PENDING' END,attempts=CASE WHEN status='DONE' THEN attempts ELSE 0 END,available_at=CASE WHEN status='DONE' THEN available_at ELSE NOW() END,locked_at=CASE WHEN status='DONE' THEN locked_at ELSE NULL END,last_error=CASE WHEN status='DONE' THEN last_error ELSE NULL END,last_error_code=CASE WHEN status='DONE' THEN last_error_code ELSE NULL END,last_error_category=CASE WHEN status='DONE' THEN last_error_category ELSE NULL END,last_error_retryable=CASE WHEN status='DONE' THEN last_error_retryable ELSE NULL END,last_error_http_status=CASE WHEN status='DONE' THEN last_error_http_status ELSE NULL END,processed_at=CASE WHEN status='DONE' THEN processed_at ELSE NULL END WHERE id=$1 RETURNING *",
+            [reservation.eventId],
+          );
+          if(!rows[0]) throw Object.assign(new Error('OUTBOX_DEDUPE_ORPHANED'),{code:'OUTBOX_DEDUPE_ORPHANED'});
+          return {...reservation,event:rows[0]};
+        })();
+    return { id:event.event.id, status:event.event.status, paymentId, jobId };
   });
 }
 
@@ -412,35 +422,31 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
         && terminalEvent.aggregate_id
       ) {
         const replayCount = Number(lockedEvent.manual_replay_count || 0);
-        await client.query(
-          `INSERT INTO outbox_events(
-             id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,
-             status,attempts,available_at,created_at
-           ) VALUES(
-             gen_random_uuid(),
-             'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL',
-             'outbox_event',
-             $1,
-             $2,
-             $3::jsonb,
-             'PENDING',
-             0,
-             NOW(),
-             NOW()
-           )
-           ON CONFLICT(dedupe_key) DO NOTHING`,
-          [
-            eventId,
-            `security-alert-terminal-failure:${eventId}:${replayCount}`,
-            JSON.stringify({
+        const dedupeKey='security-alert-terminal-failure:'+eventId+':'+replayCount;
+        const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+          eventId:crypto.randomUUID(),
+          eventType:'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL',
+          aggregateType:'outbox_event',
+          aggregateId:eventId,
+          dedupeKey,
+          conflictPolicy:'FIRST_WINS',
+        });
+        if(reservation.created){
+          await insertReservedOutboxEventWithClient(client,{
+            reservation,
+            eventType:'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL',
+            aggregateType:'outbox_event',
+            aggregateId:eventId,
+            dedupeKey,
+            payload:{
               sourceEventId:eventId,
               sourceEventType:terminalEvent.event_type,
               attempts,
               replayCount,
               runbook:'docs/runbooks/auth-refresh-token-reuse.md',
-            }),
-          ],
-        );
+            },
+          });
+        }
       }
     }
     return { terminal, attempts };
