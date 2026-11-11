@@ -64,7 +64,7 @@ async function createOutboxEvent({
     `INSERT INTO outbox_events(
        id,event_type,aggregate_type,aggregate_id,payload,status,attempts,available_at,created_at
      ) VALUES($1,$2,$3,$4,'{}'::jsonb,$5,0,NOW(),COALESCE($6::timestamptz,NOW()))`,
-    [id,eventType,aggregateType,status,createdAt],
+    [id,eventType,aggregateType,aggregateId,status,createdAt],
   );
   return {id,aggregateId};
 }
