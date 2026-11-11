@@ -136,7 +136,10 @@ test('admin application shortlist/forward/reject commit actor audit and retryabl
 
   const notifications = read('backend/src/repository/notifications.js');
   assert.match(notifications, /export async function queueNotificationWithClient/);
-  assert.match(notifications, /INSERT INTO outbox_events/);
+  assert.match(notifications, /reserveOutboxDedupeKeyWithClient/);
+  assert.match(notifications, /insertReservedOutboxEventWithClient/);
+  assert.match(notifications, /conflictPolicy:'FIRST_WINS'/);
+  assert.match(notifications, /payload:\{schemaVersion:2,channel\}/);
 
   const useCases = read('backend/src/application/use_cases/admin_use_cases.js');
   assert.match(useCases, /transitionAdminJobApplication\(id,\s*'PENDING',\s*'SHORTLISTED',\s*options\)/);

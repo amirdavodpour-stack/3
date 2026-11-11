@@ -82,9 +82,15 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
 
 test('new notification Outbox events use a content-free v2 payload and dispatch reads canonical database content',()=>{
   const producerStart=notificationsRepo.indexOf('export async function queueNotificationWithClient(');
-  const producer=notificationsRepo.slice(producerStart);
-  assert.match(producer,/const eventPayload = \{\s*schemaVersion:\s*2,\s*channel\s*\}/s);
-  assert.match(producer,/JSON\.stringify\(eventPayload\)/);
+  const producerEnd=notificationsRepo.indexOf('export async function queueNotification(',producerStart);
+  const producer=notificationsRepo.slice(producerStart,producerEnd);
+  assert.match(producer,/reserveOutboxDedupeKeyWithClient/);
+  assert.match(producer,/insertReservedOutboxEventWithClient/);
+  assert.match(producer,/conflictPolicy:'FIRST_WINS'/);
+  const v2Payload=producer.match(/payload:\s*\{([^}]+)\}/);
+  assert.ok(v2Payload,'new notification event must pass a compact v2 payload');
+  assert.match(v2Payload[1],/^\s*schemaVersion:\s*2,\s*channel\s*$/);
+  assert.doesNotMatch(v2Payload[1],/userId|notificationId|type|title|body|data/);
 
   const dispatchStart=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
   const dispatch=notificationsRepo.slice(dispatchStart);

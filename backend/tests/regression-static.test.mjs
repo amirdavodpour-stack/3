@@ -80,7 +80,10 @@ test('sendJson must not double-count requests in observability', () => {
 
 test('release outbox retries reset failed events to pending', () => {
   const source = fs.readFileSync(new URL('../src/repository/outbox.js', import.meta.url), 'utf8');
-  assert.match(source, /ON CONFLICT\(dedupe_key\) DO UPDATE SET[\s\S]*status=CASE WHEN outbox_events\.status='DONE' THEN outbox_events\.status ELSE 'PENDING' END/);
+  assert.match(source, /reserveOutboxDedupeKeyWithClient/);
+  assert.match(source, /conflictPolicy:'STATUS_GATED_REQUEUE'/);
+  assert.match(source, /UPDATE outbox_events SET status=CASE WHEN status='DONE' THEN status ELSE 'PENDING' END/);
+  assert.match(source, /OUTBOX_DEDUPE_ORPHANED/);
 });
 
 test('docker production image installs runtime dependencies and runs unprivileged', () => {
