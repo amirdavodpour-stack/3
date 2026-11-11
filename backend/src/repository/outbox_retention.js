@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { requirePool } from './context.js';
 import { withSqlTransaction } from '../db.js';
 import { lockAuthorizedAdminActor } from './admin_authorization.js';
@@ -79,6 +80,7 @@ async function acquireOutboxRetentionLocksWithClient(client, {
   aggregateType = null,
   aggregateId = null,
 } = {}) {
+  await requireReadCommittedRetentionGate(client);
   const keys = [];
   if (aggregateType && aggregateId) {
     keys.push(`hopev2:outbox-retention:aggregate:${aggregateType}:${aggregateId}`);
@@ -126,9 +128,21 @@ async function aggregateTargetExistsWithClient(client, aggregateType, aggregateI
  * candidate/archive/purge caller must use this same gate.
  */
 async function requireReadCommittedRetentionGate(client) {
-  const { rows } = await client.query(
-    "SELECT current_setting('transaction_isolation') AS isolation_level",
+  const marker = crypto.randomUUID();
+  await client.query(
+    "SELECT set_config('hopev2.outbox_retention_xact_marker',$1,true)",
+    [marker],
   );
+  const { rows } = await client.query(
+    "SELECT current_setting('transaction_isolation') AS isolation_level, current_setting('hopev2.outbox_retention_xact_marker',true) AS transaction_marker",
+  );
+  if (String(rows[0]?.transaction_marker || '') !== marker) {
+    fail(
+      'OUTBOX_RETENTION_TRANSACTION_REQUIRED',
+      'Outbox retention advisory locks require an explicit transaction',
+      409,
+    );
+  }
   if (String(rows[0]?.isolation_level || '').toLowerCase() !== 'read committed') {
     fail(
       'OUTBOX_RETENTION_GATE_REQUIRES_READ_COMMITTED',
@@ -139,7 +153,6 @@ async function requireReadCommittedRetentionGate(client) {
 }
 
 export async function lockOutboxRetentionTargetWithClient(client, target) {
-  await requireReadCommittedRetentionGate(client);
   const normalized = normalizeTarget(target);
   if (normalized.kind === 'EVENT') {
     const before = await findOutboxEventIdentityWithClient(client,normalized.eventId);
