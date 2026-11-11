@@ -25,15 +25,44 @@ const pool = enabled ? dbModule.getPool() : null;
 const uuid = () => crypto.randomUUID();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+let primaryAdminId = null;
+
 async function createAdmin() {
+  const email = 'amir.davodpour@gmail.com';
+  const sessionJti = uuid();
+  if (!primaryAdminId) {
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1',
+      [email],
+    );
+    primaryAdminId = existing.rows[0]?.id || uuid();
+  }
+  await pool.query(
+    `INSERT INTO users(
+       id,email,google_subject,password_hash,display_name,role,status,session_version,
+       admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
+     ) VALUES($1,$2,$3,'integration-only-hash','Outbox retention primary admin','ADMIN','ACTIVE',0,NOW(),$4,'WRITE',NOW())
+     ON CONFLICT(id) DO UPDATE SET
+       google_subject=EXCLUDED.google_subject,
+       role='ADMIN',
+       status='ACTIVE',
+       admin_panel_verified_at=NOW(),
+       admin_panel_verified_session_jti=EXCLUDED.admin_panel_verified_session_jti,
+       admin_panel_verified_scope='WRITE'`,
+    [primaryAdminId,email,`outbox-retention-primary-${uuid()}`,sessionJti],
+  );
+  return { actorId:primaryAdminId, sessionJti };
+}
+
+async function createOperationalAdmin() {
   const id = uuid();
   const sessionJti = uuid();
   await pool.query(
     `INSERT INTO users(
        id,email,password_hash,display_name,role,status,session_version,
        admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
-     ) VALUES($1,$2,'integration-only-hash','Outbox retention admin','ADMIN','ACTIVE',0,NOW(),$3,'WRITE',NOW())`,
-    [id, `outbox-retention-admin-${id}@example.test`, sessionJti],
+     ) VALUES($1,$2,'integration-only-hash','Outbox retention operator','ADMIN','ACTIVE',0,NOW(),$3,'WRITE',NOW())`,
+    [id, `outbox-retention-ops-${id}@example.test`, sessionJti],
   );
   return { actorId:id, sessionJti };
 }
@@ -78,6 +107,43 @@ test('repository exposes Outbox hold and dry-run operations', { skip:!enabled },
   assert.equal(typeof repository.buildOutboxRetentionDryRun, 'function');
   assert.equal(typeof retention.createOutboxRetentionHoldWithClient, 'function');
   assert.equal(typeof retention.checkOutboxRetentionTargetHoldsWithClient, 'function');
+});
+
+test('only the verified primary administrator can create or release Outbox retention holds',{skip:!implemented},async()=>{
+  const primary=await createAdmin();
+  const operational=await createOperationalAdmin();
+  const event=await createOutboxEvent();
+  const hold=await repository.createOutboxRetentionHold({
+    ...primary,
+    target:{kind:'EVENT',eventId:event.id},
+    holdKind:'LEGAL',
+    reasonCode:'LEGAL_REQUEST',
+  });
+  assert.ok(hold.id);
+
+  await assert.rejects(
+    repository.createOutboxRetentionHold({
+      ...operational,
+      target:{kind:'EVENT',eventId:event.id},
+      holdKind:'ADMIN',
+      reasonCode:'ADMIN_REVIEW',
+    }),
+    (error)=>error?.code==='PRIMARY_ADMIN_ONLY',
+  );
+  await assert.rejects(
+    repository.releaseOutboxRetentionHold({
+      ...operational,
+      holdId:hold.id,
+      reasonCode:'CASE_CLOSED',
+    }),
+    (error)=>error?.code==='PRIMARY_ADMIN_ONLY',
+  );
+
+  const rows=await pool.query(
+    'SELECT COUNT(*)::int AS count FROM outbox_retention_holds WHERE event_id=$1',
+    [event.id],
+  );
+  assert.equal(rows.rows[0].count,1);
 });
 
 test('event and aggregate holds are audited, releasable and immutable', { skip:!implemented }, async () => {

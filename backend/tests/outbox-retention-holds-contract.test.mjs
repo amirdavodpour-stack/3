@@ -29,6 +29,8 @@ test('repository exposes create, release and candidate hold-check operations', (
 });
 
 test('hold creation and release have append-only actor/reason evidence', () => {
+  assert.match(retention, /requirePrimaryAdmin:\s*true/,
+    'Outbox hold mutations must preserve the existing primary-admin-only privacy hold policy');
   assert.match(retention, /INSERT INTO outbox_retention_holds/);
   assert.match(retention, /INSERT INTO outbox_retention_hold_releases/);
   assert.match(retention, /created_by/);
