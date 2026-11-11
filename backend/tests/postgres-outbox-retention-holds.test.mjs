@@ -241,6 +241,22 @@ test('hold creation serializes with the future purge candidate gate and an activ
   }
 });
 
+test('candidate gate requires an explicit transaction so its advisory lock spans the hold check',{skip:!implemented},async()=>{
+  const event=await createOutboxEvent();
+  const client=await pool.connect();
+  try {
+    await assert.rejects(
+      retention.checkOutboxRetentionTargetHoldsWithClient(client,{
+        kind:'EVENT',
+        eventId:event.id,
+      }),
+      (error)=>error?.code==='OUTBOX_RETENTION_TRANSACTION_REQUIRED',
+    );
+  } finally {
+    client.release();
+  }
+});
+
 test('candidate gate rejects repeatable-read snapshots that could hide a newly committed hold',{skip:!implemented},async()=>{
   const event=await createOutboxEvent();
   const candidateClient=await pool.connect();
