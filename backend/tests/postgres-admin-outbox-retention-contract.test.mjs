@@ -93,7 +93,7 @@ function idempotencyKeyDigest(key) {
 
 async function countIdempotencyRows(actorId,key) {
   const {rows}=await pool.query(
-    'SELECT COUNT(*)::int AS count FROM outbox_retention_hold_idempotency WHERE actor_id=$1 AND key_digest=$2',
+    'SELECT COUNT(*)::int AS count FROM admin_outbox_retention_hold_idempotency WHERE actor_id=$1 AND key_digest=$2',
     [actorId,idempotencyKeyDigest(key)],
   );
   return rows[0].count;
@@ -555,7 +555,7 @@ test('idempotency key namespace is actor-scoped at the persistence boundary', {s
     [holdTwo,eventTwo.id,eventTwo.aggregateId,actorTwo],
   );
   await pool.query(
-    `INSERT INTO outbox_retention_hold_idempotency(
+    `INSERT INTO admin_outbox_retention_hold_idempotency(
        actor_id,key_digest,request_digest,hold_id,created_at
      ) VALUES($1,$2,$3,$4,NOW())`,
     [actorTwo,idempotencyKeyDigest(idempotencyKey),crypto.randomBytes(32),holdTwo],
