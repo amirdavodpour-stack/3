@@ -278,6 +278,68 @@ test('audit failure rolls back hold release in the same transaction',{skip:!enab
   }
 });
 
+
+test('ledger, journal, refund, reconciliation, wallet, and transfer event classes are excluded from generic retention',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const eventTypes=[
+    'LEDGER_POST',
+    'JOURNAL_APPEND',
+    'REFUND_EXECUTE',
+    'RECONCILIATION_APPLY',
+    'WALLET_TRANSFER',
+    'TRANSFER_EXECUTE',
+    'TOPUP_CAPTURE',
+    'WITHDRAWAL_REQUEST',
+  ];
+  const created=[];
+  for (const eventType of eventTypes) {
+    const event=await createOutboxEvent({eventType,aggregateType:'notification'});
+    created.push({eventType,aggregateType:'notification'});
+    await assert.rejects(
+      repository.createOutboxRetentionHold({
+        ...admin,
+        target:{kind:'EVENT',eventId:event.id},
+        holdKind:'ADMIN',
+        reasonCode:'ADMIN_REVIEW',
+      }),
+      (error)=>error?.code==='OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED',
+    );
+  }
+
+  const result=await repository.buildOutboxRetentionDryRun({
+    ...admin,
+    pageSize:100,
+    maxRows:1000,
+  });
+  for (const event of created) {
+    assert.equal(
+      result.items.some((item)=>item.eventType===event.eventType && item.aggregateType===event.aggregateType),
+      false,
+      `${event.eventType} must not enter generic Outbox retention inventory`,
+    );
+  }
+});
+
+test('ledger, journal, refund, reconciliation, wallet, and transfer aggregates are rejected explicitly',{skip:!enabled},async()=>{
+  const admin=await createPrimaryAdmin();
+  const aggregateTypes=['ledger','journal','refund','reconciliation','wallet','transfer','topup','withdrawal'];
+  for (const aggregateType of aggregateTypes) {
+    const event=await createOutboxEvent({
+      eventType:'OPERATIONAL_EVENT',
+      aggregateType,
+    });
+    await assert.rejects(
+      repository.createOutboxRetentionHold({
+        ...admin,
+        target:{kind:'AGGREGATE',aggregateType,aggregateId:event.aggregateId},
+        holdKind:'ADMIN',
+        reasonCode:'ADMIN_REVIEW',
+      }),
+      (error)=>error?.code==='OUTBOX_RETENTION_FINANCIAL_TARGET_EXCLUDED',
+    );
+  }
+});
+
 after(async()=>{
   if (enabled) await dbModule.db.close();
 });

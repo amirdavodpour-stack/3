@@ -1,13 +1,17 @@
-name: HOPEv2 Admin Outbox Retention RED Contracts
+name: HOPEv2 Admin Outbox Retention Contract Tests
 
 on:
   push:
     branches:
       - test/hopev2-admin-outbox-retention-contract-20261111
+      - fix/hopev2-admin-outbox-retention-green-20261111
     paths:
       - ".github/workflows/hopev2-admin-outbox-retention-red.yml"
       - "backend/tests/admin-outbox-retention-routes.test.mjs"
       - "backend/tests/postgres-admin-outbox-retention-contract.test.mjs"
+      - "backend/src/routes/admin_routes.js"
+      - "backend/src/repository/outbox_retention.js"
+      - "backend/openapi/openapi.yaml"
       - "backend/package-lock.json"
 
 permissions:
@@ -19,7 +23,7 @@ concurrency:
 
 jobs:
   node24-route-contract:
-    name: Node 24 Admin Outbox route RED contract
+    name: Node 24 Admin Outbox route contract
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -39,7 +43,7 @@ jobs:
         run: node --test --test-concurrency=1 tests/admin-outbox-retention-routes.test.mjs
 
   postgres17-retention-contract:
-    name: PostgreSQL 17 financial exclusion and audit RED contract
+    name: PostgreSQL 17 financial exclusion and audit contract
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
