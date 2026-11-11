@@ -175,6 +175,24 @@ test('hold creation serializes with the future purge candidate gate and an activ
   }
 });
 
+test('candidate gate rejects repeatable-read snapshots that could hide a newly committed hold',{skip:!implemented},async()=>{
+  const event=await createOutboxEvent();
+  const candidateClient=await pool.connect();
+  try {
+    await candidateClient.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
+    await assert.rejects(
+      retention.checkOutboxRetentionTargetHoldsWithClient(candidateClient,{
+        kind:'EVENT',
+        eventId:event.id,
+      }),
+      (error)=>error?.code==='OUTBOX_RETENTION_GATE_REQUIRES_READ_COMMITTED',
+    );
+  } finally {
+    await candidateClient.query('ROLLBACK').catch(()=>{});
+    candidateClient.release();
+  }
+});
+
 test('a hold never requeues a CANCELLED notification event', { skip:!implemented }, async () => {
   const admin = await createAdmin();
   const event = await createOutboxEvent({ status:'CANCELLED' });
