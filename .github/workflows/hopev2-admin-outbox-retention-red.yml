@@ -1,0 +1,77 @@
+name: HOPEv2 Admin Outbox Retention RED Contracts
+
+on:
+  push:
+    branches:
+      - test/hopev2-admin-outbox-retention-contract-20261111
+    paths:
+      - ".github/workflows/hopev2-admin-outbox-retention-red.yml"
+      - "backend/tests/admin-outbox-retention-routes.test.mjs"
+      - "backend/tests/postgres-admin-outbox-retention-contract.test.mjs"
+      - "backend/package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-admin-outbox-retention-red-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  node24-route-contract:
+    name: Node 24 Admin Outbox route RED contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Execute isolated Admin route contract tests
+        working-directory: backend
+        run: node --test --test-concurrency=1 tests/admin-outbox-retention-routes.test.mjs
+
+  postgres17-retention-contract:
+    name: PostgreSQL 17 financial exclusion and audit RED contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      REQUIRE_INTEGRATION: "1"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Execute isolated PostgreSQL contract tests
+        working-directory: backend
+        run: node --test --test-concurrency=1 --test-timeout=120000 tests/postgres-admin-outbox-retention-contract.test.mjs
