@@ -192,6 +192,7 @@ async function requireWriteAdminWithClient(client, { actorId, sessionJti } = {})
     verificationMinutes:5,
     requiredScope:'WRITE',
     requireStepUp:true,
+    requirePrimaryAdmin:true,
   });
   return actor;
 }
