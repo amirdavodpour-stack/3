@@ -132,6 +132,14 @@ jobs:
         working-directory: backend
         run: npm run test:payment-postgres-invariants
 
+      - name: Run PostgreSQL payout and Outbox integrity
+        id: payment_payout_integrity
+        continue-on-error: true
+        working-directory: backend
+        env:
+          REQUIRE_INTEGRATION: '1'
+        run: npm run test:payment-payout-integrity
+
       - name: Evaluate payment certification
         id: payment_certification_status
         if: always()
@@ -147,7 +155,8 @@ jobs:
             "${{ steps.payment_webhook_pg.outcome }}" \
             "${{ steps.payment_postgres_lifecycle.outcome }}" \
             "${{ steps.payment_wallet_ledger.outcome }}" \
-            "${{ steps.payment_financial_invariants.outcome }}"; do
+            "${{ steps.payment_financial_invariants.outcome }}" \
+            "${{ steps.payment_payout_integrity.outcome }}"; do
             [ "$result" = "success" ] || status=BLOCKED
           done
           echo "status=$status" >> "$GITHUB_OUTPUT"

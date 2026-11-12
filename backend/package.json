@@ -57,7 +57,8 @@
     "test:payment-mock-live": "NODE_ENV=test node --test tests/payment-mock-provider-live-contract.test.mjs",
     "test:payment-webhook-postgres-e2e": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-webhook-postgres-e2e.test.mjs",
     "test:payment-postgres-invariants": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-financial-invariants-postgres.test.mjs",
-    "test:payment-postgres-integration": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-internal-wallet-postgres.test.mjs"
+    "test:payment-postgres-integration": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-internal-wallet-postgres.test.mjs",
+    "test:payment-payout-integrity": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test --test-concurrency=1 tests/payment-payout-integrity-postgres.test.mjs"
   },
   "dependencies": {
     "pg": "^8.16.3",
