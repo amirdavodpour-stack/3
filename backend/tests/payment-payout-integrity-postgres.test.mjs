@@ -142,6 +142,26 @@ async function expectUnchanged(before, args) {
   assert.deepEqual(afterState, before, 'rejected payout transition must preserve all financial and Outbox state');
 }
 
+async function expectIntegrityQuarantine(before, args, { reason, resourceType = 'payout', payoutStatus = 'UNKNOWN', payoutId = null, eventId = null }) {
+  const afterState = await snapshot(args);
+  for (const field of ['wallets', 'holds', 'operations', 'journals', 'walletEntries', 'ledgerEntries']) {
+    assert.deepEqual(afterState[field], before[field], 'integrity quarantine must preserve ' + field);
+  }
+  if (payoutStatus === 'UNCHANGED') {
+    assert.deepEqual(afterState.payouts, before.payouts);
+  } else {
+    const targetPayout = afterState.payouts.find((row) => row.id === payoutId) || afterState.payouts[0];
+    assert.equal(targetPayout.status, 'UNKNOWN');
+  }
+  const targetEvent = afterState.outbox.find((row) => row.id === eventId) || afterState.outbox[0];
+  assert.equal(targetEvent.status, 'DONE');
+  assert.equal(afterState.reconciliationCases.length, 1);
+  assert.equal(afterState.reconciliationCases[0].resource_type, resourceType);
+  assert.equal(afterState.reconciliationCases[0].severity, 'CRITICAL');
+  assert.equal(afterState.reconciliationCases[0].status, 'OPEN');
+  assert.equal(afterState.reconciliationCases[0].observed.reason, reason);
+}
+
 test('Payout completion rejects an Outbox event belonging to a different payout without mutation', { skip: !enabled }, async () => {
   const { userId } = await insertFundedUser('payout-event-mismatch');
   const first = await reservePayout(userId, `event-a:${crypto.randomUUID()}`);
@@ -157,8 +177,9 @@ test('Payout completion rejects an Outbox event belonging to a different payout 
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_OUTBOX_IDENTITY_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason, resourceType: 'outbox_event', payoutStatus: 'UNCHANGED', eventId: second.event.id });
 });
 
 test('Payout completion rejects a reservation hold linked to another wallet without mutation', { skip: !enabled }, async () => {
@@ -181,8 +202,9 @@ test('Payout completion rejects a reservation hold linked to another wallet with
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason });
 });
 
 test('Payout completion rejects a reservation amount mismatch without mutation', { skip: !enabled }, async () => {
@@ -204,8 +226,9 @@ test('Payout completion rejects a reservation amount mismatch without mutation',
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason });
 });
 
 test('Payout completion rejects a reservation linked to a different financial operation without mutation', { skip: !enabled }, async () => {
@@ -234,8 +257,9 @@ test('Payout completion rejects a reservation linked to a different financial op
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_OPERATION_LINKAGE_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason, payoutId: first.payout.id, eventId: first.event.id });
 });
 
 test('Payout completion rejects multiple active reservation holds for the same payout without mutation', { skip: !enabled }, async () => {
@@ -263,8 +287,9 @@ test('Payout completion rejects multiple active reservation holds for the same p
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_AMBIGUOUS');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason });
 });
 
 test('Payout failure rejects an Outbox event belonging to a different payout without releasing funds', { skip: !enabled }, async () => {
@@ -283,8 +308,9 @@ test('Payout failure rejects an Outbox event belonging to a different payout wit
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_OUTBOX_IDENTITY_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason, resourceType: 'outbox_event', payoutStatus: 'UNCHANGED', eventId: second.event.id });
 });
 
 test('Payout failure rejects a reservation amount mismatch without releasing funds', { skip: !enabled }, async () => {
@@ -307,8 +333,9 @@ test('Payout failure rejects a reservation amount mismatch without releasing fun
   });
 
   assert.equal(result.completed, false);
+  assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
-  await expectUnchanged(before, args);
+  await expectIntegrityQuarantine(before, args, { reason: result.reason });
 });
 
 test('PAYOUT_EXECUTE integrity preflight blocks provider dispatch for a cross-payout payload', { skip: !enabled }, async () => {
@@ -734,6 +761,66 @@ test('terminal Outbox failure quarantines an insufficient locked Payout instead 
   assert.equal(afterState.reconciliationCases.length, 1);
   assert.equal(afterState.reconciliationCases[0].severity, 'CRITICAL');
   assert.equal(afterState.reconciliationCases[0].status, 'OPEN');
+});
+
+test('PAYOUT_EXECUTE quarantines Hold linkage drift occurring during provider dispatch', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('payout-provider-race-linkage');
+  const reserved = await reservePayout(owner.userId, 'provider-race-linkage:' + crypto.randomUUID());
+  const { rows } = await pool.query(
+    "UPDATE outbox_events SET status='PROCESSING',locked_at=NOW(),lease_token=gen_random_uuid() WHERE id=$1 RETURNING *",
+    [reserved.event.id],
+  );
+  const processingEvent = rows[0];
+  const args = { userIds: [owner.userId], payouts: [reserved], events: [processingEvent] };
+  let afterInjectedMismatch = null;
+  let providerCalls = 0;
+  const originalCreatePayout = paymentProvider.createPayout;
+  paymentProvider.createPayout = async () => {
+    providerCalls += 1;
+    await pool.query(
+      "UPDATE wallet_holds SET amount=amount-1 WHERE reference_id=$1 AND reference_type='PAYOUT' AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'",
+      [reserved.payout.id],
+    );
+    afterInjectedMismatch = await snapshot(args);
+    return { status: 'SUCCEEDED', providerRef: 'confirmed-before-linkage-check' };
+  };
+  let result;
+  try {
+    result = await processOutboxEvent(processingEvent);
+  } finally {
+    paymentProvider.createPayout = originalCreatePayout;
+  }
+  assert.equal(providerCalls, 1);
+  assert.equal(result.integrityBlocked, true);
+  assert.equal(result.providerInvoked, true);
+  assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
+  await expectIntegrityQuarantine(afterInjectedMismatch, args, { reason: result.reason, payoutId: reserved.payout.id, eventId: processingEvent.id });
+});
+
+test('terminal Outbox failure quarantines a payout linkage mismatch instead of persisting FAILED', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('payout-terminal-outbox-linkage');
+  const reserved = await reservePayout(owner.userId, 'terminal-outbox-linkage:' + crypto.randomUUID());
+  const { rows: events } = await pool.query(
+    "UPDATE outbox_events SET status='PROCESSING',attempts=1,locked_at=NOW(),lease_token=gen_random_uuid() WHERE id=$1 RETURNING *",
+    [reserved.event.id],
+  );
+  const processingEvent = events[0];
+  await pool.query(
+    "UPDATE wallet_holds SET amount=amount-1 WHERE reference_id=$1 AND reference_type='PAYOUT' AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'",
+    [reserved.payout.id],
+  );
+  const args = { userIds: [owner.userId], payouts: [reserved], events: [processingEvent] };
+  const before = await snapshot(args);
+  const result = await failOutboxEvent({
+    eventId: processingEvent.id,
+    error: 'terminal provider outcome with reservation linkage corruption',
+    maxAttempts: 1,
+    leaseToken: processingEvent.lease_token,
+  });
+  assert.equal(result.terminal, true);
+  assert.equal(result.integrityBlocked, true);
+  assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
+  await expectIntegrityQuarantine(before, args, { reason: result.reason, payoutId: reserved.payout.id, eventId: processingEvent.id });
 });
 
 after(async () => {

@@ -595,18 +595,15 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
 
     const linkage = await validatePayoutSettlementLinkage(client, ev[0], payout);
     if (!linkage.valid) {
-      if (linkage.reason === 'PAYOUT_LOCKED_BALANCE_INSUFFICIENT') {
-        await blockPayoutOutboxIntegrityMismatchWithClient(client, {
-          event: ev[0],
-          payout,
-          eventId,
-          payoutId,
-          reason: linkage.reason,
-          providerInvoked: true,
-        });
-        return { completed:false, integrityBlocked:true, reason:linkage.reason };
-      }
-      return {completed:false,reason:linkage.reason};
+      await blockPayoutOutboxIntegrityMismatchWithClient(client, {
+        event: ev[0],
+        payout,
+        eventId,
+        payoutId,
+        reason: linkage.reason,
+        providerInvoked: true,
+      });
+      return { completed:false, integrityBlocked:true, reason:linkage.reason };
     }
     const { hold, wallet } = linkage;
     if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), {code:'INSUFFICIENT_LOCKED_FUNDS'});
@@ -639,18 +636,15 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
     if (!['RESERVED','PROCESSING'].includes(payout.status)) return {completed:false,reason:'INVALID_PAYOUT_STATE'};
     const linkage = await validatePayoutSettlementLinkage(client, ev[0], payout);
     if (!linkage.valid) {
-      if (linkage.reason === 'PAYOUT_LOCKED_BALANCE_INSUFFICIENT') {
-        await blockPayoutOutboxIntegrityMismatchWithClient(client, {
-          event: ev[0],
-          payout,
-          eventId,
-          payoutId,
-          reason: linkage.reason,
-          providerInvoked,
-        });
-        return { completed:false, integrityBlocked:true, reason:linkage.reason };
-      }
-      return {completed:false,reason:linkage.reason};
+      await blockPayoutOutboxIntegrityMismatchWithClient(client, {
+        event: ev[0],
+        payout,
+        eventId,
+        payoutId,
+        reason: linkage.reason,
+        providerInvoked,
+      });
+      return { completed:false, integrityBlocked:true, reason:linkage.reason };
     }
     const { hold, wallet } = linkage;
     if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) {
