@@ -3,7 +3,7 @@ import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentRelea
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
 import { logEvent, logEventAndWait, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
-import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
+import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown, validatePayoutOutboxEvent, blockPayoutOutboxIntegrityMismatch } from './repository/payouts.js';
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 import { dispatchSecurityAlert } from './alerting.js';
 import { dispatchNotificationOutbox } from './repository/notifications.js';
@@ -38,6 +38,28 @@ export async function processOutboxEvent(event) {
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
     } else if (event.event_type === 'PAYOUT_EXECUTE') {
+      const integrity = await validatePayoutOutboxEvent({
+        eventId: event.id,
+        payoutId: payload.payoutId,
+        leaseToken: event.lease_token,
+      });
+      if (!integrity.valid) {
+        const blocked = await blockPayoutOutboxIntegrityMismatch({
+          eventId: event.id,
+          payoutId: payload.payoutId,
+          reason: integrity.reason,
+          leaseToken: event.lease_token,
+        });
+        logEvent({
+          level: 'error',
+          action: 'OUTBOX_PAYOUT_INTEGRITY_BLOCKED',
+          eventId: event.id,
+          payoutId: payload.payoutId,
+          reason: integrity.reason,
+          reconciliationResource: blocked.resourceType || null,
+        });
+        return { processed: false, integrityBlocked: true, reason: integrity.reason };
+      }
       if (!isInternalWalletPayoutEnabled({ paymentProvider: config.paymentProvider })) {
         const disabled = await failPayoutOutbox({
           eventId:event.id,
@@ -45,7 +67,19 @@ export async function processOutboxEvent(event) {
           error:'PAYOUT_PROVIDER_NOT_ENABLED',
           failureCode:'PAYOUT_PROVIDER_NOT_ENABLED',
           leaseToken:event.lease_token,
+          providerInvoked:false,
         });
+        if (disabled?.integrityBlocked) {
+          logEvent({
+            level:'error',
+            action:'OUTBOX_PAYOUT_INTEGRITY_BLOCKED',
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            reason:disabled.reason,
+            providerInvoked:false,
+          });
+          return { processed:false, integrityBlocked:true, reason:disabled.reason };
+        }
         if (!disabled?.completed) throw new Error(`OUTBOX_PAYOUT_DISABLED_COMMIT_FAILED:${disabled?.reason || 'UNKNOWN'}`);
         recordOutboxFailed();
         logEvent({ level:'warn', action:'OUTBOX_PAYOUT_DISABLED', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
@@ -97,6 +131,16 @@ export async function processOutboxEvent(event) {
       }
       if (result.status !== 'SUCCEEDED' || !result.providerRef) throw new Error(result.status === 'FAILED' ? (result.errorCode || 'PAYOUT_PROVIDER_FAILED') : 'PAYOUT_PROVIDER_UNCONFIRMED');
       const completed = await completePayoutOutbox({ eventId:event.id, payoutId:payload.payoutId, providerRef:result.providerRef, leaseToken:event.lease_token });
+      if (completed?.integrityBlocked) {
+        logEvent({
+          level:'error',
+          action:'OUTBOX_PAYOUT_INTEGRITY_BLOCKED_AFTER_PROVIDER',
+          eventId:event.id,
+          payoutId:payload.payoutId,
+          reason:completed.reason,
+        });
+        return { processed:false, integrityBlocked:true, providerInvoked:true, reason:completed.reason };
+      }
       if (!completed?.completed) throw new Error(`OUTBOX_PAYOUT_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });

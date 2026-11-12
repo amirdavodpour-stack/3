@@ -88,6 +88,300 @@ export async function requestPayoutAtomic({ userId, amount, idempotencyKey, refe
   });
 }
 
+function sameIntegerAmount(left, right) {
+  try {
+    return BigInt(String(left)) === BigInt(String(right));
+  } catch {
+    return false;
+  }
+}
+
+function hasSufficientLockedBalance(wallet, payout) {
+  try {
+    return BigInt(String(wallet.locked_balance)) >= BigInt(String(payout.amount));
+  } catch {
+    return false;
+  }
+}
+
+function payoutEventPayload(event) {
+  if (event?.payload && typeof event.payload === 'object') return event.payload;
+  if (typeof event?.payload === 'string') {
+    try { return JSON.parse(event.payload); } catch { return null; }
+  }
+  return null;
+}
+
+function validatePayoutEventIdentity(event, payout) {
+  const payload = payoutEventPayload(event);
+  if (!payload ||
+      event.event_type !== 'PAYOUT_EXECUTE' ||
+      event.aggregate_type !== 'payout' ||
+      String(event.aggregate_id || '') !== String(payout.id) ||
+      String(payload.payoutId || '') !== String(payout.id) ||
+      String(payload.userId || '') !== String(payout.user_id) ||
+      !sameIntegerAmount(payload.amount, payout.amount) ||
+      String(payload.currency || '') !== String(payout.currency) ||
+      String(payload.idempotencyKey || '') !== String(payout.idempotency_key)) {
+    return { valid: false, reason: 'PAYOUT_OUTBOX_IDENTITY_MISMATCH' };
+  }
+  return { valid: true, payload };
+}
+
+async function validatePayoutSettlementLinkage(client, event, payout) {
+  const identity = validatePayoutEventIdentity(event, payout);
+  if (!identity.valid) return identity;
+
+  const { rows: wallets } = await client.query(
+    `SELECT id,user_id,currency,status,locked_balance
+       FROM wallet_accounts WHERE id=$1 FOR UPDATE`,
+    [payout.wallet_id],
+  );
+  const wallet = wallets[0];
+  if (!wallet ||
+      String(wallet.user_id) !== String(payout.user_id) ||
+      String(wallet.currency) !== String(payout.currency) ||
+      wallet.status !== 'ACTIVE') {
+    return { valid: false, reason: 'PAYOUT_WALLET_LINKAGE_MISMATCH' };
+  }
+  if (!hasSufficientLockedBalance(wallet, payout)) {
+    return { valid: false, reason: 'PAYOUT_LOCKED_BALANCE_INSUFFICIENT' };
+  }
+
+  const { rows: holds } = await client.query(
+    `SELECT * FROM wallet_holds
+      WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'
+      FOR UPDATE`,
+    [payout.id],
+  );
+  if (holds.length === 0) return { valid: false, reason: 'PAYOUT_RESERVATION_NOT_FOUND' };
+  if (holds.length !== 1) return { valid: false, reason: 'PAYOUT_HOLD_AMBIGUOUS' };
+  const hold = holds[0];
+  if (hold.reference_type !== 'PAYOUT' ||
+      String(hold.wallet_id) !== String(payout.wallet_id) ||
+      !sameIntegerAmount(hold.amount, payout.amount) ||
+      !hold.financial_operation_id) {
+    return { valid: false, reason: 'PAYOUT_HOLD_LINKAGE_MISMATCH' };
+  }
+  if (String(identity.payload.operationId || '') !== String(hold.financial_operation_id)) {
+    return { valid: false, reason: 'PAYOUT_OPERATION_LINKAGE_MISMATCH' };
+  }
+
+  const { rows: operations } = await client.query(
+    `SELECT id,operation_type,actor_type,actor_id,status,idempotency_key
+       FROM financial_operations WHERE id=$1 FOR UPDATE`,
+    [hold.financial_operation_id],
+  );
+  const operation = operations[0];
+  if (!operation ||
+      operation.operation_type !== 'PAYOUT' ||
+      operation.actor_type !== 'USER' ||
+      String(operation.actor_id || '') !== String(payout.user_id) ||
+      operation.status !== 'PROCESSING' ||
+      String(operation.idempotency_key || '') !== String(payout.idempotency_key)) {
+    return { valid: false, reason: 'PAYOUT_OPERATION_LINKAGE_MISMATCH' };
+  }
+
+  const { rows: journals } = await client.query(
+    `SELECT id,operation_id,journal_type,currency,status
+       FROM journals WHERE operation_id=$1 AND journal_type='PAYOUT' FOR UPDATE`,
+    [hold.financial_operation_id],
+  );
+  if (journals.length !== 1 ||
+      String(journals[0].currency) !== String(payout.currency) ||
+      journals[0].status !== 'CREATED') {
+    return { valid: false, reason: 'PAYOUT_JOURNAL_LINKAGE_INVALID' };
+  }
+
+  return { valid: true, payload: identity.payload, wallet, hold, operation, journal: journals[0] };
+}
+
+async function validatePayoutUnknownResolutionLinkage(client, payout) {
+  const { rows: wallets } = await client.query(
+    `SELECT id,user_id,currency,status,locked_balance
+       FROM wallet_accounts WHERE id=$1 FOR UPDATE`,
+    [payout.wallet_id],
+  );
+  const wallet = wallets[0];
+  if (!wallet ||
+      String(wallet.user_id) !== String(payout.user_id) ||
+      String(wallet.currency) !== String(payout.currency) ||
+      wallet.status !== 'ACTIVE') {
+    return { valid: false, reason: 'PAYOUT_WALLET_LINKAGE_MISMATCH' };
+  }
+  if (!hasSufficientLockedBalance(wallet, payout)) {
+    return { valid: false, reason: 'PAYOUT_LOCKED_BALANCE_INSUFFICIENT' };
+  }
+
+  const { rows: holds } = await client.query(
+    `SELECT * FROM wallet_holds
+      WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'
+      FOR UPDATE`,
+    [payout.id],
+  );
+  if (holds.length === 0) return { valid: false, reason: 'PAYOUT_RESERVATION_NOT_FOUND' };
+  if (holds.length !== 1) return { valid: false, reason: 'PAYOUT_HOLD_AMBIGUOUS' };
+  const hold = holds[0];
+  if (hold.reference_type !== 'PAYOUT' ||
+      String(hold.wallet_id) !== String(payout.wallet_id) ||
+      !sameIntegerAmount(hold.amount, payout.amount) ||
+      !hold.financial_operation_id) {
+    return { valid: false, reason: 'PAYOUT_HOLD_LINKAGE_MISMATCH' };
+  }
+
+  const { rows: operations } = await client.query(
+    `SELECT id,operation_type,actor_type,actor_id,status,idempotency_key
+       FROM financial_operations WHERE id=$1 FOR UPDATE`,
+    [hold.financial_operation_id],
+  );
+  const operation = operations[0];
+  if (!operation ||
+      operation.operation_type !== 'PAYOUT' ||
+      operation.actor_type !== 'USER' ||
+      String(operation.actor_id || '') !== String(payout.user_id) ||
+      operation.status !== 'UNKNOWN' ||
+      String(operation.idempotency_key || '') !== String(payout.idempotency_key)) {
+    return { valid: false, reason: 'PAYOUT_OPERATION_LINKAGE_MISMATCH' };
+  }
+
+  const { rows: journals } = await client.query(
+    `SELECT id,operation_id,journal_type,currency,status
+       FROM journals WHERE operation_id=$1 AND journal_type='PAYOUT' FOR UPDATE`,
+    [hold.financial_operation_id],
+  );
+  if (journals.length !== 1 ||
+      String(journals[0].currency) !== String(payout.currency) ||
+      journals[0].status !== 'CREATED') {
+    return { valid: false, reason: 'PAYOUT_JOURNAL_LINKAGE_INVALID' };
+  }
+  return { valid: true, wallet, hold, operation, journal: journals[0] };
+}
+
+export async function validatePayoutOutboxEvent({ eventId, payoutId, leaseToken }) {
+  return withSqlTransaction(async (client) => {
+    const { rows: events } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    const event = events[0];
+    if (!event) return { valid: false, reason: 'OUTBOX_NOT_FOUND' };
+    if (leaseToken && String(event.lease_token) !== String(leaseToken)) {
+      return { valid: false, reason: 'STALE_LEASE' };
+    }
+    const { rows: payouts } = await client.query(`SELECT * FROM payouts WHERE id=$1 FOR UPDATE`, [payoutId]);
+    const payout = payouts[0];
+    if (!payout) return { valid: false, reason: 'PAYOUT_NOT_FOUND' };
+    if (!['RESERVED','PROCESSING'].includes(payout.status)) {
+      return { valid: false, reason: 'INVALID_PAYOUT_STATE' };
+    }
+    return validatePayoutSettlementLinkage(client, event, payout);
+  });
+}
+
+async function blockPayoutOutboxIntegrityMismatchWithClient(client, {
+  event,
+  payout,
+  eventId,
+  payoutId,
+  reason,
+  providerInvoked = false,
+}) {
+  const identity = payout ? validatePayoutEventIdentity(event, payout) : { valid: false };
+  let resourceType = 'outbox_event';
+  let resourceId = event.id;
+
+  if (payout && identity.valid && ['RESERVED','PROCESSING','UNKNOWN'].includes(payout.status)) {
+    resourceType = 'payout';
+    resourceId = payout.id;
+    await client.query(
+      `UPDATE payouts
+          SET status='UNKNOWN',failure_code='PAYOUT_INTEGRITY_BLOCKED',
+              failure_message=$2,updated_at=NOW(),completed_at=NULL
+        WHERE id=$1 AND status IN ('RESERVED','PROCESSING','UNKNOWN')`,
+      [payout.id, String(reason || 'PAYOUT_INTEGRITY_MISMATCH').slice(0, 1000)],
+    );
+
+    const { rows: holds } = await client.query(
+      `SELECT * FROM wallet_holds
+        WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE'
+        FOR UPDATE`,
+      [payout.id],
+    );
+    if (holds.length === 1) {
+      const hold = holds[0];
+      if (hold.reference_type === 'PAYOUT' &&
+          String(hold.wallet_id) === String(payout.wallet_id) &&
+          sameIntegerAmount(hold.amount, payout.amount) &&
+          String(identity.payload.operationId || '') === String(hold.financial_operation_id || '')) {
+        await client.query(
+          `UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL
+            WHERE id=$1 AND operation_type='PAYOUT' AND actor_type='USER'
+              AND actor_id=$2 AND idempotency_key=$3 AND status IN ('PROCESSING','UNKNOWN')`,
+          [hold.financial_operation_id, payout.user_id, payout.idempotency_key],
+        );
+      }
+    }
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'PAYOUT_INTEGRITY_BLOCKED',NULL,'payout',$1,$2::jsonb,NOW())`,
+      [payout.id, JSON.stringify({ eventId, reason: String(reason || 'PAYOUT_INTEGRITY_MISMATCH').slice(0, 1000), providerInvoked })],
+    );
+  }
+
+  await client.query(
+    `INSERT INTO reconciliation_cases(
+       id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
+     ) VALUES(
+       gen_random_uuid(),'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',$1,$2,'CRITICAL',
+       $3::jsonb,$4::jsonb,'OPEN',NOW(),NOW()
+     )
+     ON CONFLICT (case_type,resource_type,resource_id)
+       WHERE status IN ('OPEN','INVESTIGATING')
+     DO UPDATE SET
+       severity='CRITICAL',expected=EXCLUDED.expected,observed=EXCLUDED.observed,updated_at=NOW()`,
+    [
+      resourceType,
+      resourceId,
+      JSON.stringify({
+        walletBalancesUnchanged: true,
+        activeReservationHoldPreserved: true,
+        providerInvoked: Boolean(providerInvoked),
+      }),
+      JSON.stringify({
+        reason: String(reason || 'PAYOUT_INTEGRITY_MISMATCH').slice(0, 1000),
+        eventId,
+        payoutId,
+      }),
+    ],
+  );
+  await client.query(
+    `UPDATE outbox_events
+        SET status='DONE',processed_at=COALESCE(processed_at,NOW()),
+            locked_at=NULL,lease_token=NULL,last_error=$2
+      WHERE id=$1`,
+    [eventId, String(reason || 'PAYOUT_INTEGRITY_MISMATCH').slice(0, 2000)],
+  );
+  return { blocked: true, payoutMarkedUnknown: resourceType === 'payout', resourceType, resourceId };
+}
+
+export async function blockPayoutOutboxIntegrityMismatch({ eventId, payoutId, reason, leaseToken, providerInvoked = false }) {
+  return withSqlTransaction(async (client) => {
+    const { rows: events } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
+    const event = events[0];
+    if (!event) return { blocked: false, reason: 'OUTBOX_NOT_FOUND' };
+    if (leaseToken && String(event.lease_token) !== String(leaseToken)) {
+      return { blocked: false, reason: 'STALE_LEASE' };
+    }
+    const { rows: payouts } = await client.query(`SELECT * FROM payouts WHERE id=$1 FOR UPDATE`, [payoutId]);
+    const payout = payouts[0];
+    return blockPayoutOutboxIntegrityMismatchWithClient(client, {
+      event,
+      payout,
+      eventId,
+      payoutId,
+      reason,
+      providerInvoked,
+    });
+  });
+}
+
 export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_UNKNOWN', leaseToken }) {
   return withSqlTransaction(async (client) => {
     const { rows: events } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
@@ -102,86 +396,103 @@ export async function markPayoutUnknown({ eventId, payoutId, reason = 'PROVIDER_
       return { marked: false, reason: 'INVALID_PAYOUT_STATE' };
     }
 
-    // payouts has no financial_operation_id column. The reservation hold is the
-    // canonical relation between a payout and its financial operation.
-    const { rows: holds } = await client.query(
-      `SELECT * FROM wallet_holds
-        WHERE reference_id=$1
-          AND hold_type='PAYOUT_RESERVATION'
-          AND status='ACTIVE'
-        FOR UPDATE`,
-      [payoutId],
-    );
-    const hold = holds[0];
+    // An ambiguous provider response must not use an event to mutate an
+    // unrelated payout. First prove that the immutable Outbox identity names
+    // this exact payout; only then may the payout enter UNKNOWN.
+    const identity = validatePayoutEventIdentity(event, payout);
     let reconciliationReason = null;
     let operationId = null;
+    let reconciliationResourceType = 'payout';
+    let reconciliationResourceId = payoutId;
 
-    if (!hold?.financial_operation_id) {
-      reconciliationReason = 'PAYOUT_RESERVATION_NOT_FOUND';
+    if (!identity.valid) {
+      reconciliationReason = identity.reason;
+      reconciliationResourceType = 'outbox_event';
+      reconciliationResourceId = event.id;
     } else {
-      operationId = hold.financial_operation_id;
-      if (String(event.payload?.operationId || '') !== String(operationId)) {
-        reconciliationReason = 'PAYOUT_OPERATION_MISMATCH';
+      const linkage = alreadyUnknown
+        ? await validatePayoutUnknownResolutionLinkage(client, payout)
+        : await validatePayoutSettlementLinkage(client, event, payout);
+      reconciliationReason = linkage.valid ? null : linkage.reason;
+      operationId = linkage.valid ? linkage.hold.financial_operation_id : null;
+
+      if (linkage.valid && !alreadyUnknown) {
+        const { rows: operations } = await client.query(
+          `UPDATE financial_operations
+              SET status='UNKNOWN',completed_at=NULL
+            WHERE id=$1 AND operation_type='PAYOUT' AND actor_type='USER'
+              AND actor_id=$2 AND idempotency_key=$3 AND status='PROCESSING'
+            RETURNING id`,
+          [operationId, payout.user_id, payout.idempotency_key],
+        );
+        if (!operations[0]) reconciliationReason = 'FINANCIAL_OPERATION_NOT_PROCESSING';
       }
-      const { rows: operations } = await client.query(
-        `UPDATE financial_operations
-            SET status='UNKNOWN',completed_at=NULL
-          WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')
-          RETURNING id`,
-        [operationId],
-      );
-      if (!operations[0] && !reconciliationReason) {
-        reconciliationReason = 'FINANCIAL_OPERATION_NOT_PROCESSING';
+
+      if (!alreadyUnknown) {
+        await client.query(
+          `UPDATE payouts
+              SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW()
+            WHERE id=$1`,
+          [payoutId, String(reason).slice(0, 1000)],
+        );
+        await client.query(
+          `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+           VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
+          [payoutId, JSON.stringify({ eventId, reason, reconciliationReason })],
+        );
       }
     }
 
-    // An UNKNOWN provider outcome must never fall through the generic outbox
-    // failure path: its terminal payout failure handler would release the hold.
-    // Preserve the reservation, mark the payout UNKNOWN and surface any broken
-    // internal linkage as a critical reconciliation case for manual repair.
+    // Never release an active reservation for an ambiguous provider outcome.
+    // A misidentified event is reconciled against the event itself; a correctly
+    // identified payout with broken Hold/operation linkage remains UNKNOWN for
+    // explicit manual repair.
     if (reconciliationReason) {
       await client.query(
         `INSERT INTO reconciliation_cases(
            id,case_type,resource_type,resource_id,severity,expected,observed,status,created_at,updated_at
          ) VALUES(
-           gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY','payout',$1,'CRITICAL',
-           $2::jsonb,$3::jsonb,'OPEN',NOW(),NOW()
+           gen_random_uuid(),'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY',$1,$2,'CRITICAL',
+           $3::jsonb,$4::jsonb,'OPEN',NOW(),NOW()
          )
          ON CONFLICT (case_type,resource_type,resource_id)
            WHERE status IN ('OPEN','INVESTIGATING')
          DO UPDATE SET
            severity='CRITICAL',expected=EXCLUDED.expected,observed=EXCLUDED.observed,updated_at=NOW()`,
         [
-          payoutId,
-          JSON.stringify({ payoutStatus: 'UNKNOWN', financialOperationStatus: 'UNKNOWN', activeReservationHold: true }),
+          reconciliationResourceType,
+          reconciliationResourceId,
+          JSON.stringify({
+            payoutStatus: identity.valid ? 'UNKNOWN' : 'UNCHANGED',
+            walletBalancesUnchanged: true,
+            activeReservationHold: true,
+            financialOperationMutation: 'UNKNOWN only when canonical linkage is verified',
+          }),
           JSON.stringify({
             reason: reconciliationReason,
-            eventOperationId: event.payload?.operationId || null,
+            payoutId,
+            eventId,
+            eventAggregateId: event.aggregate_id || null,
+            eventPayoutId: payoutEventPayload(event)?.payoutId || null,
+            eventOperationId: payoutEventPayload(event)?.operationId || null,
             holdOperationId: operationId,
           }),
         ],
       );
-    }
-
-    if (!alreadyUnknown) {
-      await client.query(
-        `UPDATE payouts
-            SET status='UNKNOWN',failure_code='PROVIDER_UNKNOWN',failure_message=$2,updated_at=NOW()
-          WHERE id=$1`,
-        [payoutId, String(reason).slice(0, 1000)],
-      );
-      await client.query(
-        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
-         VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN',NULL,'payout',$1,$2::jsonb,NOW())`,
-        [payoutId, JSON.stringify({ eventId, reason, reconciliationReason })],
-      );
+      if (!identity.valid) {
+        await client.query(
+          `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+           VALUES(gen_random_uuid(),'PAYOUT_UNKNOWN_IDENTITY_MISMATCH',NULL,'outbox_event',$1,$2::jsonb,NOW())`,
+          [event.id, JSON.stringify({ payoutId, reason: reconciliationReason })],
+        );
+      }
     }
 
     await client.query(
       `UPDATE outbox_events
-          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=NULL
+          SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,lease_token=NULL,last_error=$2
         WHERE id=$1`,
-      [eventId],
+      [eventId, reconciliationReason],
     );
     return {
       marked: true,
@@ -208,11 +519,11 @@ export async function resolvePayoutUnknown({ payoutId, decision, providerRef = n
     const payout = payouts[0];
     if (!payout) return null;
     if (payout.status !== 'UNKNOWN') throw Object.assign(new Error('PAYOUT_NOT_UNKNOWN'), { code: 'PAYOUT_NOT_UNKNOWN' });
-    const { rows: holds } = await client.query(`SELECT * FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE`, [payoutId]);
-    const hold = holds[0];
-    const { rows: wallets } = await client.query(`SELECT * FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [payout.wallet_id]);
-    const wallet = wallets[0];
-    if (!hold || !wallet) throw Object.assign(new Error('PAYOUT_RESERVATION_NOT_FOUND'), { code: 'PAYOUT_RESERVATION_NOT_FOUND' });
+    const linkage = await validatePayoutUnknownResolutionLinkage(client, payout);
+    if (!linkage.valid) {
+      throw Object.assign(new Error(linkage.reason), { code: linkage.reason });
+    }
+    const { hold, wallet } = linkage;
     if (normalized === 'SUCCEEDED') {
       if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), { code: 'INSUFFICIENT_LOCKED_FUNDS' });
       await client.query(`UPDATE wallet_accounts SET locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id, payout.amount]);
@@ -274,14 +585,27 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
     const { rows: pr } = await client.query(`SELECT p.*,w.id AS wallet_id FROM payouts p JOIN wallet_accounts w ON w.id=p.wallet_id WHERE p.id=$1 FOR UPDATE`, [payoutId]);
     const payout = pr[0];
     if (!payout) return {completed:false,reason:'PAYOUT_NOT_FOUND'};
-    if (payout.status==='SUCCEEDED') { await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]); return {completed:true,alreadyDone:true}; }
+    if (payout.status==='SUCCEEDED') {
+      const identity = validatePayoutEventIdentity(ev[0], payout);
+      if (!identity.valid) return {completed:false,reason:identity.reason};
+      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);
+      return {completed:true,alreadyDone:true};
+    }
     if (payout.status!=='RESERVED' && payout.status!=='PROCESSING') return {completed:false,reason:'INVALID_PAYOUT_STATE'};
 
-    const { rows: holdRows } = await client.query(`SELECT * FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE`, [payout.id]);
-    const hold = holdRows[0];
-    if (!hold) return {completed:false,reason:'PAYOUT_HOLD_NOT_FOUND'};
-    const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [payout.wallet_id]);
-    const wallet = walletRows[0];
+    const linkage = await validatePayoutSettlementLinkage(client, ev[0], payout);
+    if (!linkage.valid) {
+      await blockPayoutOutboxIntegrityMismatchWithClient(client, {
+        event: ev[0],
+        payout,
+        eventId,
+        payoutId,
+        reason: linkage.reason,
+        providerInvoked: true,
+      });
+      return { completed:false, integrityBlocked:true, reason:linkage.reason };
+    }
+    const { hold, wallet } = linkage;
     if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) throw Object.assign(new Error('INSUFFICIENT_LOCKED_FUNDS'), {code:'INSUFFICIENT_LOCKED_FUNDS'});
 
     await client.query(`UPDATE wallet_accounts SET locked_balance=locked_balance-$2,updated_at=NOW() WHERE id=$1`, [wallet.id,payout.amount]);
@@ -296,7 +620,7 @@ export async function completePayoutOutbox({ eventId, payoutId, providerRef, lea
   });
 }
 
-export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
+export async function failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR', providerInvoked = true }) {
     const { rows: ev } = await client.query(`SELECT * FROM outbox_events WHERE id=$1 FOR UPDATE`, [eventId]);
     if (!ev[0]) return {completed:false,reason:'OUTBOX_NOT_FOUND'};
     if (leaseToken && String(ev[0].lease_token)!==String(leaseToken)) return {completed:false,reason:'STALE_LEASE'};
@@ -304,15 +628,28 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
     const payout = pr[0];
     if (!payout) return {completed:false,reason:'PAYOUT_NOT_FOUND'};
     if (payout.status==='FAILED') {
+      const identity = validatePayoutEventIdentity(ev[0], payout);
+      if (!identity.valid) return {completed:false,reason:identity.reason};
       await client.query(`UPDATE outbox_events SET status='FAILED',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=$2 WHERE id=$1`,[eventId,String(error).slice(0,2000)]);
       return {completed:true,alreadyFailed:true};
     }
     if (!['RESERVED','PROCESSING'].includes(payout.status)) return {completed:false,reason:'INVALID_PAYOUT_STATE'};
-    const { rows: holds } = await client.query(`SELECT * FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' AND status='ACTIVE' FOR UPDATE`, [payout.id]);
-    const hold = holds[0];
-    const { rows: walletRows } = await client.query(`SELECT * FROM wallet_accounts WHERE id=$1 FOR UPDATE`, [payout.wallet_id]);
-    const wallet = walletRows[0];
-    if (!hold || !wallet) return {completed:false,reason:'PAYOUT_RESERVATION_NOT_FOUND'};
+    const linkage = await validatePayoutSettlementLinkage(client, ev[0], payout);
+    if (!linkage.valid) {
+      await blockPayoutOutboxIntegrityMismatchWithClient(client, {
+        event: ev[0],
+        payout,
+        eventId,
+        payoutId,
+        reason: linkage.reason,
+        providerInvoked,
+      });
+      return { completed:false, integrityBlocked:true, reason:linkage.reason };
+    }
+    const { hold, wallet } = linkage;
+    if (BigInt(String(wallet.locked_balance)) < BigInt(String(payout.amount))) {
+      return {completed:false,reason:'INSUFFICIENT_LOCKED_FUNDS'};
+    }
     const { rows: restoredWallets } = await client.query(
       `UPDATE wallet_accounts
           SET available_balance=available_balance+$2,locked_balance=locked_balance-$2,updated_at=NOW()
@@ -335,8 +672,8 @@ export async function failPayoutOutboxWithClient(client, { eventId, payoutId, er
   return {completed:true,alreadyFailed:false};
 }
 
-export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR' }) {
-  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode }));
+export async function failPayoutOutbox({ eventId, payoutId, error, leaseToken, failureCode = 'PROVIDER_ERROR', providerInvoked = true }) {
+  return withSqlTransaction((client) => failPayoutOutboxWithClient(client, { eventId, payoutId, error, leaseToken, failureCode, providerInvoked }));
 }
 
 export async function getPayoutForUser(userId,payoutId) {
