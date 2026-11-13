@@ -89,7 +89,7 @@ export function createAuthRoutes({
       if (rateLimitAuthAccount && !(await rateLimitAuthAccount(`email-verification:${email}`, config.authRateLimitMax, config.rateLimitWindowMs))) {
         throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
       }
-      const user = await getUserByEmail(email);
+      let user = await getUserByEmail(email);
       const verification = user?.status === 'PENDING_EMAIL_VERIFICATION' ? await issueEmailVerification(user) : null;
       const response = { ok: true, message: 'If the account exists and requires verification, a code has been sent.' };
       if (verification?.delivered && config.exposeEmailVerificationCodeInDevelopment && process.env.NODE_ENV !== 'production') {
@@ -297,7 +297,7 @@ export function createAuthRoutes({
       if (rateLimitAuthAccount && !(await rateLimitAuthAccount(email, config.authRateLimitMax, config.rateLimitWindowMs))) {
         throw new HttpError(429, 'RATE_LIMITED', 'Too many authentication requests');
       }
-      const user = await getUserByEmail(email);
+      let user = await getUserByEmail(email);
       // Always perform the expensive password verification step, including for unknown users,
       // to reduce account-enumeration through response-time differences.
       const password = typeof body.password === 'string' ? body.password : '';
@@ -305,10 +305,38 @@ export function createAuthRoutes({
       const passwordOk = await verifyPassword(password, user?.passwordHash || DUMMY_PASSWORD_HASH);
       if (!user || user.status !== 'ACTIVE' || !passwordOk) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
       if (user.passwordHash && passwordNeedsRehash(user.passwordHash)) {
+        const verifiedPasswordHash = user.passwordHash;
+        const verifiedSessionVersion = Number(user.sessionVersion || 0);
         const upgradedHash = await hashPassword(password);
-        if (process.env.DATABASE_URL) await repo.updatePasswordHash(user.id, upgradedHash);
-        else { legacy.updatePassword(user, upgradedHash); await legacy.save(); }
-        user.passwordHash = upgradedHash;
+        if (process.env.DATABASE_URL) {
+          const upgraded = await repo.updatePasswordHash(
+            user.id,
+            upgradedHash,
+            verifiedPasswordHash,
+            verifiedSessionVersion,
+          );
+          if (!upgraded) {
+            // Another login may have rehashed the same password first. Accept
+            // that benign race only while the account generation is unchanged
+            // and the submitted password still verifies against the latest hash.
+            const current = await repo.findUserById(user.id);
+            if (
+              !current ||
+              current.status !== 'ACTIVE' ||
+              Number(current.sessionVersion || 0) !== verifiedSessionVersion ||
+              !(await verifyPassword(password, current.passwordHash || DUMMY_PASSWORD_HASH))
+            ) {
+              throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect');
+            }
+            user = current;
+          } else {
+            user.passwordHash = upgradedHash;
+          }
+        } else {
+          legacy.updatePassword(user, upgradedHash);
+          await legacy.save();
+          user.passwordHash = upgradedHash;
+        }
       }
       const session = await issueSession(user);
       await createAudit('AUTH_LOGIN', user.id, 'user', user.id);

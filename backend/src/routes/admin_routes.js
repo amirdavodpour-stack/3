@@ -99,17 +99,19 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified = verifyTotpCode(secret, totpCode, Number.isFinite(nowMs) ? nowMs : Date.now(), {
         lastAcceptedCounter: Number(credential.lastTotpCounter ?? -1),
       });
-      if (!verified.valid || !(await repo.consumeAdminTotpCounter(me.id, verified.counter))) {
+      if (!verified.valid) {
         throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
       }
-      return { method:'totp' };
+      return {
+        method:'totp',
+        counter:verified.counter,
+        secretCiphertext:credential.secretCiphertext,
+      };
     }
     let recoveryHash;
     try { recoveryHash = hashRecoveryCode(recoveryCode); }
     catch { throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used'); }
-    const consumed = await repo.consumeAdminRecoveryCode(me.id, recoveryHash);
-    if (!consumed) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Recovery code is invalid or has already been used');
-    return { method:'recovery_code' };
+    return { method:'recovery_code', recoveryCodeHash:recoveryHash };
   }
 
   return async function adminRoutes(req,res,parts){
@@ -215,8 +217,17 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
       const auditMeta={expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),method:primaryMethod,mfaMethod:mfa.method};
       if (config.adminMfaRequired) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,...(process.env.DATABASE_URL?[auditMeta]:[]));
-        if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
+        if (typeof repo.verifyAdminPanelMfaAndUnlock !== 'function') {
+          throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Atomic administrator MFA verification is unavailable');
+        }
+        const verified=await repo.verifyAdminPanelMfaAndUnlock(me.id,{
+          sessionJti,
+          sessionVersion:me.sessionVersion,
+          scope,
+          factor:mfa,
+          auditMeta,
+        });
+        if (!verified) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid, expired, or already used');
       } else if (process.env.DATABASE_URL) {
         const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,auditMeta);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
@@ -227,7 +238,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           scope,
         });
       }
-      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
+      if(!process.env.DATABASE_URL && !config.adminMfaRequired) {
+        await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
+      }
       return sendJson(res,200,{verified:true,scope,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15)});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
@@ -403,7 +416,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           });
         } else {
           // The PostgreSQL repository commits role mutation and audit atomically.
-          promoted = await adminUseCases.grantAdminByEmail(email, me.id);
+          promoted = await adminUseCases.grantAdminByEmail(email, me.id, {sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5});
         }
       } catch(error) {
         if (error?.code==='PRIMARY_ADMIN_ONLY') {
@@ -447,7 +460,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           });
         } else {
           // PostgreSQL repository commits role/session/refresh-token updates and Audit atomically.
-          revoked = await adminUseCases.revokeAdminById(id,me.id);
+          revoked = await adminUseCases.revokeAdminById(id,me.id,{sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5});
         }
         if(!revoked) throw new HttpError(404,'USER_NOT_FOUND','Administrator not found');
         return sendJson(res,200,{
@@ -521,7 +534,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       if(id===me.id && status==='SUSPENDED') throw new HttpError(400,'SELF_SUSPEND_FORBIDDEN','An admin cannot suspend their own account');
       let updated;
       try {
-        const options={actorId:me.id,reason,reviewDueAt};
+        const options={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5,reason,reviewDueAt};
         updated=process.env.DATABASE_URL
           ? await adminUseCases.setUserStatus(id,status,options)
           : legacyAdmin.setUserStatus(id,status,options);
@@ -600,13 +613,13 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       assertAdminPermission(me, ADMIN_PERMISSIONS.MODERATE_JOBS);
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['DRAFT','PUBLISHED','CANCELLED']),'status');
       const job=await getJob(id); if(!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
-      try { const updated=process.env.DATABASE_URL ? await adminUseCases.moderateJob(id,status,{adminId:me.id}) : legacyAdmin.moderateJob(id,status); if(!updated) throw new HttpError(404,'JOB_NOT_FOUND','Job not found'); if(!process.env.DATABASE_URL) { await legacyAdmin.save(); await createAudit('ADMIN_JOB_MODERATE',me.id,'job',id,{status}); } return sendJson(res,200,updated); } catch(e){ if(e?.code==='JOB_LOCKED') throw new HttpError(409,'JOB_LOCKED','This opportunity is already in a protected lifecycle state'); throw e; }
+      try { const updated=process.env.DATABASE_URL ? await adminUseCases.moderateJob(id,status,{adminId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5}) : legacyAdmin.moderateJob(id,status); if(!updated) throw new HttpError(404,'JOB_NOT_FOUND','Job not found'); if(!process.env.DATABASE_URL) { await legacyAdmin.save(); await createAudit('ADMIN_JOB_MODERATE',me.id,'job',id,{status}); } return sendJson(res,200,updated); } catch(e){ if(e?.code==='JOB_LOCKED') throw new HttpError(409,'JOB_LOCKED','This opportunity is already in a protected lifecycle state'); throw e; }
     }
     if(req.method==='DELETE' && parts[0]==='admin' && parts[1]==='jobs' && parts[2]){
       assertAdminPermission(me, ADMIN_PERMISSIONS.DELETE_JOBS);
       const id=parts[2]; const job=await getJob(id); if(!job) throw new HttpError(404,'JOB_NOT_FOUND','Job not found');
       if(!['DRAFT','PUBLISHED'].includes(job.status)) throw new HttpError(409,'JOB_NOT_DELETABLE','Only draft or published opportunities can be deleted by admins');
-      if(process.env.DATABASE_URL) await adminUseCases.deleteJob(id,{adminId:me.id});
+      if(process.env.DATABASE_URL) await adminUseCases.deleteJob(id,{adminId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5});
       else {
         try { legacyAdmin.deleteJob(id); } catch (error) {
           if (error?.code === 'JOB_HAS_FINANCIAL_RECORDS') throw new HttpError(409,'JOB_HAS_FINANCIAL_RECORDS','This opportunity has financial records and cannot be deleted');

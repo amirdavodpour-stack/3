@@ -8,6 +8,10 @@ const source = fs.readFileSync(
   'utf8',
 );
 const adminRepositorySource = source;
+const adminAuthorizationSource = fs.readFileSync(
+  path.resolve(import.meta.dirname, '../src/repository/admin_authorization.js'),
+  'utf8',
+);
 const start = source.indexOf('export async function setUserStatus(');
 const end = source.indexOf('export async function revokeAdminById(', start);
 const implementation = source.slice(start, end);
@@ -71,8 +75,12 @@ test('logout and password reset clear admin-panel verification in the session-ve
 
 test('admin role revocation clears every step-up field and commits its audit atomically', () => {
   const revoke = functionSource(adminRepositorySource, 'revokeAdminById', 'revokeUserSessions');
-  assert.match(revoke, /actor\.status\s*!==\s*'ACTIVE'/);
-  assert.match(revoke, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(revoke, /lockAuthorizedAdminActor\(client/);
+  assert.match(revoke, /sessionJti/);
+  assert.match(revoke, /requiredScope:\s*'WRITE'/);
+  assert.match(adminAuthorizationSource, /status !== 'ACTIVE'/);
+  assert.match(adminAuthorizationSource, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(adminAuthorizationSource, /admin_panel_verified_session_jti/);
   assert.match(revoke, /admin_panel_verified_at\s*=\s*NULL/);
   assert.match(revoke, /admin_panel_verified_session_jti\s*=\s*NULL/);
   assert.match(revoke, /admin_panel_verified_scope\s*=\s*NULL/);

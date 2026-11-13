@@ -41,6 +41,7 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/testing/runtime_render_settle.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/ui/components.dart';
+import 'package:hope_mobile/core/ui/hope_l10n.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
@@ -1695,7 +1696,8 @@ Future<void> _captureRuntimeScreen(
         'Password Reset capture marker mismatch: expected $expectedMarker, got $marker.',
       );
     }
-    expect(find.byType(PasswordResetPage), findsOneWidget,
+    final resetPage = find.byType(PasswordResetPage);
+    expect(resetPage, findsOneWidget,
         reason: 'Password Reset must be mounted before native capture.');
     expect(find.byType(RegisterPage), findsNothing,
         reason: 'Registration content must never be labelled as Password Reset evidence.');
@@ -1703,7 +1705,21 @@ Future<void> _captureRuntimeScreen(
         reason: 'Password Reset runtime surface must contain exactly one email field.');
     expect(find.byType(FilledButton), findsOneWidget,
         reason: 'Password Reset runtime surface must expose its submit action.');
+
+    // Assert target-specific copy before capture so a stale Register frame
+    // cannot satisfy the Reset evidence marker.
+    final resetCopy = HopeCopy.of(tester.element(resetPage));
+    expect(find.text(resetCopy.copy_reset_password_18b5d1c), findsOneWidget);
+    expect(find.text(resetCopy.copy_send_request_0480e80), findsOneWidget);
+    expect(find.text(resetCopy.copy_start_a_good_collaboration_9df52cf), findsNothing);
+    expect(find.text(resetCopy.copy_full_name_c7448f1), findsNothing);
+    expect(find.text(resetCopy.copy_password_656eabe), findsNothing);
+
+    // Pump one additional Flutter frame after target assertions so the raster
+    // surface presents the Reset route before native PixelCopy is requested.
+    await tester.pump();
     print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
+    print('HOPE_RUNTIME_PASSWORD_RESET_CONTENT_READY:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');
     await _captureRuntimeScreenshot(marker, tester: tester);
     if (_runtimeNeedsScrollEnd(marker)) {

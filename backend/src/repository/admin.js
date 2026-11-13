@@ -58,7 +58,7 @@ export async function getAdminUser(id) {
   const { rows } = await requirePool().query(`SELECT ${userSelect} FROM users WHERE id=$1`, [id]);
   return rows[0] ? userFromRow(rows[0]) : null;
 }
-export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
+export async function setUserStatus(id,status,{actorId,sessionJti,verificationMinutes=5,reason,reviewDueAt}={}) {
   const targetStatus=String(status || '').trim().toUpperCase();
   if(!['ACTIVE','SUSPENDED'].includes(targetStatus)) {
     const error=new Error('INVALID_STATUS'); error.code='INVALID_STATUS'; error.status=400; throw error;
@@ -81,24 +81,21 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
   }
 
   return withSqlTransaction(async (client) => {
-    // Lock actor and target in stable UUID order so reciprocal admin actions
-    // cannot deadlock by acquiring the two user rows in opposite order.
-    const { rows: lockedUsers } = await client.query(
-      `SELECT id,email,google_subject,role,status
-         FROM users
-        WHERE id=ANY($1::uuid[])
-        ORDER BY id
-        FOR UPDATE`,
-      [[actor,String(id)]],
-    );
-    const actors = lockedUsers.filter((row) => row.id === actor);
-    const current = lockedUsers.filter((row) => row.id === String(id));
-    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
-      const error=new Error('ADMIN_REQUIRED'); error.code='ADMIN_REQUIRED'; error.status=403; throw error;
-    }
+    const { actor: authorizedActor, targets } = await lockAuthorizedAdminActor(client,{
+      actorId:actor,
+      targetUserIds:[id],
+      sessionJti,
+      verificationMinutes,
+      requiredScope:'WRITE',
+    });
+    const actors = [authorizedActor];
+    const target = String(id) === String(authorizedActor.id)
+      ? authorizedActor
+      : targets.get(String(id));
+    const current = target ? [target] : [];
     const actorIsPrimaryAdmin =
-      String(actors[0].email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com'
-      && Boolean(String(actors[0].google_subject || '').trim());
+      String(authorizedActor.email || '').trim().toLowerCase() === 'amir.davodpour@gmail.com'
+      && Boolean(String(authorizedActor.google_subject || '').trim());
     if(actor===String(id) && targetStatus==='SUSPENDED') {
       const error=new Error('SELF_SUSPEND_FORBIDDEN'); error.code='SELF_SUSPEND_FORBIDDEN'; error.status=400; throw error;
     }
@@ -184,27 +181,31 @@ export async function setUserStatus(id,status,{actorId,reason,reviewDueAt}={}) {
     };
   });
 }
-export async function revokeAdminById(id, actorId) {
+export async function revokeAdminById(id, actorId, {sessionJti,verificationMinutes=5}={}) {
   return withSqlTransaction(async (client) => {
-    // Acquire both identity rows in a stable order to prevent reciprocal
-    // role-change requests from deadlocking while enforcing the current actor state.
-    const actorKey = String(actorId || '');
-    const targetKey = String(id || '');
-    const lockIds = [...new Set([actorKey,targetKey])];
-    const { rows: lockedUsers } = await client.query(
-      `SELECT id,email,role,status,google_subject
-         FROM users
-        WHERE id=ANY($1::uuid[])
-        ORDER BY id
-        FOR UPDATE`,
-      [lockIds],
-    );
-    const actor = lockedUsers.find((row) => String(row.id) === actorKey);
-    const target = lockedUsers.find((row) => String(row.id) === targetKey);
+    let authorization;
+    try {
+      authorization = await lockAuthorizedAdminActor(client,{
+        actorId,
+        targetUserIds:[id],
+        sessionJti,
+        verificationMinutes,
+        requiredScope:'WRITE',
+      });
+    } catch (error) {
+      if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) {
+        const denied = new Error('Only the verified primary administrator can revoke administrator access');
+        denied.code = 'PRIMARY_ADMIN_ONLY';
+        denied.status = 403;
+        throw denied;
+      }
+      throw error;
+    }
+    const actor = authorization.actor;
+    const target = String(id) === String(actor.id)
+      ? actor
+      : authorization.targets.get(String(id));
     if (
-      !actor ||
-      actor.role !== 'ADMIN' ||
-      actor.status !== 'ACTIVE' ||
       String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' ||
       !String(actor.google_subject || '').trim()
     ) {
@@ -291,19 +292,18 @@ export async function listAdminAudit(limit=100, offset=0) {
   const { rows } = await requirePool().query(`SELECT a.id,a.action,a.actor_id,a.entity_type,a.entity_id,a.meta,a.created_at,u.display_name AS actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.created_at DESC LIMIT $1 OFFSET $2`, [Math.min(Math.max(Number(limit)||100,1),200), Math.max(Number(offset)||0,0)]);
   return rows.map(r=>({id:r.id,action:r.action,actorId:r.actor_id,actorName:r.actor_name||null,entityType:r.entity_type,entityId:r.entity_id,meta:r.meta||{},createdAt:r.created_at?.toISOString?.() ?? r.created_at}));
 }
-export async function moderateJob(id,toStatus,{adminId}={}) {
+export async function moderateJob(id,toStatus,{adminId,sessionJti,verificationMinutes=5}={}) {
   const allowed = new Set(['DRAFT','PUBLISHED','CANCELLED']);
   if (!allowed.has(toStatus)) { const e=new Error('INVALID_STATUS'); e.code='INVALID_STATUS'; throw e; }
   const actor=String(adminId || '').trim();
   if(!actor) { const e=new Error('ADMIN_ACTOR_REQUIRED'); e.code='ADMIN_ACTOR_REQUIRED'; throw e; }
   return withSqlTransaction(async(client)=>{
-    const {rows:actors}=await client.query(
-      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
-      [actor],
-    );
-    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
-      const e=new Error('ADMIN_REQUIRED'); e.code='ADMIN_REQUIRED'; e.status=403; throw e;
-    }
+    const { actor: authorizedActor } = await lockAuthorizedAdminActor(client,{
+      actorId:actor,
+      sessionJti,
+      verificationMinutes,
+      requiredScope:'WRITE',
+    });
     const {rows}=await client.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`,[id]);
     if(!rows[0]) return null;
     const job=jobFromRow(rows[0]);
@@ -312,24 +312,23 @@ export async function moderateJob(id,toStatus,{adminId}={}) {
     await client.query(
       `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
        VALUES(gen_random_uuid(),'ADMIN_JOB_MODERATE',$1,'job',$2,$3::jsonb,NOW())`,
-      [actor,id,JSON.stringify({previousStatus:job.status,status:toStatus})],
+      [authorizedActor.id,id,JSON.stringify({previousStatus:job.status,status:toStatus})],
     );
     return jobFromRow(u[0]);
   });
 }
 
 export async function listAdminJobs() { const {rows}=await requirePool().query(`SELECT * FROM jobs ORDER BY created_at DESC`); return rows.map(jobFromRow); }
-export async function deleteJob(id,{adminId}={}) {
+export async function deleteJob(id,{adminId,sessionJti,verificationMinutes=5}={}) {
   const actor=String(adminId || '').trim();
   if(!actor) { const e=new Error('ADMIN_ACTOR_REQUIRED'); e.code='ADMIN_ACTOR_REQUIRED'; throw e; }
   return withSqlTransaction(async (client) => {
-    const {rows:actors}=await client.query(
-      `SELECT id,role,status FROM users WHERE id=$1 FOR UPDATE`,
-      [actor],
-    );
-    if(!actors[0] || actors[0].role!=='ADMIN' || actors[0].status!=='ACTIVE') {
-      const e=new Error('ADMIN_REQUIRED'); e.code='ADMIN_REQUIRED'; e.status=403; throw e;
-    }
+    const { actor: authorizedActor } = await lockAuthorizedAdminActor(client,{
+      actorId:actor,
+      sessionJti,
+      verificationMinutes,
+      requiredScope:'WRITE',
+    });
     const { rows } = await client.query(`SELECT id,status FROM jobs WHERE id=$1 FOR UPDATE`, [id]);
     if (!rows[0]) return null;
     const previousStatus=rows[0].status;
@@ -341,7 +340,7 @@ export async function deleteJob(id,{adminId}={}) {
       await client.query(
         `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
          VALUES(gen_random_uuid(),'ADMIN_JOB_DELETE',$1,'job',$2,$3::jsonb,NOW())`,
-        [actor,id,JSON.stringify({status:previousStatus,deleted:true})],
+        [authorizedActor.id,id,JSON.stringify({status:previousStatus,deleted:true})],
       );
     }
     return rowCount > 0;
@@ -349,7 +348,7 @@ export async function deleteJob(id,{adminId}={}) {
 }
 
 
-export async function grantAdminByEmail(email, actorId) {
+export async function grantAdminByEmail(email, actorId, {sessionJti,verificationMinutes=5}={}) {
   const normalizedEmail = String(email || '').trim().toLowerCase();
   if (!normalizedEmail) return null;
 
@@ -364,23 +363,30 @@ export async function grantAdminByEmail(email, actorId) {
     if (!targetKeys[0]) return null;
 
     const targetId = String(targetKeys[0].id);
-    const actorKey = String(actorId || '');
-    const lockIds = [...new Set([actorKey,targetId])];
-    const { rows: lockedUsers } = await client.query(
-      `SELECT id,email,role,status,google_subject
-         FROM users
-        WHERE id=ANY($1::uuid[])
-        ORDER BY id
-        FOR UPDATE`,
-      [lockIds],
-    );
-    const actor = lockedUsers.find((row) => String(row.id) === actorKey);
-    const target = lockedUsers.find((row) => String(row.id) === targetId);
+    let authorization;
+    try {
+      authorization = await lockAuthorizedAdminActor(client,{
+        actorId,
+        targetUserIds:[targetId],
+        sessionJti,
+        verificationMinutes,
+        requiredScope:'WRITE',
+      });
+    } catch (error) {
+      if (['ADMIN_REQUIRED','PRIMARY_ADMIN_IDENTITY_REQUIRED'].includes(error?.code)) {
+        const denied = new Error('Only the verified primary administrator can grant administrator access');
+        denied.code = 'PRIMARY_ADMIN_ONLY';
+        denied.status = 403;
+        throw denied;
+      }
+      throw error;
+    }
+    const actor = authorization.actor;
+    const target = targetId === String(actor.id)
+      ? actor
+      : authorization.targets.get(targetId);
 
     if (
-      !actor ||
-      actor.role !== 'ADMIN' ||
-      actor.status !== 'ACTIVE' ||
       String(actor.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com' ||
       !String(actor.google_subject || '').trim()
     ) {
