@@ -1,6 +1,6 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeTempEnv, startApiServer, register, closeApi } from './support/hope-test-harness.mjs';
+import { makeTempEnv, startApiServer, register, unlockAdminPanel, closeApi } from './support/hope-test-harness.mjs';
 
 const tmp = makeTempEnv('hope-authz-bola-v18-');
 const api = await startApiServer();
@@ -47,6 +47,7 @@ test('application lifecycle endpoint is scoped to the route job, not only applic
     method: 'POST', body: JSON.stringify({ email: 'bola-owner-v18@example.com', password: 'pass123456789' }),
   });
   assert.equal(login.status, 200);
+  await unlockAdminPanel(api.json, login.body.data);
 
   const forward = await api.json(`/admin/applications/${applicationId}/select`, {
     method: 'POST', headers: auth(login.body.data.accessToken),

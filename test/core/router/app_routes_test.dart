@@ -57,6 +57,10 @@ class _FakeJobDetailRepository implements JobDetailRepository {
     required String reason,
     String details = '',
   }) async {}
+
+  @override
+  Future<Map<String, dynamic>> openDispute(String jobId) async =>
+      const {'dispute': {'id': 'd1', 'status': 'OPEN'}, 'payment': {'status': 'HELD'}};
 }
 
 // The provider must sit ABOVE the MaterialApp: a route pushed with

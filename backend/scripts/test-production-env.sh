@@ -21,5 +21,6 @@ export STORAGE_BACKEND='s3'
 export RESET_TOKEN_DELIVERY_MODE='webhook'
 export RESET_TOKEN_DELIVERY_URL='https://example.invalid/reset'
 export RESET_TOKEN_DELIVERY_SECRET='ci-reset-delivery-secret-012345678901234567890123456789'
+export ADMIN_PANEL_USERNAME='hope-admin'
 
 exec sh scripts/validate-production-env.sh

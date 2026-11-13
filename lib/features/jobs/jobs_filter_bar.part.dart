@@ -251,6 +251,10 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
       children: [
         PremiumIconButton(
           key: const ValueKey('hope-opportunity-refinement-launcher'),
+          // Leave 2dp of headroom so transformed semantic bounds remain above
+          // the strict 48dp accessibility floor at fractional viewport offsets.
+          targetSize: HopeV2Touch.minimum + 2,
+          semanticsIdentifier: 'hope-opportunity-refinement-launcher',
           icon: HopeV2Icons.filter,
           tooltip: label,
           selected: activeCount > 0,
@@ -281,7 +285,7 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 9,
+                    fontSize: 12,
                     height: 1,
                     fontWeight: FontWeight.w900,
                   ),
@@ -431,22 +435,54 @@ class _JobsFilterHeader extends StatelessWidget {
             ),
           );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (compact) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: searchField),
-              const SizedBox(width: 7),
-              resultLabel,
-              const SizedBox(width: 6),
-              refinement,
-            ],
+    Widget enlargedKindChip(String value, String label) {
+      final colors = Theme.of(context).colorScheme;
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8),
+        child: ChoiceChip(
+          label: Text(label, softWrap: false),
+          selected: kind == value,
+          showCheckmark: false,
+          onSelected: (_) => onKindChanged(value),
+          selectedColor: colors.secondaryContainer,
+          backgroundColor: colors.surface,
+          side: BorderSide(
+            color: kind == value ? colors.secondary : colors.outlineVariant,
           ),
-          const SizedBox(height: 8),
-          SegmentedButton<String>(
+          labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: kind == value
+                    ? colors.onSecondaryContainer
+                    : colors.onSurface,
+                fontWeight: FontWeight.w800,
+              ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+          materialTapTargetSize: MaterialTapTargetSize.padded,
+          visualDensity: VisualDensity.standard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(HopeV2Radii.pill),
+          ),
+        ),
+      );
+    }
+
+    final Widget kindFilters = enlargedText
+        ? SizedBox(
+            height: 56,
+            child: SingleChildScrollView(
+              key: const ValueKey('hope-explore-kind-filters'),
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  enlargedKindChip('ALL', copy.copy_all_ba7d5b6),
+                  enlargedKindChip('JOB', copy.copy_jobs_ebf9a80),
+                  enlargedKindChip('MISSION', copy.copy_missions_a833d13),
+                ],
+              ),
+            ),
+          )
+        : SegmentedButton<String>(
             key: const ValueKey('hope-explore-kind-filters'),
             segments: [
               ButtonSegment<String>(
@@ -468,15 +504,30 @@ class _JobsFilterHeader extends StatelessWidget {
             onSelectionChanged: (selected) {
               if (selected.isNotEmpty) onKindChanged(selected.first);
             },
-            style: ButtonStyle(
-              minimumSize: WidgetStatePropertyAll(
-                Size(0, enlargedText ? 56 : 48),
-              ),
-              padding: const WidgetStatePropertyAll(
+            style: const ButtonStyle(
+              minimumSize: WidgetStatePropertyAll(Size(0, 48)),
+              padding: WidgetStatePropertyAll(
                 EdgeInsets.symmetric(horizontal: 7),
               ),
             ),
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (compact) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: 7),
+              resultLabel,
+              const SizedBox(width: 6),
+              refinement,
+            ],
           ),
+          const SizedBox(height: 8),
+          kindFilters,
         ] else
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,

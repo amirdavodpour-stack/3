@@ -8,6 +8,8 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-auth-'));
 if (!process.env.DATABASE_URL) process.env.DATA_FILE = path.join(tmp, 'hope.json');
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
+process.env.AUTH_RATE_LIMIT_MAX = '1000';
+process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
 const server = createServer();
@@ -18,23 +20,71 @@ const json = (url, options = {}) => fetch(base + url, {
   headers: {'Content-Type': 'application/json', ...(options.headers || {})},
 }).then(async (r) => ({status: r.status, body: await r.json()}));
 
-test('register creates a durable session and login works afterwards', async () => {
+test('password registration remains pending until email verification issues the first session', async () => {
   const registration = await json('/auth/register', {
     method: 'POST',
     body: JSON.stringify({email: 'auth@example.com', password: 'pass123456789', displayName: 'Auth User'}),
   });
-  assert.equal(registration.status, 201);
-  assert.equal(registration.body.data.user.email, 'auth@example.com');
-  assert.ok(registration.body.data.accessToken);
-  assert.ok(registration.body.data.refreshToken);
-  assert.equal(db.collection.users.some((u) => u.email === 'auth@example.com'), true);
+  assert.equal(registration.status, 202);
+  assert.equal(registration.body.data.verificationRequired, true);
+  assert.equal(registration.body.data.accessToken, undefined);
+  const pending = db.collection.users.find((u) => u.email === 'auth@example.com');
+  const pendingToken = db.collection.emailVerificationTokens.find((token) => token.userId === pending.id);
+  assert.ok(pendingToken);
+  assert.notEqual(pendingToken.tokenHash, registration.body.data.verificationCode);
+  assert.equal(pending.status, 'PENDING_EMAIL_VERIFICATION');
+
+  const pendingLogin = await json('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({email: 'auth@example.com', password: 'pass123456789'}),
+  });
+  assert.equal(pendingLogin.status, 401);
+
+  const invalidCode = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: 'unknown-verification-code'}),
+  });
+  assert.equal(invalidCode.status, 400);
+  assert.equal(invalidCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
+
+  const resend = await json('/auth/email/verification/resend', {
+    method: 'POST',
+    body: JSON.stringify({email: 'auth@example.com'}),
+  });
+  assert.equal(resend.status, 202);
+  assert.equal(resend.body.data.verificationRequired, undefined);
+  assert.ok(resend.body.data.verificationCode);
+  assert.notEqual(resend.body.data.verificationCode, registration.body.data.verificationCode);
+
+  const staleCode = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: registration.body.data.verificationCode}),
+  });
+  assert.equal(staleCode.status, 400);
+  assert.equal(staleCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
+
+  const verified = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: resend.body.data.verificationCode}),
+  });
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.data.emailVerified, true);
+  assert.ok(verified.body.data.accessToken);
+  assert.ok(verified.body.data.refreshToken);
+
+  const replayedCode = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: resend.body.data.verificationCode}),
+  });
+  assert.equal(replayedCode.status, 400);
+  assert.equal(replayedCode.body.error.code, 'EMAIL_VERIFICATION_INVALID');
 
   const login = await json('/auth/login', {
     method: 'POST',
     body: JSON.stringify({email: 'auth@example.com', password: 'pass123456789'}),
   });
   assert.equal(login.status, 200);
-  assert.equal(login.body.data.user.id, registration.body.data.user.id);
+  assert.equal(login.body.data.user.id, verified.body.data.user.id);
 });
 
 test('duplicate email is rejected without a second account', async () => {
@@ -45,6 +95,13 @@ test('duplicate email is rejected without a second account', async () => {
   assert.equal(duplicate.status, 409);
   assert.equal(duplicate.body.error.code, 'EMAIL_IN_USE');
   assert.equal(db.collection.users.filter((u) => u.email === 'auth@example.com').length, 1);
+
+  const unknownResend = await json('/auth/email/verification/resend', {
+    method: 'POST',
+    body: JSON.stringify({email: 'unknown@example.com'}),
+  });
+  assert.equal(unknownResend.status, 202);
+  assert.equal(unknownResend.body.data.verificationCode, undefined);
 });
 
 
@@ -56,14 +113,16 @@ test('public job responses do not expose account email addresses', async () => {
     method: 'POST',
     body: JSON.stringify({email: 'privacy@example.com', password: 'pass123456789', displayName: 'Privacy Owner'}),
   });
-  assert.equal(owner.status, 201);
+  assert.equal(owner.status, 202);
+  const ownerVerification = await json('/auth/email/verify', {method: 'POST', body: JSON.stringify({code: owner.body.data.verificationCode})});
+  assert.equal(ownerVerification.status, 200);
   const created = await json('/jobs', {
     method: 'POST',
-    headers: {Authorization: `Bearer ${owner.body.data.accessToken}`},
+    headers: {Authorization: `Bearer ${ownerVerification.body.data.accessToken}`},
     body: JSON.stringify({title:'Public job',description:'Public',categoryId,jobType:'FIXED',budgetType:'FIXED',budgetMin:10,budgetMax:20,duration:1,acceptanceCriteria:'done'}),
   });
   assert.equal(created.status, 201);
-  const published = await json(`/jobs/${created.body.data.id}/publish`, {method: 'POST', headers: {Authorization: `Bearer ${owner.body.data.accessToken}`}});
+  const published = await json(`/jobs/${created.body.data.id}/publish`, {method: 'POST', headers: {Authorization: `Bearer ${ownerVerification.body.data.accessToken}`}});
   assert.equal(published.status, 200);
   const listing = await json('/jobs');
   const item = listing.body.data.find((j) => j.id === created.body.data.id);
@@ -76,7 +135,9 @@ test('inactive accounts cannot create a login session', async () => {
     method: 'POST',
     body: JSON.stringify({email: 'inactive@example.com', password: 'pass123456789', displayName: 'Inactive'}),
   });
-  assert.equal(registration.status, 201);
+  assert.equal(registration.status, 202);
+  const verified = await json('/auth/email/verify', {method: 'POST', body: JSON.stringify({code: registration.body.data.verificationCode})});
+  assert.equal(verified.status, 200);
   const user = db.collection.users.find((u) => u.email === 'inactive@example.com');
   user.status = 'DISABLED';
   const login = await json('/auth/login', {

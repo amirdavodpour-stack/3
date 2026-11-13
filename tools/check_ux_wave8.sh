@@ -6,7 +6,7 @@ required=(
   'lib/core/ui/components.dart:class SkeletonBox'
   'lib/core/ui/components.dart:HapticFeedback.lightImpact()'
   'lib/features/home/home_widgets.part.dart:HopeResponsive('
-  'lib/features/jobs/jobs_widgets.part.dart:OpportunitySkeletonCard()'
+  'lib/features/jobs/jobs_widgets.part.dart:OpportunitySkeletonCard('
 )
 for item in "${required[@]}"; do
   file=${item%%:*}

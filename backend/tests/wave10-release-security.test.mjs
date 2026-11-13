@@ -60,12 +60,10 @@ test('production release requires explicit RELEASE confirmation and staging run-
 test('staging PASS is emitted only after Android runtime certification', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/staging-certification.yml', import.meta.url), 'utf8');
   assert.ok(workflow.indexOf('name: Android emulator certification') < workflow.indexOf('name: Emit certification status'));
-  assert.match(workflow, /name: Android quality gates/);
-  assert.match(workflow, /bash tools\/build_apk_debug\.sh/);
-  const helper = fs.readFileSync(new URL('../../tools/build_apk_debug.sh', import.meta.url), 'utf8');
-  assert.match(helper, /flutter analyze/);
-  assert.match(helper, /flutter test --no-pub/);
-  assert.match(helper, /flutter build apk --debug/);
+  const emulatorGate = workflow.slice(workflow.indexOf('name: Android emulator certification'), workflow.indexOf('name: Runtime gate - device certification'));
+  assert.match(emulatorGate, /uses: reactivecircus\/android-emulator-runner@/);
+  assert.match(emulatorGate, /flutter test --no-pub integration_test\/runtime\/app_smoke_test\.dart/);
+  assert.match(workflow, /steps\.emulator_certification\.outcome == 'success'/);
 });
 
 test('staging certification PASS is fail-closed on provider integration and DR restore', () => {

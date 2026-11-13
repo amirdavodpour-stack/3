@@ -22,6 +22,9 @@ test('financial insights produce balance, cash-flow, source and reservation seri
   assert.equal(result.summary.totalInflow, '1500000');
   assert.equal(result.summary.totalOutflow, '200000');
   assert.equal(result.summary.totalReserved, '200000');
+  assert.equal(result.summary.netCashFlow, '1300000');
+  assert.equal(result.monthlyCashFlow.at(-1).net, '500000',
+    'holds remain separate from cash outflow and net cash flow');
   assert.equal(result.monthlyCashFlow.at(-1).inflow, '500000');
   assert.equal(result.monthlyCashFlow.at(-1).reserved, '200000');
   assert.ok(result.balanceTrend.some((point) => point.balance === '800000'));

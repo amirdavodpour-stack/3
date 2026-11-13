@@ -17,7 +17,14 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
       const user = await getUserById(payload.sub);
       if (!user || user.status !== 'ACTIVE') throw new Error('User not active');
       if (Number(payload.sv || 0) !== Number(user.sessionVersion || 0)) throw new Error('Session revoked');
-      return user;
+      const authenticatedUser = { ...user };
+      Object.defineProperty(authenticatedUser, 'sessionJti', {
+        value: payload.jti,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+      });
+      return authenticatedUser;
     } catch {
       throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required');
     }
@@ -44,11 +51,14 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
     };
   }
 
-  async function deliverPasswordReset({ user, token }) {
+  async function deliverAuthCode({ user, code, type, expiresInSeconds }) {
     const mode = config.resetDeliveryMode;
     if (mode === 'console') {
-      // Test/development delivery must never put bearer-equivalent reset tokens into logs.
-      logEvent({ level: 'info', action: 'PASSWORD_RESET_DELIVERY', userId: user.id, delivery: 'console' });
+      if (type === 'password_reset') {
+        logEvent({ level: 'info', action: 'PASSWORD_RESET_DELIVERY', userId: user.id, delivery: 'console' });
+      } else {
+        logEvent({ level: 'info', action: 'EMAIL_VERIFICATION_DELIVERY', userId: user.id, delivery: 'console' });
+      }
       return;
     }
     if (mode === 'webhook') {
@@ -58,7 +68,7 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
       try {
         const eventId = crypto.randomUUID();
         const timestamp = Math.floor(Date.now() / 1000);
-        const payload = JSON.stringify({ type: 'password_reset', userId: user.id, email: user.email, token, expiresInSeconds: config.resetTokenTtlSeconds, eventId, timestamp });
+        const payload = JSON.stringify({ type, userId: user.id, email: user.email, code, expiresInSeconds, eventId, timestamp });
         const signature = `sha256=${crypto.createHmac('sha256', config.resetDeliverySecret).update(`${timestamp}.${eventId}.${payload}`).digest('hex')}`;
         const response = await fetch(config.resetDeliveryUrl, {
           method: 'POST',
@@ -66,14 +76,28 @@ export function createSessionService({ config, repo, logEvent, now, legacy }) {
           body: payload,
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`Reset delivery returned HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`Auth code delivery returned HTTP ${response.status}`);
       } finally {
         clearTimeout(timeout);
       }
       return;
     }
-    throw new Error('Unsupported reset delivery mode');
+    throw new Error('Unsupported auth-code delivery mode');
   }
 
-  return { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset };
+  async function deliverPasswordReset({ user, token }) {
+    return deliverAuthCode({
+      user, code: token, type: 'password_reset',
+      expiresInSeconds: config.resetTokenTtlSeconds,
+    });
+  }
+
+  async function deliverEmailVerification({ user, code }) {
+    return deliverAuthCode({
+      user, code, type: 'email_verification',
+      expiresInSeconds: config.emailVerificationTokenTtlSeconds,
+    });
+  }
+
+  return { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset, deliverEmailVerification };
 }

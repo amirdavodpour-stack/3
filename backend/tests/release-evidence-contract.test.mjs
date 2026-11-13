@@ -26,17 +26,24 @@ test('release evidence schema is deterministic and non-secret', () => {
 
 test('production release rejects staging evidence from a different commit', () => {
   const production = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
+  assert.match(production, /needs\.staging-certification\.outputs\.certification_status == 'PASS' && needs\.staging-certification\.outputs\.certification_sha == github\.sha/);
   assert.match(production, /certification_sha/);
+  assert.match(production, /CERT_SHA:\s*\$\{\{\s*needs\.staging-certification\.outputs\.certification_sha\s*\}\}/);
+  assert.match(production, /RELEASE_SHA:\s*\$\{\{\s*github\.sha\s*\}\}/);
   assert.match(production, /Certified staging commit does not match release commit/);
-  assert.match(production, /CERT_SHA:-.*GITHUB_SHA/);
+  assert.match(production, /\[\[\s*-n\s*"\$CERT_SHA"\s*&&\s*"\$CERT_SHA"\s*==\s*"\$RELEASE_SHA"\s*\]\]/);
 });
 
 test('staging owns DR evidence and production consumes an explicit certification output', () => {
   const staging = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
   const production = fs.readFileSync(path.join(root, '.github/workflows/production-release.yml'), 'utf8');
-  assert.match(staging, /DRILL_WORK_DIR:/);
+  assert.match(staging, /DRILL_DATABASE_URL:/);
   assert.match(staging, /DRILL_EVIDENCE_FILE:/);
-  assert.match(staging, /test -s \"\$DRILL_EVIDENCE_FILE\"/);
+  assert.ok(staging.includes('DRILL_EVIDENCE_FILE: ${{ runner.temp }}/hope-dr-restore-evidence.txt'));
+  const drill = fs.readFileSync(path.join(root, 'backend/scripts/dr-restore-drill.sh'), 'utf8');
+  assert.ok(drill.includes('EVIDENCE="${DRILL_EVIDENCE_FILE:-'));
+  assert.ok(drill.includes('cat > "$EVIDENCE"'));
+  assert.match(staging, /dr-restore-drill\.sh/);
   assert.match(staging, /Upload staging certification evidence/);
   assert.match(staging, /certification_status:/);
   assert.match(production, /needs: staging-certification/);

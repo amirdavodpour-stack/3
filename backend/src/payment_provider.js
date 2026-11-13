@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
+import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 
 function assertHttps(url, label) {
   try {
@@ -109,9 +110,15 @@ export function createPaymentProvider(name = config.paymentProvider) {
   }
 
   if (name === 'internal') {
+    const assertPayoutEnabled = () => {
+      if (!isInternalWalletPayoutEnabled({ paymentProvider: name })) {
+        throw Object.assign(new Error('PAYOUT_PROVIDER_NOT_ENABLED'), { code:'PAYOUT_PROVIDER_NOT_ENABLED' });
+      }
+    };
     return {
       name,
       async getPayoutStatus({ payoutId, amount, currency = config.paymentCurrency, idempotencyKey }) {
+        assertPayoutEnabled();
         const outcome = String(process.env.INTERNAL_PROVIDER_PAYOUT_OUTCOME || 'SUCCEEDED').trim().toUpperCase();
         if (!new Set(['SUCCEEDED', 'FAILED', 'UNKNOWN']).has(outcome)) throw new Error('INVALID_INTERNAL_PROVIDER_PAYOUT_OUTCOME');
         const key = String(idempotencyKey || payoutId);
@@ -121,6 +128,7 @@ export function createPaymentProvider(name = config.paymentProvider) {
         return { provider: name, providerRef: `INT-PAY-${digest}`, status: 'SUCCEEDED', amount, currency, idempotent: Boolean(idempotencyKey) };
       },
       async createPayout({ payoutId, amount, currency = config.paymentCurrency, idempotencyKey }) {
+        assertPayoutEnabled();
         const outcome = String(process.env.INTERNAL_PROVIDER_PAYOUT_OUTCOME || 'SUCCEEDED').trim().toUpperCase();
         if (!new Set(['SUCCEEDED', 'FAILED', 'UNKNOWN']).has(outcome)) throw new Error('INVALID_INTERNAL_PROVIDER_PAYOUT_OUTCOME');
         const key = String(idempotencyKey || payoutId);

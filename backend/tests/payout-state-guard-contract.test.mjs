@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const migration = fs.readFileSync(new URL('../src/db/migrations/012_payout_state_guards.js', import.meta.url), 'utf8');
 const payouts = fs.readFileSync(new URL('../src/repository/payouts.js', import.meta.url), 'utf8');
+const outboxHandlers = fs.readFileSync(new URL('../src/outbox_handlers.js', import.meta.url), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('payout database guard covers every lifecycle transition used by the repository', () => {
@@ -26,15 +27,38 @@ test('migration checker includes payout state guard migration', () => {
 });
 
 
-test('unknown payout marks the financial operation referenced by the payout hold', () => {
+test('unknown payout resolves its financial operation through the active reservation hold', () => {
+  const markUnknown = payouts
+    .split('export async function markPayoutUnknown')[1]
+    ?.split('export async function resolvePayoutUnknown')[0] || '';
+
   assert.match(
-    payouts,
-    /UPDATE financial_operations SET status='UNKNOWN',completed_at=NULL WHERE id=\$1\`, \[payout\.financial_operation_id\]\);/,
+    markUnknown,
+    /SELECT \* FROM wallet_holds[\s\S]*?reference_id=\$1[\s\S]*?hold_type='PAYOUT_RESERVATION'[\s\S]*?status='ACTIVE'[\s\S]*?FOR UPDATE/,
   );
-  assert.equal(
-    payouts.includes(
-      "WHERE id=(SELECT id FROM wallet_holds WHERE reference_id=$1 AND hold_type='PAYOUT_RESERVATION' LIMIT 1)",
-    ),
-    false,
-  )
+  assert.match(markUnknown, /PAYOUT_RESERVATION_NOT_FOUND/);
+  assert.match(markUnknown, /event\.payload\?\.operationId/);
+  assert.match(markUnknown, /PAYOUT_OPERATION_MISMATCH/);
+  const operationUpdate = markUnknown.slice(markUnknown.indexOf('UPDATE financial_operations'));
+  assert.ok(operationUpdate.includes("status='UNKNOWN'"));
+  assert.ok(operationUpdate.includes('completed_at=NULL'));
+  assert.ok(operationUpdate.includes("WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')"));
+  assert.ok(operationUpdate.includes('RETURNING id'));
+  assert.ok(markUnknown.includes('operationId = hold.financial_operation_id'));
+  assert.ok(operationUpdate.includes('[operationId]'));
+  assert.ok(markUnknown.includes('PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'));
+  assert.ok(markUnknown.includes('requiresReconciliation: Boolean(reconciliationReason)'));
+  assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);
 });
+
+test('ambiguous payout provider outcomes never enter generic terminal failure handling', () => {
+  const payoutUnknownBranch = outboxHandlers
+    .split("if (result.status === 'UNKNOWN')")[1]
+    ?.split("if (result.status !== 'SUCCEEDED'")[0] || '';
+
+  assert.ok(payoutUnknownBranch.includes('OUTBOX_PAYOUT_UNKNOWN_PERSISTENCE_FAILED'));
+  assert.ok(payoutUnknownBranch.includes('OUTBOX_PAYOUT_UNKNOWN_REQUIRES_RECONCILIATION'));
+  assert.ok(payoutUnknownBranch.includes('return { processed:false, unknown:true, persistencePending:true }'));
+  assert.ok(!payoutUnknownBranch.includes('return failOutboxEvent('));
+});
+

@@ -26,7 +26,7 @@ test('auth UI depends on AuthController/Repository, not ApiClient', () => {
 test('profile UI is typed and repository-backed', () => {
   assert.match(profilePage, /ProfileRepository/);
   assert.match(profilePage, /Future<HopeProviderProfile>/);
-  assert.match(profilePage, /Future<List<HopeApplication>>/);
+  assert.match(profileController, /Future<List<HopeApplication>>/);
   assert.doesNotMatch(profilePage, /ApiClient/);
   assert.match(profileRepo, /class HopeProviderProfile/);
 });

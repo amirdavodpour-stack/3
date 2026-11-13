@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/notifications/notification.dart';
@@ -351,6 +352,51 @@ void main() {
     expect(find.text('Fresh notification'), findsOneWidget);
     expect(find.text('عنوان اعلان'), findsNothing);
   });
+
+  testWidgets(
+    'read actionable notification cards expose their action as a semantic button',
+    (tester) async {
+      final repo = _Repo()
+        ..items = [
+          const HopeNotification(
+            id: 'read-action',
+            type: 'JOB_APPLICATION_RECEIVED',
+            title: 'به‌روزرسانی درخواست',
+            body: 'یک درخواست جدید برای بررسی وجود دارد.',
+            createdAt: '2026-10-15T10:30:00Z',
+            readAt: '2026-10-15T11:00:00Z',
+            data: {'jobId': 'job-42'},
+          ),
+        ];
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(_app(repo));
+        await tester.pumpAndSettle();
+
+        final card = find.byKey(
+          const ValueKey('notification-card-read-action'),
+        );
+        expect(card, findsOneWidget);
+
+        final actionableSemantics = find.bySemanticsLabel(
+          RegExp('به‌روزرسانی درخواست.*مشاهده پروژه'),
+        );
+        expect(
+          actionableSemantics,
+          findsOneWidget,
+          reason: 'A read notification with a valid route must expose its title and action to screen readers.',
+        );
+        final semanticData = tester.getSemantics(actionableSemantics).getSemanticsData();
+        expect(semanticData.label, contains('به‌روزرسانی درخواست'));
+        expect(semanticData.label, contains('مشاهده پروژه'));
+        expect(semanticData.hasFlag(SemanticsFlag.isButton), isTrue);
+        expect(semanticData.hasAction(SemanticsAction.tap), isTrue);
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets('notifications page renders unread content', (tester) async {
     final repo = _Repo();

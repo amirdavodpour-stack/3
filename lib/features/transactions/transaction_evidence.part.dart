@@ -44,7 +44,7 @@ class _EvidenceActionsState extends State<EvidenceActions> {
                       onDone: widget.onChanged,
                     ),
                   ),
-          icon: const Icon(Icons.upload_file_rounded),
+          icon: const Icon(HopeV2Icons.upload),
           label: Text(HopeCopy.of(context).copy_submit_evidence_bf38455),
         ),
       if (!canSubmitEvidence)
@@ -53,7 +53,7 @@ class _EvidenceActionsState extends State<EvidenceActions> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.info_outline_rounded),
+              const Icon(HopeV2Icons.info),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -148,7 +148,7 @@ class _EvidenceDialogState extends State<EvidenceDialog> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
           title: Row(children: [
-            const HopeIconTile(Icons.upload_file_rounded, size: 42),
+            const HopeIconTile(HopeV2Icons.upload, size: 42),
             const SizedBox(width: 10),
             Expanded(
                 child: Text(HopeCopy.of(context).copy_submit_evidence_bf38455))
@@ -157,7 +157,7 @@ class _EvidenceDialogState extends State<EvidenceDialog> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
             OutlinedButton.icon(
                 onPressed: busy ? null : pick,
-                icon: const Icon(Icons.attach_file),
+                icon: const Icon(HopeV2Icons.attachment),
                 label: Text(file == null
                     ? HopeCopy.of(context).copy_pick_file
                     : file!.path.split('/').last)),

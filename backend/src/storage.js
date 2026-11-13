@@ -51,6 +51,11 @@ class LocalStorage {
   async presignPut() { throw new Error('DIRECT_UPLOAD_UNSUPPORTED'); }
   async head() { throw new Error('DIRECT_UPLOAD_UNSUPPORTED'); }
   async validateObject() { throw new Error('DIRECT_UPLOAD_UNSUPPORTED'); }
+  async get({ key }) {
+    const root=path.resolve(config.storageDir), filename=path.resolve(root,key);
+    if(!filename.startsWith(root+path.sep))throw new Error('STORAGE_KEY_INVALID');
+    const stat=await fs.stat(filename); return {body:createReadStream(filename),size:stat.size};
+  }
   async delete({ key }) { try { await fs.unlink(path.join(config.storageDir, key)); } catch {} }
 }
 class S3Storage {
@@ -82,12 +87,31 @@ class S3Storage {
     return { key:file.key };
   }
   async presignPut({ key, contentType, expiresIn }) {
-    const command = new PutObjectCommand({ Bucket:this.bucket, Key:key, ContentType:contentType, ServerSideEncryption:s3ServerSideEncryption() });
-    return { key, url:await getSignedUrl(this.client, command, { expiresIn }), contentType, expiresIn, mode:'s3' };
+    // A presigned PUT is a reusable bearer URL until expiry. Signing this
+    // conditional header makes the first successful write final for this key.
+    const command = new PutObjectCommand({
+      Bucket:this.bucket,
+      Key:key,
+      ContentType:contentType,
+      IfNoneMatch:'*',
+      ServerSideEncryption:s3ServerSideEncryption(),
+    });
+    return {
+      key,
+      url:await getSignedUrl(this.client, command, { expiresIn }),
+      contentType,
+      expiresIn,
+      mode:'s3',
+      requiredHeaders:{'If-None-Match':'*'},
+    };
   }
   async head({ key }) {
     const result = await this.send(new HeadObjectCommand({ Bucket:this.bucket, Key:key }), 'HEAD');
     return { key, contentType:result.ContentType || '', size:Number(result.ContentLength || 0) };
+  }
+  async get({ key }) {
+    const result=await this.send(new GetObjectCommand({Bucket:this.bucket,Key:key}),'GET_OBJECT');
+    return {body:result.Body,contentType:result.ContentType||'',size:Number(result.ContentLength||0)};
   }
   async delete({ key }) {
     await this.send(new DeleteObjectCommand({ Bucket:this.bucket, Key:key }), 'DELETE');
@@ -101,7 +125,10 @@ class S3Storage {
       (contentType==='image/png' && content.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) ||
       (contentType==='image/jpeg' && content.subarray(0,3).equals(Buffer.from([0xff,0xd8,0xff]))) ||
       (contentType==='image/webp' && content.subarray(0,4).toString()==='RIFF' && content.subarray(8,12).toString()==='WEBP') ||
-      (contentType==='text/plain' && !content.includes(0));
+      (contentType==='text/plain' && !content.includes(0)) ||
+      (contentType==='audio/mp4' && content.length>=12 && content.subarray(4,8).toString()==='ftyp') ||
+      (contentType==='audio/mpeg' && (content.subarray(0,3).toString()==='ID3' || (content.length>=2 && content[0]===0xff && (content[1]&0xe0)===0xe0))) ||
+      (contentType==='audio/wav' && content.subarray(0,4).toString()==='RIFF' && content.subarray(8,12).toString()==='WAVE');
     if (!valid) { const error=new Error('INVALID_FILE_SIGNATURE'); error.code='INVALID_FILE_SIGNATURE'; throw error; }
     return { valid:true };
   }

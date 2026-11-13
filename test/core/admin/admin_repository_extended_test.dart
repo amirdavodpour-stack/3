@@ -66,12 +66,14 @@ void main() {
     await repository.moderateJob('j1', 'APPROVED');
   });
 
-  test('setUserStatus sends the requested user state', () async {
+  test('setUserStatus sends reason and bounded review deadline', () async {
     server.handlers['/admin/users/u1/status'] = (request, body) async {
       expect(body['status'], 'SUSPENDED');
+      expect(body['reason'], 'Reasoned temporary restriction');
+      expect(body['reviewDueAt'], '2026-11-09T12:00:00.000Z');
       await respondJson(request, 200, {});
     };
-    await repository.setUserStatus('u1', 'SUSPENDED');
+    await repository.setUserStatus('u1', 'SUSPENDED', reason: 'Reasoned temporary restriction', reviewDueAt: DateTime.utc(2026, 11, 9, 12));
   });
 
   test('deleteJob uses DELETE and authentication', () async {

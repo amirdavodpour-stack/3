@@ -60,12 +60,6 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                   domain: HopeProductDomain.finance,
                   eyebrow: _t('مالی', 'FINANCE'),
                   title: _t('تحلیل مالی', 'Financial insights'),
-                  subtitle: shortViewport
-                      ? _t('بر پایه لجر داخلی تومان.', 'Internal TOMAN ledger.')
-                      : _t(
-                          'تصویر مالی شما بر پایه لجر داخلی تومان و فعالیت‌های ثبت‌شده در HOPE.',
-                          'A ledger-based view of your balance and recorded financial activity in HOPE.',
-                        ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -165,19 +159,13 @@ class _FinancialInsightsPageState extends State<FinancialInsightsPage> {
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
                               title: _t('روند موجودی', 'Balance trend'),
-                              subtitle: _t(
-                                'آخرین موجودی ثبت‌شده در لجر (تومان)',
-                                'Recorded closing balance from the ledger (TOMAN)',
-                              ),
+                              subtitle: _t('موجودی پایانی (تومان)', 'Closing balance (TOMAN)'),
                               child: _LineChart(points: data.balanceTrend),
                             ),
                             const SizedBox(height: HopeV2Spacing.md),
                             _ChartCard(
                               title: _t('منابع فعالیت مالی', 'Financial activity sources'),
-                              subtitle: _t(
-                                'بر اساس نوع مرجع تراکنش',
-                                'Grouped by transaction reference',
-                              ),
+                              subtitle: _t('تفکیک فعالیت‌ها', 'Activity categories'),
                               child: _SourceChart(data: data.bySource, t: _t),
                             ),
                           ],
@@ -251,11 +239,6 @@ class _SummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          SizedBox(height: compact ? 4 : 6),
-          Text(t(
-            compact ? 'لجر داخلی تومان؛ بدون تخمین.' : 'بر پایه لجر داخلی TOMAN و بدون تخمین‌های خارج از تراکنش‌ها.',
-            compact ? 'Internal TOMAN ledger only.' : 'Based on the internal TOMAN ledger only; no off-ledger estimates.',
-          )),
           SizedBox(height: compact ? 8 : 13),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -332,8 +315,8 @@ class _Metric extends StatelessWidget {
         children: [
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+            overflow: TextOverflow.visible,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? HopeV2Colors.darkMuted
@@ -344,9 +327,8 @@ class _Metric extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            maxLines: 2,
             softWrap: true,
-            overflow: TextOverflow.clip,
+            overflow: TextOverflow.visible,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w900,
                 ),
@@ -372,10 +354,10 @@ class _ChartCard extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium;
     final shortViewport = MediaQuery.sizeOf(context).height < 800;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final baseChartHeight =
-        shortViewport ? 122.0 : compact ? 156.0 : 172.0;
+    // The short viewport needs a little more room for the wrapped 12sp legend.
+    final baseChartHeight = shortViewport ? 150.0 : 172.0;
     final chartHeight =
-        (baseChartHeight + math.max(0.0, textScale - 1.0) * 112.0).toDouble();
+        (baseChartHeight + math.max(0.0, textScale - 1.0) * 160.0).toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -529,18 +511,134 @@ double _cashFlowAxisMaximum(num maximum) {
   return niceStep * magnitude * 4;
 }
 
-String _cashFlowAxisLabel(int value, String locale) {
+
+/// Formats visible balance-chart ticks independently from their exact semantic dates.
+/// Persian labels use Solar Hijri month names; the accessible chart summary keeps
+/// the original recorded ISO date and value unchanged.
+String formatBalanceTrendAxisLabel(String rawDate, String locale) {
+  final match = RegExp(r'^(\d{4})-(\d{2})(?:-(\d{2}))?$')
+      .firstMatch(rawDate.trim());
+  if (match == null) return rawDate;
+  final year = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final day = int.parse(match.group(3) ?? '1');
+  if (month < 1 || month > 12) return rawDate;
+  final date = DateTime(year, month, day);
+  if (date.year != year || date.month != month || date.day != day) {
+    return rawDate;
+  }
+  if (!locale.toLowerCase().startsWith('fa')) {
+    const gregorianMonths = <String>[
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return gregorianMonths[month - 1];
+  }
+  final solar = _gregorianToSolarHijri(year, month, day);
+  const solarMonths = <String>[
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند',
+  ];
+  return solarMonths[solar[1] - 1];
+}
+
+List<int> _gregorianToSolarHijri(int gy, int gm, int gd) {
+  const gregorianMonthDays = <int>[
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+  ];
+  final adjustedYear = gy - 1600;
+  final adjustedMonth = gm - 1;
+  final adjustedDay = gd - 1;
+  var gregorianDayNumber = 365 * adjustedYear +
+      ((adjustedYear + 3) ~/ 4) -
+      ((adjustedYear + 99) ~/ 100) +
+      ((adjustedYear + 399) ~/ 400);
+  for (var index = 0; index < adjustedMonth; index++) {
+    gregorianDayNumber += gregorianMonthDays[index];
+  }
+  final isLeapYear = gy % 4 == 0 && (gy % 100 != 0 || gy % 400 == 0);
+  if (adjustedMonth > 1 && isLeapYear) gregorianDayNumber++;
+  gregorianDayNumber += adjustedDay;
+
+  var jalaliDayNumber = gregorianDayNumber - 79;
+  final jalaliCycles = jalaliDayNumber ~/ 12053;
+  jalaliDayNumber %= 12053;
+  var jy = 979 + 33 * jalaliCycles + 4 * (jalaliDayNumber ~/ 1461);
+  jalaliDayNumber %= 1461;
+  if (jalaliDayNumber >= 366) {
+    jy += (jalaliDayNumber - 1) ~/ 365;
+    jalaliDayNumber = (jalaliDayNumber - 1) % 365;
+  }
+  final jm = jalaliDayNumber < 186
+      ? 1 + jalaliDayNumber ~/ 31
+      : 7 + (jalaliDayNumber - 186) ~/ 30;
+  final jd = jalaliDayNumber < 186
+      ? 1 + jalaliDayNumber % 31
+      : 1 + (jalaliDayNumber - 186) % 30;
+  return <int>[jy, jm, jd];
+}
+
+String _cashFlowAxisLabel(
+  int value,
+  String locale, {
+  num? scaleMaximum,
+}) {
   final fa = locale.toLowerCase().startsWith('fa');
-  if (value >= 1000000000) {
+  if (value == 0) return HopeDisplayFormatter.integer(value, locale: locale);
+  final magnitude = (scaleMaximum ?? value.abs()).abs();
+  if (magnitude >= 1000000000) {
     return '${_localizeAxisScale(value / 1000000000, locale)}${fa ? 'میلیارد' : 'B'}';
   }
-  if (value >= 1000000) {
+  if (magnitude >= 1000000) {
     return '${_localizeAxisScale(value / 1000000, locale)}${fa ? 'م' : 'M'}';
   }
-  if (value >= 1000) {
+  if (magnitude >= 1000) {
     return '${_localizeAxisScale(value / 1000, locale)}${fa ? 'هزار' : 'k'}';
   }
   return HopeDisplayFormatter.integer(value, locale: locale);
+}
+
+double _financialAxisLabelWidth(
+  BuildContext context,
+  Iterable<int> tickValues,
+  String locale, {
+  num? scaleMaximum,
+}) {
+  final values = tickValues.toList(growable: false);
+  final axisMagnitude = (scaleMaximum ??
+          values.fold<int>(
+            0,
+            (largest, value) =>
+                value.abs() > largest ? value.abs() : largest,
+          ))
+      .abs();
+  final style =
+      (Theme.of(context).textTheme.labelSmall ?? const TextStyle()).copyWith(
+    fontSize: 12,
+    height: 1,
+    fontWeight: FontWeight.w800,
+  );
+  final painter = TextPainter(
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    locale: Localizations.localeOf(context),
+    maxLines: 1,
+  );
+  var widestLabel = 0.0;
+  for (final value in values) {
+    painter.text = TextSpan(
+      text: _cashFlowAxisLabel(
+        value,
+        locale,
+        scaleMaximum: axisMagnitude,
+      ),
+      style: style,
+    );
+    painter.layout();
+    widestLabel = math.max(widestLabel, painter.width);
+  }
+  painter.dispose();
+  return math.max(70.0, widestLabel + 12.0).toDouble();
 }
 
 String _localizeAxisScale(double value, String locale) {
@@ -591,17 +689,17 @@ class _BarChart extends StatelessWidget {
           children: [
             _FinancialLegendItem(
               color: inflow,
-              icon: Icons.call_received_rounded,
+              icon: HopeV2Icons.transferIn,
               label: english ? 'Inflow' : 'ورودی',
             ),
             _FinancialLegendItem(
               color: outflow,
-              icon: Icons.call_made_rounded,
+              icon: HopeV2Icons.transferOut,
               label: english ? 'Outflow' : 'خروجی',
             ),
             _FinancialLegendItem(
               color: reserved,
-              icon: Icons.lock_outline_rounded,
+              icon: HopeV2Icons.secure,
               label: english ? 'Reserved' : 'رزرو شده',
             ),
           ],
@@ -630,16 +728,31 @@ class _BarChart extends StatelessWidget {
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    const axisWidth = 70.0;
                     final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final axisTicks = textScale > 1.2 || shortViewport
+                        ? const [4, 2, 0]
+                        : const [4, 3, 2, 1, 0];
+                    final axisWidth = _financialAxisLabelWidth(
+                      context,
+                      axisTicks.map(
+                        (tick) => (scaleMaximum * tick / 4).round(),
+                      ),
+                      locale,
+                      scaleMaximum: scaleMaximum,
+                    );
+                    const axisGap = 8.0;
                     final monthWidth = math.max(58.0, 58.0 * textScale);
+                    final chartViewportWidth = math.max(
+                      0.0,
+                      constraints.maxWidth - axisWidth - axisGap,
+                    ).toDouble();
                     final chartWidth = math.max(
-                      constraints.maxWidth - axisWidth,
+                      chartViewportWidth,
                       data.length * monthWidth,
                     ).toDouble();
                     final hasHorizontalOverflow =
-                        chartWidth > constraints.maxWidth - axisWidth;
-                    final scrollHintHeight = math.max(22.0, 18.0 * textScale).toDouble();
+                        chartWidth > chartViewportWidth;
+                    final scrollHintHeight = math.max(36.0, 44.0 * textScale).toDouble();
                     final chartViewportHeight = math.max(
                       1.0,
                       constraints.maxHeight -
@@ -649,10 +762,6 @@ class _BarChart extends StatelessWidget {
                       chartViewportHeight < 150 ? 20.0 : 24.0,
                       14.0 * textScale,
                     ).toDouble();
-                    final axisTicks = textScale > 1.2
-                        ? const [4, 2, 0]
-                        : const [4, 3, 2, 1, 0];
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -663,7 +772,7 @@ class _BarChart extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Icon(
-                                  Icons.swipe_rounded,
+                                  HopeV2Icons.roleSwitch,
                                   size: 16,
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -671,14 +780,15 @@ class _BarChart extends StatelessWidget {
                                 Flexible(
                                   child: Text(
                                     english
-                                        ? 'Swipe the chart sideways to view other months'
-                                        : 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                        ? 'Swipe the cash-flow chart sideways to view other months'
+                                        : 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
+                                    maxLines: null,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
                                     textAlign: TextAlign.end,
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: theme.colorScheme.onSurfaceVariant,
-                                      fontSize: 11,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
@@ -696,13 +806,15 @@ class _BarChart extends StatelessWidget {
                                     SizedBox(
                                       height: labelHeight + 3,
                                       child: Align(
-                                        alignment: AlignmentDirectional.centerStart,
+                                        key: const ValueKey('financial-cashflow-axis-unit-alignment'),
+                                        alignment: AlignmentDirectional.centerEnd,
                                         child: Text(
                                           english ? 'TOMAN' : 'تومان',
+                                          key: const ValueKey('financial-cashflow-axis-unit'),
                                           maxLines: 1,
                                           overflow: TextOverflow.clip,
                                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                fontSize: 9,
+                                                fontSize: 12,
                                                 fontWeight: FontWeight.w800,
                                                 color: theme.colorScheme.onSurfaceVariant,
                                               ),
@@ -722,13 +834,15 @@ class _BarChart extends StatelessWidget {
                                                 _cashFlowAxisLabel(
                                                   (scaleMaximum * tick / 4).round(),
                                                   locale,
+                                                  scaleMaximum: scaleMaximum,
                                                 ),
                                                 key: ValueKey('financial-cashflow-y-tick-$tick'),
                                                 maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                                softWrap: false,
+                                                overflow: TextOverflow.clip,
                                                 textAlign: TextAlign.end,
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                      fontSize: 10,
+                                                      fontSize: 12,
                                                       height: 1,
                                                       fontWeight: tick == 0 || tick == 4
                                                           ? FontWeight.w800
@@ -742,6 +856,10 @@ class _BarChart extends StatelessWidget {
                                     ),
                                   ],
                                 ),
+                              ),
+                              const SizedBox(
+                                key: ValueKey('financial-cashflow-axis-gutter'),
+                                width: axisGap,
                               ),
                               Expanded(
                                 child: SingleChildScrollView(
@@ -935,7 +1053,7 @@ class _LineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
+    final color = HopeV2ChartColors.matchSignal(context);
     final locale = Localizations.localeOf(context).languageCode;
     final english = locale.toLowerCase().startsWith('en');
     final recordedPoints = points
@@ -963,13 +1081,8 @@ class _LineChart extends StatelessWidget {
       builder: (context, constraints) {
         // Keep both axes and data derived from the same recorded point values.
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final labelHeight = math.max(
-          constraints.maxHeight < 150 ? 20.0 : 24.0,
-          14.0 * textScale,
-        ).toDouble();
         final pointWidth = math.max(64.0, 64.0 * textScale);
-        final axisWidth =
-            math.max(70.0, 70.0 * math.min(textScale, 1.4)).toDouble();
+        const axisGap = 8.0;
         final values = recordedPoints
             .map((point) => point.value!)
             .toList(growable: false);
@@ -997,93 +1110,168 @@ class _LineChart extends StatelessWidget {
           ((scaleMaximum + scaleMinimum) / 2).round(),
           scaleMinimum.round(),
         ];
+        final axisScaleMaximum =
+            math.max(scaleMaximum.abs(), scaleMinimum.abs());
+        final axisWidth = _financialAxisLabelWidth(
+          context,
+          axisValues,
+          locale,
+          scaleMaximum: axisScaleMaximum,
+        );
+        final chartViewportWidth = math.max(
+          0.0,
+          constraints.maxWidth - axisWidth - axisGap,
+        ).toDouble();
         final chartWidth = math.max(
-          math.max(0.0, constraints.maxWidth - axisWidth),
+          chartViewportWidth,
           points.length * pointWidth,
         ).toDouble();
+        final hasHorizontalOverflow = chartWidth > chartViewportWidth;
+        final scrollHintHeight = math.max(36.0, 44.0 * textScale).toDouble();
+        final chartViewportHeight = math.max(
+          1.0,
+          constraints.maxHeight -
+              (hasHorizontalOverflow ? scrollHintHeight : 0),
+        ).toDouble();
+        final labelHeight = math.max(
+          chartViewportHeight < 150 ? 20.0 : 24.0,
+          14.0 * textScale,
+        ).toDouble();
 
-        return Row(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: axisWidth,
-              height: constraints.maxHeight,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: labelHeight),
-                      child: Column(
-                        key: const ValueKey('financial-balance-y-axis'),
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final tick in axisValues)
-                            Text(
-                              _cashFlowAxisLabel(tick, locale),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    fontSize: 10,
-                                    height: 1,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+            if (hasHorizontalOverflow)
+              SizedBox(
+                key: const ValueKey('financial-balance-scroll-hint'),
+                height: scrollHintHeight,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(
+                      HopeV2Icons.roleSwitch,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        english
+                            ? 'Swipe the balance chart sideways to view other months'
+                            : 'برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید',
+                        maxLines: null,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.end,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color:
+                                  Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 12,
                             ),
-                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: axisWidth,
+                    height: chartViewportHeight,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: labelHeight),
+                            child: Column(
+                              key: const ValueKey('financial-balance-y-axis'),
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (final tick in axisValues)
+                                  Text(
+                                    _cashFlowAxisLabel(
+                                      tick,
+                                      locale,
+                                      scaleMaximum: axisScaleMaximum,
+                                    ),
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.clip,
+                                    textAlign: TextAlign.end,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: 12,
+                                          height: 1,
+                                          fontWeight: FontWeight.w700,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    key: ValueKey('financial-balance-axis-gutter'),
+                    width: axisGap,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: const ValueKey('financial-balance-chart-scroll'),
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: chartWidth,
+                        height: chartViewportHeight,
+                        child: Semantics(
+                          key: const ValueKey(
+                            'financial-balance-chart-semantics',
+                          ),
+                          container: true,
+                          label: (english
+                                  ? 'Balance trend; recorded closing balance in TOMAN. '
+                                  : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
+                              points.map((point) {
+                                final recordedValue = point.value;
+                                if (recordedValue == null) {
+                                  return english
+                                      ? '${point.date}: no closing balance recorded'
+                                      : '${point.date}: مانده پایانی ثبت نشده';
+                                }
+                                final value = HopeDisplayFormatter.money(
+                                  recordedValue.round(),
+                                  locale: locale,
+                                );
+                                return '${point.date}: $value';
+                              }).join('. '),
+                          child: CustomPaint(
+                            painter: _LineChartPainter(
+                              points,
+                              color,
+                              color.withValues(alpha: .12),
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                              Directionality.of(context),
+                              Localizations.localeOf(context).languageCode,
+                              textScale,
+                              scaleMinimum,
+                              scaleMaximum,
+                              labelHeight,
+                            ),
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                key: const ValueKey('financial-balance-chart-scroll'),
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: chartWidth,
-                  height: constraints.maxHeight,
-                  child: Semantics(
-                    key: const ValueKey('financial-balance-chart-semantics'),
-                    container: true,
-                    label: (english
-                            ? 'Balance trend; recorded closing balance in TOMAN. '
-                            : 'روند موجودی؛ مانده پایانی ثبت‌شده به تومان. ') +
-                        points.map((point) {
-                          final recordedValue = point.value;
-                          if (recordedValue == null) {
-                            return english
-                                ? '${point.date}: no closing balance recorded'
-                                : '${point.date}: مانده پایانی ثبت نشده';
-                          }
-                          final value = HopeDisplayFormatter.money(
-                            recordedValue.round(),
-                            locale: locale,
-                          );
-                          return '${point.date}: $value';
-                        }).join('. '),
-                    child: CustomPaint(
-                      painter: _LineChartPainter(
-                        points,
-                        color,
-                        color.withValues(alpha: .12),
-                        Directionality.of(context),
-                        textScale,
-                        scaleMinimum,
-                        scaleMaximum,
-                        labelHeight,
-                      ),
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],
@@ -1098,7 +1286,9 @@ class _LineChartPainter extends CustomPainter {
     this.points,
     this.color,
     this.fillColor,
+    this.labelColor,
     this.textDirection,
+    this.locale,
     this.textScale,
     this.scaleMinimum,
     this.scaleMaximum,
@@ -1108,7 +1298,9 @@ class _LineChartPainter extends CustomPainter {
   final List<HopeBalancePoint> points;
   final Color color;
   final Color fillColor;
+  final Color labelColor;
   final TextDirection textDirection;
+  final String locale;
   final double textScale;
   final double scaleMinimum;
   final double scaleMaximum;
@@ -1179,9 +1371,9 @@ class _LineChartPainter extends CustomPainter {
     for (var i = 0; i < points.length; i++) {
       final painter = TextPainter(
         text: TextSpan(
-          text: points[i].date,
+          text: formatBalanceTrendAxisLabel(points[i].date, locale),
           style: TextStyle(
-            color: color.withValues(alpha: .92),
+            color: labelColor,
             fontSize: (12.0 * textScale).toDouble(),
             height: 1.1,
           ),
@@ -1191,9 +1383,9 @@ class _LineChartPainter extends CustomPainter {
         maxLines: 1,
         ellipsis: '…',
       )..layout(maxWidth: labelWidth);
-      final pointX = points.length == 1
-          ? size.width / 2
-          : i * size.width / (points.length - 1);
+      // Labels occupy the center of each month slot rather than the
+      // extreme data-point coordinates, preventing edge glyph clipping.
+      final pointX = (i + .5) * size.width / points.length;
       final x = (pointX - painter.width / 2)
           .clamp(0.0, math.max(0.0, size.width - painter.width))
           .toDouble();
@@ -1206,7 +1398,9 @@ class _LineChartPainter extends CustomPainter {
       oldDelegate.points != points ||
       oldDelegate.color != color ||
       oldDelegate.fillColor != fillColor ||
+      oldDelegate.labelColor != labelColor ||
       oldDelegate.textDirection != textDirection ||
+      oldDelegate.locale != locale ||
       oldDelegate.textScale != textScale ||
       oldDelegate.scaleMinimum != scaleMinimum ||
       oldDelegate.scaleMaximum != scaleMaximum ||
@@ -1301,7 +1495,13 @@ class _SourceChart extends StatelessWidget {
                   const SizedBox(height: 5),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(value: ratio, minHeight: 8),
+                    child: LinearProgressIndicator(
+                      value: ratio,
+                      minHeight: 8,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        HopeV2ChartColors.matchSignal(context),
+                      ),
+                    ),
                   ),
                 ],
               ],

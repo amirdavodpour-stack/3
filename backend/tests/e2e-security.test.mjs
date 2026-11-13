@@ -70,6 +70,7 @@ test('non-owner is rejected from every ownership-guarded job action', async () =
 
   const acceptDelivery = await json(`/jobs/${job.id}/accept`, { method: 'POST', headers: { Authorization: `Bearer ${owner.accessToken}` } });
   assert.equal(acceptDelivery.status, 200);
+  assert.ok(db.collection.notifications.some((n) => n.userId === owner.user.id && n.type === 'MISSION_UPDATE' && n.data?.jobId === job.id && n.data?.action === 'SATISFACTION_REPORT'));
 
   // Attacker cannot release someone else's payment.
   const releaseAsAttacker = await json(`/payments/release/${job.id}`, { method: 'POST', headers: { Authorization: `Bearer ${attacker.accessToken}` } });

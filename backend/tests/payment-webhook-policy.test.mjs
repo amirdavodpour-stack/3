@@ -40,6 +40,14 @@ test('payment webhooks claim the canonical provider event before financial mutat
   assert.match(repo, /status\s*=\s*'PROCESSED',\s*processed_at\s*=\s*NOW\(\)/);
 });
 
+test('state-mismatched payment webhooks are ignored and incompatible transitions create reconciliation cases', () => {
+  const repo = fs.readFileSync(new URL('../src/repository/payment_webhooks.js', import.meta.url), 'utf8');
+  assert.match(repo, /status='IGNORED',processed_at=NOW\(\)/);
+  assert.match(repo, /alreadyAppliedWebhookState/);
+  assert.match(repo, /PAYMENT_WEBHOOK_STATE_MISMATCH/);
+  assert.match(repo, /reason:alreadyApplied \? 'ALREADY_APPLIED' : 'PAYMENT_STATE_MISMATCH'/);
+});
+
 
 test('refund webhooks require a provider reference', () => {
   const requireFields = (body, fields) => {

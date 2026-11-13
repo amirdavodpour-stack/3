@@ -9,6 +9,13 @@ import 'package:hope_mobile/features/admin/admin_operations_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:provider/provider.dart';
 
+class _LongMetricAdminOperations extends _FakeAdminOperations {
+  @override
+  Future<Map<String, dynamic>> getFinanceSummary() async => const {
+        'reserved_payout_total': '123456789012345678901234567890',
+      };
+}
+
 class _FakeAdminOperations implements AdminRepository {
   int resolveCalls = 0;
   final Completer<Map<String, dynamic>> resolveResult =
@@ -62,7 +69,7 @@ class _FakeAdminOperations implements AdminRepository {
   Future<void> moderateJob(String id, String status) async {}
 
   @override
-  Future<void> setUserStatus(String id, String status) async {}
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) async {}
 
   @override
   Future<void> deleteJob(String id) async {}
@@ -110,14 +117,57 @@ class _FakeAdminOperations implements AdminRepository {
         'primaryAdmin': true,
         'permissions': ['admin.resolve_payouts'],
       };
-  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override
+  Future<Map<String, dynamic>> getAdminMfaStatus() async => const {
+        'enabled': true,
+        'recoveryCodesRemaining': 10,
+      };
+  @override
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async => const {
+        'pending': true,
+        'secret': 'ABCDEFGHIJKLMNOPQRSTUV234567ABCD',
+        'otpauthUri': 'otpauth://totp/HOPEv2%3Aadmin%40example.test?secret=ABCDEFGHIJKLMNOPQRSTUV234567ABCD&issuer=HOPEv2',
+      };
+  @override
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async => const {
+        'enabled': true,
+        'recoveryCodes': [
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA5',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9',
+        ],
+      };
+  @override
+  Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async => const {'verified': true, 'scope': 'WRITE'};
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
   @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
   @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
-Widget _host(_FakeAdminOperations repository) => MaterialApp(
+class _DelayedPanelAccessAdminOperations extends _FakeAdminOperations {
+  final Completer<Map<String, dynamic>> panelAccess =
+      Completer<Map<String, dynamic>>();
+
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() => panelAccess.future;
+}
+
+Widget _host(_FakeAdminOperations repository, {double textScale = 1}) => MaterialApp(
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        );
+      },
       locale: const Locale('en'),
       home: Provider<AdminRepository>.value(
         value: repository,
@@ -126,6 +176,68 @@ Widget _host(_FakeAdminOperations repository) => MaterialApp(
     );
 
 void main() {
+
+  testWidgets(
+    'admin operations does not show false empty reports while initial access is pending',
+    (tester) async {
+      final repository = _DelayedPanelAccessAdminOperations();
+      await tester.pumpWidget(_host(repository));
+      // Access is intentionally held pending; do not pumpAndSettle while the
+      // expected loading indicator is animating.
+      await tester.pump();
+
+      await tester.tap(find.text('Trust & Safety'));
+      await tester.pump();
+
+      // Resolve the held access request after recording the visible interim state,
+      // so the pending future cannot leak beyond this test if the assertion fails.
+      final renderedFalseEmptyState =
+          find.text('No reports').evaluate().isNotEmpty;
+      repository.panelAccess.complete(const {
+        'verified': true,
+        'primaryAdmin': true,
+        'permissions': ['admin.resolve_payouts'],
+      });
+      await tester.pumpAndSettle();
+
+      expect(
+        renderedFalseEmptyState,
+        isFalse,
+        reason: 'An initial Future.value([]) is only a placeholder; no reports should not be claimed before the access-gated fetch starts.',
+      );
+      expect(find.text('Spam'), findsOneWidget);
+      expect(find.text('No reports'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'admin metric cards preserve long financial values at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _host(_LongMetricAdminOperations(), textScale: 1.5),
+      );
+      await tester.pumpAndSettle();
+
+      final value = find.text('123456789012345678901234567890');
+      expect(value, findsOneWidget);
+      final valueWidget = tester.widget<Text>(value);
+      expect(
+        valueWidget.maxLines,
+        isNull,
+        reason: 'Operational financial values must not be clipped to one line when system text is enlarged.',
+      );
+      expect(valueWidget.overflow, TextOverflow.visible);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('admin operations preserves vertical workspace on a phone viewport',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

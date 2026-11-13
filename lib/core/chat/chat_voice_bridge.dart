@@ -1,0 +1,51 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+
+/// Native Android recorder/player bridge without an additional package.
+class HopeChatVoiceBridge {
+  HopeChatVoiceBridge._();
+  static const MethodChannel _channel = MethodChannel('hope.chat/voice');
+  static final StreamController<String> _playbackCompletedController =
+      StreamController<String>.broadcast();
+  static bool _nativeEventHandlerInstalled = false;
+
+  /// Emits when Android's MediaPlayer reaches the end of the current voice note.
+  static Stream<String> get playbackCompleted {
+    _installNativeEventHandler();
+    return _playbackCompletedController.stream;
+  }
+
+  static void _installNativeEventHandler() {
+    if (_nativeEventHandlerInstalled) return;
+    _nativeEventHandlerInstalled = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'playbackCompleted') {
+        final path = call.arguments;
+        if (path is String && path.isNotEmpty) {
+          _playbackCompletedController.add(path);
+        }
+      }
+    });
+  }
+
+  static Future<String> startRecording() async {
+    final path = await _channel.invokeMethod<String>('startRecording');
+    if (path == null || path.isEmpty) throw PlatformException(code: 'VOICE_RECORDING_FAILED');
+    return path;
+  }
+
+  /// Cancels an outstanding microphone permission/recording-start request.
+  /// Safe to call when no request is pending.
+  static Future<void> cancelPendingRecording() =>
+      _channel.invokeMethod<void>('cancelPendingRecording');
+
+  static Future<String> stopRecording() async {
+    final path = await _channel.invokeMethod<String>('stopRecording');
+    if (path == null || path.isEmpty) throw PlatformException(code: 'VOICE_RECORDING_FAILED');
+    return path;
+  }
+
+  static Future<void> playFile(String path) => _channel.invokeMethod<void>('playFile', {'path': path});
+  static Future<void> stopPlayback() => _channel.invokeMethod<void>('stopPlayback');
+}
