@@ -109,13 +109,14 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
         throw error;
       }
       const why = String(reason).trim();
+      const currentTime = typeof now === 'function' ? new Date(now()) : new Date();
       const cases = db.collection.adminUserStatusReviewCases ||= [];
       let reviewCaseId = null;
       let due = null;
       if (status === 'SUSPENDED') {
         due = new Date(reviewDueAt);
-        const delta = due.getTime() - Date.now();
-        if (!Number.isFinite(due.getTime()) || delta < 60*60*1000 || delta > 7*24*60*60*1000) {
+        const delta = due.getTime() - currentTime.getTime();
+        if (!Number.isFinite(currentTime.getTime()) || !Number.isFinite(due.getTime()) || delta < 60*60*1000 || delta > 7*24*60*60*1000) {
           const error = new Error('INVALID_REVIEW_DEADLINE');
           error.code = 'INVALID_REVIEW_DEADLINE';
           error.status = 400;
@@ -123,7 +124,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
         }
         const review = {
           id: randomUUID(), userId: id, status: 'OPEN', reason: why,
-          createdBy: actorId, createdAt: new Date().toISOString(),
+          createdBy: actorId, createdAt: currentTime.toISOString(),
           reviewDueAt: due.toISOString(), resolvedBy: null,
           resolvedAt: null, resolutionReason: null,
         };
@@ -134,7 +135,7 @@ export function createAdminLegacyAdapter({ db, findUser, now }) {
         if (review) {
           review.status = 'RESOLVED';
           review.resolvedBy = actorId;
-          review.resolvedAt = new Date().toISOString();
+          review.resolvedAt = currentTime.toISOString();
           review.resolutionReason = why;
           reviewCaseId = review.id;
         }
