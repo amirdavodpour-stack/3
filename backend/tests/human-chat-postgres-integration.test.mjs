@@ -239,6 +239,8 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   });
   assert.equal(resumed.claimed,true);
   assert.equal(resumed.resumed,true);
+  assert.equal(resumed?.dispute?.resolutionReason,'first administrator decision',
+    'expired-lease takeover must retain the original reason for the same decision');
   assert.notEqual(resumed.token,winner.token,'expired claim must receive a new fencing token');
 
   const stale = await completeJobDisputeResolution(disputeId,{
@@ -5870,6 +5872,8 @@ test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold
     assert.equal(paymentRows[0]?.status,'HELD');
     const nextClaim=await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Work later completed',adminId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(nextClaim?.claimed,true,'the same held case must remain resolvable after new evidence arrives');
+    assert.equal(nextClaim?.dispute?.resolutionReason,'Work later completed',
+      'a new RELEASE decision must replace the previous HOLD reason');
     await pool.query(
       `UPDATE job_disputes SET status='ADMIN_REVIEW',resolution=NULL,resolution_reason='',resolved_by=NULL,
         resolution_lease_token=NULL,resolution_lease_until=NULL WHERE id=$1`,

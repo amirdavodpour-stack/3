@@ -1,0 +1,82 @@
+name: HOPEv2 Dispute Resolution Reason Integrity
+
+on:
+  push:
+    branches:
+      - fix/hopev2-dispute-resolution-reason-refresh-20261114
+    paths:
+      - ".github/workflows/hopev2-dispute-resolution-reason.yml"
+      - "backend/src/repository/disputes.js"
+      - "backend/tests/human-chat-postgres-integration.test.mjs"
+      - "backend/tools/run-chat-postgres-isolated.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-dispute-resolution-reason-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  node24:
+    name: Node 24 backend checks and fast regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run backend syntax checks
+        working-directory: backend
+        run: npm run check
+      - name: Run backend fast regressions
+        working-directory: backend
+        run: npm run test:fast
+
+  postgres17:
+    name: PostgreSQL 17 dispute and financial integration regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      REQUIRE_INTEGRATION: "1"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run disposable-database PostgreSQL integration suite
+        working-directory: backend
+        run: npm run test:chat-postgres:isolated
