@@ -156,7 +156,7 @@ export async function claimJobDisputeResolution(id, {
           SET status='RESOLVING',
               resolution=$2,
               -- A fresh decision replaces the prior completed HOLD reason; an expired claim resumes its existing reason.
-              resolution_reason=CASE WHEN status='RESOLVING' AND COALESCE(resolution_reason,'')<>'' THEN resolution_reason ELSE $3 END,
+              resolution_reason=CASE WHEN status='RESOLVING' THEN resolution_reason ELSE $3 END,
               resolved_by=$4,
               resolved_at=NULL,
               resolution_started_at=COALESCE(resolution_started_at,NOW()),
