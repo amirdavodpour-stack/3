@@ -22,5 +22,8 @@ export RESET_TOKEN_DELIVERY_MODE='webhook'
 export RESET_TOKEN_DELIVERY_URL='https://example.invalid/reset'
 export RESET_TOKEN_DELIVERY_SECRET='ci-reset-delivery-secret-012345678901234567890123456789'
 export ADMIN_PANEL_USERNAME='hope-admin'
+export GOOGLE_AUTH_ENABLED='true'
+export GOOGLE_OAUTH_CLIENT_ID='hope-ci-google-client.apps.googleusercontent.com'
+export ADMIN_MFA_ENCRYPTION_KEY='ci-admin-mfa-encryption-key-with-32-bytes'
 
 exec sh scripts/validate-production-env.sh

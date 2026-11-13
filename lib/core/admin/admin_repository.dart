@@ -92,6 +92,8 @@ abstract interface class AdminRepository {
   Future<Map<String, dynamic>> getAdminMfaStatus();
   Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken});
   Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code);
+  Future<Map<String, dynamic>> retrieveAdminMfaRecoveryCodes(String code);
+  Future<Map<String, dynamic>> acknowledgeAdminMfaRecoveryDelivery(String deliveryId, String name, String username, {String? password, String? idToken});
   Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'});
   Future<void> lockPanel();
   Future<List<Map<String, dynamic>>> listDisputes();
@@ -216,6 +218,20 @@ class ApiAdminRepository implements AdminRepository {
   @override
   Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async =>
       Map<String, dynamic>.from(await _api.request('POST', '/admin/access/mfa/confirm', auth: true, body: {'code': code.trim()}) as Map);
+
+  @override
+  Future<Map<String, dynamic>> retrieveAdminMfaRecoveryCodes(String code) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access/mfa/recovery-codes/retrieve', auth: true, body: {'code': code.trim()}) as Map);
+
+  @override
+  Future<Map<String, dynamic>> acknowledgeAdminMfaRecoveryDelivery(String deliveryId, String name, String username, {String? password, String? idToken}) async =>
+      Map<String, dynamic>.from(await _api.request('POST', '/admin/access/mfa/recovery-codes/ack', auth: true, body: {
+        'recoveryDeliveryId': deliveryId,
+        'name': name,
+        'username': username,
+        if (password != null) 'password': password,
+        if (idToken != null) 'idToken': idToken,
+      }) as Map);
 
   @override
   Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async =>

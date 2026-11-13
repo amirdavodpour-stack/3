@@ -2,13 +2,17 @@
 set -eu
 
 # Unconditionally required in production.
-required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS'
+required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS GOOGLE_AUTH_ENABLED GOOGLE_OAUTH_CLIENT_ID ADMIN_MFA_ENCRYPTION_KEY'
 for name in $required; do
   eval "value=\${$name-}"
   [ -n "$value" ] || { echo "Missing required production variable: $name" >&2; exit 1; }
 done
 
 case "$PUBLIC_BASE_URL" in https://*) ;; *) echo 'PUBLIC_BASE_URL must use HTTPS.' >&2; exit 1;; esac
+[ "$GOOGLE_AUTH_ENABLED" = 'true' ] || { echo 'GOOGLE_AUTH_ENABLED=true is mandatory in production for primary-admin recovery.' >&2; exit 1; }
+
+mfa_key_bytes="$(printf '%s' "$ADMIN_MFA_ENCRYPTION_KEY" | wc -c | tr -d '[:space:]')"
+[ "$mfa_key_bytes" -ge 32 ] || { echo 'ADMIN_MFA_ENCRYPTION_KEY must be at least 32 bytes in production.' >&2; exit 1; }
 case "$PAYMENT_PROVIDER" in webhook|internal) ;; *) echo 'PAYMENT_PROVIDER must be webhook or internal in production.' >&2; exit 1;; esac
 
 # The staging project also uses a Railway environment named "production".

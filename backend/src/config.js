@@ -151,7 +151,8 @@ if (process.env.NODE_ENV === 'production') {
   if (config.s3Endpoint && !config.s3Endpoint.startsWith('https://')) throw new Error('S3_ENDPOINT must use HTTPS when set in production');
   if (!['AES256', 'aws:kms'].includes(config.s3ServerSideEncryption)) throw new Error('S3_SERVER_SIDE_ENCRYPTION must be AES256 or aws:kms');
   if (!['webhook','internal'].includes(config.paymentProvider)) throw new Error('PAYMENT_PROVIDER must be webhook or internal in production');
-  if (config.googleAuthEnabled && !config.googleOAuthClientId) throw new Error('GOOGLE_OAUTH_CLIENT_ID must be set when GOOGLE_AUTH_ENABLED=true');
+  if (!config.googleAuthEnabled) throw new Error('GOOGLE_AUTH_ENABLED=true is mandatory in production for primary-admin recovery');
+  if (!config.googleOAuthClientId) throw new Error('GOOGLE_OAUTH_CLIENT_ID must be set in production for primary-admin recovery');
   if (!config.adminPanelUsername || config.adminPanelUsername.length < 4 || config.adminPanelUsername.length > 120) throw new Error('ADMIN_PANEL_USERNAME must be configured for production admin access');
   if (!config.adminPanelAllowedEmail || !config.adminPanelAllowedEmail.includes('@')) throw new Error('ADMIN_PANEL_ALLOWED_EMAIL must be configured for production admin access');
   if (!config.adminMfaRequired) throw new Error('ADMIN_MFA_REQUIRED=true is mandatory in production');

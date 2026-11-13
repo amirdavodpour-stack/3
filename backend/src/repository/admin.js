@@ -1,6 +1,7 @@
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { jobFromRow, applicationFromRow, userFromRow } from './mappers.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
 
 const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
 
@@ -261,11 +262,28 @@ export async function revokeAdminById(id, actorId) {
     return { ...userFromRow(updated[0]), roleRevocationApplied:true };
   });
 }
-export async function revokeUserSessions(id) {
+export async function revokeUserSessions(id,{actorId,sessionJti,verificationMinutes=5}={}) {
   return withSqlTransaction(async (client) => {
-    const { rows } = await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING id,session_version`, [id]);
+    const { actor, targets } = await lockAuthorizedAdminActor(client,{
+      actorId,
+      targetUserIds:[id],
+      sessionJti,
+      verificationMinutes,
+      requiredScope:'WRITE',
+    });
+    const target=String(id)===String(actor.id)?actor:targets.get(String(id));
+    if(!target) return null;
+    const { rows } = await client.query(
+      `UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL,admin_panel_verified_scope=NULL WHERE id=$1 RETURNING id,session_version`,
+      [id],
+    );
     if (!rows[0]) return null;
     await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`, [id]);
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),'ADMIN_SESSIONS_REVOKE',$1,'user',$2,$3::jsonb,NOW())`,
+      [actor.id,id,JSON.stringify({sessionVersion:Number(rows[0].session_version),sessionJti})],
+    );
     return { id: rows[0].id, sessionVersion: Number(rows[0].session_version) };
   });
 }

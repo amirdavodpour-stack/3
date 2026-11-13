@@ -309,6 +309,18 @@ test('PostgreSQL Google admin reauthentication persists step-up verification for
     );
     assert.equal(audit.rows[0]?.action,'ADMIN_PANEL_UNLOCK');
     assert.equal(audit.rows[0]?.meta?.method,'google');
+
+    const locked=await adminRoutes({method:'POST',headers:{}},{},['admin','access','lock']);
+    assert.equal(locked.status,200);
+    const lockAudit=await pool.query(
+      `SELECT action FROM audit_logs WHERE actor_id=$1 AND action='ADMIN_PANEL_LOCK' ORDER BY created_at DESC LIMIT 1`,
+      [user.id],
+    );
+    assert.equal(lockAudit.rows[0]?.action,'ADMIN_PANEL_LOCK');
+    const cleared=await pool.query('SELECT admin_panel_verified_at,admin_panel_verified_session_jti,admin_panel_verified_scope FROM users WHERE id=$1',[user.id]);
+    assert.equal(cleared.rows[0]?.admin_panel_verified_at,null);
+    assert.equal(cleared.rows[0]?.admin_panel_verified_session_jti,null);
+    assert.equal(cleared.rows[0]?.admin_panel_verified_scope,null);
   } finally {
     await cleanupUser(user.id);
   }
@@ -316,4 +328,137 @@ test('PostgreSQL Google admin reauthentication persists step-up verification for
 
 after(async () => {
   if (enabled) await dbModule.db.close();
+});
+
+
+test('PostgreSQL password reset delivery failure invalidates the exact token after an ambiguous provider timeout', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'reset-delivery-failure-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'google-reset-delivery-' + crypto.randomUUID(),
+  });
+  const bodyState = {current:{email:user.email}};
+  let deliveredToken = null;
+  const routes = makeAuthRoutes(bodyState,(token) => {
+    deliveredToken = token;
+    throw new Error('provider accepted the token but acknowledgement timed out');
+  });
+
+  try {
+    const response = await routes({method:'POST',headers:{}},{},['auth','password-reset','request']);
+    assert.equal(response.status,202);
+    assert.equal(response.data.resetToken,undefined,'the raw bearer token must not be returned');
+    assert.ok(deliveredToken,'the provider boundary must receive the one-time reset token');
+
+    const {rows} = await pool.query(
+      'SELECT token_hash,used_at FROM reset_tokens WHERE user_id=$1',
+      [user.id],
+    );
+    assert.equal(rows.length,1);
+    assert.equal(rows[0].token_hash,sha256(deliveredToken));
+    assert.ok(rows[0].used_at,'a delivery failure must invalidate the exact reset token');
+  } finally {
+    await cleanupUser(user.id);
+  }
+});
+
+test('PostgreSQL refresh rotation and logout serialize user-first so logout revokes the successor token', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const user = await createUser({
+    email:'refresh-logout-race-' + crypto.randomUUID() + '@example.test',
+    googleSubject:'google-refresh-logout-' + crypto.randomUUID(),
+    sessionVersion:0,
+  });
+  const rawToken = 'refresh-race-token-' + crypto.randomUUID();
+  const refresh = await insertExistingRefreshToken(user.id,rawToken);
+  const nextRawToken = 'refresh-race-successor-' + crypto.randomUUID();
+  const nextToken = {
+    id:crypto.randomUUID(),
+    tokenHash:sha256(nextRawToken),
+    familyId:refresh.familyId,
+    expiresAt:new Date(Date.now()+30*24*60*60_000).toISOString(),
+    createdAt:new Date().toISOString(),
+  };
+  const blocker = await pool.connect();
+  let rotationPromise;
+  let logoutPromise;
+
+  try {
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM refresh_tokens WHERE id=$1 FOR UPDATE',[refresh.id]);
+    rotationPromise = repository.rotateRefreshToken(refresh.tokenHash,nextToken,refresh.familyId);
+
+    let rotationWaitingOnToken = false;
+    const waitDeadline = Date.now()+5_000;
+    while(Date.now()<waitDeadline) {
+      const {rows} = await pool.query(
+        "SELECT pid,wait_event_type,query FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND state='active' AND wait_event_type='Lock' AND query ILIKE '%FROM refresh_tokens%' AND query ILIKE '%FOR UPDATE%'",
+      );
+      if(rows.length>0) {
+        rotationWaitingOnToken = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve,50));
+    }
+    assert.equal(rotationWaitingOnToken,true,
+      'refresh rotation must reach the token row lock after acquiring the account row');
+
+    const probe = await pool.connect();
+    let ownerRowWasLocked = false;
+    try {
+      await probe.query('BEGIN');
+      await probe.query("SET LOCAL statement_timeout='500ms'");
+      try {
+        await probe.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[user.id]);
+      } catch(error) {
+        if(error?.code==='57014') ownerRowWasLocked = true;
+        else throw error;
+      }
+    } finally {
+      await probe.query('ROLLBACK').catch(() => {});
+      probe.release();
+    }
+    assert.equal(ownerRowWasLocked,true,
+      'refresh must hold the user row before it waits for the existing refresh token');
+
+    let logoutSettled = false;
+    logoutPromise = repository.logoutUser(user.id).then((value) => {
+      logoutSettled = true;
+      return value;
+    });
+    await new Promise((resolve) => setTimeout(resolve,150));
+    assert.equal(logoutSettled,false,
+      'logout must wait behind the in-flight rotation on the same user-first lock');
+
+    await blocker.query('COMMIT');
+    const rotated = await rotationPromise;
+    assert.equal(rotated.kind,'ok','the refresh that acquired the user lock first may finish');
+    const loggedOut = await logoutPromise;
+    assert.equal(loggedOut.sessionVersion,1);
+
+    const {rows:tokens} = await pool.query(
+      'SELECT token_hash,revoked_at FROM refresh_tokens WHERE user_id=$1 AND family_id=$2 ORDER BY created_at,id',
+      [user.id,refresh.familyId],
+    );
+    assert.equal(tokens.length,2,'the original and successor token should both be recorded');
+    assert.ok(tokens.every((token) => token.revoked_at),
+      'logout must revoke the successor created by the serialized rotation');
+    assert.equal(tokens.some((token) => token.token_hash===nextToken.tokenHash && !token.revoked_at),false);
+
+    const {rows:users} = await pool.query(
+      'SELECT session_version FROM users WHERE id=$1',
+      [user.id],
+    );
+    assert.equal(Number(users[0]?.session_version),1);
+  } finally {
+    await blocker.query('ROLLBACK').catch(() => {});
+    blocker.release();
+    if(logoutPromise) await logoutPromise.catch(() => {});
+    if(rotationPromise) await rotationPromise.catch(() => {});
+    await cleanupUser(user.id);
+  }
 });
