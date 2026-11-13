@@ -1113,8 +1113,14 @@ Future<void> _captureRuntimeScreenshot(
                                     ? 'برداشت'
                                     : 'Withdraw'),
                       )
-                    : find.byKey(
-                        const ValueKey('profile-about-hope-semantic-target'),
+                    : find.byWidgetPredicate(
+                        (widget) =>
+                            widget is Semantics &&
+                            widget.properties.button == true &&
+                            widget.properties.label ==
+                                (marker.endsWith('-fa-rtl')
+                                    ? 'درباره HOPE'
+                                    : 'About HOPE'),
                       );
     auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
