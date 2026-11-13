@@ -35,7 +35,8 @@ test('legacy suspension review metadata persists through the supported user coll
     collection:state,
     touch(name){ if(name!=='users') throw new Error('Unknown collection: '+name); touched.push(name); },
   };
-  const adapter=createAdminLegacyAdapter({db,findUser:(id)=>state.users.find((u)=>u.id===id),now:()=>new Date('2026-11-06T01:00:00.000Z')});
+  const fixedNow = new Date('2026-11-06T01:00:00.000Z');
+  const adapter=createAdminLegacyAdapter({db,findUser:(id)=>state.users.find((u)=>u.id===id),now:()=>fixedNow});
   const reviewDueAt='2026-11-09T01:00:00.000Z';
   const suspended=adapter.setUserStatus(user.id,'SUSPENDED',{
     actorId:'legacy-admin-1',
@@ -45,6 +46,7 @@ test('legacy suspension review metadata persists through the supported user coll
   assert.equal(suspended.status,'SUSPENDED');
   assert.equal(state.adminUserStatusReviewCases.length,1);
   assert.equal(state.adminUserStatusReviewCases[0].reason,'Temporary review required');
+  assert.equal(state.adminUserStatusReviewCases[0].createdAt,fixedNow.toISOString());
   assert.equal(state.adminUserStatusReviewCases[0].reviewDueAt,reviewDueAt);
   assert.deepEqual(touched,['users']);
 
@@ -54,6 +56,7 @@ test('legacy suspension review metadata persists through the supported user coll
   });
   assert.equal(activated.status,'ACTIVE');
   assert.equal(state.adminUserStatusReviewCases[0].status,'RESOLVED');
+  assert.equal(state.adminUserStatusReviewCases[0].resolvedAt,fixedNow.toISOString());
   assert.equal(state.adminUserStatusReviewCases[0].resolutionReason,'Manual review completed');
   assert.deepEqual(touched,['users','users']);
 });
