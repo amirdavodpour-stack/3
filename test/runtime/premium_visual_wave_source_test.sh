@@ -146,7 +146,12 @@ grep -Fq '.scroll_end_screens == 10' ".github/workflows/hope-ui-runtime-evidence
 grep -Fq "ValueKey('profile-about-hope-semantic-target')" "lib/features/profile/profile_page.dart"
 grep -Fq 'final shouldRevealProfileTarget =' "$runtime_driver"
 grep -Fq "responsive-720x1280-profile-" "$runtime_driver"
-grep -Fq "ValueKey('profile-about-hope-semantic-target')" "$runtime_driver"
+# The runtime audit must select the button Semantics node, not the nested Text node.
+grep -Fq 'find.byWidgetPredicate(' "$runtime_driver"
+grep -Fq 'widget is Semantics' "$runtime_driver"
+grep -Fq 'widget.properties.button == true' "$runtime_driver"
+grep -Fq "'درباره HOPE'" "$runtime_driver"
+grep -Fq "'About HOPE'" "$runtime_driver"
 # Transactions TalkBack audit reveals the actual status action on regular and responsive viewports.
 grep -Fq "ValueKey('transaction-status-semantic-target')" "lib/features/transactions/transactions_page.dart"
 grep -Fq "marker.startsWith('responsive-720x1280-transactions-')" "$runtime_driver"
