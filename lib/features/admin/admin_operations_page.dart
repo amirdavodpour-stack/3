@@ -490,6 +490,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   Widget _payoutsTab() => RefreshIndicator(
         onRefresh: () async => _reload(),
         child: ListView(
+          key: const ValueKey('admin-payouts-scroll'),
           padding: const EdgeInsets.all(18),
           children: [
             _header(
