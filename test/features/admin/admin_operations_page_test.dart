@@ -28,6 +28,10 @@ class _FakeAdminOperations implements AdminRepository {
       'currency': 'TOMAN',
     },
   ];
+  List<Map<String, dynamic>> outboxEventCases = const [];
+  List<Map<String, dynamic>> nextOutboxEventCases = const [];
+  int outboxEventCaseCalls = 0;
+  bool viewPayoutsPermission = true;
   List<Map<String, dynamic>> reports = const [
     {
       'id': 'r1',
@@ -88,6 +92,26 @@ class _FakeAdminOperations implements AdminRepository {
       payouts;
 
   @override
+  Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({
+    int limit = 50,
+    String? cursor,
+  }) async {
+    outboxEventCaseCalls += 1;
+    if (cursor == null) {
+      return {
+        'cases': outboxEventCases,
+        'hasMore': nextOutboxEventCases.isNotEmpty,
+        'nextCursor': nextOutboxEventCases.isNotEmpty ? 'next-event-cursor' : null,
+      };
+    }
+    return {
+      'cases': nextOutboxEventCases,
+      'hasMore': false,
+      'nextCursor': null,
+    };
+  }
+
+  @override
   Future<Map<String, dynamic>> resolveUnknownPayout(
     String id, {
     required String decision,
@@ -112,10 +136,13 @@ class _FakeAdminOperations implements AdminRepository {
   @override Future<void> revokeAdministrator(String id) async {}
   @override Future<void> revokeUserSessions(String id) async {}
   @override
-  Future<Map<String, dynamic>> getPanelAccess() async => const {
+  Future<Map<String, dynamic>> getPanelAccess() async => {
         'verified': true,
         'primaryAdmin': true,
-        'permissions': ['admin.resolve_payouts'],
+        'permissions': [
+          'admin.resolve_payouts',
+          if (viewPayoutsPermission) 'admin.view_payouts',
+        ],
       };
   @override
   Future<Map<String, dynamic>> getAdminMfaStatus() async => const {
@@ -318,6 +345,92 @@ void main() {
       repository.resolveResult.complete(const {});
       await tester.pumpAndSettle();
       expect(repository.resolveCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'event-scoped critical cases render separately and load additional cursor pages',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _FakeAdminOperations()
+        ..outboxEventCases = [
+          {
+            'id': 'case-01',
+            'caseType': 'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+            'resourceType': 'outbox_event',
+            'resourceId': 'event-01-00000000-0000-4000-8000-000000000001',
+            'severity': 'CRITICAL',
+            'status': 'OPEN',
+            'expected': {'eventType': 'PAYOUT_EXECUTE'},
+            'observed': {'reason': 'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+            'eventType': 'PAYOUT_EXECUTE',
+            'eventStatus': 'DONE',
+            'aggregateType': 'PAYOUT',
+            'aggregateId': 'payout-01',
+          },
+        ]
+        ..nextOutboxEventCases = [
+          {
+            'id': 'case-02',
+            'caseType': 'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+            'resourceType': 'outbox_event',
+            'resourceId': 'event-02-00000000-0000-4000-8000-000000000002',
+            'severity': 'HIGH',
+            'status': 'INVESTIGATING',
+            'expected': {'eventType': 'PAYOUT_EXECUTE'},
+            'observed': {'reason': 'PAYOUT_HOLD_LINKAGE_MISMATCH'},
+            'eventType': 'PAYOUT_EXECUTE',
+            'eventStatus': 'DONE',
+          },
+        ];
+
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outbox event integrity cases'), findsOneWidget);
+      expect(find.text('PAYOUT OUTBOX INTEGRITY MISMATCH'), findsOneWidget);
+      expect(find.text('Outbox event'), findsOneWidget);
+      expect(find.text('PAYOUT_EXECUTE'), findsOneWidget);
+      expect(find.text('DONE'), findsOneWidget);
+      expect(find.text('event-01-00000000-0000-4000-8000-000000000001'), findsOneWidget);
+      expect(find.text('event-02-00000000-0000-4000-8000-000000000002'), findsNothing);
+      expect(repository.outboxEventCaseCalls, 1);
+      expect(repository.resolveCalls, 0,
+          reason: 'event-scoped cases are inspection-only and must not invoke payout resolution');
+
+      await tester.ensureVisible(find.text('Load more cases'));
+      await tester.tap(find.text('Load more cases'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('event-02-00000000-0000-4000-8000-000000000002'), findsOneWidget);
+      expect(repository.outboxEventCaseCalls, 2);
+      expect(repository.resolveCalls, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'event reconciliation queue stays hidden and is not fetched without payout view permission',
+    (tester) async {
+      final repository = _FakeAdminOperations()..viewPayoutsPermission = false;
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(repository.outboxEventCaseCalls, 0);
+      expect(find.text('Outbox event integrity cases'), findsNothing);
+
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Access restricted'), findsOneWidget);
+      expect(repository.resolveCalls, 0);
+      expect(tester.takeException(), isNull);
     },
   );
 }

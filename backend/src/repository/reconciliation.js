@@ -22,6 +22,84 @@ export async function listUnknownPayoutsForReconciliation({ limit = 50 } = {}) {
   return rows;
 }
 
+const RECONCILIATION_CURSOR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function decodeReconciliationCursor(cursor) {
+  if (cursor == null || cursor === '') return null;
+  if (typeof cursor !== 'string' || cursor.length > 512 || !/^[A-Za-z0-9_-]+$/.test(cursor)) {
+    const error = new Error('INVALID_RECONCILIATION_CURSOR');
+    error.code = 'INVALID_RECONCILIATION_CURSOR';
+    throw error;
+  }
+  try {
+    const decoded = Buffer.from(cursor, 'base64url').toString('utf8');
+    if (Buffer.from(decoded, 'utf8').toString('base64url') !== cursor) throw new Error('non-canonical');
+    const value = JSON.parse(decoded);
+    const createdAt = String(value?.createdAt ?? '');
+    if (
+      value?.v !== 1 ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(createdAt) ||
+      !Number.isFinite(Date.parse(createdAt)) ||
+      !RECONCILIATION_CURSOR_UUID.test(String(value?.id || ''))
+    ) throw new Error('invalid cursor payload');
+    return { createdAt, id: value.id };
+  } catch {
+    const error = new Error('INVALID_RECONCILIATION_CURSOR');
+    error.code = 'INVALID_RECONCILIATION_CURSOR';
+    throw error;
+  }
+}
+
+function encodeReconciliationCursor(row) {
+  return Buffer.from(JSON.stringify({
+    v: 1,
+    // Keep PostgreSQL's six fractional digits; JavaScript Date truncates to milliseconds.
+    createdAt: String(row.createdAt),
+    id: row.id,
+  }), 'utf8').toString('base64url');
+}
+
+export async function listActiveOutboxEventReconciliationCases({ limit = 50, cursor = null } = {}) {
+  const pool = requirePool();
+  const bounded = limitValue(limit);
+  const decodedCursor = decodeReconciliationCursor(cursor);
+  const { rows } = await pool.query(`
+    SELECT rc.id,
+           rc.case_type AS "caseType",
+           rc.resource_type AS "resourceType",
+           rc.resource_id AS "resourceId",
+           rc.severity,
+           rc.status,
+           rc.expected,
+           rc.observed,
+           to_char(rc.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt",
+           rc.updated_at AS "updatedAt",
+           oe.event_type AS "eventType",
+           oe.status AS "eventStatus",
+           oe.aggregate_type AS "aggregateType",
+           oe.aggregate_id AS "aggregateId"
+      FROM reconciliation_cases rc
+      LEFT JOIN outbox_events oe
+        ON oe.id=rc.resource_id
+     WHERE rc.resource_type='outbox_event'
+       AND rc.status IN ('OPEN','INVESTIGATING')
+       AND (
+         $1::timestamptz IS NULL
+         OR (rc.created_at,rc.id)<($1::timestamptz,$2::uuid)
+       )
+     ORDER BY rc.created_at DESC,rc.id DESC
+     LIMIT $3
+  `, [decodedCursor?.createdAt ?? null, decodedCursor?.id ?? null, bounded + 1]);
+
+  const hasMore = rows.length > bounded;
+  const cases = rows.slice(0, bounded);
+  return {
+    cases,
+    hasMore,
+    nextCursor: hasMore && cases.length ? encodeReconciliationCursor(cases[cases.length - 1]) : null,
+  };
+}
+
 export async function openReconciliationCase({
   caseType,
   resourceType,

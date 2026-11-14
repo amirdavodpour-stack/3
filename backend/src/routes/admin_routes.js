@@ -668,6 +668,24 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       }
       return sendJson(res,200,{id,status:updated.status});
     }
+    if(req.method==='GET' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts.length===3){
+      assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);
+      if (typeof repo?.listActiveOutboxEventReconciliationCases !== 'function') {
+        throw new HttpError(503, 'FINANCIAL_CONTROL_UNAVAILABLE', 'Reconciliation controls are unavailable');
+      }
+      const url = new URL(req.url, 'http://localhost');
+      const limit = url.searchParams.get('limit');
+      const cursor = url.searchParams.get('cursor');
+      try {
+        const page = await repo.listActiveOutboxEventReconciliationCases({ limit, cursor });
+        return sendJson(res, 200, page);
+      } catch (error) {
+        if (error?.code === 'INVALID_RECONCILIATION_CURSOR') {
+          throw new HttpError(400, 'INVALID_RECONCILIATION_CURSOR', 'Reconciliation cursor is invalid');
+        }
+        throw error;
+      }
+    }
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='payouts' && parts[2]==='unknown'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);
       const limit = new URL(req.url, 'http://localhost').searchParams.get('limit');

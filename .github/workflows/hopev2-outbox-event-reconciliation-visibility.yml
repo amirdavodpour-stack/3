@@ -1,0 +1,108 @@
+name: HOPEv2 Outbox Event Reconciliation Visibility
+
+on:
+  push:
+    branches:
+      - fix/hopev2-outbox-event-reconciliation-visibility-20261114
+    paths:
+      - ".github/workflows/hopev2-outbox-event-reconciliation-visibility.yml"
+      - "backend/src/repository/reconciliation.js"
+      - "backend/src/routes/admin_routes.js"
+      - "backend/tests/admin-payout-reconciliation-contract.test.mjs"
+      - "backend/tests/payment-payout-integrity-postgres.test.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - "lib/core/admin/admin_repository.dart"
+      - "lib/features/admin/admin_operations_page.dart"
+      - "test/core/admin/admin_repository_extended_test.dart"
+      - "test/features/admin/admin_operations_page_test.dart"
+      - "test/features/admin/admin_page_test.dart"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-outbox-event-reconciliation-visibility-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Node 24, route contracts and PostgreSQL 17 financial integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Node 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check changed backend modules
+        working-directory: backend
+        run: |
+          node --check src/repository/reconciliation.js
+          node --check src/routes/admin_routes.js
+      - name: Run backend static checks
+        working-directory: backend
+        run: npm run check
+      - name: Run backend fast regressions
+        working-directory: backend
+        run: npm run test:fast
+      - name: Apply PostgreSQL migrations to disposable CI database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+        run: npm run migrate
+      - name: Run payout and event reconciliation PostgreSQL regressions
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+          REQUIRE_INTEGRATION: "1"
+        run: npm run test:payment-payout-integrity
+
+  flutter:
+    name: Flutter 3.47.2 analysis and focused Admin regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+      - name: Verify and install locked Flutter dependencies
+        run: |
+          bash tools/verify-pubspec-lock-fresh.sh
+          flutter pub get --enforce-lockfile
+      - name: Analyze Flutter application
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Run Admin UI and repository regressions
+        run: |
+          flutter test --no-pub \
+            test/features/admin/admin_operations_page_test.dart \
+            test/core/admin/admin_repository_extended_test.dart \
+            test/features/admin/admin_page_test.dart

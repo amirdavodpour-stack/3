@@ -25,6 +25,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   late Future<Map<String, dynamic>> _finance;
   late Future<List<Map<String, dynamic>>> _reports;
   late Future<List<Map<String, dynamic>>> _unknownPayouts;
+  late Future<Map<String, dynamic>> _outboxEventReconciliationCases;
+  final List<Map<String, dynamic>> _additionalOutboxEventCases = [];
+  final Set<String> _outboxEventCaseIds = <String>{};
+  String? _outboxEventNextCursor;
+  bool _outboxEventHasMore = false;
+  bool _outboxEventLoadMoreBusy = false;
+  int _outboxEventRequestGeneration = 0;
   late Future<Map<String, dynamic>> _analytics;
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
@@ -40,6 +47,11 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     _finance = Future.value(const <String, dynamic>{});
     _reports = Future.value(const <Map<String, dynamic>>[]);
     _unknownPayouts = Future.value(const <Map<String, dynamic>>[]);
+    _outboxEventReconciliationCases = Future.value(const {
+      'cases': <Map<String, dynamic>>[],
+      'hasMore': false,
+      'nextCursor': null,
+    });
     _analytics = Future.value(const <String, dynamic>{});
     _funnel = Future.value(const <String, dynamic>{});
     _crashes = Future.value(const <String, dynamic>{});
@@ -54,20 +66,62 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
 
   Future<void> _reload() async {
     final r = context.read<AdminRepository>();
+    final outboxEventGeneration = ++_outboxEventRequestGeneration;
     try {
       final access = await r.getPanelAccess();
-      if (!mounted) return;
+      if (!mounted ||
+          outboxEventGeneration != _outboxEventRequestGeneration) {
+        return;
+      }
       _permissions = access['permissions'] is List
           ? (access['permissions'] as List).whereType<String>().toSet()
           : <String>{};
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted ||
+          outboxEventGeneration != _outboxEventRequestGeneration) {
+        return;
+      }
       _permissions = <String>{};
     }
 
     _finance = r.getFinanceSummary();
     _reports = r.listTrustReports();
-    _unknownPayouts = r.listUnknownPayouts();
+    _unknownPayouts = _hasPermission('admin.view_payouts')
+        ? r.listUnknownPayouts()
+        : Future.value(const <Map<String, dynamic>>[]);
+
+    _additionalOutboxEventCases.clear();
+    _outboxEventCaseIds.clear();
+    _outboxEventNextCursor = null;
+    _outboxEventHasMore = false;
+    _outboxEventLoadMoreBusy = false;
+    _outboxEventReconciliationCases = _hasPermission('admin.view_payouts')
+        ? r.listActiveOutboxEventReconciliationCases().then((page) {
+            if (mounted &&
+                outboxEventGeneration == _outboxEventRequestGeneration) {
+              setState(() {
+                final rawCases = page['cases'];
+                if (rawCases is List) {
+                  _outboxEventCaseIds.addAll(
+                    rawCases.whereType<Map>()
+                        .map((item) => '${item['id'] ?? ''}')
+                        .where((id) => id.isNotEmpty),
+                  );
+                }
+                _outboxEventNextCursor = page['nextCursor']?.toString();
+                _outboxEventHasMore = page['hasMore'] == true &&
+                    _outboxEventNextCursor != null &&
+                    _outboxEventNextCursor!.isNotEmpty;
+              });
+            }
+            return page;
+          })
+        : Future.value(const {
+            'cases': <Map<String, dynamic>>[],
+            'hasMore': false,
+            'nextCursor': null,
+          });
+
     _analytics = r.getAnalyticsSummary(days: _days);
     _funnel = r.getFunnel(days: _days);
     _crashes = r.getCrashSummary(days: _days);
@@ -324,30 +378,173 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     }
   }
 
-  Widget _payoutsTab() => FutureBuilder<List<Map<String, dynamic>>>(
-        future: _unknownPayouts,
-        builder: (_, s) => _loadingOrError(s, (rows) => RefreshIndicator(
-              onRefresh: () async => _reload(),
-              child: ListView(
-                padding: const EdgeInsets.all(18),
-                children: [
-                  _header(
-                    HopeV2Icons.payments,
-                    _t('کنترل تسویه', 'Payout operations'),
-                    _t(
-                      'مواردی که Backend برای تصمیم عملیاتی علامت‌گذاری کرده است.',
-                      'Cases explicitly awaiting backend operational resolution.',
-                    ),
-                    domain: HopeProductDomain.finance,
-                  ),
-                  const SizedBox(height: 12),
-                  if (rows.isEmpty)
-                    _empty(HopeV2Icons.completed, _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'))
-                  else
-                    ...rows.map(_payoutCard),
-                ],
+  Future<void> _loadMoreOutboxEventCases() async {
+    final cursor = _outboxEventNextCursor;
+    if (_outboxEventLoadMoreBusy ||
+        !_outboxEventHasMore ||
+        cursor == null ||
+        cursor.isEmpty) {
+      return;
+    }
+    final generation = _outboxEventRequestGeneration;
+    setState(() => _outboxEventLoadMoreBusy = true);
+    try {
+      final page = await context
+          .read<AdminRepository>()
+          .listActiveOutboxEventReconciliationCases(cursor: cursor);
+      if (!mounted || generation != _outboxEventRequestGeneration) return;
+      final rawCases = page['cases'];
+      final rows = rawCases is List
+          ? rawCases
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .where((item) {
+                final id = '${item['id'] ?? ''}';
+                return id.isNotEmpty && _outboxEventCaseIds.add(id);
+              })
+              .toList(growable: false)
+          : const <Map<String, dynamic>>[];
+      setState(() {
+        _additionalOutboxEventCases.addAll(rows);
+        final nextCursor = page['nextCursor']?.toString();
+        _outboxEventNextCursor =
+            nextCursor == null || nextCursor.isEmpty ? null : nextCursor;
+        _outboxEventHasMore =
+            page['hasMore'] == true && _outboxEventNextCursor != null;
+      });
+    } catch (error) {
+      if (mounted && generation == _outboxEventRequestGeneration) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(error))),
+        );
+      }
+    } finally {
+      if (mounted && generation == _outboxEventRequestGeneration) {
+        setState(() => _outboxEventLoadMoreBusy = false);
+      }
+    }
+  }
+
+  Widget _outboxEventCasesSection(Map<String, dynamic> page) {
+    final rawCases = page['cases'];
+    final initialRows = rawCases is List
+        ? rawCases
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList(growable: false)
+        : const <Map<String, dynamic>>[];
+    final rows = [...initialRows, ..._additionalOutboxEventCases];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _header(
+          HopeV2Icons.secure,
+          _t('پرونده‌های یکپارچگی رویداد Outbox', 'Outbox event integrity cases'),
+          _t(
+            'رویدادهای ناسازگار در قرنطینه باقی می‌مانند؛ این فهرست فقط برای مشاهده و پیگیری است و وضعیت مالی را تغییر نمی‌دهد.',
+            'Quarantined event mismatches remain visible here. Inspection is read-only and never releases funds or changes payout state.',
+          ),
+          domain: HopeProductDomain.finance,
+        ),
+        const SizedBox(height: 10),
+        if (rows.isEmpty)
+          _empty(
+            HopeV2Icons.completed,
+            _t('پروندهٔ فعالی برای رویدادهای Outbox وجود ندارد', 'No active Outbox event integrity cases'),
+          )
+        else
+          ...rows.map(
+            (item) => _reconciliationCaseCard(
+              item,
+              showResourceLocator: true,
+            ),
+          ),
+        if (_outboxEventHasMore) ...[
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _outboxEventLoadMoreBusy
+                  ? null
+                  : _loadMoreOutboxEventCases,
+              icon: _outboxEventLoadMoreBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.expand_more),
+              label: Text(
+                _outboxEventLoadMoreBusy
+                    ? _t('در حال دریافت...', 'Loading...')
+                    : _t('نمایش پرونده‌های بیشتر', 'Load more cases'),
               ),
-            )),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _payoutsTab() => RefreshIndicator(
+        onRefresh: () async => _reload(),
+        child: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            _header(
+              HopeV2Icons.payments,
+              _t('کنترل تسویه', 'Payout operations'),
+              _t(
+                'تسویه‌های ناشناخته و پرونده‌های یکپارچگی رویداد را در دو صف مستقل بررسی کنید.',
+                'Review unknown payouts and event-integrity quarantines in separate queues.',
+              ),
+              domain: HopeProductDomain.finance,
+            ),
+            const SizedBox(height: 12),
+            if (!_hasPermission('admin.view_payouts'))
+              EmptyState(
+                icon: HopeV2Icons.secure,
+                title: _t('دسترسی محدود است', 'Access restricted'),
+                message: _t(
+                  'برای مشاهده پرونده‌های مالی، مجوز مشاهده تسویه لازم است.',
+                  'The payout visibility permission is required to inspect financial cases.',
+                ),
+              )
+            else ...[
+              FutureBuilder<Map<String, dynamic>>(
+                future: _outboxEventReconciliationCases,
+                builder: (_, snapshot) => _loadingOrError(
+                  snapshot,
+                  _outboxEventCasesSection,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                _t('تسویه‌های ناشناخته', 'Unknown payouts'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _unknownPayouts,
+                builder: (_, snapshot) => _loadingOrError(
+                  snapshot,
+                  (rows) => rows.isEmpty
+                      ? _empty(
+                          HopeV2Icons.completed,
+                          _t('تسویه ناشناخته‌ای نیست', 'No unknown payouts'),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: rows.map(_payoutCard).toList(growable: false),
+                        ),
+                ),
+              ),
+            ],
+          ],
+        ),
       );
 
   Widget _payoutCard(Map<String, dynamic> row) {
@@ -410,9 +607,18 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     );
   }
 
-  Widget _reconciliationCaseCard(Map<String, dynamic> item) {
+  Widget _reconciliationCaseCard(
+    Map<String, dynamic> item, {
+    bool showResourceLocator = false,
+  }) {
     final caseId = '${item['id'] ?? ''}';
     final caseType = '${item['caseType'] ?? _t('پرونده تطبیق', 'Reconciliation case')}';
+    final resourceType = '${item['resourceType'] ?? ''}';
+    final resourceId = '${item['resourceId'] ?? ''}';
+    final eventType = '${item['eventType'] ?? ''}';
+    final eventStatus = '${item['eventStatus'] ?? ''}';
+    final aggregateType = '${item['aggregateType'] ?? ''}';
+    final aggregateId = '${item['aggregateId'] ?? ''}';
     final severity = '${item['severity'] ?? '—'}'.trim().toUpperCase();
     final status = '${item['status'] ?? '—'}'.trim().toUpperCase();
     final expected = item['expected'] is Map
@@ -464,6 +670,31 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
           ),
           const SizedBox(height: 4),
           Text('${_t('وضعیت پرونده', 'Case status')}: ${_reconciliationStatusLabel(status)}'),
+          if (showResourceLocator) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${_t('منبع', 'Resource')}: ${resourceType == 'outbox_event' ? _t('رویداد Outbox', 'Outbox event') : resourceType}',
+            ),
+            Text(
+              '${_t('شناسه رویداد Outbox', 'Outbox event ID')}:',
+              style: theme.textTheme.bodySmall,
+            ),
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SelectableText(
+                resourceId.isEmpty ? '—' : resourceId,
+                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+              ),
+            ),
+            if (eventType.isNotEmpty)
+              Text('${_t('نوع رویداد', 'Event type')}: $eventType'),
+            if (eventStatus.isNotEmpty)
+              Text('${_t('وضعیت رویداد', 'Event status')}: $eventStatus'),
+            if (aggregateType.isNotEmpty || aggregateId.isNotEmpty)
+              Text(
+                '${_t('منبع تجمیع', 'Aggregate')}: ${aggregateType.isEmpty ? '—' : aggregateType} / ${aggregateId.isEmpty ? '—' : aggregateId}',
+              ),
+          ],
           const SizedBox(height: 4),
           Text('${_t('مورد انتظار', 'Expected')}: ${evidenceText(expected)}'),
           const SizedBox(height: 4),

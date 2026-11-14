@@ -84,4 +84,49 @@ void main() {
     };
     await repository.deleteJob('j1');
   });
+
+  test('event reconciliation repository sends an authenticated paginated GET', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events'] = (request, body) async {
+      expect(request.method, 'GET');
+      expect(request.url.queryParameters['limit'], '25');
+      expect(request.url.queryParameters['cursor'], 'opaque cursor+/=');
+      expect(request.headers.value('authorization'), 'Bearer token');
+      await respondJson(request, 200, {
+        'data': {
+          'cases': [
+            {
+              'id': 'case-1',
+              'resourceType': 'outbox_event',
+              'severity': 'CRITICAL',
+            },
+            'malformed',
+          ],
+          'hasMore': true,
+          'nextCursor': 'next-cursor',
+        },
+      });
+    };
+
+    final page = await repository.listActiveOutboxEventReconciliationCases(
+      limit: 25,
+      cursor: 'opaque cursor+/=',
+    );
+
+    expect(page['cases'], hasLength(1));
+    expect((page['cases'] as List).single['id'], 'case-1');
+    expect(page['hasMore'], isTrue);
+    expect(page['nextCursor'], 'next-cursor');
+  });
+
+  test('event reconciliation repository returns a safe empty page for malformed payloads', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events'] = (request, body) async {
+      await respondJson(request, 200, {'data': 'unexpected'});
+    };
+
+    final page = await repository.listActiveOutboxEventReconciliationCases();
+
+    expect(page['cases'], isEmpty);
+    expect(page['hasMore'], isFalse);
+    expect(page['nextCursor'], isNull);
+  });
 }

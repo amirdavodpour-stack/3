@@ -84,6 +84,7 @@ abstract interface class AdminRepository {
   Future<List<Map<String, dynamic>>> listTrustReports({String? status});
   Future<void> updateTrustReportStatus(String id, String status);
   Future<List<Map<String, dynamic>>> listUnknownPayouts({int limit = 100});
+  Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({int limit = 50, String? cursor});
   Future<Map<String, dynamic>> resolveUnknownPayout(String id, {required String decision, String? providerRef, String? reason});
   Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30});
   Future<Map<String, dynamic>> getFunnel({int days = 30});
@@ -176,6 +177,40 @@ class ApiAdminRepository implements AdminRepository {
       return (raw['payouts'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(growable: false);
     }
     return const [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({
+    int limit = 50,
+    String? cursor,
+  }) async {
+    final query = StringBuffer('?limit=$limit');
+    if (cursor != null && cursor.trim().isNotEmpty) {
+      query.write('&cursor=${Uri.encodeQueryComponent(cursor)}');
+    }
+    final raw = await _api.request(
+      'GET',
+      '/admin/reconciliation-cases/outbox-events${query.toString()}',
+      auth: true,
+    );
+    if (raw is! Map) {
+      return const {
+        'cases': <Map<String, dynamic>>[],
+        'hasMore': false,
+        'nextCursor': null,
+      };
+    }
+    final data = Map<String, dynamic>.from(raw);
+    return {
+      'cases': data['cases'] is List
+          ? (data['cases'] as List)
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false)
+          : const <Map<String, dynamic>>[],
+      'hasMore': data['hasMore'] == true,
+      'nextCursor': data['nextCursor']?.toString(),
+    };
   }
 
   @override

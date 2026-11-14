@@ -26,6 +26,7 @@ const {
   resolvePayoutUnknown,
 } = payouts;
 const { processOutboxEvent } = await import('../src/outbox_handlers.js');
+const reconciliation = await import('../src/repository/reconciliation.js');
 const { failOutboxEvent } = await import('../src/repository/outbox.js');
 const { paymentProvider } = await import('../src/payment_provider.js');
 
@@ -821,6 +822,87 @@ test('terminal Outbox failure quarantines a payout linkage mismatch instead of p
   assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
   await expectIntegrityQuarantine(before, args, { reason: result.reason, payoutId: reserved.payout.id, eventId: processingEvent.id });
+});
+
+
+test('active outbox-event reconciliation cases are independently listable without mutating finance state', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('outbox-event-reconciliation-list');
+  const reserved = await reservePayout(owner.userId, 'outbox-event-list:' + crypto.randomUUID());
+  const args = { userIds:[owner.userId], payouts:[reserved], events:[reserved.event] };
+
+  const eventCase = await reconciliation.openReconciliationCase({
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'outbox_event',
+    resourceId:reserved.event.id,
+    severity:'CRITICAL',
+    expected:{payoutId:reserved.payout.id,eventType:'PAYOUT_EXECUTE'},
+    observed:{reason:'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+  });
+  await reconciliation.openReconciliationCase({
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'payout',
+    resourceId:reserved.payout.id,
+    severity:'CRITICAL',
+    expected:{payoutId:reserved.payout.id},
+    observed:{reason:'PAYOUT_HOLD_LINKAGE_MISMATCH'},
+  });
+  const secondEventCase = await reconciliation.openReconciliationCase({
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'outbox_event',
+    resourceId:crypto.randomUUID(),
+    severity:'CRITICAL',
+    expected:{},
+    observed:{reason:'second-active-event'},
+  });
+  const resolvedEventCase = await reconciliation.openReconciliationCase({
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'outbox_event',
+    resourceId:crypto.randomUUID(),
+    severity:'HIGH',
+    expected:{},
+    observed:{reason:'historical-only'},
+  });
+  await pool.query("UPDATE reconciliation_cases SET created_at='2099-01-02T00:00:00.123456Z' WHERE id=$1", [eventCase.id]);
+  await pool.query("UPDATE reconciliation_cases SET created_at='2099-01-02T00:00:00.123123Z' WHERE id=$1", [secondEventCase.id]);
+  await pool.query(
+    "UPDATE reconciliation_cases SET status='RESOLVED',resolved_at=NOW(),updated_at=NOW() WHERE id=$1",
+    [resolvedEventCase.id],
+  );
+
+  const before = await snapshot(args);
+  await assert.rejects(
+    reconciliation.listActiveOutboxEventReconciliationCases({cursor:'not-a-canonical-cursor'}),
+    (error) => error?.code === 'INVALID_RECONCILIATION_CURSOR',
+  );
+  assert.equal(typeof reconciliation.listActiveOutboxEventReconciliationCases,'function',
+    'repository must expose a read-only list for event-scoped reconciliation cases');
+  const firstPage = await reconciliation.listActiveOutboxEventReconciliationCases({limit:1});
+  const cases = firstPage.cases;
+  const found = cases.find((item)=>item.id===eventCase.id);
+  assert.ok(found,'active event-scoped CRITICAL case must be returned');
+  assert.equal(found.resourceType,'outbox_event');
+  assert.equal(found.resourceId,reserved.event.id);
+  assert.equal(found.caseType,'PAYOUT_OUTBOX_INTEGRITY_MISMATCH');
+  assert.equal(found.severity,'CRITICAL');
+  assert.equal(found.status,'OPEN');
+  assert.equal(found.eventType,'PAYOUT_EXECUTE');
+  assert.equal(found.eventStatus,reserved.event.status);
+  assert.equal(cases.some((item)=>item.resourceType==='payout'),false,
+    'payout-scoped cases remain in the existing UNKNOWN payout queue');
+  assert.equal(cases.some((item)=>item.id===resolvedEventCase.id),false,
+    'resolved historical cases must not be mixed into the active queue');
+  assert.equal(firstPage.hasMore,true,'active event cases must expose additional pages');
+  assert.ok(firstPage.nextCursor,'a non-final page must expose an opaque next cursor');
+  const secondPage = await reconciliation.listActiveOutboxEventReconciliationCases({
+    limit:1,
+    cursor:firstPage.nextCursor,
+  });
+  assert.deepEqual(secondPage.cases.map((item)=>item.id),[secondEventCase.id]);
+  assert.equal(typeof secondPage.hasMore,'boolean');
+  if (secondPage.hasMore) assert.ok(secondPage.nextCursor);
+  else assert.equal(secondPage.nextCursor,null);
+  const afterState = await snapshot(args);
+  assert.deepEqual(afterState,before,'listing reconciliation evidence must not mutate payout, wallet, Hold, Outbox or ledger state');
 });
 
 after(async () => {
