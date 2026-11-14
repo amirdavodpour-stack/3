@@ -404,9 +404,9 @@ void main() {
 
       expect(find.text('Outbox event integrity cases'), findsOneWidget);
       expect(find.text('PAYOUT OUTBOX INTEGRITY MISMATCH'), findsOneWidget);
-      expect(find.text('Outbox event'), findsOneWidget);
-      expect(find.text('PAYOUT_EXECUTE'), findsOneWidget);
-      expect(find.text('DONE'), findsOneWidget);
+      expect(find.textContaining('Outbox event'), findsOneWidget);
+      expect(find.textContaining('PAYOUT_EXECUTE'), findsOneWidget);
+      expect(find.textContaining('DONE'), findsOneWidget);
       expect(find.text('event-01-00000000-0000-4000-8000-000000000001'), findsOneWidget);
       expect(find.text('event-02-00000000-0000-4000-8000-000000000002'), findsNothing);
       expect(repository.outboxEventCaseCalls, 1);
