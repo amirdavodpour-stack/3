@@ -88,8 +88,8 @@ void main() {
   test('event reconciliation repository sends an authenticated paginated GET', () async {
     server.handlers['/admin/reconciliation-cases/outbox-events'] = (request, body) async {
       expect(request.method, 'GET');
-      expect(request.url.queryParameters['limit'], '25');
-      expect(request.url.queryParameters['cursor'], 'opaque cursor+/=');
+      expect(request.uri.queryParameters['limit'], '25');
+      expect(request.uri.queryParameters['cursor'], 'opaque cursor+/=');
       expect(request.headers.value('authorization'), 'Bearer token');
       await respondJson(request, 200, {
         'data': {
