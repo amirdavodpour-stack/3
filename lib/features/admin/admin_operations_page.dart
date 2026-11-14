@@ -512,16 +512,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                 ),
               )
             else ...[
-              FutureBuilder<Map<String, dynamic>>(
-                future: _outboxEventReconciliationCases,
-                builder: (_, snapshot) => _loadingOrError(
-                  snapshot,
-                  _outboxEventCasesSection,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 8),
               Text(
                 _t('تسویه‌های ناشناخته', 'Unknown payouts'),
                 style: Theme.of(context).textTheme.titleSmall,
@@ -540,6 +530,16 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: rows.map(_payoutCard).toList(growable: false),
                         ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              FutureBuilder<Map<String, dynamic>>(
+                future: _outboxEventReconciliationCases,
+                builder: (_, snapshot) => _loadingOrError(
+                  snapshot,
+                  _outboxEventCasesSection,
                 ),
               ),
             ],

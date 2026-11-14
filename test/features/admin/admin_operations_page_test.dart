@@ -390,8 +390,17 @@ void main() {
 
       await tester.pumpWidget(_host(repository));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unknown payouts'));
       await tester.tap(find.text('Unknown payouts'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Outbox event integrity cases'),
+        250,
+        scrollable: find.descendant(
+          of: find.byType(RefreshIndicator),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
 
       expect(find.text('Outbox event integrity cases'), findsOneWidget);
       expect(find.text('PAYOUT OUTBOX INTEGRITY MISMATCH'), findsOneWidget);
