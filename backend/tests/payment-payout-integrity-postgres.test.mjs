@@ -909,3 +909,173 @@ after(async () => {
   if (pool) await pool.end();
   if (enabled) await getPool().end();
 });
+
+
+test('event-scoped investigation notes are audited and idempotent without changing financial state', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('outbox-event-investigation');
+  const intended = await reservePayout(owner.userId, `investigation-intended:${crypto.randomUUID()}`);
+  const eventSource = await reservePayout(owner.userId, `investigation-event:${crypto.randomUUID()}`);
+  const args = {
+    userIds: [owner.userId],
+    payouts: [intended, eventSource],
+    events: [intended.event, eventSource.event],
+  };
+
+  const quarantine = await markPayoutUnknown({
+    eventId: eventSource.event.id,
+    payoutId: intended.payout.id,
+    reason: 'event/payout identity cannot be correlated',
+  });
+  assert.equal(quarantine.requiresReconciliation, true);
+  assert.equal(quarantine.reconciliationReason, 'PAYOUT_OUTBOX_IDENTITY_MISMATCH');
+
+  const { rows: cases } = await pool.query(
+    `SELECT id,resource_id,status
+       FROM reconciliation_cases
+      WHERE resource_type='outbox_event' AND resource_id=$1
+        AND case_type='PAYOUT_OUTBOX_INTEGRITY_MISMATCH'
+        AND status IN ('OPEN','INVESTIGATING')`,
+    [eventSource.event.id],
+  );
+  assert.equal(cases.length, 1);
+  const caseId = cases[0].id;
+  assert.equal(cases[0].status, 'OPEN');
+  const before = await snapshot(args);
+
+  const actorId = crypto.randomUUID();
+  const sessionJti = `investigation-write-session:${crypto.randomUUID()}`;
+  const { rows: admins } = await pool.query(
+    `INSERT INTO users(
+       id,email,password_hash,display_name,role,status,session_version,
+       google_subject,admin_panel_verified_at,
+       admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
+     ) VALUES(
+       $1,'amir.davodpour@gmail.com','test','Primary Admin','ADMIN','ACTIVE',0,
+       $2,NOW(),$3,'WRITE',NOW()
+     )
+     ON CONFLICT (email) DO UPDATE SET
+       role='ADMIN',status='ACTIVE',google_subject=EXCLUDED.google_subject,
+       admin_panel_verified_at=NOW(),
+       admin_panel_verified_session_jti=EXCLUDED.admin_panel_verified_session_jti,
+       admin_panel_verified_scope='WRITE'
+     RETURNING id`,
+    [actorId, `verified-investigation-admin:${crypto.randomUUID()}`, sessionJti],
+  );
+  const verifiedActorId = admins[0].id;
+
+  const input = {
+    caseId,
+    actorId: verifiedActorId,
+    sessionJti,
+    verificationMinutes: 5,
+    reason: 'Correlate the quarantined event against the canonical payout and provider evidence.',
+    evidenceReference: `incident:${crypto.randomUUID()}`,
+    verification: {
+      eventIdentity: 'MISMATCH_CONFIRMED',
+      canonicalPayout: 'NOT_VERIFIED',
+      providerOutcome: 'NOT_CHECKED',
+    },
+    idempotencyKey: `event-investigation:${crypto.randomUUID()}`,
+  };
+
+  const recorded = await reconciliation.appendOutboxEventReconciliationNote(input);
+  assert.equal(recorded.caseId, caseId);
+  assert.equal(recorded.eventId, eventSource.event.id);
+  assert.equal(recorded.action, 'INVESTIGATION_NOTE_ADDED');
+  assert.equal(recorded.caseStatus, 'INVESTIGATING');
+  assert.equal(recorded.replayed, false);
+
+  const after = await snapshot(args);
+  for (const field of ['wallets','payouts','holds','operations','journals','walletEntries','ledgerEntries','outbox']) {
+    assert.deepEqual(after[field], before[field], `investigation note must not change ${field}`);
+  }
+  assert.equal(after.reconciliationCases.length, 1);
+  assert.equal(after.reconciliationCases[0].status, 'INVESTIGATING');
+  assert.equal(after.reconciliationCases[0].resource_type, 'outbox_event');
+  assert.equal(after.reconciliationCases[0].resource_id, eventSource.event.id);
+
+  const replay = await reconciliation.appendOutboxEventReconciliationNote(input);
+  assert.equal(replay.id, recorded.id);
+  assert.equal(replay.replayed, true);
+  const { rows: notes } = await pool.query(
+    `SELECT id,actor_id,actor_session_jti,action,reason,evidence_reference,
+            verification,idempotency_key,request_hash
+       FROM reconciliation_case_events
+      WHERE case_id=$1 AND actor_id=$2`,
+    [caseId, verifiedActorId],
+  );
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].actor_session_jti, sessionJti);
+  assert.equal(notes[0].action, 'INVESTIGATION_NOTE_ADDED');
+  assert.equal(notes[0].reason, input.reason);
+  assert.equal(notes[0].evidence_reference, input.evidenceReference);
+  assert.deepEqual(notes[0].verification, input.verification);
+
+  await assert.rejects(
+    reconciliation.appendOutboxEventReconciliationNote({
+      ...input,
+      reason: 'A different statement must not reuse the same idempotency key.',
+    }),
+    (error) => error?.code === 'IDEMPOTENCY_CONFLICT',
+  );
+
+  const { rows: afterConflict } = await pool.query(
+    `SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1`,
+    [caseId],
+  );
+  assert.equal(afterConflict[0].count, 1);
+});
+
+test('event-scoped investigation notes reject non-primary or stale-session administrators', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('outbox-event-investigation-auth');
+  const intended = await reservePayout(owner.userId, `investigation-auth-intended:${crypto.randomUUID()}`);
+  const eventSource = await reservePayout(owner.userId, `investigation-auth-event:${crypto.randomUUID()}`);
+  await markPayoutUnknown({
+    eventId: eventSource.event.id,
+    payoutId: intended.payout.id,
+    reason: 'event/payout identity cannot be correlated',
+  });
+  const { rows: cases } = await pool.query(
+    `SELECT id FROM reconciliation_cases
+      WHERE resource_type='outbox_event' AND resource_id=$1
+        AND status IN ('OPEN','INVESTIGATING')`,
+    [eventSource.event.id],
+  );
+  assert.equal(cases.length, 1);
+  const caseId = cases[0].id;
+
+  const actorId = crypto.randomUUID();
+  const sessionJti = `investigation-auth-session:${crypto.randomUUID()}`;
+  await pool.query(
+    `INSERT INTO users(
+       id,email,password_hash,display_name,role,status,session_version,
+       google_subject,admin_panel_verified_at,
+       admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
+     ) VALUES($1,$2,'test','Operations Admin','ADMIN','ACTIVE',0,$3,NOW(),$4,'WRITE',NOW())`,
+    [actorId, `operations-investigation-${actorId}@example.test`, `operations-google-${actorId}`, sessionJti],
+  );
+
+  const input = {
+    caseId,
+    actorId,
+    sessionJti,
+    verificationMinutes: 5,
+    reason: 'Investigate the quarantined event using the referenced evidence.',
+    evidenceReference: `incident:${crypto.randomUUID()}`,
+    verification: {
+      eventIdentity: 'UNRESOLVED',
+      canonicalPayout: 'NOT_VERIFIED',
+      providerOutcome: 'NOT_CHECKED',
+    },
+    idempotencyKey: `event-investigation-auth:${crypto.randomUUID()}`,
+  };
+
+  await assert.rejects(
+    reconciliation.appendOutboxEventReconciliationNote(input),
+    (error) => error?.code === 'PRIMARY_ADMIN_ONLY',
+  );
+  assert.equal(
+    (await pool.query('SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1', [caseId])).rows[0].count,
+    0,
+  );
+});
