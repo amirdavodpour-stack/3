@@ -1115,12 +1115,16 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
                 ),
               ),
             const SizedBox(height: 6),
-            Text('${_t('شرح', 'Reason')}: ${note['reason'] ?? '—'}'),
+            Text(
+              '${_t('شرح', 'Reason')}: ${note['reason'] ?? '—'}',
+              key: ValueKey('outbox-note-reason-${note['id']}'),
+            ),
             const SizedBox(height: 4),
             Directionality(
               textDirection: TextDirection.ltr,
               child: SelectableText(
                 '${_t('ارجاع مدرک', 'Evidence reference')}: ${evidence.isEmpty ? '—' : evidence}',
+                key: ValueKey('outbox-note-evidence-${note['id']}'),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

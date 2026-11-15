@@ -525,8 +525,14 @@ void main() {
       await tester.tap(find.text('Investigation notes'));
       await tester.pumpAndSettle();
       expect(repository.outboxNoteHistoryCalls, 1);
-      expect(find.textContaining('The canonical payout mapping is still being checked.'), findsOneWidget);
-      expect(find.textContaining('incident:previous-note'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('outbox-note-reason-previous-note'))).data,
+        contains('The canonical payout mapping is still being checked.'),
+      );
+      expect(
+        tester.widget<SelectableText>(find.byKey(const ValueKey('outbox-note-evidence-previous-note'))).data,
+        contains('incident:previous-note'),
+      );
 
       await tester.enterText(
         find.byKey(const ValueKey('outbox-investigation-reason-case-01')),
@@ -551,7 +557,10 @@ void main() {
         'providerOutcome':'NOT_CHECKED',
       });
       expect(repository.submittedOutboxNotes.single['idempotencyKey'], isNotEmpty);
-      expect(find.textContaining('Confirmed the event identity mismatch after independent review.'), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('outbox-note-reason-note-1'))).data,
+        contains('Confirmed the event identity mismatch after independent review.'),
+      );
       expect(repository.resolveCalls, 0);
       expect(tester.takeException(), isNull);
     },
