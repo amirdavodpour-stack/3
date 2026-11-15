@@ -27,6 +27,7 @@ const {
 } = payouts;
 const { processOutboxEvent } = await import('../src/outbox_handlers.js');
 const reconciliation = await import('../src/repository/reconciliation.js');
+const { migration: reconciliationCaseEventsMigration } = await import('../src/db/migrations/055_reconciliation_case_events.js');
 const { failOutboxEvent } = await import('../src/repository/outbox.js');
 const { paymentProvider } = await import('../src/payment_provider.js');
 
@@ -1024,6 +1025,36 @@ test('event-scoped investigation notes are audited and idempotent without changi
     [caseId],
   );
   assert.equal(afterConflict[0].count, 1);
+
+  await assert.rejects(
+    pool.query(
+      'UPDATE reconciliation_case_events SET reason=$2 WHERE id=$1',
+      [recorded.id, 'tampered evidence must never replace original content'],
+    ),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+  await assert.rejects(
+    pool.query('DELETE FROM reconciliation_case_events WHERE id=$1', [recorded.id]),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+  await assert.rejects(
+    pool.query('TRUNCATE reconciliation_case_events'),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+  await assert.rejects(
+    pool.query('DELETE FROM users WHERE id=$1', [verifiedActorId]),
+    (error) => error?.code === '23503',
+  );
+  await assert.rejects(
+    reconciliationCaseEventsMigration.down(pool),
+    /Cannot rollback reconciliation case events while investigation evidence exists/,
+  );
+  const { rows: retained } = await pool.query(
+    'SELECT id,reason FROM reconciliation_case_events WHERE id=$1',
+    [recorded.id],
+  );
+  assert.equal(retained.length, 1);
+  assert.equal(retained[0].reason, input.reason);
 });
 
 test('event-scoped investigation notes reject non-primary or stale-session administrators', { skip: !enabled }, async () => {
@@ -1073,6 +1104,68 @@ test('event-scoped investigation notes reject non-primary or stale-session admin
   await assert.rejects(
     reconciliation.appendOutboxEventReconciliationNote(input),
     (error) => error?.code === 'PRIMARY_ADMIN_ONLY',
+  );
+  assert.equal(
+    (await pool.query('SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1', [caseId])).rows[0].count,
+    0,
+  );
+});
+
+test('event-scoped investigation notes reject a stale primary-admin session JTI', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('outbox-event-investigation-stale-session');
+  const intended = await reservePayout(owner.userId, `investigation-stale-intended:${crypto.randomUUID()}`);
+  const eventSource = await reservePayout(owner.userId, `investigation-stale-event:${crypto.randomUUID()}`);
+  await markPayoutUnknown({
+    eventId: eventSource.event.id,
+    payoutId: intended.payout.id,
+    reason: 'event/payout identity cannot be correlated',
+  });
+  const { rows: cases } = await pool.query(
+    `SELECT id FROM reconciliation_cases
+      WHERE resource_type='outbox_event' AND resource_id=$1
+        AND case_type='PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'
+        AND status IN ('OPEN','INVESTIGATING')`,
+    [eventSource.event.id],
+  );
+  assert.equal(cases.length, 1);
+  const caseId = cases[0].id;
+  const actorId = crypto.randomUUID();
+  const storedSessionJti = `current-investigation-session:${crypto.randomUUID()}`;
+  const staleSessionJti = `stale-investigation-session:${crypto.randomUUID()}`;
+  const { rows: admins } = await pool.query(
+    `INSERT INTO users(
+       id,email,password_hash,display_name,role,status,session_version,
+       google_subject,admin_panel_verified_at,
+       admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
+     ) VALUES(
+       $1,'amir.davodpour@gmail.com','test','Primary Admin','ADMIN','ACTIVE',0,
+       $2,NOW(),$3,'WRITE',NOW()
+     )
+     ON CONFLICT (email) DO UPDATE SET
+       role='ADMIN',status='ACTIVE',google_subject=EXCLUDED.google_subject,
+       admin_panel_verified_at=NOW(),
+       admin_panel_verified_session_jti=EXCLUDED.admin_panel_verified_session_jti,
+       admin_panel_verified_scope='WRITE'
+     RETURNING id`,
+    [actorId, `verified-stale-session-admin:${crypto.randomUUID()}`, storedSessionJti],
+  );
+  const input = {
+    caseId,
+    actorId: admins[0].id,
+    sessionJti: staleSessionJti,
+    verificationMinutes: 5,
+    reason: 'Verify this event against the independently retained evidence record.',
+    evidenceReference: `incident:${crypto.randomUUID()}`,
+    verification: {
+      eventIdentity: 'UNRESOLVED',
+      canonicalPayout: 'NOT_VERIFIED',
+      providerOutcome: 'NOT_CHECKED',
+    },
+    idempotencyKey: `event-investigation-stale:${crypto.randomUUID()}`,
+  };
+  await assert.rejects(
+    reconciliation.appendOutboxEventReconciliationNote(input),
+    (error) => error?.code === 'ADMIN_PANEL_LOCKED',
   );
   assert.equal(
     (await pool.query('SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1', [caseId])).rows[0].count,
