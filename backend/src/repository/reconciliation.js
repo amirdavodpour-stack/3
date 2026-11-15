@@ -365,6 +365,79 @@ export async function appendOutboxEventReconciliationNote(input = {}) {
   });
 }
 
+
+
+/**
+ * Read the append-only investigation history for one exact Outbox event case.
+ * Session JTI, idempotency keys, request hashes and provider payloads are
+ * intentionally not exposed to the Admin client.
+ */
+export async function listOutboxEventReconciliationNotes({
+  caseId,
+  limit = 25,
+  cursor = null,
+} = {}) {
+  const normalizedCaseId = String(caseId || '').trim();
+  if (!UUID_VALUE.test(normalizedCaseId)) {
+    throw investigationInputError('INVALID_RECONCILIATION_CASE_ID');
+  }
+
+  const pool = requirePool();
+  const bounded = limitValue(limit, 25);
+  const decodedCursor = decodeReconciliationCursor(cursor);
+  const { rows: cases } = await pool.query(
+    `SELECT id
+       FROM reconciliation_cases
+      WHERE id=$1
+        AND resource_type='outbox_event'
+        AND case_type=ANY($2::text[])`,
+    [normalizedCaseId, OUTBOX_EVENT_INVESTIGATION_CASE_TYPES],
+  );
+  if (!cases[0]) {
+    const error = new Error('RECONCILIATION_CASE_NOT_FOUND');
+    error.code = 'RECONCILIATION_CASE_NOT_FOUND';
+    error.status = 404;
+    throw error;
+  }
+
+  const { rows } = await pool.query(
+    `SELECT n.id,
+            n.case_id AS "caseId",
+            n.event_id AS "eventId",
+            n.action,
+            n.reason,
+            n.evidence_reference AS "evidenceReference",
+            n.verification,
+            COALESCE(NULLIF(BTRIM(u.display_name),''),'Administrator') AS "actorDisplayName",
+            to_char(n.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt"
+       FROM reconciliation_case_events n
+       JOIN users u ON u.id=n.actor_id
+      WHERE n.case_id=$1
+        AND (
+          $2::timestamptz IS NULL
+          OR (n.created_at,n.id)<($2::timestamptz,$3::uuid)
+        )
+      ORDER BY n.created_at DESC,n.id DESC
+      LIMIT $4`,
+    [
+      normalizedCaseId,
+      decodedCursor?.createdAt ?? null,
+      decodedCursor?.id ?? null,
+      bounded + 1,
+    ],
+  );
+
+  const hasMore = rows.length > bounded;
+  const notes = rows.slice(0, bounded);
+  return {
+    notes,
+    hasMore,
+    nextCursor: hasMore && notes.length
+      ? encodeReconciliationCursor(notes[notes.length - 1])
+      : null,
+  };
+}
+
 export async function openReconciliationCase({
   caseType,
   resourceType,

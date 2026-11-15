@@ -85,6 +85,14 @@ abstract interface class AdminRepository {
   Future<void> updateTrustReportStatus(String id, String status);
   Future<List<Map<String, dynamic>>> listUnknownPayouts({int limit = 100});
   Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({int limit = 50, String? cursor});
+  Future<Map<String, dynamic>> listOutboxEventReconciliationNotes(String caseId, {int limit = 25, String? cursor});
+  Future<Map<String, dynamic>> appendOutboxEventReconciliationNote(
+    String caseId, {
+    required String reason,
+    required String evidenceReference,
+    required Map<String, dynamic> verification,
+    required String idempotencyKey,
+  });
   Future<Map<String, dynamic>> resolveUnknownPayout(String id, {required String decision, String? providerRef, String? reason});
   Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30});
   Future<Map<String, dynamic>> getFunnel({int days = 30});
@@ -211,6 +219,58 @@ class ApiAdminRepository implements AdminRepository {
       'hasMore': data['hasMore'] == true,
       'nextCursor': data['nextCursor']?.toString(),
     };
+  }
+
+
+  @override
+  Future<Map<String, dynamic>> listOutboxEventReconciliationNotes(
+    String caseId, {
+    int limit = 25,
+    String? cursor,
+  }) async {
+    final query = StringBuffer('?limit=$limit');
+    if (cursor != null && cursor.trim().isNotEmpty) {
+      query.write('&cursor=${Uri.encodeQueryComponent(cursor)}');
+    }
+    final path = '/admin/reconciliation-cases/outbox-events/${Uri.encodeComponent(caseId)}/investigation-notes';
+    final raw = await _api.request('GET', '$path${query.toString()}', auth: true);
+    if (raw is! Map) {
+      return const {'notes': <Map<String, dynamic>>[], 'hasMore': false, 'nextCursor': null};
+    }
+    final data = Map<String, dynamic>.from(raw);
+    return {
+      'notes': data['notes'] is List
+          ? (data['notes'] as List)
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList(growable: false)
+          : const <Map<String, dynamic>>[],
+      'hasMore': data['hasMore'] == true,
+      'nextCursor': data['nextCursor']?.toString(),
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> appendOutboxEventReconciliationNote(
+    String caseId, {
+    required String reason,
+    required String evidenceReference,
+    required Map<String, dynamic> verification,
+    required String idempotencyKey,
+  }) async {
+    final path = '/admin/reconciliation-cases/outbox-events/${Uri.encodeComponent(caseId)}/investigation-notes';
+    final raw = await _api.request(
+      'POST',
+      path,
+      auth: true,
+      body: {
+        'reason': reason.trim(),
+        'evidenceReference': evidenceReference.trim(),
+        'verification': verification,
+        'idempotencyKey': idempotencyKey,
+      },
+    );
+    return raw is Map ? Map<String, dynamic>.from(raw) : const <String, dynamic>{};
   }
 
   @override

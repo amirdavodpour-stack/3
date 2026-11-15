@@ -701,6 +701,34 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       }
     }
 
+
+    if(req.method==='GET' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts[4]==='investigation-notes' && parts.length===5){
+      assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);
+      if (typeof repo?.listOutboxEventReconciliationNotes !== 'function') {
+        throw new HttpError(503, 'FINANCIAL_CONTROL_UNAVAILABLE', 'Reconciliation controls are unavailable');
+      }
+      const url = new URL(req.url, 'http://localhost');
+      const limit = url.searchParams.get('limit');
+      const cursor = url.searchParams.get('cursor');
+      try {
+        const page = await repo.listOutboxEventReconciliationNotes({
+          caseId: parts[3],
+          limit,
+          cursor,
+        });
+        return sendJson(res, 200, page);
+      } catch (error) {
+        if (error?.code === 'INVALID_RECONCILIATION_CURSOR' ||
+            error?.code === 'INVALID_RECONCILIATION_CASE_ID') {
+          throw new HttpError(400, error.code, 'Reconciliation history request is invalid');
+        }
+        if (error?.code === 'RECONCILIATION_CASE_NOT_FOUND') {
+          throw new HttpError(404, 'RECONCILIATION_CASE_NOT_FOUND', 'Outbox reconciliation case not found');
+        }
+        throw error;
+      }
+    }
+
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts.length===3){
       assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);
       if (typeof repo?.listActiveOutboxEventReconciliationCases !== 'function') {

@@ -583,7 +583,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Outbox event integrity cases'), findsOneWidget);
-      expect(find.text('Investigation notes'), findsNothing);
+      expect(find.text('Investigation notes'), findsOneWidget);
+      expect(find.text('Add investigation note'), findsNothing);
       expect(repository.outboxNoteHistoryCalls, 0);
       expect(repository.appendOutboxNoteCalls, 0);
     },

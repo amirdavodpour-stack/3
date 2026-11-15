@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +34,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
   bool _outboxEventHasMore = false;
   bool _outboxEventLoadMoreBusy = false;
   int _outboxEventRequestGeneration = 0;
+  final Map<String,String> _outboxEventCaseStatusOverrides = <String,String>{};
   late Future<Map<String, dynamic>> _analytics;
   late Future<Map<String, dynamic>> _funnel;
   late Future<Map<String, dynamic>> _crashes;
@@ -92,6 +95,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
 
     _additionalOutboxEventCases.clear();
     _outboxEventCaseIds.clear();
+    _outboxEventCaseStatusOverrides.clear();
     _outboxEventNextCursor = null;
     _outboxEventHasMore = false;
     _outboxEventLoadMoreBusy = false;
@@ -454,20 +458,33 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
             _t('پروندهٔ فعالی برای رویدادهای Outbox وجود ندارد', 'No active Outbox event integrity cases'),
           )
         else
-          ...rows.map(
-            (item) => _reconciliationCaseCard(
-              item,
-              showResourceLocator: true,
-            ),
-          ),
+          ...rows.map((item) {
+            final caseId = '${item['id'] ?? ''}';
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _reconciliationCaseCard(item, showResourceLocator: true),
+                if (caseId.isNotEmpty)
+                  _OutboxEventInvestigationPanel(
+                    key: ValueKey('outbox-investigation-$caseId'),
+                    repository: context.read<AdminRepository>(),
+                    caseId: caseId,
+                    canWrite: _hasPermission('admin.manage_reconciliation_cases'),
+                    translate: _t,
+                    onCaseStatusChanged: (status) {
+                      if (!mounted) return;
+                      setState(() => _outboxEventCaseStatusOverrides[caseId] = status);
+                    },
+                  ),
+              ],
+            );
+          }),
         if (_outboxEventHasMore) ...[
           const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _outboxEventLoadMoreBusy
-                  ? null
-                  : _loadMoreOutboxEventCases,
+              onPressed: _outboxEventLoadMoreBusy ? null : _loadMoreOutboxEventCases,
               icon: _outboxEventLoadMoreBusy
                   ? const SizedBox(
                       width: 16,
@@ -486,7 +503,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
       ],
     );
   }
-
   Widget _payoutsTab() => RefreshIndicator(
         onRefresh: () async => _reload(),
         child: ListView(
@@ -621,7 +637,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     final aggregateType = '${item['aggregateType'] ?? ''}';
     final aggregateId = '${item['aggregateId'] ?? ''}';
     final severity = '${item['severity'] ?? '—'}'.trim().toUpperCase();
-    final status = '${item['status'] ?? '—'}'.trim().toUpperCase();
+    final status = (_outboxEventCaseStatusOverrides[caseId] ?? '${item['status'] ?? '—'}').trim().toUpperCase();
     final expected = item['expected'] is Map
         ? Map<String, dynamic>.from(item['expected'] as Map)
         : const <String, dynamic>{};
@@ -946,4 +962,322 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
     padding: const EdgeInsets.symmetric(vertical: 32),
     child: EmptyState(icon: icon, title: text, message: ''),
   );
+}
+
+
+
+class _OutboxEventInvestigationPanel extends StatefulWidget {
+  const _OutboxEventInvestigationPanel({
+    super.key,
+    required this.repository,
+    required this.caseId,
+    required this.canWrite,
+    required this.translate,
+    required this.onCaseStatusChanged,
+  });
+
+  final AdminRepository repository;
+  final String caseId;
+  final bool canWrite;
+  final String Function(String fa, String en) translate;
+  final ValueChanged<String> onCaseStatusChanged;
+
+  @override
+  State<_OutboxEventInvestigationPanel> createState() =>
+      _OutboxEventInvestigationPanelState();
+}
+
+class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigationPanel> {
+  final _formKey = GlobalKey<FormState>();
+  final _reasonController = TextEditingController();
+  final _evidenceController = TextEditingController();
+  final _random = Random.secure();
+  final List<Map<String, dynamic>> _notes = [];
+  String _eventIdentity = 'UNRESOLVED';
+  String _canonicalPayout = 'NOT_VERIFIED';
+  String _providerOutcome = 'NOT_CHECKED';
+  String? _nextCursor;
+  String? _pendingIdempotencyKey;
+  String? _historyError;
+  bool _hasMore = false;
+  bool _historyBusy = false;
+  bool _historyLoaded = false;
+  bool _saving = false;
+
+  String _t(String fa, String en) => widget.translate(fa, en);
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _evidenceController.dispose();
+    super.dispose();
+  }
+
+  String _newIdempotencyKey() =>
+      'event-note-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+
+  Future<void> _loadHistory({bool nextPage = false}) async {
+    if (_historyBusy || (nextPage && (!_hasMore || _nextCursor == null))) return;
+    setState(() {
+      _historyBusy = true;
+      _historyError = null;
+    });
+    try {
+      final page = await widget.repository.listOutboxEventReconciliationNotes(
+        widget.caseId,
+        limit: 25,
+        cursor: nextPage ? _nextCursor : null,
+      );
+      if (!mounted) return;
+      final raw = page['notes'];
+      final rows = raw is List
+          ? raw.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false)
+          : const <Map<String, dynamic>>[];
+      setState(() {
+        if (!nextPage) _notes.clear();
+        _notes.addAll(rows);
+        final cursor = page['nextCursor']?.toString();
+        _nextCursor = cursor == null || cursor.isEmpty ? null : cursor;
+        _hasMore = page['hasMore'] == true && _nextCursor != null;
+        _historyLoaded = true;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _historyError = apiErrorMessage(error));
+    } finally {
+      if (mounted) setState(() => _historyBusy = false);
+    }
+  }
+
+  Future<void> _submitNote() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
+    final idempotencyKey = _pendingIdempotencyKey ??= _newIdempotencyKey();
+    setState(() => _saving = true);
+    try {
+      final result = await widget.repository.appendOutboxEventReconciliationNote(
+        widget.caseId,
+        reason: _reasonController.text.trim(),
+        evidenceReference: _evidenceController.text.trim(),
+        verification: {
+          'eventIdentity': _eventIdentity,
+          'canonicalPayout': _canonicalPayout,
+          'providerOutcome': _providerOutcome,
+        },
+        idempotencyKey: idempotencyKey,
+      );
+      if (!mounted) return;
+      final status = result['caseStatus']?.toString();
+      if (status != null && status.isNotEmpty) widget.onCaseStatusChanged(status);
+      _reasonController.clear();
+      _evidenceController.clear();
+      _pendingIdempotencyKey = null;
+      await _loadHistory();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('یادداشت بررسی ثبت شد', 'Investigation note saved'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(error))));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _noteCard(Map<String, dynamic> note) {
+    final verification = note['verification'] is Map
+        ? Map<String, dynamic>.from(note['verification'] as Map)
+        : const <String, dynamic>{};
+    final actor = '${note['actorDisplayName'] ?? _t('مدیر سامانه', 'Administrator')}';
+    final createdAt = '${note['createdAt'] ?? ''}';
+    final evidence = '${note['evidenceReference'] ?? ''}';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(child: Text(actor, style: Theme.of(context).textTheme.titleSmall)),
+              if (createdAt.isNotEmpty) Text(createdAt, style: Theme.of(context).textTheme.bodySmall),
+            ]),
+            const SizedBox(height: 6),
+            Text('${_t('شرح', 'Reason')}: ${note['reason'] ?? '—'}'),
+            const SizedBox(height: 4),
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SelectableText(
+                '${_t('ارجاع مدرک', 'Evidence reference')}: ${evidence.isEmpty ? '—' : evidence}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            if (verification.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${_t('نتیجه بررسی', 'Verification')}: ${verification.entries.map((entry) => '${entry.key}=${entry.value}').join(' • ')}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _verificationDropdown({
+    required String label,
+    required String value,
+    required List<String> values,
+    required ValueChanged<String?> onChanged,
+    required String keyName,
+  }) {
+    return DropdownButtonFormField<String>(
+      key: ValueKey('$keyName-${widget.caseId}'),
+      initialValue: value,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: label),
+      items: values.map((item) => DropdownMenuItem<String>(
+        value: item,
+        child: Text(item.replaceAll('_', ' ')),
+      )).toList(growable: false),
+      onChanged: _saving ? null : (next) {
+        _pendingIdempotencyKey = null;
+        onChanged(next);
+      },
+    );
+  }
+
+  Widget _composer() {
+    if (!widget.canWrite) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Divider(height: 24),
+          Text(_t('ثبت یادداشت مستند', 'Add an evidence-backed note'), style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            _t(
+              'این عملیات فقط سابقه بررسی را ثبت می‌کند؛ موجودی، تسویه و وجه قفل‌شده تغییر نمی‌کند. ثبت نیازمند تأیید WRITE همین نشست است.',
+              'This appends investigation evidence only. It does not move funds, resolve payouts or release holds. The server requires current-session WRITE step-up.',
+            ),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            key: ValueKey('outbox-investigation-reason-${widget.caseId}'),
+            controller: _reasonController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 1000,
+            decoration: InputDecoration(labelText: _t('دلیل بررسی', 'Investigation reason'), alignLabelWithHint: true),
+            onChanged: (_) => _pendingIdempotencyKey = null,
+            validator: (value) {
+              final length = value?.trim().length ?? 0;
+              if (length < 10 || length > 1000) return _t('دلیل باید بین ۱۰ تا ۱۰۰۰ نویسه باشد', 'Enter 10 to 1000 characters');
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('outbox-investigation-evidence-${widget.caseId}'),
+            controller: _evidenceController,
+            maxLength: 500,
+            decoration: InputDecoration(
+              labelText: _t('ارجاع مدرک', 'Evidence reference'),
+              hintText: _t('شناسه تیکت یا مسیر مدرک', 'Incident ID or evidence location'),
+            ),
+            onChanged: (_) => _pendingIdempotencyKey = null,
+            validator: (value) {
+              final length = value?.trim().length ?? 0;
+              if (length < 8 || length > 500) return _t('ارجاع مدرک باید بین ۸ تا ۵۰۰ نویسه باشد', 'Enter 8 to 500 characters');
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('هویت رویداد', 'Event identity'),
+            value: _eventIdentity,
+            values: const ['MISMATCH_CONFIRMED','UNRESOLVED'],
+            keyName: 'outbox-event-identity',
+            onChanged: (value) { if (value != null) setState(() => _eventIdentity = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('تطبیق تسویه مرجع', 'Canonical payout'),
+            value: _canonicalPayout,
+            values: const ['MATCHED','MISMATCHED','NOT_FOUND','NOT_VERIFIED'],
+            keyName: 'outbox-canonical-payout',
+            onChanged: (value) { if (value != null) setState(() => _canonicalPayout = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('نتیجه ارائه‌دهنده', 'Provider outcome'),
+            value: _providerOutcome,
+            values: const ['SUCCEEDED_CONFIRMED','FAILED_CONFIRMED','UNKNOWN','NOT_CHECKED'],
+            keyName: 'outbox-provider-outcome',
+            onChanged: (value) { if (value != null) setState(() => _providerOutcome = value); },
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _saving ? null : _submitNote,
+            icon: _saving
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.note_add_outlined),
+            label: Text(_saving ? _t('در حال ثبت...', 'Saving...') : _t('ثبت یادداشت بررسی', 'Add investigation note')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        key: PageStorageKey<String>('outbox-investigation-${widget.caseId}'),
+        title: Text(_t('یادداشت‌های بررسی', 'Investigation notes')),
+        subtitle: Text(_t(
+          'مشاهده سابقه مستند؛ بدون تغییر وضعیت مالی',
+          'Evidence history only; no financial state changes',
+        )),
+        onExpansionChanged: (expanded) {
+          if (expanded && !_historyLoaded && !_historyBusy) _loadHistory();
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_historyBusy && !_historyLoaded)
+                  const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+                else if (_historyError != null)
+                  Text(_historyError!, style: TextStyle(color: Theme.of(context).colorScheme.error))
+                else if (_notes.isEmpty)
+                  Text(_t('یادداشتی ثبت نشده است', 'No investigation notes recorded'))
+                else
+                  ..._notes.map(_noteCard),
+                if (_hasMore)
+                  OutlinedButton(
+                    onPressed: _historyBusy ? null : () => _loadHistory(nextPage: true),
+                    child: Text(_historyBusy ? _t('در حال دریافت...', 'Loading...') : _t('یادداشت‌های بیشتر', 'Load more notes')),
+                  ),
+                if (_historyError != null)
+                  TextButton(
+                    onPressed: _historyBusy ? null : () => _loadHistory(),
+                    child: Text(_t('تلاش دوباره', 'Retry')),
+                  ),
+                _composer(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
