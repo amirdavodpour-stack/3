@@ -250,6 +250,10 @@ test('primary administrator can append an evidence-only note to an exact active 
   };
   const calls=[];
   const repo={
+    async isAdminPanelVerified(...args) {
+      assert.deepEqual(args,[admin.id,5,admin.sessionJti,'WRITE']);
+      return true;
+    },
     async appendOutboxEventReconciliationNote(input) {
       calls.push(input);
       return {
@@ -321,6 +325,7 @@ test('operational administrators cannot append Outbox reconciliation investigati
     HttpError,
     URL:globalThis.URL,
     repo:{
+      async isAdminPanelVerified() { return true; },
       async appendOutboxEventReconciliationNote() { writes+=1; return {}; },
     },
     config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
