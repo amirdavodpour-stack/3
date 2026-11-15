@@ -933,7 +933,7 @@ test('event-scoped investigation notes are audited and idempotent without changi
     `SELECT id,resource_id,status
        FROM reconciliation_cases
       WHERE resource_type='outbox_event' AND resource_id=$1
-        AND case_type='PAYOUT_OUTBOX_INTEGRITY_MISMATCH'
+        AND case_type='PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'
         AND status IN ('OPEN','INVESTIGATING')`,
     [eventSource.event.id],
   );
