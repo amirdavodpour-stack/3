@@ -1003,6 +1003,7 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
   bool _historyBusy = false;
   bool _historyLoaded = false;
   bool _saving = false;
+  bool _historyVisible = false;
 
   String _t(String fa, String en) => widget.translate(fa, en);
 
@@ -1252,47 +1253,75 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ExpansionTile(
-        key: PageStorageKey<String>('outbox-investigation-${widget.caseId}'),
-        title: Text(_t('یادداشت‌های بررسی', 'Investigation notes')),
-        subtitle: Text(_t(
-          'مشاهده سابقه مستند؛ بدون تغییر وضعیت مالی',
-          'Evidence history only; no financial state changes',
-        )),
-        onExpansionChanged: (expanded) {
-          if (expanded && !_historyLoaded && !_historyBusy) _loadHistory();
-        },
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_historyBusy && !_historyLoaded)
-                  const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
-                else if (_historyError != null)
-                  Text(_historyError!, style: TextStyle(color: Theme.of(context).colorScheme.error))
-                else if (_notes.isEmpty)
-                  Text(_t('یادداشتی ثبت نشده است', 'No investigation notes recorded'))
-                else
-                  ..._notes.map(_noteCard),
-                if (_hasMore)
-                  OutlinedButton(
-                    onPressed: _historyBusy ? null : () => _loadHistory(nextPage: true),
-                    child: Text(_historyBusy ? _t('در حال دریافت...', 'Loading...') : _t('یادداشت‌های بیشتر', 'Load more notes')),
-                  ),
-                if (_historyError != null)
-                  TextButton(
-                    onPressed: _historyBusy ? null : () => _loadHistory(),
-                    child: Text(_t('تلاش دوباره', 'Retry')),
-                  ),
-                _composer(),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextButton.icon(
+              key: ValueKey('outbox-investigation-toggle-${widget.caseId}'),
+              onPressed: () {
+                final show = !_historyVisible;
+                setState(() => _historyVisible = show);
+                if (show && !_historyLoaded && !_historyBusy) _loadHistory();
+              },
+              icon: Icon(_historyVisible ? Icons.expand_less : Icons.expand_more),
+              label: Text(_t('یادداشت‌های بررسی', 'Investigation notes')),
+              style: TextButton.styleFrom(alignment: Alignment.centerLeft),
             ),
-          ),
-        ],
+            if (_historyVisible)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _t(
+                        'مشاهده سابقه مستند؛ بدون تغییر وضعیت مالی',
+                        'Evidence history only; no financial state changes',
+                      ),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    if (_historyBusy && !_historyLoaded)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_historyError != null)
+                      Text(
+                        _historyError!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      )
+                    else if (_notes.isEmpty)
+                      Text(_t('یادداشتی ثبت نشده است', 'No investigation notes recorded'))
+                    else
+                      ..._notes.map(_noteCard),
+                    if (_hasMore)
+                      OutlinedButton(
+                        onPressed: _historyBusy ? null : () => _loadHistory(nextPage: true),
+                        child: Text(
+                          _historyBusy
+                              ? _t('در حال دریافت...', 'Loading...')
+                              : _t('یادداشت‌های بیشتر', 'Load more notes'),
+                        ),
+                      ),
+                    if (_historyError != null)
+                      TextButton(
+                        onPressed: _historyBusy ? null : () => _loadHistory(),
+                        child: Text(_t('تلاش دوباره', 'Retry')),
+                      ),
+                    _composer(),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
