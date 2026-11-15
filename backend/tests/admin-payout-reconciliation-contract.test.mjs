@@ -225,3 +225,117 @@ test('invalid event reconciliation cursors return a client error without queryin
     (error)=>error?.status===400 && error?.code==='INVALID_RECONCILIATION_CURSOR',
   );
 });
+
+
+test('primary administrator can append an evidence-only note to an exact active Outbox reconciliation case', async () => {
+  const admin = {
+    id:'primary-event-case-admin',
+    email:'amir.davodpour@gmail.com',
+    displayName:'Primary Administrator',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'primary-event-case-google',
+    sessionJti:'primary-event-case-session',
+  };
+  const caseId='00000000-0000-4000-8000-000000000201';
+  const body={
+    reason:'Correlate the event identity against the canonical payout evidence.',
+    evidenceReference:'incident:case-201',
+    verification:{
+      eventIdentity:'MISMATCH_CONFIRMED',
+      canonicalPayout:'NOT_VERIFIED',
+      providerOutcome:'NOT_CHECKED',
+    },
+    idempotencyKey:'event-investigation-note-201',
+  };
+  const calls=[];
+  const repo={
+    async appendOutboxEventReconciliationNote(input) {
+      calls.push(input);
+      return {
+        id:'00000000-0000-4000-8000-000000000202',
+        caseId,
+        eventId:'00000000-0000-4000-8000-000000000203',
+        action:'INVESTIGATION_NOTE_ADDED',
+        caseStatus:'INVESTIGATING',
+        replayed:false,
+      };
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async(req)=>req.body||{},
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
+  });
+  const result=await route(
+    {
+      method:'POST',
+      url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,
+      body,
+      headers:{host:'localhost'},
+    },
+    {},
+    ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+  );
+  assert.equal(result.status,200);
+  assert.equal(result.data.action,'INVESTIGATION_NOTE_ADDED');
+  assert.equal(result.data.caseStatus,'INVESTIGATING');
+  assert.deepEqual(calls,[{
+    ...body,
+    caseId,
+    actorId:admin.id,
+    sessionJti:admin.sessionJti,
+    verificationMinutes:5,
+  }]);
+});
+
+test('operational administrators cannot append Outbox reconciliation investigation notes', async () => {
+  let writes=0;
+  const route=createAdminRoutes({
+    authUser:async()=>({
+      id:'operational-event-case-admin',
+      email:'ops-event-case@example.test',
+      displayName:'Operations Administrator',
+      role:'ADMIN',
+      status:'ACTIVE',
+      googleSubject:'operations-event-case-google',
+      sessionJti:'operations-event-case-session',
+    }),
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({
+      reason:'Investigate this event using independently referenced evidence.',
+      evidenceReference:'incident:case-204',
+      verification:{
+        eventIdentity:'UNRESOLVED',
+        canonicalPayout:'NOT_VERIFIED',
+        providerOutcome:'NOT_CHECKED',
+      },
+      idempotencyKey:'event-investigation-note-204',
+    }),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo:{
+      async appendOutboxEventReconciliationNote() { writes+=1; return {}; },
+    },
+    config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
+  });
+  await assert.rejects(
+    route(
+      {
+        method:'POST',
+        url:'/api/v1/admin/reconciliation-cases/outbox-events/00000000-0000-4000-8000-000000000204/investigation-notes',
+        headers:{host:'localhost'},
+      },
+      {},
+      ['admin','reconciliation-cases','outbox-events','00000000-0000-4000-8000-000000000204','investigation-notes'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PERMISSION_DENIED',
+  );
+  assert.equal(writes,0);
+});
