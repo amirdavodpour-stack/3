@@ -7,7 +7,7 @@ export const migration = {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         case_id UUID NOT NULL REFERENCES reconciliation_cases(id) ON DELETE RESTRICT,
         event_id UUID NOT NULL REFERENCES outbox_events(id) ON DELETE RESTRICT,
-        actor_id UUID NOT NULL,
+        actor_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
         actor_session_jti TEXT NOT NULL
           CHECK (length(trim(actor_session_jti)) BETWEEN 1 AND 200),
         action TEXT NOT NULL
