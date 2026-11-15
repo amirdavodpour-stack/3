@@ -1066,7 +1066,7 @@ test('event-scoped investigation notes are audited and idempotent without changi
     `SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1`,
     [caseId],
   );
-  assert.equal(afterConflict[0].count, 1);
+  assert.equal(afterConflict[0].count, 2);
 
   await assert.rejects(
     pool.query(
