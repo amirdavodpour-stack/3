@@ -668,6 +668,39 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       }
       return sendJson(res,200,{id,status:updated.status});
     }
+
+    if(req.method==='POST' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts[4]==='investigation-notes' && parts.length===5){
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_RECONCILIATION_CASES);
+      if (typeof repo?.appendOutboxEventReconciliationNote !== 'function') {
+        throw new HttpError(503, 'FINANCIAL_CONTROL_UNAVAILABLE', 'Reconciliation controls are unavailable');
+      }
+      const body = await readBody(req);
+      try {
+        const result = await repo.appendOutboxEventReconciliationNote({
+          caseId: parts[3],
+          actorId: me.id,
+          sessionJti: me.sessionJti,
+          verificationMinutes: config.adminPanelWriteVerificationMinutes ?? 5,
+          reason: body?.reason,
+          evidenceReference: body?.evidenceReference,
+          verification: body?.verification,
+          idempotencyKey: body?.idempotencyKey,
+        });
+        return sendJson(res, 200, result);
+      } catch (error) {
+        if (String(error?.code || '').startsWith('INVALID_RECONCILIATION_')) {
+          throw new HttpError(400, error.code, 'Reconciliation investigation note is invalid');
+        }
+        if (error?.code === 'RECONCILIATION_CASE_NOT_FOUND') {
+          throw new HttpError(404, 'RECONCILIATION_CASE_NOT_FOUND', 'Active Outbox reconciliation case not found');
+        }
+        if (['OUTBOX_EVENT_NOT_FOUND','RECONCILIATION_CASE_NOT_ACTIVE','IDEMPOTENCY_CONFLICT'].includes(error?.code)) {
+          throw new HttpError(409, error.code, 'Reconciliation investigation note conflicts with current state');
+        }
+        throw error;
+      }
+    }
+
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts.length===3){
       assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_PAYOUTS);
       if (typeof repo?.listActiveOutboxEventReconciliationCases !== 'function') {
