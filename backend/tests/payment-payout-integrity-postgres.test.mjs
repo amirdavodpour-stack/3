@@ -1012,6 +1012,48 @@ test('event-scoped investigation notes are audited and idempotent without changi
   assert.equal(notes[0].evidence_reference, input.evidenceReference);
   assert.deepEqual(notes[0].verification, input.verification);
 
+  const secondInput = {
+    ...input,
+    reason: 'A second operator note records the independent payout lookup result.',
+    evidenceReference: `incident:${crypto.randomUUID()}`,
+    verification: {
+      eventIdentity: 'MISMATCH_CONFIRMED',
+      canonicalPayout: 'MISMATCHED',
+      providerOutcome: 'UNKNOWN',
+    },
+    idempotencyKey: `event-investigation-second:${crypto.randomUUID()}`,
+  };
+  await reconciliation.appendOutboxEventReconciliationNote(secondInput);
+
+  const firstHistoryPage = await reconciliation.listOutboxEventReconciliationNotes({
+    caseId,
+    limit: 1,
+  });
+  assert.equal(firstHistoryPage.notes.length, 1);
+  assert.equal(firstHistoryPage.hasMore, true);
+  assert.ok(firstHistoryPage.nextCursor);
+  const visibleNote = firstHistoryPage.notes[0];
+  assert.equal(visibleNote.caseId, caseId);
+  assert.equal(visibleNote.eventId, eventSource.event.id);
+  assert.equal(visibleNote.actorDisplayName, 'Primary Admin');
+  for (const sensitiveField of ['actorSessionJti','sessionJti','requestHash','idempotencyKey']) {
+    assert.equal(Object.hasOwn(visibleNote, sensitiveField), false);
+  }
+
+  const secondHistoryPage = await reconciliation.listOutboxEventReconciliationNotes({
+    caseId,
+    limit: 1,
+    cursor: firstHistoryPage.nextCursor,
+  });
+  assert.equal(secondHistoryPage.notes.length, 1);
+  assert.equal(secondHistoryPage.hasMore, false);
+  assert.notEqual(secondHistoryPage.notes[0].id, visibleNote.id);
+
+  const historyAfter = await snapshot(args);
+  for (const field of ['wallets','payouts','holds','operations','journals','walletEntries','ledgerEntries','outbox']) {
+    assert.deepEqual(historyAfter[field], before[field], `reading or appending investigation history must not change ${field}`);
+  }
+
   await assert.rejects(
     reconciliation.appendOutboxEventReconciliationNote({
       ...input,

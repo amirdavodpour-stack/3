@@ -344,3 +344,111 @@ test('operational administrators cannot append Outbox reconciliation investigati
   );
   assert.equal(writes,0);
 });
+
+
+test('payout-visible admins can read bounded event-scoped investigation-note history without sensitive session data', async () => {
+  const admin = {
+    id:'outbox-note-history-admin',
+    email:'ops-history@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-history-admin',
+    sessionJti:'outbox-note-history-session',
+  };
+  const caseId='00000000-0000-4000-8000-000000000301';
+  const expected={
+    notes:[{
+      id:'00000000-0000-4000-8000-000000000302',
+      caseId,
+      eventId:'00000000-0000-4000-8000-000000000303',
+      action:'INVESTIGATION_NOTE_ADDED',
+      reason:'Canonical event identity remains under investigation.',
+      evidenceReference:'incident:outbox-301',
+      verification:{eventIdentity:'UNRESOLVED',canonicalPayout:'NOT_VERIFIED',providerOutcome:'NOT_CHECKED'},
+      actorDisplayName:'Primary Administrator',
+      createdAt:'2026-11-15T12:00:00.123456Z',
+    }],
+    hasMore:true,
+    nextCursor:'opaque-note-cursor',
+  };
+  const calls=[];
+  const repo={
+    async isAdminPanelVerified(...args) {
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return true;
+    },
+    async listOutboxEventReconciliationNotes(input) {
+      calls.push(input);
+      return expected;
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+  const result=await route(
+    {
+      method:'GET',
+      url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes?limit=25&cursor=opaque%20note%20cursor`,
+      headers:{host:'localhost'},
+    },
+    {},
+    ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+  );
+  assert.equal(result.status,200);
+  assert.deepEqual(result.data,expected);
+  assert.deepEqual(calls,[{caseId,limit:'25',cursor:'opaque note cursor'}]);
+});
+
+test('event-scoped investigation-note history maps invalid cursors and unknown cases to safe errors', async () => {
+  const admin={
+    id:'outbox-note-history-admin',
+    email:'ops-history@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-history-admin',
+    sessionJti:'outbox-note-history-session',
+  };
+  const repo={
+    async isAdminPanelVerified() { return true; },
+    async listOutboxEventReconciliationNotes({cursor}) {
+      if(cursor==='bad') throw Object.assign(new Error('INVALID_RECONCILIATION_CURSOR'),{code:'INVALID_RECONCILIATION_CURSOR'});
+      throw Object.assign(new Error('RECONCILIATION_CASE_NOT_FOUND'),{code:'RECONCILIATION_CASE_NOT_FOUND'});
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+  const caseId='00000000-0000-4000-8000-000000000304';
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes?cursor=bad`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===400 && error?.code==='INVALID_RECONCILIATION_CURSOR',
+  );
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===404 && error?.code==='RECONCILIATION_CASE_NOT_FOUND',
+  );
+});
