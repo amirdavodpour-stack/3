@@ -2,7 +2,6 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
-import { config } from '../src/config.js';
 
 // These tests exercise only the synthetic internal payout adapter in a disposable CI database.
 process.env.NODE_ENV = 'test';
@@ -14,10 +13,11 @@ if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
 }
 const pool = enabled ? new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 8 }) : null;
 
-const [{ getPool }, { creditWallet }, payouts] = await Promise.all([
+const [{ getPool }, { creditWallet }, payouts, { config }] = await Promise.all([
   import('../src/db.js'),
   import('../src/wallet_ledger.js'),
   import('../src/repository/payouts.js'),
+  import('../src/config.js'),
 ]);
 const {
   requestPayoutAtomic,
