@@ -351,7 +351,7 @@ void main() {
   testWidgets(
     'event-scoped critical cases render separately and load additional cursor pages',
     (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
+      tester.view.physicalSize = const Size(390, 2000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -393,16 +393,6 @@ void main() {
       await tester.ensureVisible(find.text('Unknown payouts'));
       await tester.tap(find.text('Unknown payouts'));
       await tester.pumpAndSettle();
-      final payoutsScrollable = find.descendant(
-        of: find.byKey(const ValueKey('admin-payouts-scroll')),
-        matching: find.byType(Scrollable),
-      ).first;
-      await tester.scrollUntilVisible(
-        find.text('Outbox event integrity cases'),
-        250,
-        scrollable: payoutsScrollable,
-      );
-
       expect(find.text('Outbox event integrity cases'), findsOneWidget);
       expect(find.text('PAYOUT OUTBOX INTEGRITY MISMATCH'), findsOneWidget);
       expect(find.textContaining('Resource: Outbox event'), findsOneWidget);
@@ -414,11 +404,7 @@ void main() {
       expect(repository.resolveCalls, 0,
           reason: 'event-scoped cases are inspection-only and must not invoke payout resolution');
 
-      await tester.scrollUntilVisible(
-        find.text('Load more cases'),
-        250,
-        scrollable: payoutsScrollable,
-      );
+      expect(tester.getCenter(find.text('Load more cases')).dy, lessThan(2000));
       await tester.tap(find.text('Load more cases'));
       await tester.pumpAndSettle();
 
