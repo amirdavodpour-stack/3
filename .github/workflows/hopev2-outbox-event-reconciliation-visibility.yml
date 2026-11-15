@@ -103,7 +103,8 @@ jobs:
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
       - name: Run Admin UI and repository regressions
         run: |
-          flutter test --no-pub \
+          set -o pipefail
+          flutter test --no-pub --reporter expanded \
             test/features/admin/admin_operations_page_test.dart \
             test/core/admin/admin_repository_extended_test.dart \
-            test/features/admin/admin_page_test.dart
+            test/features/admin/admin_page_test.dart 2>&1 | tail -n 500
