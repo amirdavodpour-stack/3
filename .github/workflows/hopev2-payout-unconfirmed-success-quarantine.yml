@@ -1,0 +1,70 @@
+name: HOPEv2 Payout Unconfirmed Success Quarantine
+
+on:
+  push:
+    branches:
+      - fix/hopev2-payout-unconfirmed-success-quarantine-20261115
+    paths:
+      - ".github/workflows/hopev2-payout-unconfirmed-success-quarantine.yml"
+      - "backend/src/outbox_handlers.js"
+      - "backend/tests/payment-payout-integrity-postgres.test.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-payout-unconfirmed-success-quarantine-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  postgres17:
+    name: Node 24 backend checks and PostgreSQL 17 payout integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+      REQUIRE_INTEGRATION: "1"
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Node 24
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check changed payout handler syntax
+        working-directory: backend
+        run: node --check src/outbox_handlers.js
+      - name: Run backend static checks
+        working-directory: backend
+        run: npm run check
+      - name: Run backend fast regressions
+        working-directory: backend
+        run: npm run test:fast
+      - name: Apply migrations to disposable PostgreSQL 17
+        working-directory: backend
+        run: npm run migrate
+      - name: Run PostgreSQL payout and Outbox integrity regressions
+        working-directory: backend
+        run: npm run test:payment-payout-integrity
