@@ -15,6 +15,7 @@ export const ADMIN_PERMISSIONS = Object.freeze({
   VIEW_PAYOUTS: 'admin.view_payouts',
   RESOLVE_DISPUTES: 'admin.resolve_disputes',
   RESOLVE_PAYOUTS: 'admin.resolve_payouts',
+  MANAGE_RECONCILIATION_CASES: 'admin.manage_reconciliation_cases',
   VIEW_AUDIT: 'admin.view_audit',
   MANAGE_ADMINS: 'admin.manage_admins',
   REVOKE_SESSIONS: 'admin.revoke_sessions',

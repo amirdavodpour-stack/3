@@ -84,4 +84,126 @@ void main() {
     };
     await repository.deleteJob('j1');
   });
+
+  test('event reconciliation repository sends an authenticated paginated GET', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events'] = (request, body) async {
+      expect(request.method, 'GET');
+      expect(request.uri.queryParameters['limit'], '25');
+      expect(request.uri.queryParameters['cursor'], 'opaque cursor+/=');
+      expect(request.headers.value('authorization'), 'Bearer token');
+      await respondJson(request, 200, {
+        'data': {
+          'cases': [
+            {
+              'id': 'case-1',
+              'resourceType': 'outbox_event',
+              'severity': 'CRITICAL',
+            },
+            'malformed',
+          ],
+          'hasMore': true,
+          'nextCursor': 'next-cursor',
+        },
+      });
+    };
+
+    final page = await repository.listActiveOutboxEventReconciliationCases(
+      limit: 25,
+      cursor: 'opaque cursor+/=',
+    );
+
+    expect(page['cases'], hasLength(1));
+    expect((page['cases'] as List).single['id'], 'case-1');
+    expect(page['hasMore'], isTrue);
+    expect(page['nextCursor'], 'next-cursor');
+  });
+
+
+  test('event investigation history repository sends an authenticated case-scoped paginated GET', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events/case-01/investigation-notes'] = (request, body) async {
+      expect(request.method, 'GET');
+      expect(request.uri.queryParameters['limit'], '1');
+      expect(request.uri.queryParameters['cursor'], 'opaque history cursor+/=');
+      expect(request.headers.value('authorization'), 'Bearer token');
+      await respondJson(request, 200, {
+        'data': {
+          'notes': [
+            {'id':'note-1','reason':'Verified mismatch','actorDisplayName':'Primary Admin'},
+            'malformed',
+          ],
+          'hasMore': true,
+          'nextCursor': 'next-history-cursor',
+        },
+      });
+    };
+
+    final page = await repository.listOutboxEventReconciliationNotes(
+      'case-01',
+      limit: 1,
+      cursor: 'opaque history cursor+/=',
+    );
+
+    expect(page['notes'], hasLength(1));
+    expect((page['notes'] as List).single['id'], 'note-1');
+    expect(page['hasMore'], isTrue);
+    expect(page['nextCursor'], 'next-history-cursor');
+  });
+
+  test('event investigation history repository safely handles malformed payloads', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events/case-01/investigation-notes'] = (request, body) async {
+      await respondJson(request, 200, {'data': 'unexpected'});
+    };
+    final page = await repository.listOutboxEventReconciliationNotes('case-01');
+    expect(page['notes'], isEmpty);
+    expect(page['hasMore'], isFalse);
+    expect(page['nextCursor'], isNull);
+  });
+
+  test('event investigation note repository posts evidence fields with authentication', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events/case-01/investigation-notes'] = (request, body) async {
+      expect(request.method, 'POST');
+      expect(request.headers.value('authorization'), 'Bearer token');
+      expect(body['reason'], 'Confirmed event mismatch after independent reconciliation.');
+      expect(body['evidenceReference'], 'incident:outbox-case-01');
+      expect(body['verification'], {
+        'eventIdentity':'MISMATCH_CONFIRMED',
+        'canonicalPayout':'NOT_VERIFIED',
+        'providerOutcome':'NOT_CHECKED',
+      });
+      expect(body['idempotencyKey'], 'event-note-test-idempotency-01');
+      await respondJson(request, 200, {
+        'data': {
+          'action':'INVESTIGATION_NOTE_ADDED',
+          'caseStatus':'INVESTIGATING',
+          'replayed':false,
+        },
+      });
+    };
+
+    final result = await repository.appendOutboxEventReconciliationNote(
+      'case-01',
+      reason: 'Confirmed event mismatch after independent reconciliation.',
+      evidenceReference: 'incident:outbox-case-01',
+      verification: const {
+        'eventIdentity':'MISMATCH_CONFIRMED',
+        'canonicalPayout':'NOT_VERIFIED',
+        'providerOutcome':'NOT_CHECKED',
+      },
+      idempotencyKey: 'event-note-test-idempotency-01',
+    );
+    expect(result['action'], 'INVESTIGATION_NOTE_ADDED');
+    expect(result['caseStatus'], 'INVESTIGATING');
+  });
+
+  test('event reconciliation repository returns a safe empty page for malformed payloads', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events'] = (request, body) async {
+      await respondJson(request, 200, {'data': 'unexpected'});
+    };
+
+    final page = await repository.listActiveOutboxEventReconciliationCases();
+
+    expect(page['cases'], isEmpty);
+    expect(page['hasMore'], isFalse);
+    expect(page['nextCursor'], isNull);
+  });
 }
