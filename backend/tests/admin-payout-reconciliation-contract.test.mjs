@@ -53,9 +53,14 @@ test('admin outbox-event reconciliation queue is read-only and requires payout v
     eventStatus:'DONE',
   }];
   const calls = [];
+  let readChecks = 0;
   const page = {cases,hasMore:true,nextCursor:'next-cursor'};
   const repo = {
-    async isAdminPanelVerified() { return true; },
+    async isAdminPanelVerified(...args) {
+      readChecks += 1;
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return true;
+    },
     async listActiveOutboxEventReconciliationCases(options) {
       calls.push(options);
       return page;
@@ -85,6 +90,7 @@ test('admin outbox-event reconciliation queue is read-only and requires payout v
   );
   assert.equal(response.status,200);
   assert.deepEqual(response.data,page);
+  assert.equal(readChecks,1);
   assert.deepEqual(calls,[{limit:'25',cursor:'opaque-cursor'}]);
 });
 
@@ -373,8 +379,10 @@ test('payout-visible admins can read bounded event-scoped investigation-note his
     nextCursor:'opaque-note-cursor',
   };
   const calls=[];
+  let readChecks = 0;
   const repo={
     async isAdminPanelVerified(...args) {
+      readChecks += 1;
       assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
       return true;
     },
@@ -404,7 +412,70 @@ test('payout-visible admins can read bounded event-scoped investigation-note his
   );
   assert.equal(result.status,200);
   assert.deepEqual(result.data,expected);
+  assert.equal(readChecks,1);
   assert.deepEqual(calls,[{caseId,limit:'25',cursor:'opaque note cursor'}]);
+});
+
+
+test('event reconciliation reads reject a stale READ step-up before querying case or note data', async () => {
+  const admin = {
+    id:'outbox-read-step-up-admin',
+    email:'ops-read@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-read-admin',
+    sessionJti:'stale-outbox-read-session',
+  };
+  let readChecks = 0;
+  let caseListCalls = 0;
+  let noteListCalls = 0;
+  const caseId='00000000-0000-4000-8000-000000000305';
+  const repo = {
+    async isAdminPanelVerified(...args) {
+      readChecks += 1;
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return false;
+    },
+    async listActiveOutboxEventReconciliationCases() {
+      caseListCalls += 1;
+      return {cases:[],hasMore:false,nextCursor:null};
+    },
+    async listOutboxEventReconciliationNotes() {
+      noteListCalls += 1;
+      return {notes:[],hasMore:false,nextCursor:null};
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+
+  await assert.rejects(
+    route(
+      {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events',headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PANEL_LOCKED',
+  );
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PANEL_LOCKED',
+  );
+  assert.equal(readChecks,2);
+  assert.equal(caseListCalls,0);
+  assert.equal(noteListCalls,0);
 });
 
 test('event-scoped investigation-note history maps invalid cursors and unknown cases to safe errors', async () => {
