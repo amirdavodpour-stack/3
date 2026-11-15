@@ -2,6 +2,7 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
+import { config } from '../src/config.js';
 
 // These tests exercise only the synthetic internal payout adapter in a disposable CI database.
 process.env.NODE_ENV = 'test';
@@ -821,6 +822,48 @@ test('terminal Outbox failure quarantines a payout linkage mismatch instead of p
   assert.equal(result.integrityBlocked, true);
   assert.equal(result.reason, 'PAYOUT_HOLD_LINKAGE_MISMATCH');
   await expectIntegrityQuarantine(before, args, { reason: result.reason, payoutId: reserved.payout.id, eventId: processingEvent.id });
+});
+
+
+test('PAYOUT_EXECUTE preserves a reservation when the provider claims success without a reference at terminal retry', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('payout-success-without-reference');
+  const reserved = await reservePayout(owner.userId, `success-without-reference:${crypto.randomUUID()}`);
+  const { rows: events } = await pool.query(
+    `UPDATE outbox_events
+        SET status='PROCESSING',attempts=$2,locked_at=NOW(),lease_token=gen_random_uuid()
+      WHERE id=$1
+      RETURNING *`,
+    [reserved.event.id, config.outboxMaxAttempts],
+  );
+  const processingEvent = events[0];
+  const args = { userIds: [owner.userId], payouts: [reserved], events: [processingEvent] };
+  const before = await snapshot(args);
+  const originalCreatePayout = paymentProvider.createPayout;
+  paymentProvider.createPayout = async () => ({
+    status: 'SUCCEEDED',
+    amount: reserved.payout.amount,
+    currency: reserved.payout.currency,
+  });
+  let result;
+  try {
+    result = await processOutboxEvent(processingEvent);
+  } finally {
+    paymentProvider.createPayout = originalCreatePayout;
+  }
+
+  assert.equal(result.unknown, true, 'success without a provider reference is not a confirmed settlement');
+  assert.equal(result.requiresReconciliation, false);
+  const afterState = await snapshot(args);
+  assert.deepEqual(afterState.wallets, before.wallets, 'available and locked balances must remain unchanged');
+  assert.deepEqual(afterState.holds, before.holds, 'the reservation must remain active');
+  assert.deepEqual(afterState.journals, before.journals, 'the payout journal must remain unposted');
+  assert.deepEqual(afterState.walletEntries, before.walletEntries, 'no wallet reversal may be written');
+  assert.deepEqual(afterState.ledgerEntries, before.ledgerEntries, 'no ledger movement may be written');
+  assert.equal(afterState.payouts[0].status, 'UNKNOWN');
+  assert.equal(afterState.operations[0].status, 'UNKNOWN');
+  assert.equal(afterState.holds[0].status, 'ACTIVE');
+  assert.equal(afterState.outbox[0].status, 'DONE');
+  assert.equal(afterState.reconciliationCases.length, 0, 'canonical linkage requires no integrity-mismatch case');
 });
 
 after(async () => {
