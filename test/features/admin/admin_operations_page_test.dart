@@ -542,6 +542,8 @@ void main() {
         find.byKey(const ValueKey('outbox-investigation-evidence-case-01')),
         'incident:outbox-2026-11-15-01',
       );
+      await tester.ensureVisible(find.text('Add investigation note'));
+      await tester.pump();
       await tester.tap(find.text('Add investigation note'));
       await tester.pumpAndSettle();
 
