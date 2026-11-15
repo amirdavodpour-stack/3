@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/hopev2-outbox-event-reconciliation-visibility.yml"
       - "backend/src/repository/reconciliation.js"
+      - "backend/src/db/migrations/055_reconciliation_case_events.js"
       - "backend/src/routes/admin_routes.js"
       - "backend/tests/admin-payout-reconciliation-contract.test.mjs"
       - "backend/tests/payment-payout-integrity-postgres.test.mjs"
