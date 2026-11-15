@@ -1098,10 +1098,22 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Expanded(child: Text(actor, style: Theme.of(context).textTheme.titleSmall)),
-              if (createdAt.isNotEmpty) Text(createdAt, style: Theme.of(context).textTheme.bodySmall),
-            ]),
+            Text(
+              actor,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            if (createdAt.isNotEmpty)
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(
+                  createdAt,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             const SizedBox(height: 6),
             Text('${_t('شرح', 'Reason')}: ${note['reason'] ?? '—'}'),
             const SizedBox(height: 4),
