@@ -28,3 +28,5 @@ export * from './repository/admin_mfa.js';
 export * from './repository/chat_retention.js';
 
 export * from './repository/outbox_dedupe_registry.js';
+
+export * from './repository/outbox_retention.js';
