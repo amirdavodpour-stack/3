@@ -7,6 +7,7 @@ import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 import { postExternalLedgerJournalWithClient } from './external_payment_ledger.js';
+import { reserveOutboxDedupeKeyWithClient, insertReservedOutboxEventWithClient } from './outbox_dedupe_registry.js';
 
 export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {
   const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];
@@ -120,29 +121,41 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
       refundRow = rr[0];
     }
     await client.query(`UPDATE payments SET status='REFUND_PENDING',updated_at=$2 WHERE id=$1`,[paymentId,createdAt]);
-    const dedupe=`PAYMENT_REFUND:${paymentId}`;
-    const {rows:ev}=await client.query(
-      `INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at)
-       VALUES(gen_random_uuid(),'PAYMENT_REFUND','payment',$1,$2,$3::jsonb,'PENDING',0,NOW(),NOW())
-       ON CONFLICT(dedupe_key) DO UPDATE SET
-         status=CASE WHEN outbox_events.status='FAILED' THEN 'PENDING' ELSE outbox_events.status END,
-         attempts=CASE WHEN outbox_events.status='FAILED' THEN 0 ELSE outbox_events.attempts END,
-         available_at=CASE WHEN outbox_events.status='FAILED' THEN NOW() ELSE outbox_events.available_at END,
-         locked_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.locked_at END,
-         lease_token=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.lease_token END,
-         last_error=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error END,
-         last_error_code=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_code END,
-         last_error_category=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_category END,
-         last_error_retryable=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_retryable END,
-         last_error_http_status=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_http_status END,
-         processed_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.processed_at END
-       RETURNING *`,
-      [paymentId,dedupe,JSON.stringify({
-        jobId,ownerId,paymentId,refundId:refundRow.id,providerRef:payment.provider_ref,
-        idempotencyKey:idempotencyKey||`refund:${refundRow.id}`,
-      })],
-    );
-    return {refund:refundRow,payment:{...payment,status:'REFUND_PENDING'},outboxEvent:{id:ev[0].id}};
+    const dedupe='PAYMENT_REFUND:'+paymentId;
+    const eventPayload={
+      jobId,
+      ownerId,
+      paymentId,
+      refundId:refundRow.id,
+      providerRef:payment.provider_ref,
+      idempotencyKey:idempotencyKey||('refund:'+refundRow.id),
+    };
+    const reservation=await reserveOutboxDedupeKeyWithClient(client,{
+      eventId:crypto.randomUUID(),
+      eventType:'PAYMENT_REFUND',
+      aggregateType:'payment',
+      aggregateId:paymentId,
+      dedupeKey:dedupe,
+      conflictPolicy:'STATUS_GATED_REQUEUE',
+    });
+    const ev=reservation.created
+      ? await insertReservedOutboxEventWithClient(client,{
+          reservation,
+          eventType:'PAYMENT_REFUND',
+          aggregateType:'payment',
+          aggregateId:paymentId,
+          dedupeKey:dedupe,
+          payload:eventPayload,
+        })
+      : await (async()=>{
+          const {rows}=await client.query(
+            "UPDATE outbox_events SET status=CASE WHEN status='FAILED' THEN 'PENDING' ELSE status END,attempts=CASE WHEN status='FAILED' THEN 0 ELSE attempts END,available_at=CASE WHEN status='FAILED' THEN NOW() ELSE available_at END,locked_at=CASE WHEN status='FAILED' THEN NULL ELSE locked_at END,lease_token=CASE WHEN status='FAILED' THEN NULL ELSE lease_token END,last_error=CASE WHEN status='FAILED' THEN NULL ELSE last_error END,last_error_code=CASE WHEN status='FAILED' THEN NULL ELSE last_error_code END,last_error_category=CASE WHEN status='FAILED' THEN NULL ELSE last_error_category END,last_error_retryable=CASE WHEN status='FAILED' THEN NULL ELSE last_error_retryable END,last_error_http_status=CASE WHEN status='FAILED' THEN NULL ELSE last_error_http_status END,processed_at=CASE WHEN status='FAILED' THEN NULL ELSE processed_at END WHERE id=$1 RETURNING *",
+            [reservation.eventId],
+          );
+          if(!rows[0]) throw Object.assign(new Error('OUTBOX_DEDUPE_ORPHANED'),{code:'OUTBOX_DEDUPE_ORPHANED'});
+          return {...reservation,event:rows[0]};
+        })();
+    return {refund:refundRow,payment:{...payment,status:'REFUND_PENDING'},outboxEvent:{id:ev.event.id}};
   });
 }
 export async function cancelJobAfterConfirmedRefundWithClient(client,jobId) {
