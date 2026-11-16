@@ -370,7 +370,7 @@ void main() {
       expect(source, contains('setState(() => _savedSearchMutationBusy = true);'));
       expect(
         source,
-        contains('_savedSearchMutationBusy ? null : _saveCurrentSearch'),
+        contains('_savedSearchMutationBusy ? null : this._saveCurrentSearch'),
       );
       expect(source, contains('StatefulBuilder'));
       expect(source, contains('deleteBusyId'));
