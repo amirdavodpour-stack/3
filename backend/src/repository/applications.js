@@ -1,6 +1,8 @@
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { applicationFromRow, employerCandidateFromRow } from './mappers.js';
+import { lockAuthorizedAdminActor } from './admin_authorization.js';
+import { queueNotificationWithClient } from './notifications.js';
 
 export async function listAdminApplications() { const {rows}=await requirePool().query(`SELECT a.*, j.title AS job_title, u.display_name AS candidate_name FROM job_applications a JOIN jobs j ON j.id=a.job_id JOIN users u ON u.id=a.candidate_id ORDER BY a.created_at DESC`); return rows.map(r=>({...applicationFromRow(r),jobTitle:r.job_title,candidateName:r.candidate_name})); }
 export async function transitionJobApplication(id, fromStatuses, toStatus) {
@@ -9,6 +11,49 @@ export async function transitionJobApplication(id, fromStatuses, toStatus) {
   return rows[0]?applicationFromRow(rows[0]):null;
 }
 export async function selectJobApplication(id) { return transitionJobApplication(id,['PENDING','SHORTLISTED'],'FORWARDED'); }
+
+const ADMIN_APPLICATION_ACTIONS = Object.freeze({
+  SHORTLISTED: { auditAction:'ADMIN_APPLICATION_SHORTLIST', notificationType:'APPLICATION_SHORTLISTED' },
+  FORWARDED: { auditAction:'ADMIN_APPLICATION_FORWARD', notificationType:'APPLICATION_FORWARDED' },
+  REJECTED: { auditAction:'ADMIN_APPLICATION_REJECT', notificationType:'APPLICATION_REJECTED' },
+});
+
+export async function transitionAdminJobApplication(id,fromStatuses,toStatus,{actorId,sessionJti,verificationMinutes=5,notification}={}) {
+  const statuses=Array.isArray(fromStatuses)?fromStatuses:[fromStatuses];
+  const action=ADMIN_APPLICATION_ACTIONS[toStatus];
+  if(!action) throw Object.assign(new Error('INVALID_ADMIN_APPLICATION_TRANSITION'),{code:'INVALID_ADMIN_APPLICATION_TRANSITION'});
+  if(!notification || notification.type!==action.notificationType || !String(notification.title||'').trim() || !String(notification.body||'').trim()) {
+    throw Object.assign(new Error('ADMIN_APPLICATION_NOTIFICATION_REQUIRED'),{code:'ADMIN_APPLICATION_NOTIFICATION_REQUIRED'});
+  }
+  return withSqlTransaction(async(client)=>{
+    const {actor}=await lockAuthorizedAdminActor(client,{actorId,sessionJti,verificationMinutes,requiredScope:'WRITE'});
+    const {rows:references}=await client.query('SELECT job_id FROM job_applications WHERE id=$1',[id]);
+    if(!references[0]) return null;
+    const {rows:jobs}=await client.query('SELECT id FROM jobs WHERE id=$1 FOR UPDATE',[references[0].job_id]);
+    if(!jobs[0]) return null;
+    const {rows:applications}=await client.query('SELECT * FROM job_applications WHERE id=$1 FOR UPDATE',[id]);
+    const current=applications[0];
+    if(!current || !statuses.includes(current.status)) return null;
+    const {rows:updated}=await client.query('UPDATE job_applications SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING *',[id,toStatus]);
+    if(!updated[0]) return null;
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),$1,$2,'job_application',$3,$4::jsonb,NOW())`,
+      [action.auditAction,actor.id,id,JSON.stringify({jobId:current.job_id,candidateId:current.candidate_id,fromStatus:current.status,toStatus,sessionJti})],
+    );
+    await queueNotificationWithClient(client,{
+      userId:current.candidate_id,
+      type:action.notificationType,
+      title:notification.title,
+      body:notification.body,
+      data:{jobId:current.job_id,applicationId:id},
+      dedupeKey:`application:${id}:${action.notificationType}`,
+      channels:notification.channels||['IN_APP','PUSH','EMAIL'],
+    });
+    return applicationFromRow(updated[0]);
+  });
+}
+
 export async function listForwardedCandidatesForJob(jobId) { const {rows}=await requirePool().query(`SELECT id,resume_text,skills,status,created_at,updated_at FROM job_applications WHERE job_id=$1 AND status IN ('FORWARDED','INTERVIEW','OFFERED','ACCEPTED') ORDER BY updated_at DESC`,[jobId]); return rows.map(employerCandidateFromRow); }
 // Backward-compatible repository contract name retained for older integrations/tests.
 export async function listSelectedCandidatesForJob(jobId) { return listForwardedCandidatesForJob(jobId); }

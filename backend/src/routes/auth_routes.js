@@ -345,8 +345,13 @@ export function createAuthRoutes({
 
     if (req.method === 'POST' && route === 'logout') {
       const user = await authUser(req);
-      if (process.env.DATABASE_URL) { await repo.revokeUserRefreshTokens(user.id); await repo.bumpUserSessionVersion(user.id); }
-      else { legacy.logout(user.id); await legacy.save(); }
+      if (process.env.DATABASE_URL) {
+        const revoked = await repo.logoutUser(user.id);
+        if (!revoked) throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required');
+      } else {
+        legacy.logout(user.id);
+        await legacy.save();
+      }
       await createAudit('AUTH_LOGOUT', user.id, 'user', user.id);
       return sendJson(res, 200, { ok: true });
     }
@@ -388,7 +393,15 @@ export function createAuthRoutes({
       try {
         await deliverPasswordReset({ user, token });
       } catch (error) {
-        if (!process.env.DATABASE_URL) legacy.markResetDeliveryFailed(sha256(token));
+        if (process.env.DATABASE_URL) {
+          try {
+            await repo.invalidateResetToken(sha256(token));
+          } catch (invalidationError) {
+            logEvent({ level:'error', action:'PASSWORD_RESET_TOKEN_INVALIDATION_FAILED', userId:user.id, message:invalidationError?.message || 'reset token invalidation failed' });
+          }
+        } else {
+          legacy.markResetDeliveryFailed(sha256(token));
+        }
         logEvent({ level:'error', action:'PASSWORD_RESET_DELIVERY_FAILED', userId:user.id, message:error.message });
         // Keep the external response generic even when delivery fails so the endpoint does not
         // become an account-enumeration oracle based on status code.

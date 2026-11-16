@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { createAdminRoutes } from '../src/routes/admin_routes.js';
 import { HttpError } from '../src/api/http_error.js';
 import {
+  decryptRecoveryCodes,
   decryptTotpSecret,
+  encryptRecoveryCodes,
   generateRecoveryCodes,
   generateTotpCode,
   hashRecoveryCode,
@@ -19,19 +21,26 @@ const USER = Object.freeze({
   googleSubject: 'google-subject-admin',
   passwordHash: 'password-hash',
   sessionJti: 'admin-mfa-session-jti',
+  sessionVersion: 0,
 });
 
-function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
+function makeHarness({ credential = null, alreadyEnabled = false, dropConfirmResponse = false, dropAckResponse = false } = {}) {
   const audit = [];
   const calls = [];
   let stored = credential;
   let accessVerification = null;
   let clock = Date.now();
+  let loseConfirmResponse=dropConfirmResponse;
+  let loseAckResponse=dropAckResponse;
   const route = createAdminRoutes({
     authUser: async () => USER,
     requireAdmin: (user) => user,
     readBody: async (req) => req.body || {},
-    sendJson: async (_res, status, data) => ({ status, data }),
+    sendJson: async (_res, status, data) => {
+      if(loseConfirmResponse && Array.isArray(data?.recoveryCodes)){loseConfirmResponse=false;throw new Error('SIMULATED_CONFIRM_RESPONSE_LOST');}
+      if(loseAckResponse && data?.acknowledged===true){loseAckResponse=false;throw new Error('SIMULATED_ACK_RESPONSE_LOST');}
+      return {status,data};
+    },
     HttpError,
     enumField: (value, allowed, field) => {
       if (!allowed.has(value)) throw new HttpError(400, 'INVALID_FIELD', field);
@@ -56,7 +65,7 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
     now: () => new Date(clock).toISOString(),
     createAudit: async (...args) => audit.push(args),
     repo: {
-      getAdminMfaStatus: async () => ({ enabled: alreadyEnabled || Boolean(stored?.enabled) }),
+      getAdminMfaStatus: async () => ({ enabled: alreadyEnabled || Boolean(stored?.enabled), recoveryCodesDeliveryPending:Boolean(stored?.recoveryCodesCiphertext) }),
       beginAdminMfaEnrollment: async (userId, encryptedSecret, expiresAt) => {
         calls.push(['begin', userId, encryptedSecret, expiresAt]);
         stored = {
@@ -68,12 +77,30 @@ function makeHarness({ credential = null, alreadyEnabled = false } = {}) {
         return true;
       },
       getAdminMfaCredential: async () => stored,
-      completeAdminMfaEnrollment: async (userId, { secretCiphertext, recoveryCodeHashes, lastTotpCounter }) => {
+      consumeAdminMfaRecoveryDelivery: async (userId, counter, sessionJti, sessionVersion) => {
+        calls.push(['recovery-delivery', userId, counter, sessionJti, sessionVersion]);
+        if (sessionVersion !== USER.sessionVersion || !stored?.recoveryCodesCiphertext || counter <= (stored.lastTotpCounter ?? -1)) return null;
+        stored.lastTotpCounter = counter;
+        return {ciphertext:stored.recoveryCodesCiphertext,deliveryId:stored.recoveryDeliveryId};
+      },
+      acknowledgeAdminMfaRecoveryDelivery: async (userId, sessionJti, sessionVersion, deliveryId) => {
+        calls.push(['recovery-ack',userId,sessionJti,sessionVersion,deliveryId]);
+        if(sessionVersion !== USER.sessionVersion || !stored || stored.recoveryDeliveryId!==deliveryId) return false;
+        if(stored.recoveryCodesAcknowledgedAt) return true;
+        if(!stored.recoveryCodesCiphertext) return false;
+        stored.recoveryCodesCiphertext=null;
+        stored.recoveryCodesAcknowledgedAt=new Date(clock).toISOString();
+        return true;
+      },
+      completeAdminMfaEnrollment: async (userId, { secretCiphertext, recoveryCodeHashes, recoveryCodesCiphertext, recoveryDeliveryId, lastTotpCounter }) => {
         calls.push(['complete', userId, secretCiphertext, recoveryCodeHashes, lastTotpCounter]);
         stored = {
           enabled: true,
           secretCiphertext,
           recoveryCodeHashes,
+          recoveryCodesCiphertext,
+          recoveryDeliveryId,
+          recoveryCodesAcknowledgedAt:null,
           lastTotpCounter,
           enrolledAt: new Date().toISOString(),
         };
@@ -113,6 +140,12 @@ function invoke(route, method, parts, body = {}) {
   return route({ method, url: '/api/v1/' + parts.join('/'), headers: { host: 'localhost' }, body }, {}, parts);
 }
 
+async function acknowledgeRecovery(h, deliveryId) {
+  return invoke(h.route,'POST',['admin','access','mfa','recovery-codes','ack'],{
+    name:USER.displayName,username:'hope-admin',password:'current-password',recoveryDeliveryId:deliveryId,
+  });
+}
+
 test('admin MFA setup encrypts a pending secret and returns an authenticator URI only once', async () => {
   const h = makeHarness();
   const result = await invoke(h.route, 'POST', ['admin','access','mfa','setup'], {
@@ -141,6 +174,7 @@ test('admin MFA enrollment confirms TOTP and returns ten recovery codes once whi
   assert.equal(confirmed.status, 200);
   assert.equal(confirmed.data.enabled, true);
   assert.equal(confirmed.data.recoveryCodes.length, 10);
+  assert.ok(confirmed.data.recoveryDeliveryId);
   const completed = h.calls.find((call) => call[0] === 'complete');
   assert.ok(completed);
   assert.equal(completed[3].length, 10);
@@ -170,7 +204,8 @@ test('admin panel unlock requires primary reauthentication and a valid TOTP fact
     name: USER.displayName, username:'hope-admin', password:'current-password',
   });
   const firstCode = generateTotpCode(setup.data.secret, h.now);
-  await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:firstCode });
+  const enrollment=await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:firstCode });
+  await acknowledgeRecovery(h,enrollment.data.recoveryDeliveryId);
   h.advance(30000);
   const counter = Math.floor(h.now / 30000);
   const code = generateTotpCode(setup.data.secret, h.now);
@@ -189,7 +224,8 @@ test('admin MFA unlock rejects replayed counters and does not set panel verifica
     name: USER.displayName, username:'hope-admin', password:'current-password',
   });
   const enrollmentCode = generateTotpCode(setup.data.secret, h.now);
-  await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:enrollmentCode });
+  const enrollment=await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code:enrollmentCode });
+  await acknowledgeRecovery(h,enrollment.data.recoveryDeliveryId);
   h.advance(30000);
   const code = generateTotpCode(setup.data.secret, h.now);
   const next = await invoke(h.route, 'POST', ['admin','access'], {
@@ -211,6 +247,7 @@ test('admin MFA unlock consumes a recovery code exactly once', async () => {
   });
   const code = generateTotpCode(setup.data.secret, h.now);
   const enrollment = await invoke(h.route, 'POST', ['admin','access','mfa','confirm'], { code });
+  await acknowledgeRecovery(h,enrollment.data.recoveryDeliveryId);
   const recovery = enrollment.data.recoveryCodes[0];
   const first = await invoke(h.route, 'POST', ['admin','access'], {
     name:USER.displayName, username:'hope-admin', password:'current-password', recoveryCode:recovery,
@@ -222,4 +259,50 @@ test('admin MFA unlock consumes a recovery code exactly once', async () => {
     }),
     (error) => error?.status === 401 && error?.code === 'ADMIN_MFA_CODE_INVALID',
   );
+});
+
+
+test('lost MFA enrollment and ACK responses can be retried securely without losing recovery codes', async () => {
+  const h=makeHarness({dropConfirmResponse:true,dropAckResponse:true});
+  const setup=await invoke(h.route,'POST',['admin','access','mfa','setup'],{name:USER.displayName,username:'hope-admin',password:'current-password'});
+  const enrollmentCode=generateTotpCode(setup.data.secret,h.now);
+  await assert.rejects(
+    invoke(h.route,'POST',['admin','access','mfa','confirm'],{code:enrollmentCode}),
+    /SIMULATED_CONFIRM_RESPONSE_LOST/,
+  );
+  const status=await invoke(h.route,'GET',['admin','access','mfa']);
+  assert.equal(status.data.enabled,true);
+  assert.equal(status.data.recoveryCodesDeliveryPending,true);
+  const stored=h.getStored();
+  const expected=decryptRecoveryCodes(stored.recoveryCodesCiphertext,MFA_KEY);
+  assert.equal(expected.length,10);
+  assert.ok(stored.recoveryDeliveryId);
+  h.advance(30000);
+  const retryCode=generateTotpCode(setup.data.secret,h.now);
+  const delivered=await invoke(h.route,'POST',['admin','access','mfa','recovery-codes','retrieve'],{code:retryCode});
+  assert.equal(delivered.status,200);
+  assert.deepEqual(delivered.data.recoveryCodes,expected);
+  assert.equal(delivered.data.recoveryDeliveryId,stored.recoveryDeliveryId);
+
+  await assert.rejects(
+    invoke(h.route,'POST',['admin','access'],{
+      name:USER.displayName,username:'hope-admin',password:'current-password',totpCode:retryCode,
+    }),
+    (error)=>error?.status===409&&error?.code==='ADMIN_MFA_RECOVERY_CODES_ACK_REQUIRED',
+  );
+
+  await assert.rejects(acknowledgeRecovery(h,delivered.data.recoveryDeliveryId),/SIMULATED_ACK_RESPONSE_LOST/);
+  const retriedAck=await acknowledgeRecovery(h,delivered.data.recoveryDeliveryId);
+  assert.equal(retriedAck.data.acknowledged,true);
+  assert.equal(h.getStored().recoveryCodesCiphertext,null);
+  const acknowledgedStatus=await invoke(h.route,'GET',['admin','access','mfa']);
+  assert.equal(acknowledgedStatus.data.recoveryCodesDeliveryPending,false);
+
+  h.advance(30000);
+  const unlockCode=generateTotpCode(setup.data.secret,h.now);
+  const unlocked=await invoke(h.route,'POST',['admin','access'],{
+    name:USER.displayName,username:'hope-admin',password:'current-password',totpCode:unlockCode,
+  });
+  assert.equal(unlocked.status,200);
+  assert.equal(unlocked.data.verified,true);
 });

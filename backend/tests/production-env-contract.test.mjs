@@ -60,16 +60,80 @@ const validProductionEnv = {
   RESET_TOKEN_DELIVERY_MODE: 'webhook',
   RESET_TOKEN_DELIVERY_URL: 'https://example.invalid/reset',
   RESET_TOKEN_DELIVERY_SECRET: 'ci-reset-delivery-secret-012345678901234567890123456789',
+  GOOGLE_AUTH_ENABLED: 'true',
+  GOOGLE_OAUTH_CLIENT_ID: 'hope-ci-google-client.apps.googleusercontent.com',
+  ADMIN_MFA_ENCRYPTION_KEY: 'ci-admin-mfa-encryption-key-with-32-bytes',
 };
 
+const validProductionRuntimeEnv = {
+  NODE_ENV: 'production',
+  ACCESS_TOKEN_SECRET: 'ci-access-token-secret-012345678901234567890123',
+  REFRESH_TOKEN_SECRET: 'ci-refresh-token-secret-012345678901234567890123',
+  DATABASE_URL: 'postgres://ci:ci@example.invalid/hope',
+  PUBLIC_BASE_URL: 'https://example.invalid',
+  RATE_LIMIT_STORE: 'postgres',
+  METRICS_TOKEN: 'ci-metrics-token-0123456789012345',
+  ALLOWED_CORS_ORIGINS: 'https://example.invalid',
+  STORAGE_BACKEND: 's3',
+  S3_BUCKET: 'hope-ci',
+  PAYMENT_PROVIDER: 'internal',
+  PAYMENT_CURRENCY: 'TOMAN',
+  ADMIN_PANEL_USERNAME: 'hope-admin',
+  GOOGLE_AUTH_ENABLED: 'true',
+  GOOGLE_OAUTH_CLIENT_ID: 'hope-ci-google-client.apps.googleusercontent.com',
+  ADMIN_MFA_ENCRYPTION_KEY: 'ci-admin-mfa-encryption-key-with-32-bytes',
+  RESET_TOKEN_DELIVERY_MODE: 'webhook',
+  RESET_TOKEN_DELIVERY_URL: 'https://example.invalid/reset',
+  RESET_TOKEN_DELIVERY_SECRET: 'ci-reset-delivery-secret-012345678901234567890123456789',
+};
+
+function runProductionRuntimeConfig(overrides = {}) {
+  const env = {
+    PATH: process.env.PATH || '/usr/bin:/bin',
+    ...(process.env.LD_PRELOAD ? { LD_PRELOAD: process.env.LD_PRELOAD } : {}),
+    ...validProductionRuntimeEnv,
+    ...overrides,
+  };
+  return spawnSync(process.execPath, ['--input-type=module', '-e', "await import('./src/config.js')"], {
+    cwd: path.join(root, 'backend'),
+    env,
+    encoding: 'utf8',
+  });
+}
+
 function runProductionEnvValidator(overrides = {}) {
-  const env = { PATH: process.env.PATH || '/usr/bin:/bin', ...validProductionEnv, ...overrides };
+  const env = {
+    PATH: process.env.PATH || '/usr/bin:/bin',
+    ...(process.env.LD_PRELOAD ? { LD_PRELOAD: process.env.LD_PRELOAD } : {}),
+    ...validProductionEnv,
+    ...overrides,
+  };
   return spawnSync('sh', ['scripts/validate-production-env.sh'], {
     cwd: path.join(root, 'backend'),
     env,
     encoding: 'utf8',
   });
 }
+
+test('Production runtime refuses startup when Google owner recovery is disabled', () => {
+  const result = runProductionRuntimeConfig({ GOOGLE_AUTH_ENABLED: 'false' });
+  assert.notEqual(result.status, 0, 'Production runtime must fail closed without Google owner recovery');
+  assert.match(result.stderr, /GOOGLE_AUTH_ENABLED=true/);
+});
+
+test('Production runtime refuses startup when the Google OAuth client ID is absent', () => {
+  const result = runProductionRuntimeConfig({ GOOGLE_OAUTH_CLIENT_ID: '' });
+  assert.notEqual(result.status, 0, 'Production runtime must reject a missing Google OAuth client ID');
+  assert.match(result.stderr, /GOOGLE_OAUTH_CLIENT_ID/);
+});
+
+test('Production runtime refuses startup when the MFA encryption key is absent or weak', () => {
+  for (const key of ['', 'short-key']) {
+    const result = runProductionRuntimeConfig({ ADMIN_MFA_ENCRYPTION_KEY: key });
+    assert.notEqual(result.status, 0, 'Production runtime must reject a missing or short MFA encryption key');
+    assert.match(result.stderr, /ADMIN_MFA_ENCRYPTION_KEY.*32 bytes/);
+  }
+});
 
 test('production env validator fails closed when runtime-required admin username is missing', () => {
   const result = runProductionEnvValidator();
@@ -81,6 +145,26 @@ test('production env validator accepts a complete admin identity configuration',
   const result = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin' });
   assert.equal(result.status, 0, result.stdout + '\n' + result.stderr);
   assert.match(result.stdout, /Production environment contract PASS/);
+});
+
+test('production env validator rejects a disabled or missing Google owner-recovery provider', () => {
+  const disabled = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', GOOGLE_AUTH_ENABLED: 'false' });
+  assert.notEqual(disabled.status, 0, 'Production must not ship without the primary-owner Google recovery provider');
+  assert.match(disabled.stdout + '\n' + disabled.stderr, /GOOGLE_AUTH_ENABLED=true/);
+
+  const missingClient = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', GOOGLE_OAUTH_CLIENT_ID: '' });
+  assert.notEqual(missingClient.status, 0, 'Production must reject an absent Google OAuth client ID');
+  assert.match(missingClient.stdout + '\n' + missingClient.stderr, /GOOGLE_OAUTH_CLIENT_ID/);
+});
+
+test('production env validator rejects a missing or undersized MFA encryption key', () => {
+  const missing = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', ADMIN_MFA_ENCRYPTION_KEY: '' });
+  assert.notEqual(missing.status, 0, 'Production must require the MFA encryption key');
+  assert.match(missing.stdout + '\n' + missing.stderr, /ADMIN_MFA_ENCRYPTION_KEY/);
+
+  const short = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', ADMIN_MFA_ENCRYPTION_KEY: 'short-key' });
+  assert.notEqual(short.status, 0, 'Production must reject an MFA encryption key shorter than 32 bytes');
+  assert.match(short.stdout + '\n' + short.stderr, /ADMIN_MFA_ENCRYPTION_KEY.*32 bytes/);
 });
 
 test('production validator keeps the service bootable when only the user-top-up flag is set; runtime policy disables the feature', () => {
@@ -146,6 +230,9 @@ test('production-release workflow provides all runtime-required validator inputs
     'RESET_TOKEN_DELIVERY_MODE',
     'RESET_TOKEN_DELIVERY_URL',
     'ADMIN_PANEL_USERNAME',
+    'GOOGLE_AUTH_ENABLED',
+    'GOOGLE_OAUTH_CLIENT_ID',
+    'ADMIN_MFA_ENCRYPTION_KEY',
   ]) {
     assert.match(block, new RegExp('^\\s*' + name + ':', 'm'), name + ' must be supplied to the production validator step');
   }
@@ -158,6 +245,9 @@ test('release-validation scopes the configured admin username to the production 
   assert.doesNotMatch(job, /^    env:\s*$/m, 'production credentials must not be configured at job scope');
   const block = job.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
   assert.match(block, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*secrets\.ADMIN_PANEL_USERNAME_PRODUCTION\s*\}\}/);
+  assert.match(block, /GOOGLE_AUTH_ENABLED:\s*'true'/);
+  assert.match(block, /GOOGLE_OAUTH_CLIENT_ID:\s*\$\{\{\s*vars\.GOOGLE_OAUTH_CLIENT_ID_PRODUCTION\s*\}\}/);
+  assert.match(block, /ADMIN_MFA_ENCRYPTION_KEY:\s*\$\{\{\s*secrets\.ADMIN_MFA_ENCRYPTION_KEY_PRODUCTION\s*\}\}/);
   assert.doesNotMatch(job, /ADMIN_PANEL_USERNAME:\s*\$\{\{\s*env\.ADMIN_PANEL_USERNAME\s*\}\}/);
 });
 

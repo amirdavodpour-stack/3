@@ -13,22 +13,60 @@ export async function findRefreshTokenByHash(tokenHash) {
   return r ? { id:r.id,userId:r.user_id,tokenHash:r.token_hash,familyId:r.family_id,expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at,revokedAt:r.revoked_at ? (r.revoked_at.toISOString?.() ?? r.revoked_at) : null,replacedBy:r.replaced_by } : null;
 }
 export async function rotateRefreshToken(oldHash, nextToken, familyId) {
-  return withSqlTransaction(async (client)=>{
-    const {rows}=await client.query(`SELECT * FROM refresh_tokens WHERE token_hash=$1 FOR UPDATE`,[oldHash]);
-    const r=rows[0];
-    if(!r) return {kind:'invalid'};
-    if(r.revoked_at){
-      await client.query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[r.family_id]);
-      await client.query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1`,[r.user_id]);
-      await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,[r.user_id,JSON.stringify({tokenFamilyId:r.family_id})]);
-      return {kind:'reuse'};
+  return withSqlTransaction(async (client) => {
+    // Global lock order: account row first, then refresh-token row. Logout,
+    // administrator revocation and suspension all use this same user-first
+    // order, so a successor token cannot be inserted after a revocation scan.
+    const { rows: owners } = await client.query(
+      `SELECT user_id FROM refresh_tokens WHERE token_hash=$1`,
+      [oldHash],
+    );
+    const userId = owners[0]?.user_id;
+    if (!userId) return { kind:'invalid' };
+
+    const { rows: users } = await client.query(
+      `SELECT ${userSelect} FROM users WHERE id=$1 FOR UPDATE`,
+      [userId],
+    );
+    const user = users[0] ? userFromRow(users[0]) : null;
+    if (!user || user.status !== 'ACTIVE') return { kind:'invalid' };
+
+    // Re-read and lock the token only after owning the account lock. The
+    // initial owner lookup is advisory; all token state is checked again here.
+    const { rows: tokens } = await client.query(
+      `SELECT * FROM refresh_tokens WHERE token_hash=$1 AND user_id=$2 FOR UPDATE`,
+      [oldHash,userId],
+    );
+    const r = tokens[0];
+    if (!r) return { kind:'invalid' };
+
+    if (r.revoked_at) {
+      await client.query(
+        `UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,
+        [r.family_id],
+      );
+      await client.query(
+        `UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL,admin_panel_verified_scope=NULL WHERE id=$1`,
+        [userId],
+      );
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES(gen_random_uuid(),'AUTH_REFRESH_REUSE_DETECTED',$1,'user',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify({tokenFamilyId:r.family_id})],
+      );
+      return { kind:'reuse' };
     }
-    if(new Date(r.expires_at).getTime()<=Date.now()) return {kind:'invalid'};
-    const {rows:users}=await client.query(`SELECT ${userSelect} FROM users WHERE id=$1`,[r.user_id]);
-    const user=users[0]?userFromRow(users[0]):null;
-    if(!user) return {kind:'invalid'};
-    await client.query(`UPDATE refresh_tokens SET revoked_at=NOW(), replaced_by=$2 WHERE id=$1`,[r.id,nextToken.tokenHash]);
-    const {rows:created}=await client.query(`INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,[nextToken.id,user.id,nextToken.tokenHash,familyId,nextToken.expiresAt,nextToken.createdAt,null,null]);
+
+    if (new Date(r.expires_at).getTime() <= Date.now() || String(familyId || r.family_id) !== String(r.family_id) || !nextToken?.tokenHash) {
+      return { kind:'invalid' };
+    }
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at=NOW(),replaced_by=$2 WHERE id=$1`,
+      [r.id,nextToken.tokenHash],
+    );
+    const { rows: created } = await client.query(
+      `INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by) VALUES($1,$2,$3,$4,$5,$6,NULL,NULL) RETURNING *`,
+      [nextToken.id,userId,nextToken.tokenHash,r.family_id,nextToken.expiresAt,nextToken.createdAt],
+    );
     return {kind:'ok',user,token:{id:created[0].id,userId:created[0].user_id,tokenHash:created[0].token_hash,familyId:created[0].family_id,expiresAt:created[0].expires_at?.toISOString?.() ?? created[0].expires_at,createdAt:created[0].created_at?.toISOString?.() ?? created[0].created_at,revokedAt:null,replacedBy:null}};
   });
 }
@@ -38,6 +76,25 @@ export async function revokeRefreshFamily(familyId) {
 export async function updatePasswordHash(userId, passwordHash) {
   const { rows } = await requirePool().query(`UPDATE users SET password_hash=$2 WHERE id=$1 RETURNING id`, [userId, passwordHash]);
   return Boolean(rows[0]);
+}
+export async function logoutUser(userId) {
+  return withSqlTransaction(async (client) => {
+    // Keep the same user -> refresh-token lock order as rotateRefreshToken.
+    const { rows: users } = await client.query(
+      `SELECT id FROM users WHERE id=$1 FOR UPDATE`,
+      [userId],
+    );
+    if (!users[0]) return null;
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE user_id=$1 AND revoked_at IS NULL`,
+      [userId],
+    );
+    const { rows } = await client.query(
+      `UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL,admin_panel_verified_scope=NULL WHERE id=$1 RETURNING session_version`,
+      [userId],
+    );
+    return rows[0] ? {id:userId,sessionVersion:Number(rows[0].session_version)} : null;
+  });
 }
 export async function bumpUserSessionVersion(userId) {
   const { rows } = await requirePool().query(`UPDATE users SET session_version=session_version+1,admin_panel_verified_at=NULL,admin_panel_verified_session_jti=NULL WHERE id=$1 RETURNING session_version`, [userId]);
@@ -50,6 +107,15 @@ export async function revokeUserRefreshTokens(userId) {
 export async function insertResetToken(token) {
   const {rows}=await requirePool().query(`INSERT INTO reset_tokens(id,user_id,token_hash,family_id,expires_at,used_at,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,[token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,null,token.createdAt]);
   return rows[0];
+}
+
+export async function invalidateResetToken(tokenHash) {
+  const { rows } = await requirePool().query(
+    `UPDATE reset_tokens SET used_at=COALESCE(used_at,NOW())
+      WHERE token_hash=$1 AND used_at IS NULL RETURNING id`,
+    [tokenHash],
+  );
+  return Boolean(rows[0]);
 }
 
 export async function insertEmailVerificationToken(token) {

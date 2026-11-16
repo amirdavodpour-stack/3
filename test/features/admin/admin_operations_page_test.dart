@@ -145,6 +145,10 @@ class _FakeAdminOperations implements AdminRepository {
         ],
       };
   @override
+  Future<Map<String, dynamic>> retrieveAdminMfaRecoveryCodes(String code) async => const {};
+  @override
+  Future<Map<String, dynamic>> acknowledgeAdminMfaRecoveryDelivery(String deliveryId, String name, String username, {String? password, String? idToken}) async => const {'acknowledged': true};
+  @override
   Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async => const {'verified': true, 'scope': 'WRITE'};
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];

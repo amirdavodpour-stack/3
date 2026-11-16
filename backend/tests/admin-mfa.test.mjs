@@ -9,6 +9,8 @@ import {
   encryptTotpSecret,
   decryptTotpSecret,
   generateRecoveryCodes,
+  encryptRecoveryCodes,
+  decryptRecoveryCodes,
   hashRecoveryCode,
   buildTotpUri,
 } from '../src/security/admin_mfa.js';
@@ -91,4 +93,23 @@ test('TOTP URI labels the HOPEv2 administrator and encodes issuer/account values
   assert.match(uri, /issuer=HOPEv2/);
   assert.match(uri, /admin%2Bhope%40example.test/);
   assert.match(uri, /secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ/);
+});
+
+
+test('recovery-code delivery payload is authenticated-encrypted and can be retried without storing plaintext', () => {
+  const codes = generateRecoveryCodes(10).codes;
+  const ciphertext = encryptRecoveryCodes(codes, 'hope-admin-mfa-test-encryption-key-with-entropy');
+  assert.notEqual(ciphertext, JSON.stringify(codes));
+  assert.deepEqual(decryptRecoveryCodes(ciphertext, 'hope-admin-mfa-test-encryption-key-with-entropy'), codes);
+  assert.throws(() => decryptRecoveryCodes(ciphertext, 'wrong-encryption-key-with-sufficient-entropy'));
+  assert.throws(() => encryptRecoveryCodes(['not-a-recovery-code'], 'hope-admin-mfa-test-encryption-key-with-entropy'));
+});
+
+test('recovery delivery ciphertext is purpose-bound, contains exactly ten unique codes, and rejects substitution', () => {
+  const secret = generateTotpSecret();
+  const totpCiphertext = encryptTotpSecret(secret, 'hope-admin-mfa-test-encryption-key-with-entropy');
+  assert.throws(() => decryptRecoveryCodes(totpCiphertext, 'hope-admin-mfa-test-encryption-key-with-entropy'));
+  const codes = generateRecoveryCodes(10).codes;
+  assert.throws(() => encryptRecoveryCodes(codes.slice(1), 'hope-admin-mfa-test-encryption-key-with-entropy'));
+  assert.throws(() => encryptRecoveryCodes([...codes.slice(0, 9), codes[0]], 'hope-admin-mfa-test-encryption-key-with-entropy'));
 });

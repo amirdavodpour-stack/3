@@ -9,9 +9,7 @@ export function createHumanChatRoutes({authUser,sendJson,readBody,HttpError,repo
     if(String(me?.role || '').toUpperCase()==='ADMIN'){
       const admin=requireAdmin(me);
       assertAdminPermission(admin,ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
-      if((process.env.DATABASE_URL || config?.adminMfaRequired) && !(await (config?.adminMfaRequired
-        ? repo.isAdminPanelVerified(admin.id,req.method === 'GET' ? (config.adminPanelReadVerificationMinutes ?? 15) : (config.adminPanelWriteVerificationMinutes ?? 5),admin.sessionJti,req.method === 'GET' ? 'READ' : 'WRITE')
-        : repo.isAdminPanelVerified(admin.id,config?.adminPanelVerificationMinutes ?? 15,admin.sessionJti))))
+      if((process.env.DATABASE_URL || config?.adminMfaRequired) && !(await repo.isAdminPanelVerified(admin.id,req.method === 'GET' ? (config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 15) : (config.adminPanelWriteVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 5),admin.sessionJti,req.method === 'GET' ? 'READ' : 'WRITE')))
         throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     }
     if(parts.length===2&&parts[1]==='conversations'&&req.method==='GET')

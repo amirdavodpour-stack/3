@@ -63,6 +63,7 @@ export async function reconcileUnknownPayouts({ limit = config.reconciliationBat
         payoutId: payout.id,
         decision: status,
         providerRef: result.providerRef || null,
+        source: 'PROVIDER_RECONCILIATION',
         adminId: null,
         reason: result.errorCode || 'PROVIDER_RECONCILIATION',
       });

@@ -1,5 +1,6 @@
+import crypto from 'node:crypto';
 import { ADMIN_PERMISSIONS, assertAdminPermission, assertPrimaryAdmin, getAdminPermissions, isPrimaryAdmin, isPrimaryAdminEmail, verifyAdminPanelCredentials } from '../application/admin_panel_access.js';
-import { buildTotpUri, decryptTotpSecret, encryptTotpSecret, generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, verifyTotpCode } from '../security/admin_mfa.js';
+import { buildTotpUri, decryptRecoveryCodes, decryptTotpSecret, encryptRecoveryCodes, encryptTotpSecret, generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, verifyTotpCode } from '../security/admin_mfa.js';
 
 const legacyVerifiedAdmins = new Map();
 
@@ -82,6 +83,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if (!credential?.enrolledAt || !credential.secretCiphertext) {
       throw new HttpError(403,'ADMIN_MFA_ENROLLMENT_REQUIRED','Enroll an authenticator before opening the administrator panel');
     }
+    if (credential.recoveryCodesCiphertext) {
+      throw new HttpError(409,'ADMIN_MFA_RECOVERY_CODES_ACK_REQUIRED','Retrieve and acknowledge your recovery codes before opening the administrator panel');
+    }
     const totpCode = typeof body?.totpCode === 'string' ? body.totpCode.trim() : '';
     const recoveryCode = typeof body?.recoveryCode === 'string' ? body.recoveryCode.trim() : '';
     if (Boolean(totpCode) === Boolean(recoveryCode)) {
@@ -128,9 +132,9 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const encrypted = encryptTotpSecret(secret,config.adminMfaEncryptionKey);
       const minutes = config.adminMfaEnrollmentMinutes ?? 10;
       const expiresAt = new Date(Date.now()+minutes*60000).toISOString();
-      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt);
+      const created = await repo.beginAdminMfaEnrollment(me.id,encrypted,expiresAt,{expiresInMinutes:minutes,sessionJti:me.sessionJti},me.sessionJti,me.sessionVersion);
       if (!created) throw new HttpError(409,'ADMIN_MFA_ALREADY_ENROLLED','An authenticator is already enrolled');
-      await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_SETUP_STARTED',me.id,'admin',me.id,{expiresInMinutes:minutes});
       return sendJson(res,200,{pending:true,secret,otpauthUri:buildTotpUri({secret,email:me.email}),expiresInMinutes:minutes});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='confirm' && parts.length===4) {
@@ -148,22 +152,58 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified=verifyTotpCode(secret,body?.code,Number.isFinite(nowMs)?nowMs:Date.now());
       if (!verified.valid) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid');
       const recovery=generateRecoveryCodes(10);
+      const recoveryDeliveryId=crypto.randomUUID();
       const completed=await repo.completeAdminMfaEnrollment(me.id,{
         secretCiphertext:credential.pendingSecretCiphertext,
         recoveryCodeHashes:recovery.hashes,
+        recoveryCodesCiphertext:encryptRecoveryCodes(recovery.codes,config.adminMfaEncryptionKey),
+        recoveryDeliveryId,
         lastTotpCounter:verified.counter,
+        sessionJti:me.sessionJti,
+        sessionVersion:me.sessionVersion,
+        auditMeta:{recoveryCodesIssued:recovery.codes.length,sessionJti:me.sessionJti},
       });
       if (!completed) throw new HttpError(409,'ADMIN_MFA_ENROLLMENT_EXPIRED','Start authenticator setup again');
-      await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
-      return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_MFA_ENROLLED',me.id,'admin',me.id,{recoveryCodesIssued:recovery.codes.length});
+      return sendJson(res,200,{enabled:true,recoveryCodes:recovery.codes,recoveryDeliveryId,recoveryCodesDeliveryPending:true});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='recovery-codes' && parts[4]==='retrieve' && parts.length===5) {
+      const body=await readBody(req);
+      await enforceAuthRateLimits(req,me);
+      if (!config.adminMfaEncryptionKey || Buffer.byteLength(config.adminMfaEncryptionKey,'utf8') < 32) {
+        throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA encryption is not configured');
+      }
+      const credential=await repo.getAdminMfaCredential(me.id);
+      if (!credential?.recoveryCodesCiphertext || !credential?.recoveryDeliveryId) {
+        throw new HttpError(404,'ADMIN_MFA_RECOVERY_DELIVERY_UNAVAILABLE','No recovery-code delivery is pending');
+      }
+      let secret;
+      try { secret=decryptTotpSecret(credential.secretCiphertext,config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Administrator MFA secret could not be opened'); }
+      const nowMs=Date.parse(typeof now==='function'?now():new Date().toISOString());
+      const verified=verifyTotpCode(secret,body?.code,Number.isFinite(nowMs)?nowMs:Date.now(),{lastAcceptedCounter:Number(credential.lastTotpCounter ?? -1)});
+      if (!verified.valid) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
+      const delivery=await repo.consumeAdminMfaRecoveryDelivery(me.id,verified.counter,me.sessionJti,me.sessionVersion);
+      if (!delivery) throw new HttpError(401,'ADMIN_MFA_CODE_INVALID','Authenticator code is invalid or has already been used');
+      let recoveryCodes;
+      try { recoveryCodes=decryptRecoveryCodes(delivery.ciphertext,config.adminMfaEncryptionKey); }
+      catch { throw new HttpError(503,'ADMIN_MFA_UNAVAILABLE','Recovery codes could not be opened'); }
+      return sendJson(res,200,{enabled:true,recoveryCodes,recoveryDeliveryId:delivery.deliveryId,recoveryCodesDeliveryPending:true});
+    }
+    if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='mfa' && parts[3]==='recovery-codes' && parts[4]==='ack' && parts.length===5) {
+      const body=await readBody(req);
+      await verifyPrimaryFactor(me,body,req);
+      const acknowledged=await repo.acknowledgeAdminMfaRecoveryDelivery(me.id,me.sessionJti,me.sessionVersion,body?.recoveryDeliveryId);
+      if (!acknowledged) throw new HttpError(409,'ADMIN_MFA_RECOVERY_ACK_FAILED','Recovery-code delivery could not be acknowledged');
+      return sendJson(res,200,{enabled:true,recoveryCodesDeliveryPending:false,acknowledged:true});
     }
     if (req.method==='GET' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const verified = config.adminMfaRequired
         ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes, me.sessionJti, 'READ')
         : process.env.DATABASE_URL
-          ? await repo.isAdminPanelVerified(me.id, config.adminPanelVerificationMinutes, me.sessionJti)
+          ? await repo.isAdminPanelVerified(me.id, config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 15, me.sessionJti, 'READ')
           : isLegacyAdminPanelVerified(me.id, me.sessionJti, 'READ');
-      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes});
+      return sendJson(res,200,{verified:Boolean(verified),primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:config.adminPanelReadVerificationMinutes ?? config.adminPanelVerificationMinutes ?? 15});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts.length===2) {
       const body=await readBody(req);
@@ -173,11 +213,12 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const mfa=await verifyAdminMfa(me,body);
       const scope=String(body?.scope||'WRITE').trim().toUpperCase();
       if (!['READ','WRITE'].includes(scope)) throw new HttpError(400,'INVALID_ADMIN_PANEL_SCOPE','scope must be READ or WRITE');
+      const auditMeta={expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),method:primaryMethod,mfaMethod:mfa.method};
       if (config.adminMfaRequired) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope);
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,...(process.env.DATABASE_URL?[auditMeta]:[]));
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else if (process.env.DATABASE_URL) {
-        const verified=await repo.setAdminPanelVerified(me.id,sessionJti);
+        const verified=await repo.setAdminPanelVerified(me.id,sessionJti,scope,auditMeta);
         if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
       } else {
         legacyVerifiedAdmins.set(me.id,{
@@ -186,18 +227,14 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
           scope,
         });
       }
-      await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{
-        scope,
-        expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15),
-        method:primaryMethod,
-        mfaMethod:mfa.method,
-      });
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_UNLOCK',me.id,'admin',me.id,{scope,...auditMeta});
       return sendJson(res,200,{verified:true,scope,primaryAdmin:isPrimaryAdmin(me),userId:me.id,permissions:getAdminPermissions(me),expiresInMinutes:scope==='WRITE'?(config.adminPanelWriteVerificationMinutes??5):(config.adminPanelReadVerificationMinutes??15)});
     }
     if (req.method==='POST' && parts[0]==='admin' && parts[1]==='access' && parts[2]==='lock' && parts.length===3) {
-      if (process.env.DATABASE_URL || config.adminMfaRequired) await repo.clearAdminPanelVerification(me.id);
+      if (process.env.DATABASE_URL) await repo.clearAdminPanelVerification(me.id,{sessionJti:me.sessionJti});
+      else if(config.adminMfaRequired) await repo.clearAdminPanelVerification(me.id);
       else legacyVerifiedAdmins.delete(me.id);
-      await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_PANEL_LOCK',me.id,'admin',me.id);
       return sendJson(res,200,{verified:false});
     }
     const requiredScope=req.method==='GET'?'READ':'WRITE';
@@ -208,7 +245,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
     } else if (process.env.DATABASE_URL) {
-      const verified=await repo.isAdminPanelVerified(me.id,config.adminPanelVerificationMinutes ?? 15,me.sessionJti);
+      const verified=await repo.isAdminPanelVerified(me.id,ttlMinutes,me.sessionJti,requiredScope);
       if (!verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
     } else if (!isLegacyAdminPanelVerified(me.id,me.sessionJti,requiredScope)) {
       throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires identity verification');
@@ -430,9 +467,11 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='users' && parts[3]==='revoke-sessions'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.REVOKE_SESSIONS);
       const id=parts[2];
-      const revoked=process.env.DATABASE_URL ? await adminUseCases.revokeUserSessions(id) : legacyAdmin.revokeUserSessions(id);
+      const revoked=process.env.DATABASE_URL
+        ? await adminUseCases.revokeUserSessions(id,{actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5})
+        : legacyAdmin.revokeUserSessions(id);
       if(!revoked) throw new HttpError(404,'USER_NOT_FOUND','User not found');
-      await createAudit('ADMIN_SESSIONS_REVOKE',me.id,'user',id,{sessionVersion:revoked.sessionVersion});
+      if(!process.env.DATABASE_URL) await createAudit('ADMIN_SESSIONS_REVOKE',me.id,'user',id,{sessionVersion:revoked.sessionVersion});
       return sendJson(res,200,{...revoked,revoked:true});
     }
     if (parts[0] === 'admin' && parts[1] === 'disputes') {
@@ -518,7 +557,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       assertAdminPermission(me, ADMIN_PERMISSIONS.TRUST_SAFETY);
       const id=parts[2]; const body=await readBody(req); const status=enumField(body?.status,new Set(['OPEN','REVIEWING','RESOLVED','DISMISSED']),'status');
       const updated=process.env.DATABASE_URL
-        ? await adminUseCases.updateTrustReportStatus(id,status,{actorId:me.id})
+        ? await adminUseCases.updateTrustReportStatus(id,status,{actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config.adminPanelWriteVerificationMinutes??5})
         : legacyAdmin.updateTrustReportStatus(id,status);
       if(!updated) throw new HttpError(404,'REPORT_NOT_FOUND','Trust report not found');
       if(!process.env.DATABASE_URL) {
@@ -539,7 +578,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       const payoutId = parts[2];
       const body = await readBody(req);
       try {
-        const result = await resolvePayoutUnknown({ payoutId, decision: body?.decision, providerRef: body?.providerRef, adminId: me.id, reason: body?.reason });
+        const result = await resolvePayoutUnknown({ payoutId, decision: body?.decision, providerRef: body?.providerRef, source:'ADMIN', adminId: me.id, adminSessionJti:me.sessionJti, verificationMinutes:config.adminPanelWriteVerificationMinutes??5, reason: body?.reason });
         if (!result) throw new HttpError(404, 'PAYOUT_NOT_FOUND', 'Payout not found');
         return sendJson(res, 200, result);
       } catch (error) {
@@ -580,11 +619,26 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
     if(req.method==='GET' && parts[0]==='admin' && parts[1]==='applications'){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const apps=process.env.DATABASE_URL ? await adminUseCases.applications() : legacyAdmin.applications(); return sendJson(res,200,apps); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='shortlist'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.shortlist(id) : legacyAdmin.shortlist(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application is not pending'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_SHORTLISTED', 'درخواست شما وارد فهرست کوتاه شد', 'درخواست شما برای بررسی بیشتر انتخاب شده است.'); await createAudit('ADMIN_APPLICATION_SHORTLIST',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_SHORTLISTED',title:'درخواست شما وارد فهرست کوتاه شد',body:'درخواست شما برای بررسی بیشتر انتخاب شده است.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.shortlist(id,applicationOptions) : legacyAdmin.shortlist(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application is not pending');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_SHORTLISTED','درخواست شما وارد فهرست کوتاه شد','درخواست شما برای بررسی بیشتر انتخاب شده است.');await createAudit('ADMIN_APPLICATION_SHORTLIST',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='select'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.forward(id) : legacyAdmin.forward(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be forwarded'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_FORWARDED', 'درخواست شما برای کارفرما ارسال شد', 'رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.'); await createAudit('ADMIN_APPLICATION_FORWARD',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_FORWARDED',title:'درخواست شما برای کارفرما ارسال شد',body:'رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.forward(id,applicationOptions) : legacyAdmin.forward(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be forwarded');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_FORWARDED','درخواست شما برای کارفرما ارسال شد','رزومه و اطلاعات حرفه‌ای شما برای بررسی کارفرما ارسال شده است.');await createAudit('ADMIN_APPLICATION_FORWARD',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='applications' && parts[3]==='reject'){
-      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2]; const changed=process.env.DATABASE_URL ? await adminUseCases.reject(id) : legacyAdmin.reject(id); if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be rejected from its current state'); if(!process.env.DATABASE_URL) await legacyAdmin.save(); await notifyApplicationCandidate(id, 'APPLICATION_REJECTED', 'درخواست شما پذیرفته نشد', 'درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.'); await createAudit('ADMIN_APPLICATION_REJECT',me.id,'job_application',id); return sendJson(res,200,{id,status:changed.status}); }
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_APPLICATIONS); const id=parts[2];
+      const applicationOptions={actorId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5,notification:{type:'APPLICATION_REJECTED',title:'درخواست شما پذیرفته نشد',body:'درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.',channels:['IN_APP','PUSH','EMAIL']}};
+      const changed=process.env.DATABASE_URL ? await adminUseCases.reject(id,applicationOptions) : legacyAdmin.reject(id);
+      if(!changed) throw new HttpError(409,'INVALID_APPLICATION_STATE','Application cannot be rejected from its current state');
+      if(!process.env.DATABASE_URL){await legacyAdmin.save();await notifyApplicationCandidate(id,'APPLICATION_REJECTED','درخواست شما پذیرفته نشد','درخواست شما برای این شغل در این مرحله ادامه پیدا نکرد.');await createAudit('ADMIN_APPLICATION_REJECT',me.id,'job_application',id);}
+      return sendJson(res,200,{id,status:changed.status}); }
     throw new HttpError(404,'NOT_FOUND','Admin route not found');
   };
 }

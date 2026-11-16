@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const source = fs.readFileSync(new URL('../src/repository/applications.js', import.meta.url), 'utf8');
+const moduleSource = fs.readFileSync(new URL('../src/repository/applications.js', import.meta.url), 'utf8');
+const employerStart = moduleSource.indexOf('export async function transitionEmployerApplication(');
+const source = employerStart >= 0 ? moduleSource.slice(employerStart) : moduleSource;
 
 test('employer application lifecycle locks the job aggregate before the application row', () => {
   const lockJob = source.indexOf('SELECT id,owner_id,kind,status FROM jobs');

@@ -112,20 +112,23 @@ export async function disableNotificationDevice(id,userId) {
   return r?{id:r.id,userId:r.user_id,platform:r.platform,token:r.token,enabled:r.enabled,createdAt:r.created_at?.toISOString?.() ?? r.created_at,updatedAt:r.updated_at?.toISOString?.() ?? r.updated_at}:null;
 }
 
-export async function queueNotification({userId,type,title,body,data={},dedupeKey=null,channels=['IN_APP']}) {
+export async function queueNotificationWithClient(client,{userId,type,title,body,data={},dedupeKey=null,channels=['IN_APP']}) {
+  if(!userId) return {created:false,reason:'NO_RECIPIENT'};
   const id=crypto.randomUUID();
-  return withSqlTransaction(async(client)=>{
-    if(dedupeKey){
-      const {rows:existing}=await client.query(`SELECT * FROM notifications WHERE user_id=$1 AND (data->>'dedupeKey')=$2 ORDER BY created_at DESC LIMIT 1`,[userId,dedupeKey]);
-      if(existing[0]) return {notification:notificationFromRow(existing[0]),created:false};
-    }
-    const payload={...data,dedupeKey:dedupeKey||undefined,channels};
-    const {rows}=await client.query(`INSERT INTO notifications(id,user_id,type,title,body,data,created_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW()) RETURNING *`,[id,userId,type,title,body,JSON.stringify(payload)]);
-    const notifyChannels=Array.from(new Set(channels));
-    for(const ch of notifyChannels.filter(Boolean)){
-      const eventId=crypto.randomUUID();
-      await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'NOTIFICATION_DISPATCH','notification',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW()) ON CONFLICT(dedupe_key) DO NOTHING`,[eventId,id,`NOTIFICATION:${id}:${ch}`,JSON.stringify({notificationId:id,userId,type,channel:ch,title,body,data})]);
-    }
-    return {notification:notificationFromRow(rows[0]),created:true};
-  });
+  if(dedupeKey){
+    const {rows:existing}=await client.query(`SELECT * FROM notifications WHERE user_id=$1 AND (data->>'dedupeKey')=$2 ORDER BY created_at DESC LIMIT 1`,[userId,dedupeKey]);
+    if(existing[0]) return {notification:notificationFromRow(existing[0]),created:false};
+  }
+  const notifyChannels=Array.from(new Set(channels));
+  const payload={...data,dedupeKey:dedupeKey||undefined,channels:notifyChannels};
+  const {rows}=await client.query(`INSERT INTO notifications(id,user_id,type,title,body,data,created_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW()) RETURNING *`,[id,userId,type,title,body,JSON.stringify(payload)]);
+  for(const channel of notifyChannels.filter(Boolean)){
+    const eventId=crypto.randomUUID();
+    await client.query(`INSERT INTO outbox_events(id,event_type,aggregate_type,aggregate_id,dedupe_key,payload,status,attempts,available_at,created_at) VALUES($1,'NOTIFICATION_DISPATCH','notification',$2,$3,$4::jsonb,'PENDING',0,NOW(),NOW()) ON CONFLICT(dedupe_key) DO NOTHING`,[eventId,id,`NOTIFICATION:${id}:${channel}`,JSON.stringify({notificationId:id,userId,type,channel,title,body,data})]);
+  }
+  return {notification:notificationFromRow(rows[0]),created:true};
+}
+
+export async function queueNotification(options) {
+  return withSqlTransaction((client)=>queueNotificationWithClient(client,options));
 }

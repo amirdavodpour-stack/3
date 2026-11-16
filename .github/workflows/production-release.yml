@@ -139,6 +139,9 @@ jobs:
           RESET_TOKEN_DELIVERY_URL: ${{ secrets.RESET_TOKEN_DELIVERY_URL_PRODUCTION || 'https://oumueyftltvakimtbemj.supabase.co/functions/v1/hope-password-reset' }}
           RESET_TOKEN_DELIVERY_SECRET: ${{ secrets.RESET_TOKEN_DELIVERY_SECRET_PRODUCTION }}
           ADMIN_PANEL_USERNAME: ${{ secrets.ADMIN_PANEL_USERNAME_PRODUCTION }}
+          GOOGLE_AUTH_ENABLED: 'true'
+          GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID_PRODUCTION }}
+          ADMIN_MFA_ENCRYPTION_KEY: ${{ secrets.ADMIN_MFA_ENCRYPTION_KEY_PRODUCTION }}
           ALLOWED_CORS_ORIGINS: ${{ secrets.ALLOWED_CORS_ORIGINS_PRODUCTION }}
         run: bash scripts/validate-production-env.sh
 

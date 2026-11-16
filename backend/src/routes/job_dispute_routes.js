@@ -70,9 +70,11 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
     if (parts[0] === 'admin') {
       const me = requireAdmin(await authUser(req));
       const requiredScope = req.method === 'GET' ? 'READ' : 'WRITE';
-      const verified = (process.env.DATABASE_URL || config?.adminMfaRequired) && await (config?.adminMfaRequired
-        ? repo.isAdminPanelVerified(me.id, requiredScope === 'WRITE' ? (config.adminPanelWriteVerificationMinutes ?? 5) : (config.adminPanelReadVerificationMinutes ?? 15), me.sessionJti, requiredScope)
-        : repo.isAdminPanelVerified(me.id, config?.adminPanelVerificationMinutes ?? 15, me.sessionJti));
+      const verificationMinutes=requiredScope==='WRITE'
+        ? (config?.adminPanelWriteVerificationMinutes??5)
+        : (config?.adminPanelReadVerificationMinutes??config?.adminPanelVerificationMinutes??15);
+      const verified=(process.env.DATABASE_URL || config?.adminMfaRequired)
+        && await repo.isAdminPanelVerified(me.id,verificationMinutes,me.sessionJti,requiredScope);
       if ((process.env.DATABASE_URL || config?.adminMfaRequired) && !verified) throw new HttpError(403,'ADMIN_PANEL_LOCKED','Admin panel requires current-session step-up verification');
       if (parts.length === 2 && parts[1] === 'disputes' && req.method === 'GET') {
         assertAdminPermission(me, ADMIN_PERMISSIONS.VIEW_ADMIN_CENTER);
@@ -87,7 +89,7 @@ export function createJobDisputeRoutes({ authUser, requireAdmin, config, readBod
         const body=await readBody(req); const resolution=String(body?.resolution||'').toUpperCase(); if(!DISPUTE_DECISIONS.includes(resolution)) throw new HttpError(400,'INVALID_DISPUTE_RESOLUTION','resolution must be RELEASE, REFUND, or HOLD');
         const dispute=await repo.getAdminDispute(parts[2]); if(!dispute) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
         const reason=String(body?.reason||'').trim().slice(0,2000);
-        const claim=await repo.claimJobDisputeResolution(dispute.id,{resolution,reason,adminId:me.id});
+        const claim=await repo.claimJobDisputeResolution(dispute.id,{resolution,reason,adminId:me.id,sessionJti:me.sessionJti,verificationMinutes:config?.adminPanelWriteVerificationMinutes??5});
         if(!claim) throw new HttpError(404,'DISPUTE_NOT_FOUND','Dispute not found');
         if(claim.conflict) {
           const code=claim.code||'DISPUTE_RESOLUTION_CONFLICT';

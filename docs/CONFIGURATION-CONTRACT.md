@@ -13,7 +13,7 @@ This document defines the supported environment variables and the policy by envi
 | local/development | optional | local | simulator | console | explicit local origins | safe local placeholders allowed |
 | test | optional | test adapter/local | simulator | console | test-configured | isolated test values only |
 | staging | required | S3-compatible | webhook/sandbox | webhook | explicit HTTPS origins | real staging secrets |
-| production | required | S3 | internal or webhook | webhook | explicit non-wildcard origins | fail-closed, 32+ char auth/reset secrets and configured admin username |
+| production | required | S3 | internal or webhook | webhook | explicit non-wildcard origins | fail-closed, required Google OAuth owner recovery, 32+ byte MFA encryption key, 32+ char auth/reset secrets and configured admin username |
 
 ## Variables
 
@@ -21,7 +21,7 @@ This document defines the supported environment variables and the policy by envi
 `NODE_ENV`, `HOST`, `PORT`, `DATA_FILE`, `PUBLIC_BASE_URL`, `API_BASE_URL_PRODUCTION` (CI/release only), `REQUEST_TIMEOUT_MS`, `HEADERS_TIMEOUT_MS`, `KEEP_ALIVE_TIMEOUT_MS`, `MAX_REQUEST_BYTES`, `TRUST_PROXY`, `TRUSTED_PROXY_IPS`.
 
 ### Authentication / authorization
-`ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ACCESS_TOKEN_TTL`, `REFRESH_TOKEN_TTL`, `ACCESS_TOKEN_ISSUER`, `ACCESS_TOKEN_AUDIENCE`, `RESET_TOKEN_TTL`, `RESET_TOKEN_DELIVERY_MODE`, `RESET_TOKEN_DELIVERY_URL`, `RESET_TOKEN_DELIVERY_SECRET`, `EXPOSE_RESET_TOKEN_IN_DEVELOPMENT`, `GOOGLE_AUTH_ENABLED`, `GOOGLE_OAUTH_CLIENT_ID`, `ADMIN_PANEL_USERNAME`, `ADMIN_PANEL_ALLOWED_EMAIL`, `ADMIN_PANEL_VERIFICATION_MINUTES`.
+`ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `ACCESS_TOKEN_TTL`, `REFRESH_TOKEN_TTL`, `ACCESS_TOKEN_ISSUER`, `ACCESS_TOKEN_AUDIENCE`, `RESET_TOKEN_TTL`, `RESET_TOKEN_DELIVERY_MODE`, `RESET_TOKEN_DELIVERY_URL`, `RESET_TOKEN_DELIVERY_SECRET`, `EXPOSE_RESET_TOKEN_IN_DEVELOPMENT`, `EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT`, `GOOGLE_AUTH_ENABLED`, `GOOGLE_OAUTH_CLIENT_ID`, `ADMIN_PANEL_USERNAME`, `ADMIN_PANEL_ALLOWED_EMAIL`, `ADMIN_PANEL_VERIFICATION_MINUTES`, `ADMIN_MFA_REQUIRED`, `ADMIN_MFA_ENCRYPTION_KEY`, `ADMIN_MFA_ENROLLMENT_MINUTES`.
 
 ### CORS / rate limiting
 `ALLOWED_CORS_ORIGINS`, `RATE_LIMIT_STORE`, `RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`, `GENERAL_RATE_LIMIT_WINDOW_MS`, `GENERAL_RATE_LIMIT_MAX`, `HEALTH_RATE_LIMIT_WINDOW_MS`, `HEALTH_RATE_LIMIT_MAX`.
@@ -43,7 +43,7 @@ This document defines the supported environment variables and the policy by envi
 
 ## Secret rules
 
-Never commit real secret values. Production must reject placeholder authentication secrets, missing metrics token, missing payment/reset secrets, missing `ADMIN_PANEL_USERNAME` (runtime contract: 4–120 characters), wildcard CORS, non-HTTPS external endpoints, non-PostgreSQL persistence, local storage, and simulator payments. External PSP credentials/endpoints are required only when `PAYMENT_PROVIDER=webhook`; internal ledger mode is explicitly allowed for the temporary non-bank-money phase.
+Never commit real secret values. Production must reject placeholder authentication secrets, missing metrics token, missing payment/reset secrets, missing `ADMIN_PANEL_USERNAME` (runtime contract: 4–120 characters), disabled or unconfigured Google OAuth (required for canonical primary-admin recovery after identity-policy enforcement), missing or sub-32-byte `ADMIN_MFA_ENCRYPTION_KEY`, wildcard CORS, non-HTTPS external endpoints, non-PostgreSQL persistence, local storage, and simulator payments. External PSP credentials/endpoints are required only when `PAYMENT_PROVIDER=webhook`; internal ledger mode is explicitly allowed for the temporary non-bank-money phase.
 
 ## Machine validation
 
@@ -55,7 +55,7 @@ npm run check:config-contract
 ./scripts/validate-production-env.sh
 ```
 
-The first command verifies repository consistency. The second validates the production-specific policy and requires real production variables in its calling environment. The `production-release` and `release-validation` workflows map `ADMIN_PANEL_USERNAME_PRODUCTION` into `ADMIN_PANEL_USERNAME`; configure that GitHub Actions secret and the matching runtime variable before releasing a candidate that includes the production admin identity gate.
+The first command verifies repository consistency. The second validates the production-specific policy and requires real production variables in its calling environment. The `production-release` and `release-validation` workflows require `GOOGLE_AUTH_ENABLED=true`, map the public `GOOGLE_OAUTH_CLIENT_ID_PRODUCTION` repository variable into `GOOGLE_OAUTH_CLIENT_ID`, map the `ADMIN_MFA_ENCRYPTION_KEY_PRODUCTION` secret, and map `ADMIN_PANEL_USERNAME_PRODUCTION`. Configure the Google OAuth client ID in GitHub Actions Variables and the MFA encryption key/admin username in Secrets; configure the matching runtime values on the Production service before releasing a candidate that includes the primary-admin identity policy.
 
 
 ## Internal wallet / temporary payment mode

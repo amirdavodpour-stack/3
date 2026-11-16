@@ -21,7 +21,7 @@ export function createRepositoryPorts(repo) {
       'getAdminSummary', 'listAdminUsers', 'getAdminUser', 'listAdminJobs', 'listAdminApplications', 'listAdminAudit',
       'grantAdminByEmail', 'revokeAdminById', 'revokeUserSessions',
       'setUserStatus', 'moderateJob', 'deleteJob', 'listTrustReports', 'updateTrustReportStatus',
-      'transitionJobApplication', 'selectJobApplication',
+      'transitionJobApplication', 'selectJobApplication', 'transitionAdminJobApplication',
     ], 'AdminRepository'),
     marketplace: slice(repo, ['listJobViews', 'insertJob', 'updateJobSimple'], 'MarketplaceRepository'),
     categories: slice(repo, ['listCategories'], 'CategoryRepository'),

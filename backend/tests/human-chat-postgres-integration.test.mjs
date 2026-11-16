@@ -140,6 +140,10 @@ if (enabled) {
   };
 }
 
+async function ensureFixtureAdminWriteStepUp() {
+  assert.ok(await setAdminPanelVerified(fixture.adminId,PANEL_TEST_SESSION_JTI,'WRITE'));
+}
+
 async function waitForConversationRowLock(pool, timeoutMs = 6000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -162,6 +166,10 @@ async function waitForConversationRowLock(pool, timeoutMs = 6000) {
 test('admin dispute resolution atomically admits one decision and recovers its expired claim', { skip: !enabled, timeout: 30000 }, async () => {
   const pool = dbModule.getPool();
   const disputeId = crypto.randomUUID();
+  await ensureFixtureAdminWriteStepUp();
+  const competingAdminId=await createPanelTestAdmin(pool,'dispute-concurrent-admin');
+  const competingSessionJti=`${PANEL_TEST_SESSION_JTI}:competing`;
+  assert.ok(await setAdminPanelVerified(competingAdminId,competingSessionJti,'WRITE'));
   await pool.query(
     "INSERT INTO job_disputes(id,job_id,opened_by,trigger_type,status) VALUES($1,$2,$3,'ADMIN','ADMIN_REVIEW')",
     [disputeId,fixture.jobId,fixture.adminId],
@@ -172,11 +180,13 @@ test('admin dispute resolution atomically admits one decision and recovers its e
       resolution:'HOLD',
       reason:'first administrator decision',
       adminId:fixture.adminId,
+      sessionJti:PANEL_TEST_SESSION_JTI,
     }),
     claimJobDisputeResolution(disputeId,{
       resolution:'REFUND',
       reason:'competing administrator decision',
-      adminId:fixture.outsiderId,
+      adminId:competingAdminId,
+      sessionJti:competingSessionJti,
     }),
   ]);
   const winner = attempts.find((attempt) => attempt?.claimed === true);
@@ -205,6 +215,7 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     resolution:winner.resolution,
     reason:'retry while the first worker still owns the lease',
     adminId:fixture.adminId,
+    sessionJti:PANEL_TEST_SESSION_JTI,
   });
   assert.equal(sameDecision.inProgress,true,
     'same-decision retry must not execute the financial action concurrently');
@@ -224,6 +235,7 @@ test('admin dispute resolution atomically admits one decision and recovers its e
     resolution:winner.resolution,
     reason:'resume the same decision after lease expiry',
     adminId:fixture.adminId,
+    sessionJti:PANEL_TEST_SESSION_JTI,
   });
   assert.equal(resumed.claimed,true);
   assert.equal(resumed.resumed,true);
@@ -292,8 +304,10 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   assert.equal(resolutionAudits[0].meta.resolution,winner.resolution);
   assert.equal(resolutionAudits[0].meta.reason,rows[0]?.resolution_reason);
   assert.equal(resolutionAudits[0].meta.outcomeStatus,winner.resolution === 'HOLD' ? 'ADMIN_REVIEW' : 'RESOLVED');
-  await pool.query("DELETE FROM audit_logs WHERE action='ADMIN_DISPUTE_RESOLVE' AND entity_id=$1",[disputeId]);
+  await pool.query("DELETE FROM audit_logs WHERE action IN ('ADMIN_DISPUTE_RESOLVE','ADMIN_DISPUTE_RESOLUTION_CLAIMED') AND entity_id=$1",[disputeId]);
   await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
+  await pool.query('DELETE FROM audit_logs WHERE actor_id=$1',[competingAdminId]).catch(()=>{});
+  await pool.query('DELETE FROM users WHERE id=$1',[competingAdminId]);
 });
 
 test('admin dispute HOLD cancels pending release events but refuses a provider operation already in progress', { skip: !enabled, timeout: 30000 }, async () => {
@@ -4166,6 +4180,7 @@ test('manual failed resolution of an unknown payout appends a compensating walle
     const resolved = await resolvePayoutUnknown({
       payoutId: payout.id,
       decision: 'FAILED',
+      source:'PROVIDER_RECONCILIATION',
       reason: 'integration fixture: provider status confirmed no disbursement',
     });
     assert.equal(resolved?.status, 'FAILED');
@@ -4248,10 +4263,13 @@ test('manual payout resolution closes every active reconciliation case atomicall
       [payout.id],
     );
 
+    await ensureFixtureAdminWriteStepUp();
     const resolved = await resolvePayoutUnknown({
       payoutId: payout.id,
       decision: 'FAILED',
+      source:'ADMIN',
       adminId: fixture.adminId,
+      adminSessionJti:PANEL_TEST_SESSION_JTI,
       reason: 'admin confirmed provider did not disburse',
     });
     assert.equal(resolved?.status, 'FAILED');
@@ -5247,10 +5265,11 @@ test('PostgreSQL password reset clears admin-panel verification atomically', { s
 
 test('PostgreSQL forced session revocation clears admin-panel verification', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
+  await ensureFixtureAdminWriteStepUp();
   const userId = await createPanelTestAdmin(pool, 'admin-panel-revoke-session');
   assert.ok(await setAdminPanelVerified(userId, `admin-panel-test-jti:${userId}`));
 
-  const result = await revokeUserSessions(userId);
+  const result = await revokeUserSessions(userId,{actorId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
   assert.equal(result?.id, userId);
   assert.equal(result?.sessionVersion, 1);
   await assertPanelVerificationCleared(pool, userId);
@@ -5549,6 +5568,7 @@ test('PostgreSQL refuses to cancel an active job before confirmed refund and per
 
 test('HELD payment can be released only by the matching active admin dispute RELEASE claim', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
+  await ensureFixtureAdminWriteStepUp();
   const ownerId = await createTransferTestUser(pool, 'dispute-release-owner');
   const workerId = await createTransferTestUser(pool, 'dispute-release-worker');
   const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
@@ -5593,7 +5613,7 @@ test('HELD payment can be released only by the matching active admin dispute REL
     const { rows: stillHeld } = await pool.query('SELECT status FROM payments WHERE id=$1',[paymentId]);
     assert.equal(stillHeld[0]?.status,'HELD');
 
-    const claim = await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Evidence reviewed',adminId:workerId});
+    const claim = await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Evidence reviewed',adminId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(claim?.claimed,true);
     const event = await enqueuePaymentRelease({
       jobId,ownerId,paymentId,disputeId,
@@ -5615,6 +5635,7 @@ test('HELD payment can be released only by the matching active admin dispute REL
 
 test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
+  await ensureFixtureAdminWriteStepUp();
   const ownerId = await createTransferTestUser(pool, 'dispute-hold-owner');
   const workerId = await createTransferTestUser(pool, 'dispute-hold-worker');
   const suffix = `${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
@@ -5648,7 +5669,7 @@ test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold
     );
     const dispute=await createJobDispute({jobId,openedBy:ownerId,triggerType:'USER'});
     disputeId=dispute.id;
-    const claim=await claimJobDisputeResolution(disputeId,{resolution:'HOLD',reason:'Further evidence required',adminId:workerId});
+    const claim=await claimJobDisputeResolution(disputeId,{resolution:'HOLD',reason:'Further evidence required',adminId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(claim?.claimed,true);
     const completed=await completeJobDisputeResolution(disputeId,{resolution:'HOLD',token:claim.token});
     assert.equal(completed?.status,'ADMIN_REVIEW');
@@ -5656,7 +5677,7 @@ test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold
     assert.equal(completed?.resolvedAt ?? null,null);
     const { rows: paymentRows }=await pool.query('SELECT status FROM payments WHERE id=$1',[paymentId]);
     assert.equal(paymentRows[0]?.status,'HELD');
-    const nextClaim=await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Work later completed',adminId:workerId});
+    const nextClaim=await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Work later completed',adminId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(nextClaim?.claimed,true,'the same held case must remain resolvable after new evidence arrives');
     await pool.query(
       `UPDATE job_disputes SET status='ADMIN_REVIEW',resolution=NULL,resolution_reason='',resolved_by=NULL,
@@ -7394,6 +7415,7 @@ test('PostgreSQL trust-report status and its audit commit or roll back atomicall
   timeout: 30000,
 }, async () => {
   const pool=dbModule.getPool();
+  await ensureFixtureAdminWriteStepUp();
   const reportId=crypto.randomUUID();
   const suffix=reportId.replaceAll('-','');
   const fn='r05_fail_trust_report_audit_'+suffix;
@@ -7417,7 +7439,7 @@ test('PostgreSQL trust-report status and its audit commit or roll back atomicall
        FOR EACH ROW EXECUTE FUNCTION ${fn}('${reportId}')`,
     );
     await assert.rejects(
-      updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId}),
+      updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI}),
       /R05 forced TRUST_REPORT_STATUS audit failure/,
     );
     const { rows: rolledBack }=await pool.query('SELECT status FROM trust_reports WHERE id=$1',[reportId]);
@@ -7425,7 +7447,7 @@ test('PostgreSQL trust-report status and its audit commit or roll back atomicall
     await pool.query('DROP TRIGGER IF EXISTS '+trigger+' ON audit_logs');
     await pool.query('DROP FUNCTION IF EXISTS '+fn+'()');
 
-    const updated=await updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId});
+    const updated=await updateTrustReportStatus(reportId,'RESOLVED',{actorId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(updated.status,'RESOLVED');
     const { rows: audits }=await pool.query(
       `SELECT action,actor_id,meta FROM audit_logs
@@ -7546,4 +7568,83 @@ test('PostgreSQL admin job moderation and deletion are atomic with their audit e
 
 after(async () => {
   if (enabled) await dbModule.db.close();
+});
+test('PostgreSQL session revocation rechecks admin role after waiting for the actor row lock', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const pool=dbModule.getPool();
+  const actorId=await createPanelTestAdmin(pool,'actor-revocation-race-admin');
+  const targetId=await createTransferTestUser(pool,'actor-revocation-race-target');
+  const sessionJti='actor-revocation-race-session:'+crypto.randomUUID();
+  const refreshId=crypto.randomUUID();
+  const refreshHash='actor-revocation-race-token:'+crypto.randomUUID();
+  const familyId=crypto.randomUUID();
+  const blocker=await pool.connect();
+  let revokePromise;
+
+  try {
+    assert.ok(await setAdminPanelVerified(actorId,sessionJti,'WRITE'));
+    await insertRefreshToken({
+      id:refreshId,
+      userId:targetId,
+      tokenHash:refreshHash,
+      familyId,
+      expiresAt:new Date(Date.now()+60*60_000).toISOString(),
+      createdAt:new Date().toISOString(),
+      revokedAt:null,
+      replacedBy:null,
+    });
+
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM users WHERE id=$1 FOR UPDATE',[actorId]);
+    revokePromise=revokeUserSessions(targetId,{actorId,sessionJti,verificationMinutes:5});
+
+    let waitingForActor=false;
+    const deadline=Date.now()+5_000;
+    while(Date.now()<deadline) {
+      const {rows}=await pool.query(
+        "SELECT pid FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND state='active' AND wait_event_type='Lock' AND query ILIKE '%WHERE id=ANY%' AND query ILIKE '%ORDER BY id%' AND query ILIKE '%FOR UPDATE%'",
+      );
+      if(rows.length) {
+        waitingForActor=true;
+        break;
+      }
+      await new Promise((resolve)=>setTimeout(resolve,50));
+    }
+    assert.equal(waitingForActor,true,
+      'session revocation must acquire its sorted actor/target lock set before mutating the target');
+
+    await blocker.query(
+      `UPDATE users
+          SET role='USER',
+              session_version=session_version+1,
+              admin_panel_verified_at=NULL,
+              admin_panel_verified_session_jti=NULL,
+              admin_panel_verified_scope=NULL
+        WHERE id=$1`,
+      [actorId],
+    );
+    await blocker.query('COMMIT');
+
+    await assert.rejects(
+      revokePromise,
+      (error)=>error?.code==='ADMIN_REQUIRED' && error?.status===403,
+      'revocation must reject when the actor loses ADMIN before the transaction obtains the lock',
+    );
+
+    const {rows:target}=await pool.query('SELECT session_version FROM users WHERE id=$1',[targetId]);
+    assert.equal(Number(target[0]?.session_version),0,
+      'the target account must remain unchanged after the actor loses authorization');
+    const {rows:refresh}=await pool.query('SELECT revoked_at FROM refresh_tokens WHERE id=$1',[refreshId]);
+    assert.equal(refresh[0]?.revoked_at,null,
+      'the target refresh token must remain usable because the unauthorized mutation wrote nothing');
+  } finally {
+    await blocker.query('ROLLBACK').catch(()=>{});
+    blocker.release();
+    if(revokePromise) await revokePromise.catch(()=>{});
+    const fixtureIds=[actorId,targetId];
+    await pool.query('DELETE FROM audit_logs WHERE actor_id=ANY($1::uuid[]) OR entity_id=ANY($1::uuid[])',[fixtureIds]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=ANY($1::uuid[])',[fixtureIds]).catch(()=>{});
+  }
 });
