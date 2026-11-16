@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -59,11 +60,11 @@ void main() {
 
     const steps = [
       PremiumLifecycleStep(label: 'تأمین وجه', icon: Icons.account_balance_wallet, active: true),
-      PremiumLifecycleStep(label: 'در امانت', icon: Icons.lock_outline),
-      PremiumLifecycleStep(label: 'در حال انجام', icon: Icons.work_outline),
-      PremiumLifecycleStep(label: 'تحویل', icon: Icons.upload_outlined),
-      PremiumLifecycleStep(label: 'تأیید', icon: Icons.verified_outlined),
-      PremiumLifecycleStep(label: 'تسویه', icon: Icons.payments_outlined),
+      PremiumLifecycleStep(label: 'در امانت', icon: Icons.lock_outline, active: false),
+      PremiumLifecycleStep(label: 'در حال انجام', icon: Icons.work_outline, active: false),
+      PremiumLifecycleStep(label: 'تحویل', icon: Icons.upload_outlined, active: false),
+      PremiumLifecycleStep(label: 'تأیید', icon: Icons.verified_outlined, active: false),
+      PremiumLifecycleStep(label: 'تسویه', icon: Icons.payments_outlined, active: false),
     ];
 
     await tester.pumpWidget(

@@ -133,6 +133,32 @@ class _FakeAdmin implements AdminRepository {
       };
 
   @override
+  Future<Map<String, dynamic>> verifyPanelAccess(
+    String name,
+    String username,
+  ) async =>
+      const {'verified': true};
+
+  @override
+  Future<void> lockPanel() async {
+    calls.add('lock-panel');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+
+  @override
+  Future<Map<String, dynamic>> getDispute(String id) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> resolveDispute(
+    String id, {
+    required String resolution,
+    String? reason,
+  }) async =>
+      {'id': id, 'resolution': resolution};
+
+  @override
   Future<void> deleteJob(String id) async {
     calls.add('delete:$id');
     if (failNextAction) throw Exception('action boom');
