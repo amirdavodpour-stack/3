@@ -93,6 +93,19 @@ abstract interface class AdminRepository {
     required Map<String, dynamic> verification,
     required String idempotencyKey,
   });
+  Future<Map<String, dynamic>> recordOutboxEventReconciliationAttestation(
+    String caseId, {
+    required String action,
+    required String reason,
+    required String sourceType,
+    required String issuer,
+    required String evidenceReference,
+    String? artifactSha256,
+    String? sourceObservedAt,
+    required Map<String, dynamic> verification,
+    required String reviewedCaseDigest,
+    required String idempotencyKey,
+  });
   Future<Map<String, dynamic>> resolveUnknownPayout(String id, {required String decision, String? providerRef, String? reason});
   Future<Map<String, dynamic>> getAnalyticsSummary({int days = 30});
   Future<Map<String, dynamic>> getFunnel({int days = 30});
@@ -267,6 +280,43 @@ class ApiAdminRepository implements AdminRepository {
         'reason': reason.trim(),
         'evidenceReference': evidenceReference.trim(),
         'verification': verification,
+        'idempotencyKey': idempotencyKey,
+      },
+    );
+    return raw is Map ? Map<String, dynamic>.from(raw) : const <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordOutboxEventReconciliationAttestation(
+    String caseId, {
+    required String action,
+    required String reason,
+    required String sourceType,
+    required String issuer,
+    required String evidenceReference,
+    String? artifactSha256,
+    String? sourceObservedAt,
+    required Map<String, dynamic> verification,
+    required String reviewedCaseDigest,
+    required String idempotencyKey,
+  }) async {
+    final path = '/admin/reconciliation-cases/outbox-events/${Uri.encodeComponent(caseId)}/investigation-attestations';
+    final raw = await _api.request(
+      'POST',
+      path,
+      auth: true,
+      body: {
+        'action': action,
+        'reason': reason.trim(),
+        'sourceType': sourceType,
+        'issuer': issuer.trim(),
+        'evidenceReference': evidenceReference.trim(),
+        if (artifactSha256 != null && artifactSha256.trim().isNotEmpty)
+          'artifactSha256': artifactSha256.trim().toLowerCase(),
+        if (sourceObservedAt != null && sourceObservedAt.trim().isNotEmpty)
+          'sourceObservedAt': sourceObservedAt.trim(),
+        'verification': verification,
+        'reviewedCaseDigest': reviewedCaseDigest.trim().toLowerCase(),
         'idempotencyKey': idempotencyKey,
       },
     );

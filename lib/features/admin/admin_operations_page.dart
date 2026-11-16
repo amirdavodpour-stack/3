@@ -469,8 +469,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage>
                     key: ValueKey('outbox-investigation-$caseId'),
                     repository: context.read<AdminRepository>(),
                     caseId: caseId,
+                    caseEvidenceDigest: '${item['caseEvidenceDigest'] ?? ''}',
+                    investigationStatus: '${item['investigationStatus'] ?? 'NOT_STARTED'}',
+                    reReviewRequired: item['reReviewRequired'] == true,
+                    hasCurrentDigestAttestation: item['hasCurrentDigestAttestation'] == true,
                     canWrite: _hasPermission('admin.manage_reconciliation_cases'),
                     translate: _t,
+                    onRefresh: _reload,
                     onCaseStatusChanged: (status) {
                       if (!mounted) return;
                       setState(() => _outboxEventCaseStatusOverrides[caseId] = status);
@@ -971,15 +976,25 @@ class _OutboxEventInvestigationPanel extends StatefulWidget {
     super.key,
     required this.repository,
     required this.caseId,
+    required this.caseEvidenceDigest,
+    required this.investigationStatus,
+    required this.reReviewRequired,
+    required this.hasCurrentDigestAttestation,
     required this.canWrite,
     required this.translate,
+    required this.onRefresh,
     required this.onCaseStatusChanged,
   });
 
   final AdminRepository repository;
   final String caseId;
+  final String caseEvidenceDigest;
+  final String investigationStatus;
+  final bool reReviewRequired;
+  final bool hasCurrentDigestAttestation;
   final bool canWrite;
   final String Function(String fa, String en) translate;
+  final Future<void> Function() onRefresh;
   final ValueChanged<String> onCaseStatusChanged;
 
   @override
@@ -989,15 +1004,26 @@ class _OutboxEventInvestigationPanel extends StatefulWidget {
 
 class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigationPanel> {
   final _formKey = GlobalKey<FormState>();
+  final _attestationFormKey = GlobalKey<FormState>();
   final _reasonController = TextEditingController();
   final _evidenceController = TextEditingController();
+  final _attestationReasonController = TextEditingController();
+  final _attestationEvidenceController = TextEditingController();
+  final _issuerController = TextEditingController(text: 'Operator review');
+  final _artifactDigestController = TextEditingController();
+  final _sourceObservedAtController = TextEditingController();
   final _random = Random.secure();
   final List<Map<String, dynamic>> _notes = [];
   String _eventIdentity = 'UNRESOLVED';
   String _canonicalPayout = 'NOT_VERIFIED';
   String _providerOutcome = 'NOT_CHECKED';
+  String _sourceType = 'OPERATOR_REPORT';
+  String _eventIdentityLevel = 'OPERATOR_REPORTED';
+  String _canonicalPayoutLevel = 'NOT_CHECKED';
+  String _providerOutcomeLevel = 'NOT_CHECKED';
   String? _nextCursor;
   String? _pendingIdempotencyKey;
+  String? _pendingAttestationIdempotencyKey;
   String? _historyError;
   bool _hasMore = false;
   bool _historyBusy = false;
@@ -1011,11 +1037,16 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
   void dispose() {
     _reasonController.dispose();
     _evidenceController.dispose();
+    _attestationReasonController.dispose();
+    _attestationEvidenceController.dispose();
+    _issuerController.dispose();
+    _artifactDigestController.dispose();
+    _sourceObservedAtController.dispose();
     super.dispose();
   }
 
-  String _newIdempotencyKey() =>
-      'event-note-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+  String _newIdempotencyKey([String prefix = 'event-note']) =>
+      '$prefix-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
 
   Future<void> _loadHistory({bool nextPage = false}) async {
     if (_historyBusy || (nextPage && (!_hasMore || _nextCursor == null))) return;
@@ -1080,6 +1111,105 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorMessage(error))));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  bool? _investigationClosedOverride;
+  String? _attestedDigestOverride;
+
+  bool get _investigationClosed =>
+      _investigationClosedOverride ??
+      widget.investigationStatus.trim().toUpperCase() == 'CLOSED_UNRESOLVED';
+
+  bool get _hasAttestationForCurrentDigest =>
+      widget.hasCurrentDigestAttestation ||
+      _attestedDigestOverride == widget.caseEvidenceDigest ||
+      _notes.any((note) =>
+          const {
+            'INVESTIGATION_ATTESTATION_RECORDED',
+            'INVESTIGATION_REOPENED',
+          }.contains(note['action']) &&
+          note['reviewedCaseDigest'] == widget.caseEvidenceDigest);
+
+  Future<void> _submitAttestation(String action) async {
+    if (_saving || !(_attestationFormKey.currentState?.validate() ?? false)) return;
+    final digest = widget.caseEvidenceDigest.trim().toLowerCase();
+    if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(digest)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t('نسخه شواهد معتبر نیست؛ فهرست را تازه‌سازی کنید', 'Evidence snapshot is missing. Refresh the case list.'))),
+      );
+      return;
+    }
+    final idempotencyKey = _pendingAttestationIdempotencyKey ??= _newIdempotencyKey('event-attestation');
+    setState(() => _saving = true);
+    try {
+      final result = await widget.repository.recordOutboxEventReconciliationAttestation(
+        widget.caseId,
+        action: action,
+        reason: _attestationReasonController.text.trim(),
+        sourceType: _sourceType,
+        issuer: _issuerController.text.trim(),
+        evidenceReference: _attestationEvidenceController.text.trim(),
+        artifactSha256: _artifactDigestController.text.trim().isEmpty
+            ? null
+            : _artifactDigestController.text.trim(),
+        sourceObservedAt: _sourceObservedAtController.text.trim().isEmpty
+            ? null
+            : _sourceObservedAtController.text.trim(),
+        verification: {
+          'eventIdentity': {
+            'result': _eventIdentity,
+            'verificationLevel': _eventIdentityLevel,
+          },
+          'canonicalPayout': {
+            'result': _canonicalPayout,
+            'verificationLevel': _canonicalPayoutLevel,
+          },
+          'providerOutcome': {
+            'result': _providerOutcome,
+            'verificationLevel': _providerOutcomeLevel,
+          },
+        },
+        reviewedCaseDigest: digest,
+        idempotencyKey: idempotencyKey,
+      );
+      if (!mounted) return;
+      final status = result['caseStatus']?.toString();
+      if (status != null && status.isNotEmpty) widget.onCaseStatusChanged(status);
+      _pendingAttestationIdempotencyKey = null;
+      _attestationReasonController.clear();
+      setState(() {
+        if (action == 'INVESTIGATION_CLOSED_UNRESOLVED') {
+          _investigationClosedOverride = true;
+        } else if (action == 'INVESTIGATION_REOPENED') {
+          _investigationClosedOverride = false;
+          _attestedDigestOverride = widget.caseEvidenceDigest;
+        } else {
+          _attestedDigestOverride = widget.caseEvidenceDigest;
+        }
+      });
+      await _loadHistory();
+      if (!mounted) return;
+      final message = switch (action) {
+        'INVESTIGATION_CLOSED_UNRESOLVED' => _t(
+            'بررسی بسته شد؛ قرنطینه مالی همچنان فعال است',
+            'Investigation closed; financial quarantine remains active',
+          ),
+        'INVESTIGATION_REOPENED' => _t('بررسی دوباره باز شد', 'Investigation reopened'),
+        _ => _t('گواهی بررسی ثبت شد', 'Investigation attestation recorded'),
+      };
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (error) {
+      if (!mounted) return;
+      if (error.toString().contains('RECONCILIATION_EVIDENCE_STALE')) {
+        await widget.onRefresh();
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(error))),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1160,13 +1290,14 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
       )).toList(growable: false),
       onChanged: _saving ? null : (next) {
         _pendingIdempotencyKey = null;
+        _pendingAttestationIdempotencyKey = null;
         onChanged(next);
       },
     );
   }
 
   Widget _composer() {
-    if (!widget.canWrite) return const SizedBox.shrink();
+    if (!widget.canWrite || _investigationClosed) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Form(
       key: _formKey,
@@ -1251,6 +1382,252 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
     );
   }
 
+  Widget _attestationComposer() {
+    if (!widget.canWrite) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final digest = widget.caseEvidenceDigest.trim();
+    final digestValid = RegExp(r'^[a-f0-9]{64}$').hasMatch(digest);
+    final hasAttestation = _hasAttestationForCurrentDigest;
+    final closed = _investigationClosed;
+    return Form(
+      key: _attestationFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Divider(height: 28),
+          Text(
+            _t('گواهی و وضعیت بررسی', 'Attestation and investigation status'),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _t(
+              'گواهی به نسخه دقیق شواهد متصل می‌شود. بستن بررسی به معنی حل مالی نیست و قرنطینه را فعال نگه می‌دارد.',
+              'Attestations are bound to the exact reviewed evidence snapshot. Closing an investigation does not resolve the financial case or release its quarantine.',
+            ),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          if (!digestValid)
+            Text(
+              _t('نسخه شواهد در دسترس نیست؛ فهرست پرونده را تازه‌سازی کنید.', 'Evidence digest unavailable. Refresh the case list before submitting.'),
+              style: TextStyle(color: theme.colorScheme.error),
+            )
+          else
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: SelectableText(
+                'SHA-256: ' + digest,
+                key: ValueKey('outbox-attestation-digest-' + widget.caseId),
+                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+              ),
+            ),
+          if (widget.reReviewRequired)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _t(
+                  'شواهد پرونده پس از آخرین گواهی تغییر کرده است؛ بررسی مجدد الزامی است.',
+                  'Case evidence changed after the last attestation. Re-review is required.',
+                ),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+          if (closed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _t(
+                  'بررسی بسته شده است؛ قرنطینه مالی همچنان فعال و پرونده همچنان در صف قرار دارد.',
+                  'Investigation is closed unresolved. The financial quarantine remains active and the case stays in the queue.',
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          const SizedBox(height: 10),
+          TextFormField(
+            key: ValueKey('outbox-attestation-reason-' + widget.caseId),
+            controller: _attestationReasonController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 1000,
+            decoration: InputDecoration(
+              labelText: _t('دلیل گواهی', 'Attestation reason'),
+              alignLabelWithHint: true,
+            ),
+            onChanged: (_) => _pendingAttestationIdempotencyKey = null,
+            validator: (value) {
+              final length = value?.trim().length ?? 0;
+              if (length < 10 || length > 1000) {
+                return _t('دلیل باید بین ۱۰ تا ۱۰۰۰ نویسه باشد', 'Enter 10 to 1000 characters');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: ValueKey('outbox-attestation-source-' + widget.caseId),
+            initialValue: _sourceType,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: _t('نوع منبع مدرک', 'Evidence source type')),
+            items: const [
+              'OPERATOR_REPORT',
+              'PROVIDER_ARTIFACT',
+              'BANK_STATEMENT',
+              'INTERNAL_LEDGER',
+              'OUTBOX_EVENT',
+              'SUPPORT_TICKET',
+              'OTHER',
+            ].map((value) => DropdownMenuItem(value: value, child: Text(value.replaceAll('_', ' ')))).toList(),
+            onChanged: _saving ? null : (value) {
+              if (value == null) return;
+              setState(() {
+                _sourceType = value;
+                _pendingAttestationIdempotencyKey = null;
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('outbox-attestation-issuer-' + widget.caseId),
+            controller: _issuerController,
+            maxLength: 160,
+            decoration: InputDecoration(labelText: _t('صادرکننده یا مرجع مدرک', 'Evidence issuer')),
+            onChanged: (_) => _pendingAttestationIdempotencyKey = null,
+            validator: (value) {
+              final length = value?.trim().length ?? 0;
+              if (length < 2 || length > 160) {
+                return _t('نام مرجع باید بین ۲ تا ۱۶۰ نویسه باشد', 'Enter 2 to 160 characters');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('outbox-attestation-reference-' + widget.caseId),
+            controller: _attestationEvidenceController,
+            maxLength: 500,
+            decoration: InputDecoration(labelText: _t('شناسه ارجاع مدرک', 'Evidence reference')),
+            onChanged: (_) => _pendingAttestationIdempotencyKey = null,
+            validator: (value) {
+              final length = value?.trim().length ?? 0;
+              if (length < 8 || length > 500) {
+                return _t('ارجاع باید بین ۸ تا ۵۰۰ نویسه باشد', 'Enter 8 to 500 characters');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('outbox-attestation-sha256-' + widget.caseId),
+            controller: _artifactDigestController,
+            maxLength: 64,
+            decoration: InputDecoration(
+              labelText: _t('SHA-256 فایل مدرک (اختیاری)', 'Artifact SHA-256 (optional)'),
+            ),
+            onChanged: (_) => _pendingAttestationIdempotencyKey = null,
+            validator: (value) {
+              final digestValue = value?.trim() ?? '';
+              if (digestValue.isNotEmpty && !RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(digestValue)) {
+                return _t('باید SHA-256 شصت‌وچهاررقمی باشد', 'Enter a 64-character SHA-256 digest');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('outbox-attestation-source-time-' + widget.caseId),
+            controller: _sourceObservedAtController,
+            decoration: InputDecoration(
+              labelText: _t('زمان مشاهده مدرک (ISO 8601، اختیاری)', 'Source observed at (ISO 8601, optional)'),
+              hintText: '2026-11-15T19:00:00Z',
+            ),
+            onChanged: (_) => _pendingAttestationIdempotencyKey = null,
+            validator: (value) {
+              final timestamp = value?.trim() ?? '';
+              if (timestamp.isNotEmpty && DateTime.tryParse(timestamp) == null) {
+                return _t('زمان ISO 8601 معتبر وارد کنید', 'Enter a valid ISO 8601 timestamp');
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('هویت رویداد', 'Event identity'),
+            value: _eventIdentity,
+            values: const ['MATCHED','MISMATCH_CONFIRMED','UNRESOLVED','NOT_CHECKED'],
+            keyName: 'outbox-attestation-event-result',
+            onChanged: (value) { if (value != null) setState(() => _eventIdentity = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('سطح بررسی هویت رویداد', 'Event identity verification level'),
+            value: _eventIdentityLevel,
+            values: const ['OPERATOR_REPORTED','SOURCE_ARTIFACT_REVIEWED','INDEPENDENTLY_CORROBORATED','CONFLICTING','INCONCLUSIVE','NOT_CHECKED'],
+            keyName: 'outbox-attestation-event-level',
+            onChanged: (value) { if (value != null) setState(() => _eventIdentityLevel = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('تطبیق پرداخت مرجع', 'Canonical payout'),
+            value: _canonicalPayout,
+            values: const ['MATCHED','MISMATCHED','NOT_FOUND','NOT_VERIFIED','NOT_CHECKED'],
+            keyName: 'outbox-attestation-payout-result',
+            onChanged: (value) { if (value != null) setState(() => _canonicalPayout = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('سطح بررسی پرداخت مرجع', 'Canonical payout verification level'),
+            value: _canonicalPayoutLevel,
+            values: const ['OPERATOR_REPORTED','SOURCE_ARTIFACT_REVIEWED','INDEPENDENTLY_CORROBORATED','CONFLICTING','INCONCLUSIVE','NOT_CHECKED'],
+            keyName: 'outbox-attestation-payout-level',
+            onChanged: (value) { if (value != null) setState(() => _canonicalPayoutLevel = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('نتیجه ارائه‌دهنده', 'Provider outcome'),
+            value: _providerOutcome,
+            values: const ['SUCCEEDED_CONFIRMED','FAILED_CONFIRMED','UNKNOWN','NOT_CHECKED'],
+            keyName: 'outbox-attestation-provider-result',
+            onChanged: (value) { if (value != null) setState(() => _providerOutcome = value); },
+          ),
+          const SizedBox(height: 8),
+          _verificationDropdown(
+            label: _t('سطح بررسی نتیجه ارائه‌دهنده', 'Provider outcome verification level'),
+            value: _providerOutcomeLevel,
+            values: const ['OPERATOR_REPORTED','SOURCE_ARTIFACT_REVIEWED','INDEPENDENTLY_CORROBORATED','CONFLICTING','INCONCLUSIVE','NOT_CHECKED'],
+            keyName: 'outbox-attestation-provider-level',
+            onChanged: (value) { if (value != null) setState(() => _providerOutcomeLevel = value); },
+          ),
+          const SizedBox(height: 12),
+          if (closed)
+            FilledButton.icon(
+              onPressed: _saving || !digestValid ? null : () => _submitAttestation('INVESTIGATION_REOPENED'),
+              icon: const Icon(Icons.lock_open),
+              label: Text(_saving ? _t('در حال ثبت...', 'Saving...') : _t('بازگشایی بررسی با این نسخه شواهد', 'Reopen investigation against this evidence')),
+            )
+          else ...[
+            FilledButton.icon(
+              onPressed: _saving || !digestValid ? null : () => _submitAttestation('INVESTIGATION_ATTESTATION_RECORDED'),
+              icon: _saving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.fact_check_outlined),
+              label: Text(_saving ? _t('در حال ثبت...', 'Saving...') : _t('ثبت گواهی بررسی', 'Record attestation')),
+            ),
+            if (hasAttestation) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _saving || !digestValid ? null : () => _submitAttestation('INVESTIGATION_CLOSED_UNRESOLVED'),
+                icon: const Icon(Icons.lock_outline),
+                label: Text(_t('بستن تحقیق بدون حل مالی', 'Close investigation unresolved')),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1317,6 +1694,7 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
                         child: Text(_t('تلاش دوباره', 'Retry')),
                       ),
                     _composer(),
+                    _attestationComposer(),
                   ],
                 ),
               ),
