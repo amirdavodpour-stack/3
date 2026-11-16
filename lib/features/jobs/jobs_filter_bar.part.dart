@@ -172,14 +172,30 @@ class HopeOpportunityRefinementLauncher extends StatelessWidget {
                   icon: HopeV2Icons.location,
                   label: cityLabel,
                   selected: false,
-                  onTap: onPickCity,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    unawaited(
+                      Future<void>.delayed(
+                        const Duration(milliseconds: 220),
+                        onPickCity,
+                      ),
+                    );
+                  },
                   color: HopeV2Colors.secondary,
                 ),
                 PremiumFilterChip(
                   icon: HopeV2Icons.category,
                   label: categoryLabel,
                   selected: false,
-                  onTap: onPickCategory,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    unawaited(
+                      Future<void>.delayed(
+                        const Duration(milliseconds: 220),
+                        onPickCategory,
+                      ),
+                    );
+                  },
                   color: HopeV2Colors.primary,
                 ),
               ],

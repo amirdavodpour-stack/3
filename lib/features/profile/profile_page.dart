@@ -104,6 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
       maxWidth: 920,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
       child: ListView(
+        key: const ValueKey('profile-content-scroll'),
         padding: EdgeInsets.zero,
         children: [
           PremiumHeader(
@@ -130,67 +131,34 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: HopeV2Spacing.sm),
-          FutureBuilder<HopeProviderProfile>(
-            future: profile,
-            builder: (context, snapshot) {
-              final data = snapshot.data;
-              final providerType = data?.providerType.trim();
-              final verification = data?.verificationStatus.trim().toUpperCase();
-              return PremiumPanel(
-                key: const ValueKey('profile-account-summary'),
-                quiet: true,
-                padding: const EdgeInsets.fromLTRB(15, 13, 15, 13),
-                child: Row(
-                  children: [
-                    const HopeIconTile(
-                      HopeV2Icons.secure,
-                      filled: true,
-                      size: 40,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            HopeCopy.of(context).copy_active_account_bef80da,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                          PremiumTag(
-                            icon: HopeV2Icons.completed,
-                            label: _t(context, 'حساب فعال', 'Active account'),
-                            color: HopeV2Colors.secondaryStrong,
-                          ),
-                          if (providerType?.isNotEmpty == true)
-                            PremiumTag(
-                              icon: HopeV2Icons.job,
-                              label: _providerTypeLabel(context, providerType!),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          if (verification == 'VERIFIED')
-                            PremiumTag(
-                              icon: HopeV2Icons.verified,
-                              label: _t(context, 'تأییدشده', 'Verified'),
-                              color: HopeV2Colors.success,
-                            )
-                          else if (verification != null &&
-                              verification.isNotEmpty)
-                            PremiumTag(
-                              icon: HopeV2Icons.pending,
-                              label: _verificationStatusLabel(context, verification),
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+          PremiumPanel(
+            key: const ValueKey('profile-account-summary'),
+            quiet: true,
+            padding: const EdgeInsets.fromLTRB(15, 11, 15, 11),
+            child: Row(
+              children: [
+                const HopeIconTile(
+                  HopeV2Icons.secure,
+                  filled: true,
+                  size: 40,
                 ),
-              );
-            },
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      PremiumTag(
+                        icon: HopeV2Icons.completed,
+                        label: _t(context, 'حساب فعال', 'Active account'),
+                        color: HopeV2Colors.secondaryStrong,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 26),
           PremiumSectionHeader(
@@ -273,13 +241,6 @@ padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                           runSpacing: 10,
                           children: [
                             _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted),
-                            if (data.providerType.isNotEmpty)
-                              _trustMetric(
-                                context,
-                                HopeV2Icons.job,
-                                _providerTypeLabel(context, data.providerType),
-                                Theme.of(context).colorScheme.secondary,
-                              ),
                             if (data.capacity.isNotEmpty)
                               _trustMetric(
                                 context,
@@ -583,11 +544,19 @@ padding: const EdgeInsets.symmetric(vertical: 6),
     HopeSettingsController settings,
     ThemeController theme,
   ) {
+    final compact = MediaQuery.sizeOf(context).width < 500;
     return PremiumPanel(
       key: const ValueKey('profile-settings-panel'),
       glass: true,
-child: Column(
-        children: [
+      child: ListTileTheme(
+        data: ListTileThemeData(
+          dense: compact,
+          visualDensity: compact
+              ? const VisualDensity(horizontal: -2, vertical: -2)
+              : VisualDensity.standard,
+        ),
+        child: Column(
+          children: [
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 500) {
@@ -700,7 +669,7 @@ child: Column(
               return ListTile(
                 dense: compact,
                 visualDensity: compact
-                    ? const VisualDensity(horizontal: -2, vertical: -1)
+                    ? const VisualDensity(horizontal: -2, vertical: -2)
                     : null,
                 leading: const HopeIconTile(HopeV2Icons.secure),
                 title: Text(
@@ -932,6 +901,7 @@ child: Column(
             },
           ),
         ],
+        ),
       ),
     );
   }

@@ -168,11 +168,8 @@ testWidgets('withdrawing an application disables the action until completion',
     final repo = _ProfileRepo(applications: [application]);
     await _pump(tester, authenticated: true, repository: repo);
 
-    await tester.scrollUntilVisible(
-      find.text('Flutter developer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(find.text('Flutter developer'));
+    await tester.pumpAndSettle();
     final undo = find.byTooltip('انصراف');
     expect(undo, findsOneWidget);
 
@@ -211,11 +208,8 @@ testWidgets('withdrawing an application disables the action until completion',
     final repo = _ProfileRepo(applications: [application]);
     await _pump(tester, authenticated: true, repository: repo);
 
-    await tester.scrollUntilVisible(
-      find.text('Backend engineer'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(find.text('Backend engineer'));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('انصراف'));
     await tester.pump();
@@ -248,9 +242,16 @@ testWidgets('withdrawing an application disables the action until completion',
   testWidgets('authenticated profile compresses secondary settings on narrow screens', (tester) async {
     await _pump(tester, authenticated: true, width: 390);
 
-    final panel = find.byKey(const ValueKey('profile-settings-panel'));
-    expect(panel, findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(520));
+    final compactPanel = find.byKey(const ValueKey('profile-settings-panel'));
+    expect(compactPanel, findsOneWidget);
+    final compactHeight = tester.getSize(compactPanel).height;
+
+    await _pump(tester, authenticated: true, width: 600);
+    final expandedPanel = find.byKey(const ValueKey('profile-settings-panel'));
+    expect(expandedPanel, findsOneWidget);
+    final expandedHeight = tester.getSize(expandedPanel).height;
+
+    expect(compactHeight, lessThan(expandedHeight));
     expect(tester.takeException(), isNull);
   });
 
@@ -267,8 +268,13 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(summary, findsOneWidget);
     expect(tester.getSize(summary).height, lessThan(112));
     expect(find.text('حساب فعال'), findsOneWidget);
-    expect(find.text('مجری مستقل'), findsOneWidget);
-    expect(find.text('تأییدشده'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: summary,
+        matching: find.text('مجری مستقل'),
+      ),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 

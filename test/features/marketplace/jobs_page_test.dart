@@ -210,7 +210,7 @@ void main() {
     final featuredFinder = find.byWidgetPredicate(
       (widget) =>
           widget is OpportunityCard &&
-          widget.variant == OpportunityCardVariant.featured,
+          widget.variant == OpportunityCardVariant.featuredScan,
     );
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);
@@ -342,10 +342,16 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'طراحی'));
     await tester.pumpAndSettle();
 
+    await tester.tap(
+      find.byKey(const ValueKey('hope-opportunity-refinement-launcher')),
+    );
+    await tester.pumpAndSettle();
     expect(
       find.widgetWithText(PremiumFilterChip, 'طراحی'),
       findsOneWidget,
     );
+    await tester.tap(find.text('اعمال فیلترها'));
+    await tester.pumpAndSettle();
     expect(find.text('design'), findsNothing);
     expect(find.text('طراحی گرافیک'), findsOneWidget);
     expect(find.text('طراحی اپ'), findsNothing);

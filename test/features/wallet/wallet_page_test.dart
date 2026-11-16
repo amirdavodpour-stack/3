@@ -400,7 +400,9 @@ void main() {
       expect(find.text('قابل استفاده'), findsOneWidget);
       expect(find.text('محافظت‌شده'), findsOneWidget);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
+      await tester.ensureVisible(find.text('برداشت‌ها'));
+      await tester.pumpAndSettle();
+      expect(find.text('برداشت‌ها'), findsOneWidget);
     },
   );
 
@@ -435,8 +437,9 @@ void main() {
       expect(find.text('کل موجودی'), findsOneWidget);
       expect(find.textContaining('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
-      expect(find.text('درخواست‌های برداشت'), findsOneWidget);
-      expect(find.text('برداشت در انتظار'), findsOneWidget);
+      await tester.ensureVisible(find.text('برداشت‌ها'));
+      await tester.pumpAndSettle();
+      expect(find.text('برداشت‌ها'), findsOneWidget);
       expect(find.text('موجودی مادام‌العمر'), findsNothing);
     },
   );

@@ -279,6 +279,7 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
                 button: true,
                 label: _t(context, 'منوی برنامه', 'App menu'),
                 child: PremiumIconButton(
+                  key: const ValueKey('hope-menu-button'),
                   icon: HopeV2Icons.menu,
                   tooltip: _t(context, 'منوی برنامه', 'App menu'),
                   onPressed: onOpenMenu,
@@ -430,7 +431,7 @@ padding: const EdgeInsets.all(12),
                           ),
                         ],
                       ),
-                      const SizedBox(height: HopeV2Spacing.md),
+                      const SizedBox(height: HopeV2Spacing.md - 1),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           // Keep the pulse in the same compact, four-signal row as the
