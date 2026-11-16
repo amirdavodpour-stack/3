@@ -79,13 +79,32 @@ test('payout reads never expose historical raw failure_message values', () => {
 
 test('payout request returns an explicit safe projection on existing, concurrent and new request paths', () => {
   const start = payouts.indexOf('export async function requestPayoutAtomic(');
-  const end = payouts.indexOf('\nexport async function markPayoutUnknown(', start);
+  const end = payouts.indexOf('\nfunction sameIntegerAmount(', start);
   assert.ok(start >= 0 && end > start, 'payout request repository method must exist');
   const request = payouts.slice(start, end);
   assert.match(payouts, /const PAYOUT_RESPONSE_COLUMNS =/);
   assert.equal(request.split('SELECT ${PAYOUT_RESPONSE_COLUMNS}').length - 1, 3);
   assert.doesNotMatch(request, /SELECT\s+\*\s+FROM\s+payouts/i);
   assert.doesNotMatch(request, /failure_message/i);
+});
+
+test('ambiguous Payout outcomes preserve reconciliation while redacting provider text', () => {
+  const unknownStart = payouts.indexOf('export async function markPayoutUnknown(');
+  const unknownEnd = payouts.indexOf('\nexport async function resolvePayoutUnknown(', unknownStart);
+  assert.ok(unknownStart >= 0 && unknownEnd > unknownStart);
+  const unknown = payouts.slice(unknownStart, unknownEnd);
+  assert.match(unknown, /failure_message=NULL/);
+  assert.match(unknown, /reason:'PROVIDER_UNKNOWN'/);
+  assert.doesNotMatch(unknown, /failure_message=\$2|String\(reason\)\.slice/);
+
+  const blockStart = payouts.indexOf('async function blockPayoutOutboxIntegrityMismatchWithClient(');
+  const blockEnd = payouts.indexOf('\nexport async function blockPayoutOutboxIntegrityMismatch(', blockStart);
+  assert.ok(blockStart >= 0 && blockEnd > blockStart);
+  const block = payouts.slice(blockStart, blockEnd);
+  assert.match(block, /failure_message=NULL/);
+  assert.match(block, /last_error=NULL/);
+  assert.match(block, /last_error_code=\$2/);
+  assert.doesNotMatch(block, /failure_message=\$2|last_error=\$2/);
 });
 
 test('worker failure logging does not emit raw exception messages or response bodies', () => {

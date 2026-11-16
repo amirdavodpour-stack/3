@@ -59,7 +59,8 @@
     "test:payment-postgres-invariants": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-financial-invariants-postgres.test.mjs",
     "test:payment-postgres-integration": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test tests/payment-internal-wallet-postgres.test.mjs",
     "test:collector": "NODE_ENV=test node --test --test-concurrency=1 tests/cloudflare-collector.test.mjs",
-    "test:outbox-dedupe": "NODE_ENV=test node --test --test-concurrency=1 tests/outbox-dedupe-registry-contract.test.mjs tests/postgres-outbox-dedupe-registry.test.mjs"
+    "test:outbox-dedupe": "NODE_ENV=test node --test --test-concurrency=1 tests/outbox-dedupe-registry-contract.test.mjs tests/postgres-outbox-dedupe-registry.test.mjs",
+    "test:payment-payout-integrity": "REQUIRE_INTEGRATION=1 NODE_ENV=test node --test --test-concurrency=1 tests/payment-payout-integrity-postgres.test.mjs"
   },
   "dependencies": {
     "pg": "^8.16.3",

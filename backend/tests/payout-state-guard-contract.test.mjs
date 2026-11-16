@@ -27,25 +27,43 @@ test('migration checker includes payout state guard migration', () => {
 });
 
 
-test('unknown payout resolves its financial operation through the active reservation hold', () => {
+test('unknown payout resolves its financial operation through the canonical active reservation hold', () => {
+  const settlementLinkage = payouts
+    .split('async function validatePayoutSettlementLinkage')[1]
+    ?.split('async function validatePayoutUnknownResolutionLinkage')[0] || '';
+  const unknownResolutionLinkage = payouts
+    .split('async function validatePayoutUnknownResolutionLinkage')[1]
+    ?.split('export async function validatePayoutOutboxEvent')[0] || '';
   const markUnknown = payouts
     .split('export async function markPayoutUnknown')[1]
     ?.split('export async function resolvePayoutUnknown')[0] || '';
+  const identityValidation = payouts
+    .split('function validatePayoutEventIdentity')[1]
+    ?.split('async function validatePayoutSettlementLinkage')[0] || '';
 
-  assert.match(
-    markUnknown,
-    /SELECT \* FROM wallet_holds[\s\S]*?reference_id=\$1[\s\S]*?hold_type='PAYOUT_RESERVATION'[\s\S]*?status='ACTIVE'[\s\S]*?FOR UPDATE/,
-  );
-  assert.match(markUnknown, /PAYOUT_RESERVATION_NOT_FOUND/);
-  assert.match(markUnknown, /event\.payload\?\.operationId/);
-  assert.match(markUnknown, /PAYOUT_OPERATION_MISMATCH/);
+  for (const source of [settlementLinkage, unknownResolutionLinkage]) {
+    assert.match(
+      source,
+      /SELECT \* FROM wallet_holds[\s\S]*?reference_id=\$1[\s\S]*?hold_type='PAYOUT_RESERVATION'[\s\S]*?status='ACTIVE'[\s\S]*?FOR UPDATE/,
+    );
+    assert.match(source, /PAYOUT_RESERVATION_NOT_FOUND/);
+    assert.match(source, /PAYOUT_HOLD_AMBIGUOUS/);
+    assert.match(source, /PAYOUT_HOLD_LINKAGE_MISMATCH/);
+  }
+
+  assert.match(markUnknown, /validatePayoutEventIdentity\(event, payout\)/);
+  assert.match(markUnknown, /await validatePayoutSettlementLinkage\(client, event, payout\)/);
+  assert.match(markUnknown, /await validatePayoutUnknownResolutionLinkage\(client, payout\)/);
+  assert.match(identityValidation, /PAYOUT_OUTBOX_IDENTITY_MISMATCH/);
+  assert.match(markUnknown, /if \(!identity\.valid\)/);
+  assert.match(markUnknown, /reconciliationResourceType = 'outbox_event'/);
+  assert.match(markUnknown, /payoutEventPayload\(event\)\?\.operationId/);
   const operationUpdate = markUnknown.slice(markUnknown.indexOf('UPDATE financial_operations'));
   assert.ok(operationUpdate.includes("status='UNKNOWN'"));
   assert.ok(operationUpdate.includes('completed_at=NULL'));
-  assert.ok(operationUpdate.includes("WHERE id=$1 AND status IN ('PROCESSING','UNKNOWN')"));
+  assert.ok(operationUpdate.includes("status='PROCESSING'"));
   assert.ok(operationUpdate.includes('RETURNING id'));
-  assert.ok(markUnknown.includes('operationId = hold.financial_operation_id'));
-  assert.ok(operationUpdate.includes('[operationId]'));
+  assert.ok(operationUpdate.includes('[operationId, payout.user_id, payout.idempotency_key]'));
   assert.ok(markUnknown.includes('PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY'));
   assert.ok(markUnknown.includes('requiresReconciliation: Boolean(reconciliationReason)'));
   assert.doesNotMatch(markUnknown, /payout\.financial_operation_id/);

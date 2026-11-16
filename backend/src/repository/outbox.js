@@ -390,7 +390,17 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     if (terminal) {
       const terminalEvent = eventMetadata;
       if (terminalEvent.event_type === 'PAYOUT_EXECUTE') {
-        await failPayoutOutboxWithClient(client, { eventId, payoutId: terminalEvent.aggregate_id, error, leaseToken: null, failureMetadata });
+        const payoutFailure = await failPayoutOutboxWithClient(client, {
+          eventId,
+          payoutId: terminalEvent.aggregate_id,
+          error,
+          leaseToken: null,
+          failureMetadata,
+          providerInvoked: true,
+        });
+        if (payoutFailure?.integrityBlocked) {
+          return { terminal:true, attempts, integrityBlocked:true, reason:payoutFailure.reason };
+        }
         return { terminal, attempts };
       }
       const { rows: failedHoldRows } = await client.query(`
