@@ -792,6 +792,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
             builder: (context, constraints) {
               final compact = constraints.maxWidth < 500;
               return ListTile(
+                key: const ValueKey('profile-appearance-semantic-target'),
                 dense: compact,
                 minTileHeight: compact ? 48 : null,
                 visualDensity: compact

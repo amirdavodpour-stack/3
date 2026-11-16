@@ -1104,25 +1104,30 @@ Future<void> _captureRuntimeScreenshot(
                 ? find.byKey(
                     const ValueKey('candidate-match-details-candidate-user-1'),
                   )
-                : shouldRevealWalletTarget
-                    ? find.byWidgetPredicate(
-                        (widget) =>
-                            widget is Semantics &&
-                            widget.properties.button == true &&
-                            widget.properties.label ==
-                                (marker.endsWith('-fa-rtl')
-                                    ? 'برداشت'
-                                    : 'Withdraw'),
+                // Appearance is shared by guest and authenticated profiles.
+                : shouldRevealProfileTarget
+                    ? find.byKey(
+                        const ValueKey('profile-appearance-semantic-target'),
                       )
-                    : find.byWidgetPredicate(
-                        (widget) =>
-                            widget is Semantics &&
-                            widget.properties.button == true &&
-                            widget.properties.label ==
-                                (marker.endsWith('-fa-rtl')
-                                    ? 'درباره HOPE'
-                                    : 'About HOPE'),
-                      );
+                    : shouldRevealWalletTarget
+                        ? find.byWidgetPredicate(
+                            (widget) =>
+                                widget is Semantics &&
+                                widget.properties.button == true &&
+                                widget.properties.label ==
+                                    (marker.endsWith('-fa-rtl')
+                                        ? 'برداشت'
+                                        : 'Withdraw'),
+                          )
+                        : find.byWidgetPredicate(
+                            (widget) =>
+                                widget is Semantics &&
+                                widget.properties.button == true &&
+                                widget.properties.label ==
+                                    (marker.endsWith('-fa-rtl')
+                                        ? 'درباره HOPE'
+                                        : 'About HOPE'),
+                          );
     auditedTargetFinder = auditedTarget;
     // An audited action can be a late ListView child and may not exist in the
     // element tree until the lazy sliver is scrolled near the end. Build it

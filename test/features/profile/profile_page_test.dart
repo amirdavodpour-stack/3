@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/auth/auth_controller.dart';
@@ -473,6 +474,46 @@ testWidgets('profile keeps application management in the dedicated work destinat
   );
 
   testWidgets(
+    'guest profile exposes the shared appearance action as a 48dp semantic target',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await _pump(
+          tester,
+          authenticated: false,
+          width: 390,
+          height: 844,
+          theme: AppTheme.dark(),
+        );
+
+        final appearanceTile =
+            find.byKey(const ValueKey('profile-appearance-semantic-target'));
+        expect(appearanceTile, findsOneWidget);
+        await tester.ensureVisible(appearanceTile);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.getSize(appearanceTile).height,
+          greaterThanOrEqualTo(48),
+        );
+        final appearanceSemantics = tester.getSemantics(appearanceTile);
+        expect(
+          appearanceSemantics.getSemanticsData().hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+        expect(
+          appearanceSemantics.rect.height,
+          greaterThanOrEqualTo(48),
+          reason: 'Guest TalkBack actions must meet the 48dp minimum.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'compact appearance action keeps a 48dp rendered and semantic target',
     (tester) async {
       final semantics = tester.ensureSemantics();
@@ -487,10 +528,9 @@ testWidgets('profile keeps application management in the dedicated work destinat
 
         final appearanceLabel = find.text('ظاهر برنامه');
         expect(appearanceLabel, findsOneWidget);
-        final appearanceTile = find.ancestor(
-          of: appearanceLabel,
-          matching: find.byType(ListTile),
-        ).first;
+        final appearanceTile =
+            find.byKey(const ValueKey('profile-appearance-semantic-target'));
+        expect(appearanceTile, findsOneWidget);
         await tester.ensureVisible(appearanceTile);
         await tester.pumpAndSettle();
 
