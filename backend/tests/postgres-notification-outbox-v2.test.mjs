@@ -120,6 +120,9 @@ test('v2 dispatch obtains recipient and notification content from canonical data
     eventId=event.id;
     let delivery=null;
     const result=await notificationsRepo.dispatchNotificationOutbox(event,async(value)=>{delivery=value;});
+    const terminalRow=await pool.query('SELECT status,terminal_at FROM outbox_events WHERE id=$1',[event.id]);
+    assert.equal(terminalRow.rows[0].status,'DONE');
+    assert.ok(terminalRow.rows[0].terminal_at,'successful notification delivery must stamp its terminal time');
     assert.equal(result.delivered,true);
     assert.equal(delivery.channel,'PUSH');
     assert.equal(delivery.targets.length,1);
@@ -204,13 +207,14 @@ test('account erasure cancels new content-free v2 notification Outbox events by 
     assert.equal(erased.deleted,true);
 
     const afterRows=await pool.query(
-      'SELECT id,status,processed_at,lease_token,payload FROM outbox_events WHERE id=ANY($1::uuid[]) ORDER BY id',
+      'SELECT id,status,processed_at,lease_token,payload,terminal_at FROM outbox_events WHERE id=ANY($1::uuid[]) ORDER BY id',
       [eventIds],
     );
     assert.equal(afterRows.rowCount,2);
     for(const row of afterRows.rows) {
       assert.equal(row.status,'CANCELLED');
       assert.ok(row.processed_at);
+      assert.ok(row.terminal_at,'account erasure cancellation must stamp its terminal time');
       assert.equal(row.lease_token,null);
       const original=before.rows.find(item=>item.id===row.id);
       assert.deepEqual(row.payload,original.payload,'erasure must preserve immutable v2 Outbox payload');
