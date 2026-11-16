@@ -1,5 +1,6 @@
 
 import crypto from 'node:crypto';
+import { normalizeOutboxFailureMetadata } from '../outbox_failure_metadata.js';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { normalizeFinancialAmount, releaseJournal, payoutJournal } from '../financial.js';
@@ -41,7 +42,7 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
       if (payment.provider_ref !== providerRef) {
         const e = new Error('PROVIDER_REF_MISMATCH'); e.code = 'PROVIDER_REF_MISMATCH'; throw e;
       }
-      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
+      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`, [eventId]);
       return { completed:true, alreadyDone:true };
     }
     if (payment.status !== 'HOLD_PENDING') return { completed:false, reason:'INVALID_PAYMENT_STATE' };
@@ -73,7 +74,7 @@ export async function completePaymentCreateHoldOutbox({ eventId, jobId, paymentI
     }
     await client.query(`UPDATE payments SET status='HELD',provider_ref=$2,updated_at=NOW() WHERE id=$1`, [paymentId, providerRef]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_HOLD_CONFIRMED',$2,'payment',$3,$4::jsonb,NOW())`, [crypto.randomUUID(), actorId, paymentId, JSON.stringify({ jobId, outboxEventId:eventId, providerRef })]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
+    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`, [eventId]);
     return { completed:true, alreadyDone:false };
   });
 }
@@ -109,6 +110,10 @@ export async function enqueuePaymentRelease({ jobId, ownerId, paymentId, dedupeK
          available_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.available_at ELSE NOW() END,
          locked_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.locked_at ELSE NULL END,
          last_error=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error ELSE NULL END,
+         last_error_code=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_code ELSE NULL END,
+         last_error_category=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_category ELSE NULL END,
+         last_error_retryable=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_retryable ELSE NULL END,
+         last_error_http_status=CASE WHEN outbox_events.status='DONE' THEN outbox_events.last_error_http_status ELSE NULL END,
          processed_at=CASE WHEN outbox_events.status='DONE' THEN outbox_events.processed_at ELSE NULL END
        RETURNING *`,
       [paymentId, dedupeKey, JSON.stringify({ jobId, ownerId, paymentId, providerRef: payment.provider_ref, idempotencyKey: payment.idempotency_key || `payment-release:${paymentId}` })]
@@ -169,7 +174,11 @@ export async function holdPaymentForDisputeWithClient(client, { jobId, paymentId
                   processed_at=COALESCE(processed_at,NOW()),
                   locked_at=NULL,
                   lease_token=NULL,
-                  last_error='CANCELLED_BY_ADMIN_DISPUTE_HOLD'
+                  last_error=NULL,
+                  last_error_code='CANCELLED_BY_ADMIN_DISPUTE_HOLD',
+                  last_error_category='payment',
+                  last_error_retryable=FALSE,
+                  last_error_http_status=NULL
             WHERE id=$1`,
           [event.id],
         );
@@ -233,7 +242,7 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
     const payment = pr[0];
     if (!payment) return { completed:false, reason:'PAYMENT_NOT_FOUND' };
     if (payment.status === 'RELEASED') {
-      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
+      await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`, [eventId]);
       return { completed:true, alreadyDone:true };
     }
     if (payment.status !== 'RELEASE_PENDING') return { completed:false, reason:'INVALID_PAYMENT_STATE' };
@@ -271,7 +280,7 @@ export async function completePaymentReleaseOutbox({ eventId, jobId, paymentId, 
     }
     await client.query(`INSERT INTO settlements(id,payment_id,provider_ref,amount,currency,status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,'RELEASED',NOW(),NOW()) ON CONFLICT(payment_id) DO UPDATE SET status='RELEASED',provider_ref=EXCLUDED.provider_ref,updated_at=NOW()`, [crypto.randomUUID(),paymentId,settlementProviderRef,breakdown.providerPayout,breakdown.currency]);
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_RELEASE',$2,'payment',$3,$4::jsonb,NOW())`, [crypto.randomUUID(), actorId, paymentId, JSON.stringify({ jobId, outboxEventId:eventId, providerPayout:breakdown.providerPayout, platformFee:breakdown.platformFee })]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`, [eventId]);
+    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`, [eventId]);
     return { completed:true, alreadyDone:false };
   });
 }
@@ -290,7 +299,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     // their completion paths. A non-locking metadata read selects that order
     // without owning the outbox row prematurely.
     const { rows: metadataRows } = await client.query(
-      `SELECT event_type,aggregate_type,aggregate_id FROM outbox_events WHERE id=$1`,
+      `SELECT event_type,aggregate_type,aggregate_id,payload FROM outbox_events WHERE id=$1`,
       [eventId],
     );
     const eventMetadata = metadataRows[0];
@@ -361,14 +370,17 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     const terminal = attempts >= maxAttempts;
     const nextStatus = terminal ? 'FAILED' : 'PENDING';
     const retryDelay = terminal ? 0 : outboxRetryDelaySeconds(eventId, attempts, backoffSeconds);
+    const failureMetadata = normalizeOutboxFailureMetadata({
+      eventType, payload:eventMetadata.payload || {}, error, retryable:!terminal,
+    });
     await client.query(
-      `UPDATE outbox_events SET status=$2,available_at=NOW()+make_interval(secs => $3),locked_at=NULL,lease_token=NULL,last_error=$4 WHERE id=$1`,
-      [eventId, nextStatus, retryDelay, String(error).slice(0,2000)]
+      `UPDATE outbox_events SET status=$2,available_at=NOW()+make_interval(secs => $3),locked_at=NULL,lease_token=NULL,last_error=NULL,last_error_code=$4,last_error_category=$5,last_error_retryable=$6,last_error_http_status=$7 WHERE id=$1`,
+      [eventId, nextStatus, retryDelay, failureMetadata.code, failureMetadata.category, failureMetadata.retryable, failureMetadata.httpStatus]
     );
     if (terminal) {
       const terminalEvent = eventMetadata;
       if (terminalEvent.event_type === 'PAYOUT_EXECUTE') {
-        await failPayoutOutboxWithClient(client, { eventId, payoutId: terminalEvent.aggregate_id, error, leaseToken: null });
+        await failPayoutOutboxWithClient(client, { eventId, payoutId: terminalEvent.aggregate_id, error, leaseToken: null, failureMetadata });
         return { terminal, attempts };
       }
       const { rows: failedHoldRows } = await client.query(`
@@ -528,7 +540,7 @@ export async function replaySecurityAlert({
               available_at=NOW(),
               locked_at=NULL,
               lease_token=NULL,
-              last_error=NULL,
+              last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL,
               processed_at=NULL,
               manual_replay_count=1,
               manual_replay_idempotency_key=$2
@@ -601,7 +613,7 @@ export async function completeOutboxEvent({ eventId, leaseToken }) {
               processed_at=COALESCE(processed_at,NOW()),
               locked_at=NULL,
               lease_token=NULL,
-              last_error=NULL
+              last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL
         WHERE id=$1 AND status='PROCESSING' AND lease_token=$2`,
       [eventId,leaseToken],
     );

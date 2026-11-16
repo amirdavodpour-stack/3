@@ -53,7 +53,11 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
                    processed_at=COALESCE(processed_at,NOW()),
                    locked_at=NULL,
                    lease_token=NULL,
-                   last_error='SUPERSEDED_BY_REFUND'
+                   last_error=NULL,
+                   last_error_code='SUPERSEDED_BY_REFUND',
+                   last_error_category='payment',
+                   last_error_retryable=FALSE,
+                   last_error_http_status=NULL
              WHERE id=$1`,
             [release.id],
           );
@@ -127,6 +131,10 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
          locked_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.locked_at END,
          lease_token=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.lease_token END,
          last_error=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error END,
+         last_error_code=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_code END,
+         last_error_category=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_category END,
+         last_error_retryable=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_retryable END,
+         last_error_http_status=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.last_error_http_status END,
          processed_at=CASE WHEN outbox_events.status='FAILED' THEN NULL ELSE outbox_events.processed_at END
        RETURNING *`,
       [paymentId,dedupe,JSON.stringify({
@@ -165,7 +173,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment)return {completed:false,reason:'PAYMENT_NOT_FOUND'};
     const {rows:rr}=await client.query(`SELECT * FROM refunds WHERE id=$1 AND payment_id=$2 FOR UPDATE`,[refundId,paymentId]); const refund=rr[0]; if(!refund)return {completed:false,reason:'REFUND_NOT_FOUND'};
-    if(payment.status==='REFUNDED' && refund.status==='REFUNDED'){await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);return {completed:true,alreadyDone:true};}
+    if(payment.status==='REFUNDED' && refund.status==='REFUNDED'){await client.query(`UPDATE outbox_events SET status='DONE',processed_at=COALESCE(processed_at,NOW()),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`,[eventId]);return {completed:true,alreadyDone:true};}
     if(payment.status!=='REFUND_PENDING' || refund.status!=='PENDING'){return {completed:false,reason:'INVALID_REFUND_STATE'};}
     const breakdown={baseAmount:normalizeFinancialAmount(payment.currency,payment.base_amount||payment.amount),employerFee:normalizeFinancialAmount(payment.currency,payment.employer_fee||0),workerFee:normalizeFinancialAmount(payment.currency,payment.worker_fee||0),platformFee:normalizeFinancialAmount(payment.currency,payment.platform_fee||0),employerCharge:normalizeFinancialAmount(payment.currency,payment.employer_charge||payment.amount),providerPayout:normalizeFinancialAmount(payment.currency,payment.provider_payout||payment.amount),currency:payment.currency||config.paymentCurrency,policyVersion:payment.fee_policy_version||'legacy',kind:'JOB'};
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
@@ -191,7 +199,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
       });
     }
     await client.query(`INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at) VALUES($1,'PAYMENT_REFUND',$2,'payment',$3,$4::jsonb,NOW())`,[crypto.randomUUID(),actorId,paymentId,JSON.stringify({jobId,refundId,eventId,providerRef})]);
-    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=$1`,[eventId]);
+    await client.query(`UPDATE outbox_events SET status='DONE',processed_at=NOW(),locked_at=NULL,last_error=NULL,last_error_code=NULL,last_error_category=NULL,last_error_retryable=NULL,last_error_http_status=NULL WHERE id=$1`,[eventId]);
     return {completed:true,alreadyDone:false};
   });
 }

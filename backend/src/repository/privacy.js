@@ -172,7 +172,11 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
               processed_at=NOW(),
               locked_at=NULL,
               lease_token=NULL,
-              last_error='RECIPIENT_ERASED'
+              last_error=NULL,
+              last_error_code='RECIPIENT_ERASED',
+              last_error_category='notification',
+              last_error_retryable=FALSE,
+              last_error_http_status=NULL
         WHERE event_type='NOTIFICATION_DISPATCH'
           AND aggregate_type='notification'
           AND EXISTS (
