@@ -1116,11 +1116,16 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
     }
   }
 
+  bool? _investigationClosedOverride;
+  String? _attestedDigestOverride;
+
   bool get _investigationClosed =>
+      _investigationClosedOverride ??
       widget.investigationStatus.trim().toUpperCase() == 'CLOSED_UNRESOLVED';
 
   bool get _hasAttestationForCurrentDigest =>
       widget.hasCurrentDigestAttestation ||
+      _attestedDigestOverride == widget.caseEvidenceDigest ||
       _notes.any((note) =>
           const {
             'INVESTIGATION_ATTESTATION_RECORDED',
@@ -1175,8 +1180,16 @@ class _OutboxEventInvestigationPanelState extends State<_OutboxEventInvestigatio
       if (status != null && status.isNotEmpty) widget.onCaseStatusChanged(status);
       _pendingAttestationIdempotencyKey = null;
       _attestationReasonController.clear();
-      await widget.onRefresh();
-      if (!mounted) return;
+      setState(() {
+        if (action == 'INVESTIGATION_CLOSED_UNRESOLVED') {
+          _investigationClosedOverride = true;
+        } else if (action == 'INVESTIGATION_REOPENED') {
+          _investigationClosedOverride = false;
+          _attestedDigestOverride = widget.caseEvidenceDigest;
+        } else {
+          _attestedDigestOverride = widget.caseEvidenceDigest;
+        }
+      });
       await _loadHistory();
       if (!mounted) return;
       final message = switch (action) {

@@ -642,7 +642,14 @@ void main() {
         find.byKey(const ValueKey('outbox-attestation-reference-case-01')),
         'provider-case:case-01',
       );
-      await tester.ensureVisible(find.text('Record attestation'));
+      await tester.scrollUntilVisible(
+        find.text('Record attestation'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
       await tester.pump();
       await tester.tap(find.text('Record attestation'));
       await tester.pumpAndSettle();
@@ -672,7 +679,14 @@ void main() {
         find.byKey(const ValueKey('outbox-attestation-reason-case-01')),
         'The investigation is complete but the financial outcome remains unknown.',
       );
-      await tester.ensureVisible(find.text('Close investigation unresolved'));
+      await tester.scrollUntilVisible(
+        find.text('Close investigation unresolved'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
       await tester.pump();
       await tester.tap(find.text('Close investigation unresolved'));
       await tester.pumpAndSettle();
@@ -686,7 +700,14 @@ void main() {
         find.byKey(const ValueKey('outbox-attestation-reason-case-01')),
         'New evidence is available and the event investigation must be reopened.',
       );
-      await tester.ensureVisible(find.text('Reopen investigation against this evidence'));
+      await tester.scrollUntilVisible(
+        find.text('Reopen investigation against this evidence'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
       await tester.pump();
       await tester.tap(find.text('Reopen investigation against this evidence'));
       await tester.pumpAndSettle();
@@ -798,7 +819,14 @@ void main() {
       find.byKey(const ValueKey('outbox-attestation-reference-case-attestation-01')),
       'provider-case:attestation-01',
     );
-    await tester.ensureVisible(find.text('Record attestation'));
+    await tester.scrollUntilVisible(
+        find.text('Record attestation'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
     await tester.tap(find.text('Record attestation'));
     await tester.pumpAndSettle();
 
@@ -820,7 +848,14 @@ void main() {
       find.byKey(const ValueKey('outbox-attestation-reason-case-attestation-01')),
       'No verified financial outcome is available; retain the quarantine.',
     );
-    await tester.ensureVisible(find.text('Close investigation unresolved'));
+    await tester.scrollUntilVisible(
+        find.text('Close investigation unresolved'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
     await tester.tap(find.text('Close investigation unresolved'));
     await tester.pumpAndSettle();
 
@@ -835,7 +870,14 @@ void main() {
       find.byKey(const ValueKey('outbox-attestation-reason-case-attestation-01')),
       'Reopen because a new source artifact has been received for review.',
     );
-    await tester.ensureVisible(find.text('Reopen investigation against this evidence'));
+    await tester.scrollUntilVisible(
+        find.text('Reopen investigation against this evidence'),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('admin-payouts-scroll')),
+          matching: find.byType(Scrollable),
+        ).first,
+      );
     await tester.tap(find.text('Reopen investigation against this evidence'));
     await tester.pumpAndSettle();
 
