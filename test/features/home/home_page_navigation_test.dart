@@ -52,16 +52,20 @@ class _AuthRepo implements AuthRepository {
   }
 
   @override
-  Future<AuthSession> register(String e, String p, String n) async {
+  Future<void> register(String e, String p, String n) async {
     if (!allowRegister) throw UnimplementedError();
+  }
+  @override
+  Future<AuthSession> verifyEmail(String code) async {
+    if (!allowRegister || code.trim().length < 16) {
+      throw StateError('verification failed');
+    }
     return const AuthSession(
       accessToken: 'a',
       refreshToken: 'r',
       user: {'id': 'u1', 'displayName': 'Ali'},
     );
   }
-  @override
-  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
   @override
   Future<void> resendEmailVerification(String email) async {}
 
@@ -343,7 +347,7 @@ void main() {
   });
 
   testWidgets(
-      'guest create resumes CreateJob exactly once after successful registration',
+      'guest create resumes CreateJob exactly once after email verification',
       (tester) async {
     _setView(tester);
     await tester.pumpWidget(await _app(allowRegister: true));
@@ -359,10 +363,26 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(0), 'Ali');
     await tester.enterText(find.byType(TextField).at(1), 'ali@example.com');
-    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.enterText(find.byType(TextField).at(2), 'password1234');
     await tester.tap(find.text('Create account'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    // Registration only starts the verification flow; it must not authenticate
+    // the guest or resume the protected CreateJob route before email proof.
+    expect(find.byType(RegisterPage), findsOneWidget);
+    expect(find.byType(CreateJobPage), findsNothing);
+    expect(
+      tester.element(find.byType(RegisterPage)).read<AuthController>().isGuest,
+      isTrue,
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('auth-email-verification-code')),
+      'verification-code-123456',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('auth-email-verification-submit')),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.byType(RegisterPage), findsNothing);
     expect(find.byType(CreateJobPage), findsOneWidget);
