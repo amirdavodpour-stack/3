@@ -1,0 +1,67 @@
+name: HOPEv2 Collector Node 24 Verification
+
+on:
+  push:
+    branches:
+      - fix/hopev2-outbound-alert-egress-20261110
+    paths:
+      - ".github/workflows/hopev2-collector-node24.yml"
+      - "backend/package.json"
+      - "backend/README.md"
+      - "backend/package-lock.json"
+      - "backend/cloudflare-collector/**"
+      - "backend/tests/cloudflare-collector.test.mjs"
+      - "backend/tests/pagerduty-incident-readback.test.mjs"
+      - "backend/src/pagerduty_incident_readback.js"
+      - "backend/src/alert_egress.js"
+      - "backend/src/alerting.js"
+      - "backend/src/config.js"
+      - "backend/src/outbox_handlers.js"
+      - "backend/src/outbox_worker.js"
+      - "backend/src/repository/outbox.js"
+      - "backend/tests/outbox-contract.test.mjs"
+      - "backend/tests/wave11-tracing-alerts.test.mjs"
+      - "backend/tests/security-alert-outbox-replay-route.test.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-collector-node24-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  collector-node24:
+    name: Collector source and Outbox regressions (Node 24)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up repository-required Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+
+      - name: Record exact toolchain
+        run: |
+          node --version
+          npm --version
+          node -p "JSON.parse(require('node:fs').readFileSync('backend/package.json', 'utf8')).engines.node"
+
+      - name: Install locked backend dependencies without lifecycle scripts
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run backend syntax and static checks
+        working-directory: backend
+        run: npm run check
+
+      - name: Run Collector SQLite-compatible suite
+        working-directory: backend
+        run: npm run test:collector
+
+      - name: Run backend fast regressions (includes Outbox and alert-egress contracts)
+        working-directory: backend
+        run: npm run test:fast
