@@ -257,6 +257,25 @@ class _FakeAdmin implements AdminRepository {
       };
 
   @override
+  Future<Map<String, dynamic>> recordOutboxEventReconciliationAttestation(
+    String caseId, {
+    required String action,
+    required String reason,
+    required String sourceType,
+    required String issuer,
+    required String evidenceReference,
+    String? artifactSha256,
+    String? sourceObservedAt,
+    required Map<String, dynamic> verification,
+    required String reviewedCaseDigest,
+    required String idempotencyKey,
+  }) async => const {
+    'action':'INVESTIGATION_ATTESTATION_RECORDED',
+    'caseStatus':'INVESTIGATING',
+    'replayed':false,
+  };
+
+  @override
   Future<Map<String, dynamic>> resolveUnknownPayout(String id, {required String decision, String? providerRef, String? reason}) async => const {};
 
   @override

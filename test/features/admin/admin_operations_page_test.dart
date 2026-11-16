@@ -37,6 +37,7 @@ class _FakeAdminOperations implements AdminRepository {
   int appendOutboxNoteCalls = 0;
   final Map<String,List<Map<String,dynamic>>> outboxNotesByCase = {};
   final List<Map<String,dynamic>> submittedOutboxNotes = [];
+  final List<Map<String,dynamic>> attestationCalls = [];
   List<Map<String, dynamic>> reports = const [
     {
       'id': 'r1',
@@ -160,6 +161,71 @@ class _FakeAdminOperations implements AdminRepository {
     });
     return {
       'action':'INVESTIGATION_NOTE_ADDED',
+      'caseStatus':'INVESTIGATING',
+      'replayed':false,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordOutboxEventReconciliationAttestation(
+    String caseId, {
+    required String action,
+    required String reason,
+    required String sourceType,
+    required String issuer,
+    required String evidenceReference,
+    String? artifactSha256,
+    String? sourceObservedAt,
+    required Map<String, dynamic> verification,
+    required String reviewedCaseDigest,
+    required String idempotencyKey,
+  }) async {
+    attestationCalls.add({
+      'caseId':caseId,
+      'action':action,
+      'reason':reason,
+      'sourceType':sourceType,
+      'issuer':issuer,
+      'evidenceReference':evidenceReference,
+      'artifactSha256':artifactSha256,
+      'sourceObservedAt':sourceObservedAt,
+      'verification':verification,
+      'reviewedCaseDigest':reviewedCaseDigest,
+      'idempotencyKey':idempotencyKey,
+    });
+    for (final item in outboxEventCases) {
+      if (item['id'] == caseId) {
+        item['investigationStatus'] = switch (action) {
+          'INVESTIGATION_CLOSED_UNRESOLVED' => 'CLOSED_UNRESOLVED',
+          'INVESTIGATION_REOPENED' => 'IN_PROGRESS',
+          _ => 'IN_PROGRESS',
+        };
+        item['reReviewRequired'] = false;
+        item['hasCurrentDigestAttestation'] = const {
+          'INVESTIGATION_ATTESTATION_RECORDED',
+          'INVESTIGATION_REOPENED',
+        }.contains(action);
+      }
+    }
+    outboxNotesByCase.putIfAbsent(caseId, () => []).insert(0, {
+      'id':'attestation-${attestationCalls.length}',
+      'caseId':caseId,
+      'eventId':'event-for-$caseId',
+      'actorId':'primary-admin-id',
+      'action':action,
+      'reason':reason,
+      'evidenceReference':evidenceReference,
+      'sourceType':sourceType,
+      'issuer':issuer,
+      'artifactSha256':artifactSha256,
+      'sourceObservedAt':sourceObservedAt,
+      'reviewedCaseDigest':reviewedCaseDigest,
+      'verification':verification,
+      'actorDisplayName':'Primary Administrator',
+      'createdAt':'2026-11-15T12:00:00.000000Z',
+    });
+    return {
+      'action':action,
       'caseStatus':'INVESTIGATING',
       'replayed':false,
     };
@@ -493,6 +559,10 @@ void main() {
             'observed':{'reason':'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
             'eventType':'PAYOUT_EXECUTE',
             'eventStatus':'DONE',
+            'caseEvidenceDigest':List.filled(64, 'a').join(),
+            'investigationStatus':'NOT_STARTED',
+            'reReviewRequired':false,
+            'hasCurrentDigestAttestation':false,
           },
         ]
         ..outboxNotesByCase[caseId] = [
@@ -563,6 +633,64 @@ void main() {
         tester.widget<Text>(find.byKey(const ValueKey('outbox-note-reason-note-1'))).data,
         contains('Confirmed the event identity mismatch after independent review.'),
       );
+
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-attestation-reason-case-01')),
+        'Independent source artifact confirms the event identity mismatch.',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-attestation-reference-case-01')),
+        'provider-case:case-01',
+      );
+      await tester.ensureVisible(find.text('Record attestation'));
+      await tester.pump();
+      await tester.tap(find.text('Record attestation'));
+      await tester.pumpAndSettle();
+
+      expect(repository.attestationCalls, hasLength(1));
+      expect(repository.attestationCalls.single['action'], 'INVESTIGATION_ATTESTATION_RECORDED');
+      expect(repository.attestationCalls.single['reviewedCaseDigest'], List.filled(64, 'a').join());
+      expect(repository.attestationCalls.single['sourceType'], 'OPERATOR_REPORT');
+      expect(repository.attestationCalls.single['issuer'], 'Operator review');
+      expect(repository.attestationCalls.single['verification'], {
+        'eventIdentity': {
+          'result':'UNRESOLVED',
+          'verificationLevel':'OPERATOR_REPORTED',
+        },
+        'canonicalPayout': {
+          'result':'NOT_VERIFIED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+        'providerOutcome': {
+          'result':'NOT_CHECKED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+      });
+      expect(find.text('Close investigation unresolved'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-attestation-reason-case-01')),
+        'The investigation is complete but the financial outcome remains unknown.',
+      );
+      await tester.ensureVisible(find.text('Close investigation unresolved'));
+      await tester.pump();
+      await tester.tap(find.text('Close investigation unresolved'));
+      await tester.pumpAndSettle();
+
+      expect(repository.attestationCalls.last['action'], 'INVESTIGATION_CLOSED_UNRESOLVED');
+      expect(find.textContaining('financial quarantine remains active'), findsOneWidget);
+      expect(find.text('Add investigation note'), findsNothing);
+      expect(find.text('Reopen investigation against this evidence'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-attestation-reason-case-01')),
+        'New evidence is available and the event investigation must be reopened.',
+      );
+      await tester.ensureVisible(find.text('Reopen investigation against this evidence'));
+      await tester.pump();
+      await tester.tap(find.text('Reopen investigation against this evidence'));
+      await tester.pumpAndSettle();
+      expect(repository.attestationCalls.last['action'], 'INVESTIGATION_REOPENED');
       expect(repository.resolveCalls, 0);
       expect(tester.takeException(), isNull);
     },
@@ -620,3 +748,102 @@ void main() {
     },
   );
 }
+
+
+testWidgets(
+  'primary admin records a digest-bound attestation, closes unresolved without financial resolution, and can reopen',
+  (tester) async {
+    tester.view.physicalSize = const Size(390, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const caseId = 'case-attestation-01';
+    final digest = List.filled(64, 'd').join();
+    final repository = _FakeAdminOperations()
+      ..manageReconciliationPermission = true
+      ..outboxEventCases = [
+        {
+          'id':caseId,
+          'caseType':'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+          'resourceType':'outbox_event',
+          'resourceId':'event-attestation-01',
+          'severity':'CRITICAL',
+          'status':'INVESTIGATING',
+          'expected':{'eventType':'PAYOUT_EXECUTE'},
+          'observed':{'reason':'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+          'eventType':'PAYOUT_EXECUTE',
+          'eventStatus':'DONE',
+          'caseEvidenceDigest':digest,
+          'investigationStatus':'IN_PROGRESS',
+          'reReviewRequired':false,
+        },
+      ];
+
+    await tester.pumpWidget(_host(repository));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Unknown payouts'));
+    await tester.tap(find.text('Unknown payouts'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Investigation notes'));
+    await tester.tap(find.text('Investigation notes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Record attestation'), findsOneWidget);
+    expect(find.textContaining('SHA-256: ' + digest), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('outbox-attestation-reason-case-attestation-01')),
+      'The Outbox identity was compared against the referenced source artifact.',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('outbox-attestation-reference-case-attestation-01')),
+      'provider-case:attestation-01',
+    );
+    await tester.ensureVisible(find.text('Record attestation'));
+    await tester.tap(find.text('Record attestation'));
+    await tester.pumpAndSettle();
+
+    expect(repository.attestationCalls, hasLength(1));
+    expect(repository.attestationCalls.single['action'], 'INVESTIGATION_ATTESTATION_RECORDED');
+    expect(repository.attestationCalls.single['sourceType'], 'OPERATOR_REPORT');
+    expect(repository.attestationCalls.single['issuer'], 'Operator review');
+    expect(repository.attestationCalls.single['reviewedCaseDigest'], digest);
+    expect(
+      (repository.attestationCalls.single['verification'] as Map)['eventIdentity'],
+      {
+        'result':'UNRESOLVED',
+        'verificationLevel':'OPERATOR_REPORTED',
+      },
+    );
+    expect(find.text('Close investigation unresolved'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('outbox-attestation-reason-case-attestation-01')),
+      'No verified financial outcome is available; retain the quarantine.',
+    );
+    await tester.ensureVisible(find.text('Close investigation unresolved'));
+    await tester.tap(find.text('Close investigation unresolved'));
+    await tester.pumpAndSettle();
+
+    expect(repository.attestationCalls.last['action'], 'INVESTIGATION_CLOSED_UNRESOLVED');
+    expect(find.textContaining('financial quarantine remains active'), findsOneWidget);
+    expect(find.text('Reopen investigation against this evidence'), findsOneWidget);
+    expect(find.text('Record attestation'), findsNothing);
+    expect(repository.resolveCalls, 0);
+    expect(repository.attestationCalls.every((call) => call['reviewedCaseDigest'] == digest), isTrue);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('outbox-attestation-reason-case-attestation-01')),
+      'Reopen because a new source artifact has been received for review.',
+    );
+    await tester.ensureVisible(find.text('Reopen investigation against this evidence'));
+    await tester.tap(find.text('Reopen investigation against this evidence'));
+    await tester.pumpAndSettle();
+
+    expect(repository.attestationCalls.last['action'], 'INVESTIGATION_REOPENED');
+    expect(find.text('Record attestation'), findsOneWidget);
+    expect(repository.resolveCalls, 0);
+    expect(tester.takeException(), isNull);
+  },
+);

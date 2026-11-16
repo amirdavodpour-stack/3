@@ -523,3 +523,139 @@ test('event-scoped investigation-note history maps invalid cursors and unknown c
     (error)=>error?.status===404 && error?.code==='RECONCILIATION_CASE_NOT_FOUND',
   );
 });
+
+
+test('primary administrator can submit an event-scoped source-backed attestation with an exact reviewed digest', async () => {
+  const admin = {
+    id:'primary-event-attestation-admin',
+    email:'amir.davodpour@gmail.com',
+    displayName:'Primary Administrator',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'primary-event-attestation-google',
+    sessionJti:'primary-event-attestation-session',
+  };
+  const caseId='00000000-0000-4000-8000-000000000611';
+  const body={
+    action:'INVESTIGATION_ATTESTATION_RECORDED',
+    reason:'Correlate this event against the original provider artifact.',
+    sourceType:'PROVIDER_ARTIFACT',
+    issuer:'Example Payment Provider',
+    evidenceReference:'provider-case:attestation-611',
+    artifactSha256:'a'.repeat(64),
+    sourceObservedAt:'2026-11-15T19:00:00.000Z',
+    verification:{
+      eventIdentity:{result:'MISMATCH_CONFIRMED',verificationLevel:'SOURCE_ARTIFACT_REVIEWED'},
+      canonicalPayout:{result:'NOT_VERIFIED',verificationLevel:'NOT_CHECKED'},
+      providerOutcome:{result:'NOT_CHECKED',verificationLevel:'NOT_CHECKED'},
+    },
+    reviewedCaseDigest:'b'.repeat(64),
+    idempotencyKey:'event-attestation-route-611',
+  };
+  const calls=[];
+  const repo={
+    async isAdminPanelVerified(...args) {
+      assert.deepEqual(args,[admin.id,5,admin.sessionJti,'WRITE']);
+      return true;
+    },
+    async recordOutboxEventReconciliationAttestation(input) {
+      calls.push(input);
+      return {
+        id:'00000000-0000-4000-8000-000000000612',
+        caseId,
+        eventId:'00000000-0000-4000-8000-000000000613',
+        action:body.action,
+        caseStatus:'INVESTIGATING',
+        replayed:false,
+      };
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async(req)=>req.body||{},
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
+  });
+  const result=await route(
+    {
+      method:'POST',
+      url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-attestations`,
+      body,
+      headers:{host:'localhost'},
+    },
+    {},
+    ['admin','reconciliation-cases','outbox-events',caseId,'investigation-attestations'],
+  );
+  assert.equal(result.status,200);
+  assert.equal(result.data.action,body.action);
+  assert.deepEqual(calls,[{
+    ...body,
+    caseId,
+    actorId:admin.id,
+    sessionJti:admin.sessionJti,
+    verificationMinutes:5,
+  }]);
+});
+
+test('event-scoped attestation route maps stale evidence to a conflict and never calls payout resolution', async () => {
+  const admin={
+    id:'primary-event-attestation-admin',
+    email:'amir.davodpour@gmail.com',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'primary-event-attestation-google',
+    sessionJti:'primary-event-attestation-session',
+  };
+  let payoutResolverCalls=0;
+  const repo={
+    async isAdminPanelVerified() { return true; },
+    async recordOutboxEventReconciliationAttestation() {
+      throw Object.assign(new Error('RECONCILIATION_EVIDENCE_STALE'),{
+        code:'RECONCILIATION_EVIDENCE_STALE',
+      });
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    resolvePayoutUnknown:async()=>{payoutResolverCalls+=1;},
+    config:{adminMfaRequired:true},
+  });
+  await assert.rejects(
+    route(
+      {
+        method:'POST',
+        url:'/api/v1/admin/reconciliation-cases/outbox-events/00000000-0000-4000-8000-000000000614/investigation-attestations',
+        headers:{host:'localhost'},
+      },
+      {},
+      ['admin','reconciliation-cases','outbox-events','00000000-0000-4000-8000-000000000614','investigation-attestations'],
+    ),
+    (error)=>error?.status===409 && error?.code==='RECONCILIATION_EVIDENCE_STALE',
+  );
+  assert.equal(payoutResolverCalls,0);
+});
+
+
+test('OpenAPI documents event-scoped digest-bound attestations and investigation-only disposition', () => {
+  const contract = fs.readFileSync(
+    new URL('../openapi/openapi.yaml', import.meta.url),
+    'utf8',
+  );
+  assert.match(contract, /\/admin\/reconciliation-cases\/outbox-events\/\{caseId\}\/investigation-attestations:/);
+  assert.match(contract, /reviewedCaseDigest/);
+  assert.match(contract, /hasCurrentDigestAttestation/);
+  assert.match(contract, /INVESTIGATION_CLOSED_UNRESOLVED/);
+  assert.match(contract, /INVESTIGATION_REOPENED/);
+  assert.match(contract, /current-session WRITE step-up/);
+  assert.match(contract, /never changes payout, wallet, Hold, journal, ledger, Outbox delivery state, or calls a provider/);
+});

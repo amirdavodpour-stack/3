@@ -61,6 +61,44 @@ function encodeReconciliationCursor(row) {
   }), 'utf8').toString('base64url');
 }
 
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(',')}]`;
+  if (value instanceof Date) return JSON.stringify(value.toISOString());
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+}
+
+function sha256(value) {
+  return crypto.createHash('sha256').update(String(value)).digest('hex');
+}
+
+function outboxEventCaseEvidenceDigest(row) {
+  const event = row.eventId ? {
+    id: row.eventId,
+    eventType: row.eventType,
+    aggregateType: row.aggregateType,
+    aggregateId: row.aggregateId,
+    payloadSha256: sha256(canonicalJson(row.eventPayload)),
+    status: row.eventStatus,
+    attempts: Number(row.eventAttempts ?? 0),
+    processedAt: row.eventProcessedAt ?? null,
+    lastErrorSha256: row.eventLastError == null ? null : sha256(row.eventLastError),
+  } : null;
+  return sha256(canonicalJson({
+    version: 1,
+    case: {
+      id: row.id,
+      caseType: row.caseType,
+      resourceType: row.resourceType,
+      resourceId: row.resourceId,
+      severity: row.severity,
+      expected: row.expected,
+      observed: row.observed,
+    },
+    event,
+  }));
+}
+
 export async function listActiveOutboxEventReconciliationCases({ limit = 50, cursor = null } = {}) {
   const pool = requirePool();
   const bounded = limitValue(limit);
@@ -76,13 +114,35 @@ export async function listActiveOutboxEventReconciliationCases({ limit = 50, cur
            rc.observed,
            to_char(rc.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt",
            rc.updated_at AS "updatedAt",
+           oe.id AS "eventId",
            oe.event_type AS "eventType",
            oe.status AS "eventStatus",
            oe.aggregate_type AS "aggregateType",
-           oe.aggregate_id AS "aggregateId"
+           oe.aggregate_id AS "aggregateId",
+           oe.payload AS "eventPayload",
+           oe.attempts AS "eventAttempts",
+           to_char(oe.processed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "eventProcessedAt",
+           oe.last_error AS "eventLastError",
+           latest.action AS "latestAction",
+           reviewed.reviewed_case_digest AS "lastAttestedCaseDigest"
       FROM reconciliation_cases rc
       LEFT JOIN outbox_events oe
         ON oe.id=rc.resource_id
+      LEFT JOIN LATERAL (
+        SELECT n.action
+          FROM reconciliation_case_events n
+         WHERE n.case_id=rc.id
+         ORDER BY n.created_at DESC,n.id DESC
+         LIMIT 1
+      ) latest ON true
+      LEFT JOIN LATERAL (
+        SELECT n.reviewed_case_digest
+          FROM reconciliation_case_events n
+         WHERE n.case_id=rc.id
+           AND n.reviewed_case_digest IS NOT NULL
+         ORDER BY n.created_at DESC,n.id DESC
+         LIMIT 1
+      ) reviewed ON true
      WHERE rc.resource_type='outbox_event'
        AND rc.status IN ('OPEN','INVESTIGATING')
        AND (
@@ -94,7 +154,30 @@ export async function listActiveOutboxEventReconciliationCases({ limit = 50, cur
   `, [decodedCursor?.createdAt ?? null, decodedCursor?.id ?? null, bounded + 1]);
 
   const hasMore = rows.length > bounded;
-  const cases = rows.slice(0, bounded);
+  const cases = rows.slice(0, bounded).map((row) => {
+    const caseEvidenceDigest = outboxEventCaseEvidenceDigest(row);
+    const investigationStatus = row.latestAction === 'INVESTIGATION_CLOSED_UNRESOLVED'
+      ? 'CLOSED_UNRESOLVED'
+      : row.latestAction
+        ? 'IN_PROGRESS'
+        : 'NOT_STARTED';
+    const result = {
+      ...row,
+      caseEvidenceDigest,
+      investigationStatus,
+      reReviewRequired: Boolean(
+        row.lastAttestedCaseDigest && row.lastAttestedCaseDigest !== caseEvidenceDigest,
+      ),
+      hasCurrentDigestAttestation: Boolean(
+        row.lastAttestedCaseDigest && row.lastAttestedCaseDigest === caseEvidenceDigest,
+      ),
+    };
+    for (const field of [
+      'eventId','eventPayload','eventAttempts','eventProcessedAt','eventLastError',
+      'latestAction','lastAttestedCaseDigest',
+    ]) delete result[field];
+    return result;
+  });
   return {
     cases,
     hasMore,
@@ -178,6 +261,187 @@ function normalizeInvestigationNoteInput(input = {}) {
     verification,
     idempotencyKey,
     requestHash,
+  };
+}
+
+const OUTBOX_EVENT_ATTESTATION_ACTIONS = new Set([
+  'INVESTIGATION_ATTESTATION_RECORDED',
+  'INVESTIGATION_CLOSED_UNRESOLVED',
+  'INVESTIGATION_REOPENED',
+]);
+const OUTBOX_EVENT_EVIDENCE_SOURCES = new Set([
+  'BANK_STATEMENT',
+  'INTERNAL_LEDGER',
+  'OUTBOX_EVENT',
+  'OPERATOR_REPORT',
+  'PROVIDER_ARTIFACT',
+  'SUPPORT_TICKET',
+  'OTHER',
+]);
+const ATTESTATION_VERIFICATION_LEVELS = new Set([
+  'OPERATOR_REPORTED',
+  'SOURCE_ARTIFACT_REVIEWED',
+  'INDEPENDENTLY_CORROBORATED',
+  'CONFLICTING',
+  'INCONCLUSIVE',
+  'NOT_CHECKED',
+]);
+const ATTESTATION_RESULT_FIELDS = Object.freeze({
+  eventIdentity: new Set(['MATCHED','MISMATCH_CONFIRMED','UNRESOLVED','NOT_CHECKED']),
+  canonicalPayout: new Set(['MATCHED','MISMATCHED','NOT_FOUND','NOT_VERIFIED','NOT_CHECKED']),
+  providerOutcome: new Set(['SUCCEEDED_CONFIRMED','FAILED_CONFIRMED','UNKNOWN','NOT_CHECKED']),
+});
+
+function commandError(code, status = 409) {
+  const error = new Error(code);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+function normalizeOutboxEventAttestationInput(input = {}) {
+  const allowedFields = new Set([
+    'caseId','actorId','sessionJti','verificationMinutes','action','reason',
+    'sourceType','issuer','evidenceReference','artifactSha256','sourceObservedAt',
+    'reviewedCaseDigest','verification','idempotencyKey',
+  ]);
+  if (
+    !input
+    || typeof input !== 'object'
+    || Array.isArray(input)
+    || Object.keys(input).some((key) => !allowedFields.has(key))
+  ) throw investigationInputError('INVALID_RECONCILIATION_ATTESTATION_FIELDS');
+
+  const caseId = String(input.caseId || '').trim();
+  const actorId = String(input.actorId || '').trim();
+  const sessionJti = String(input.sessionJti || '').trim();
+  const action = String(input.action || '').trim().toUpperCase();
+  const reason = String(input.reason || '').trim();
+  const sourceType = String(input.sourceType || '').trim().toUpperCase();
+  const issuer = String(input.issuer || '').trim();
+  const evidenceReference = String(input.evidenceReference || '').trim();
+  const artifactSha256 = input.artifactSha256 == null || input.artifactSha256 === ''
+    ? null
+    : String(input.artifactSha256).trim().toLowerCase();
+  const sourceObservedAt = input.sourceObservedAt == null || input.sourceObservedAt === ''
+    ? null
+    : String(input.sourceObservedAt).trim();
+  const reviewedCaseDigest = String(input.reviewedCaseDigest || '').trim().toLowerCase();
+  const idempotencyKey = String(input.idempotencyKey || '').trim();
+
+  if (!UUID_VALUE.test(caseId)) throw investigationInputError('INVALID_RECONCILIATION_CASE_ID');
+  if (!UUID_VALUE.test(actorId)) throw investigationInputError('INVALID_RECONCILIATION_ACTOR_ID');
+  if (!sessionJti || sessionJti.length > 200) throw investigationInputError('INVALID_RECONCILIATION_SESSION');
+  if (!OUTBOX_EVENT_ATTESTATION_ACTIONS.has(action)) throw investigationInputError('INVALID_RECONCILIATION_ACTION');
+  if (reason.length < 10 || reason.length > 1000) throw investigationInputError('INVALID_RECONCILIATION_REASON');
+  if (!OUTBOX_EVENT_EVIDENCE_SOURCES.has(sourceType)) throw investigationInputError('INVALID_RECONCILIATION_SOURCE_TYPE');
+  if (issuer.length < 2 || issuer.length > 160) throw investigationInputError('INVALID_RECONCILIATION_EVIDENCE_ISSUER');
+  if (evidenceReference.length < 8 || evidenceReference.length > 500) throw investigationInputError('INVALID_RECONCILIATION_EVIDENCE_REFERENCE');
+  if (artifactSha256 && !/^[a-f0-9]{64}$/.test(artifactSha256)) throw investigationInputError('INVALID_RECONCILIATION_ARTIFACT_DIGEST');
+  if (sourceObservedAt && (
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(sourceObservedAt)
+    || !Number.isFinite(Date.parse(sourceObservedAt))
+  )) throw investigationInputError('INVALID_RECONCILIATION_SOURCE_OBSERVED_AT');
+  if (!/^[a-f0-9]{64}$/.test(reviewedCaseDigest)) throw investigationInputError('INVALID_RECONCILIATION_REVIEWED_DIGEST');
+  if (!IDEMPOTENCY_KEY_VALUE.test(idempotencyKey)) throw investigationInputError('INVALID_RECONCILIATION_IDEMPOTENCY_KEY');
+
+  const supplied = input.verification;
+  const requiredKeys = Object.keys(ATTESTATION_RESULT_FIELDS).sort();
+  const suppliedKeys = supplied && typeof supplied === 'object' && !Array.isArray(supplied)
+    ? Object.keys(supplied).sort()
+    : [];
+  if (
+    suppliedKeys.length !== requiredKeys.length
+    || suppliedKeys.some((key, index) => key !== requiredKeys[index])
+  ) throw investigationInputError('INVALID_RECONCILIATION_VERIFICATION');
+
+  const verification = {};
+  for (const field of requiredKeys) {
+    const entry = supplied[field];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw investigationInputError('INVALID_RECONCILIATION_VERIFICATION');
+    }
+    const keys = Object.keys(entry).sort();
+    if (
+      keys.length !== 2
+      || keys[0] !== 'result'
+      || keys[1] !== 'verificationLevel'
+    ) throw investigationInputError('INVALID_RECONCILIATION_VERIFICATION');
+    const result = String(entry.result || '').trim().toUpperCase();
+    const verificationLevel = String(entry.verificationLevel || '').trim().toUpperCase();
+    if (
+      !ATTESTATION_RESULT_FIELDS[field].has(result)
+      || !ATTESTATION_VERIFICATION_LEVELS.has(verificationLevel)
+    ) throw investigationInputError('INVALID_RECONCILIATION_VERIFICATION');
+    verification[field] = { result, verificationLevel };
+  }
+
+  return {
+    caseId,
+    actorId,
+    sessionJti,
+    verificationMinutes: Math.min(120, Math.max(1, Number(input.verificationMinutes) || 5)),
+    action,
+    reason,
+    sourceType,
+    issuer,
+    evidenceReference,
+    artifactSha256,
+    sourceObservedAt,
+    reviewedCaseDigest,
+    verification,
+    idempotencyKey,
+  };
+}
+
+function outboxEventAttestationRequestHash(command, eventId) {
+  return sha256(canonicalJson({
+    version: 1,
+    action: command.action,
+    caseId: command.caseId,
+    eventId,
+    actorId: command.actorId,
+    reason: command.reason,
+    sourceType: command.sourceType,
+    issuer: command.issuer,
+    evidenceReference: command.evidenceReference,
+    artifactSha256: command.artifactSha256,
+    sourceObservedAt: command.sourceObservedAt,
+    verification: command.verification,
+    reviewedCaseDigest: command.reviewedCaseDigest,
+  }));
+}
+
+async function loadOutboxEventCaseEvidenceSnapshot(client, caseId) {
+  const { rows } = await client.query(
+    `SELECT rc.id,
+            rc.case_type AS "caseType",
+            rc.resource_type AS "resourceType",
+            rc.resource_id AS "resourceId",
+            rc.severity,
+            rc.status,
+            rc.expected,
+            rc.observed,
+            oe.id AS "eventId",
+            oe.event_type AS "eventType",
+            oe.status AS "eventStatus",
+            oe.aggregate_type AS "aggregateType",
+            oe.aggregate_id AS "aggregateId",
+            oe.payload AS "eventPayload",
+            oe.attempts AS "eventAttempts",
+            to_char(oe.processed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "eventProcessedAt",
+            oe.last_error AS "eventLastError"
+       FROM reconciliation_cases rc
+       LEFT JOIN outbox_events oe ON oe.id=rc.resource_id
+      WHERE rc.id=$1
+        AND rc.resource_type='outbox_event'
+        AND rc.case_type=ANY($2::text[])`,
+    [caseId, OUTBOX_EVENT_INVESTIGATION_CASE_TYPES],
+  );
+  if (!rows[0]) throw commandError('RECONCILIATION_CASE_NOT_ACTIVE');
+  return {
+    ...rows[0],
+    caseEvidenceDigest: outboxEventCaseEvidenceDigest(rows[0]),
   };
 }
 
@@ -281,6 +545,17 @@ export async function appendOutboxEventReconciliationNote(input = {}) {
       error.status = 409;
       throw error;
     }
+    const latestActionResult = await client.query(
+      `SELECT action
+         FROM reconciliation_case_events
+        WHERE case_id=$1
+        ORDER BY created_at DESC,id DESC
+        LIMIT 1`,
+      [note.caseId],
+    );
+    if (latestActionResult.rows[0]?.action === 'INVESTIGATION_CLOSED_UNRESOLVED') {
+      throw commandError('INVESTIGATION_CLOSED');
+    }
 
     const inserted = await client.query(
       `INSERT INTO reconciliation_case_events(
@@ -365,7 +640,233 @@ export async function appendOutboxEventReconciliationNote(input = {}) {
   });
 }
 
+/**
+ * Record a source-backed event attestation or an investigation-only disposition.
+ * All actions append evidence; CLOSED_UNRESOLVED never resolves the financial
+ * reconciliation case and never touches payout, wallet, Hold, ledger or Outbox state.
+ */
+export async function recordOutboxEventReconciliationAttestation(input = {}) {
+  const command = normalizeOutboxEventAttestationInput(input);
 
+  return withSqlTransaction(async (client) => {
+    await lockAuthorizedAdminActor(client, {
+      actorId: command.actorId,
+      sessionJti: command.sessionJti,
+      verificationMinutes: command.verificationMinutes,
+      requiredScope: 'WRITE',
+      requireStepUp: true,
+      requirePrimaryAdmin: true,
+    });
+
+    const existing = await client.query(
+      `SELECT n.id,n.case_id,n.event_id,n.action,n.request_hash,rc.status AS case_status
+         FROM reconciliation_case_events n
+         JOIN reconciliation_cases rc ON rc.id=n.case_id
+        WHERE n.actor_id=$1 AND n.idempotency_key=$2`,
+      [command.actorId, command.idempotencyKey],
+    );
+    if (existing.rows[0]) {
+      const row = existing.rows[0];
+      const expectedHash = outboxEventAttestationRequestHash(command, row.event_id);
+      if (
+        row.request_hash !== expectedHash
+        || String(row.case_id) !== command.caseId
+      ) throw commandError('IDEMPOTENCY_CONFLICT');
+      return {
+        id: row.id,
+        caseId: row.case_id,
+        eventId: row.event_id,
+        action: row.action,
+        caseStatus: row.case_status,
+        replayed: true,
+      };
+    }
+
+    const candidate = await client.query(
+      `SELECT id,resource_id,status
+         FROM reconciliation_cases
+        WHERE id=$1
+          AND resource_type='outbox_event'
+          AND case_type=ANY($2::text[])
+          AND status IN ('OPEN','INVESTIGATING')`,
+      [command.caseId, OUTBOX_EVENT_INVESTIGATION_CASE_TYPES],
+    );
+    if (!candidate.rows[0]) throw commandError('RECONCILIATION_CASE_NOT_FOUND', 404);
+    const eventId = candidate.rows[0].resource_id;
+    if (!eventId) throw commandError('OUTBOX_EVENT_NOT_FOUND');
+
+    // Lock order is deliberately actor → referenced Outbox event → exact case.
+    const event = await client.query(
+      'SELECT id FROM outbox_events WHERE id=$1 FOR SHARE',
+      [eventId],
+    );
+    if (!event.rows[0]) throw commandError('OUTBOX_EVENT_NOT_FOUND');
+
+    const lockedCase = await client.query(
+      `SELECT id,resource_id,status
+         FROM reconciliation_cases
+        WHERE id=$1
+          AND resource_type='outbox_event'
+          AND case_type=ANY($2::text[])
+          AND status IN ('OPEN','INVESTIGATING')
+        FOR UPDATE`,
+      [command.caseId, OUTBOX_EVENT_INVESTIGATION_CASE_TYPES],
+    );
+    const caseRow = lockedCase.rows[0];
+    if (!caseRow || String(caseRow.resource_id) !== String(eventId)) {
+      throw commandError('RECONCILIATION_CASE_NOT_ACTIVE');
+    }
+
+    const snapshot = await loadOutboxEventCaseEvidenceSnapshot(client, command.caseId);
+    if (
+      String(snapshot.eventId) !== String(eventId)
+      || snapshot.caseEvidenceDigest !== command.reviewedCaseDigest
+    ) throw commandError('RECONCILIATION_EVIDENCE_STALE');
+
+    const latestResult = await client.query(
+      `SELECT action
+         FROM reconciliation_case_events
+        WHERE case_id=$1
+        ORDER BY created_at DESC,id DESC
+        LIMIT 1`,
+      [command.caseId],
+    );
+    const latestAction = latestResult.rows[0]?.action ?? null;
+
+    if (
+      latestAction === 'INVESTIGATION_CLOSED_UNRESOLVED'
+      && command.action !== 'INVESTIGATION_REOPENED'
+    ) throw commandError('INVESTIGATION_CLOSED');
+
+    if (
+      command.action === 'INVESTIGATION_REOPENED'
+      && latestAction !== 'INVESTIGATION_CLOSED_UNRESOLVED'
+    ) throw commandError('INVESTIGATION_NOT_CLOSED');
+
+    if (
+      command.action === 'INVESTIGATION_CLOSED_UNRESOLVED'
+      && latestAction === 'INVESTIGATION_CLOSED_UNRESOLVED'
+    ) throw commandError('INVESTIGATION_ALREADY_CLOSED');
+
+    if (command.action === 'INVESTIGATION_CLOSED_UNRESOLVED') {
+      if (caseRow.status !== 'INVESTIGATING') {
+        throw commandError('RECONCILIATION_INVESTIGATION_NOT_STARTED');
+      }
+      const latestAttestation = await client.query(
+        `SELECT reviewed_case_digest
+           FROM reconciliation_case_events
+          WHERE case_id=$1
+            AND action IN ('INVESTIGATION_ATTESTATION_RECORDED','INVESTIGATION_REOPENED')
+          ORDER BY created_at DESC,id DESC
+          LIMIT 1`,
+        [command.caseId],
+      );
+      if (latestAttestation.rows[0]?.reviewed_case_digest !== snapshot.caseEvidenceDigest) {
+        throw commandError('RECONCILIATION_ATTESTATION_REQUIRED');
+      }
+    }
+
+    const inserted = await client.query(
+      `INSERT INTO reconciliation_case_events(
+         case_id,event_id,actor_id,actor_session_jti,action,reason,
+         evidence_reference,verification,idempotency_key,request_hash,
+         evidence_source_type,evidence_issuer,artifact_sha256,source_observed_at,
+         reviewed_case_digest
+       ) VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14::timestamptz,$15)
+       ON CONFLICT (actor_id,idempotency_key) DO NOTHING
+       RETURNING id,case_id,event_id,action`,
+      [
+        command.caseId,
+        eventId,
+        command.actorId,
+        command.sessionJti,
+        command.action,
+        command.reason,
+        command.evidenceReference,
+        JSON.stringify(command.verification),
+        command.idempotencyKey,
+        outboxEventAttestationRequestHash(command, eventId),
+        command.sourceType,
+        command.issuer,
+        command.artifactSha256,
+        command.sourceObservedAt,
+        command.reviewedCaseDigest,
+      ],
+    );
+
+    if (!inserted.rows[0]) {
+      const replay = await client.query(
+        `SELECT n.id,n.case_id,n.event_id,n.action,n.request_hash,rc.status AS case_status
+           FROM reconciliation_case_events n
+           JOIN reconciliation_cases rc ON rc.id=n.case_id
+          WHERE n.actor_id=$1 AND n.idempotency_key=$2`,
+        [command.actorId, command.idempotencyKey],
+      );
+      const row = replay.rows[0];
+      if (
+        !row
+        || row.request_hash !== outboxEventAttestationRequestHash(command, row.event_id)
+        || String(row.case_id) !== command.caseId
+      ) throw commandError('IDEMPOTENCY_CONFLICT');
+      return {
+        id: row.id,
+        caseId: row.case_id,
+        eventId: row.event_id,
+        action: row.action,
+        caseStatus: row.case_status,
+        replayed: true,
+      };
+    }
+
+    let caseStatus = caseRow.status;
+    if (command.action === 'INVESTIGATION_ATTESTATION_RECORDED' && caseStatus === 'OPEN') {
+      const updated = await client.query(
+        `UPDATE reconciliation_cases
+            SET status='INVESTIGATING',updated_at=NOW()
+          WHERE id=$1 AND status='OPEN'
+          RETURNING status`,
+        [command.caseId],
+      );
+      caseStatus = updated.rows[0]?.status || 'INVESTIGATING';
+    }
+
+    const auditAction = {
+      INVESTIGATION_ATTESTATION_RECORDED: 'OUTBOX_EVENT_RECONCILIATION_ATTESTED',
+      INVESTIGATION_CLOSED_UNRESOLVED: 'OUTBOX_EVENT_RECONCILIATION_CLOSED_UNRESOLVED',
+      INVESTIGATION_REOPENED: 'OUTBOX_EVENT_RECONCILIATION_REOPENED',
+    }[command.action];
+    await client.query(
+      `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+       VALUES(gen_random_uuid(),$1,$2,'reconciliation_case',$3,$4::jsonb,NOW())`,
+      [
+        auditAction,
+        command.actorId,
+        command.caseId,
+        JSON.stringify({
+          eventId,
+          eventRecordId: inserted.rows[0].id,
+          action: command.action,
+          sourceType: command.sourceType,
+          issuer: command.issuer,
+          evidenceReference: command.evidenceReference,
+          artifactSha256: command.artifactSha256,
+          sourceObservedAt: command.sourceObservedAt,
+          reviewedCaseDigest: command.reviewedCaseDigest,
+          verification: command.verification,
+        }),
+      ],
+    );
+
+    return {
+      id: inserted.rows[0].id,
+      caseId: inserted.rows[0].case_id,
+      eventId: inserted.rows[0].event_id,
+      action: inserted.rows[0].action,
+      caseStatus,
+      replayed: false,
+    };
+  });
+}
 
 /**
  * Read the append-only investigation history for one exact Outbox event case.
@@ -404,9 +905,15 @@ export async function listOutboxEventReconciliationNotes({
     `SELECT n.id,
             n.case_id AS "caseId",
             n.event_id AS "eventId",
+            n.actor_id AS "actorId",
             n.action,
             n.reason,
             n.evidence_reference AS "evidenceReference",
+            n.evidence_source_type AS "sourceType",
+            n.evidence_issuer AS "issuer",
+            n.artifact_sha256 AS "artifactSha256",
+            to_char(n.source_observed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "sourceObservedAt",
+            n.reviewed_case_digest AS "reviewedCaseDigest",
             n.verification,
             COALESCE(NULLIF(BTRIM(u.display_name),''),'Administrator') AS "actorDisplayName",
             to_char(n.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "createdAt"

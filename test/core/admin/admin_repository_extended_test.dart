@@ -206,4 +206,70 @@ void main() {
     expect(page['hasMore'], isFalse);
     expect(page['nextCursor'], isNull);
   });
+
+  test('event attestation repository posts the reviewed snapshot and source provenance', () async {
+    server.handlers['/admin/reconciliation-cases/outbox-events/case-01/investigation-attestations'] = (request, body) async {
+      expect(request.method, 'POST');
+      expect(request.headers.value('authorization'), 'Bearer token');
+      expect(body['action'], 'INVESTIGATION_ATTESTATION_RECORDED');
+      expect(body['sourceType'], 'PROVIDER_ARTIFACT');
+      expect(body['issuer'], 'Example Provider');
+      expect(body['evidenceReference'], 'provider-case:case-01');
+      expect(body['artifactSha256'], 'a' * 64);
+      expect(body['sourceObservedAt'], '2026-11-15T19:00:00.000Z');
+      expect(body['reviewedCaseDigest'], 'b' * 64);
+      expect(body['verification'], {
+        'eventIdentity': {
+          'result':'MISMATCH_CONFIRMED',
+          'verificationLevel':'SOURCE_ARTIFACT_REVIEWED',
+        },
+        'canonicalPayout': {
+          'result':'NOT_VERIFIED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+        'providerOutcome': {
+          'result':'NOT_CHECKED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+      });
+      expect(body['idempotencyKey'], 'attestation-test-key-01');
+      await respondJson(request, 200, {
+        'data': {
+          'action':'INVESTIGATION_ATTESTATION_RECORDED',
+          'caseStatus':'INVESTIGATING',
+          'replayed':false,
+        },
+      });
+    };
+
+    final result = await repository.recordOutboxEventReconciliationAttestation(
+      'case-01',
+      action:'INVESTIGATION_ATTESTATION_RECORDED',
+      reason:'The event identity was compared with source evidence.',
+      sourceType:'PROVIDER_ARTIFACT',
+      issuer:'Example Provider',
+      evidenceReference:'provider-case:case-01',
+      artifactSha256:'A' * 64,
+      sourceObservedAt:'2026-11-15T19:00:00.000Z',
+      verification:const {
+        'eventIdentity': {
+          'result':'MISMATCH_CONFIRMED',
+          'verificationLevel':'SOURCE_ARTIFACT_REVIEWED',
+        },
+        'canonicalPayout': {
+          'result':'NOT_VERIFIED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+        'providerOutcome': {
+          'result':'NOT_CHECKED',
+          'verificationLevel':'NOT_CHECKED',
+        },
+      },
+      reviewedCaseDigest:'B' * 64,
+      idempotencyKey:'attestation-test-key-01',
+    );
+
+    expect(result['action'], 'INVESTIGATION_ATTESTATION_RECORDED');
+    expect(result['caseStatus'], 'INVESTIGATING');
+  });
 }

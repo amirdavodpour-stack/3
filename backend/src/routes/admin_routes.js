@@ -669,6 +669,45 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
       return sendJson(res,200,{id,status:updated.status});
     }
 
+    if(req.method==='POST' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts[4]==='investigation-attestations' && parts.length===5){
+      assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_RECONCILIATION_CASES);
+      if (typeof repo?.recordOutboxEventReconciliationAttestation !== 'function') {
+        throw new HttpError(503, 'FINANCIAL_CONTROL_UNAVAILABLE', 'Reconciliation attestation controls are unavailable');
+      }
+      const body = await readBody(req);
+      try {
+        const result = await repo.recordOutboxEventReconciliationAttestation({
+          ...body,
+          caseId: parts[3],
+          actorId: me.id,
+          sessionJti: me.sessionJti,
+          verificationMinutes: config.adminPanelWriteVerificationMinutes ?? 5,
+        });
+        return sendJson(res, 200, result);
+      } catch (error) {
+        if (String(error?.code || '').startsWith('INVALID_RECONCILIATION_')) {
+          throw new HttpError(400, error.code, 'Reconciliation attestation is invalid');
+        }
+        if (error?.code === 'RECONCILIATION_CASE_NOT_FOUND') {
+          throw new HttpError(404, 'RECONCILIATION_CASE_NOT_FOUND', 'Active Outbox reconciliation case not found');
+        }
+        if ([
+          'OUTBOX_EVENT_NOT_FOUND',
+          'RECONCILIATION_CASE_NOT_ACTIVE',
+          'IDEMPOTENCY_CONFLICT',
+          'RECONCILIATION_EVIDENCE_STALE',
+          'INVESTIGATION_CLOSED',
+          'INVESTIGATION_NOT_CLOSED',
+          'INVESTIGATION_ALREADY_CLOSED',
+          'RECONCILIATION_INVESTIGATION_NOT_STARTED',
+          'RECONCILIATION_ATTESTATION_REQUIRED',
+        ].includes(error?.code)) {
+          throw new HttpError(409, error.code, 'Outbox event investigation state or evidence snapshot conflicts with this request');
+        }
+        throw error;
+      }
+    }
+
     if(req.method==='POST' && parts[0]==='admin' && parts[1]==='reconciliation-cases' && parts[2]==='outbox-events' && parts[4]==='investigation-notes' && parts.length===5){
       assertAdminPermission(me, ADMIN_PERMISSIONS.MANAGE_RECONCILIATION_CASES);
       if (typeof repo?.appendOutboxEventReconciliationNote !== 'function') {
@@ -694,7 +733,7 @@ export function createAdminRoutes({ authUser, requireAdmin, jobDisputeRoutes, re
         if (error?.code === 'RECONCILIATION_CASE_NOT_FOUND') {
           throw new HttpError(404, 'RECONCILIATION_CASE_NOT_FOUND', 'Active Outbox reconciliation case not found');
         }
-        if (['OUTBOX_EVENT_NOT_FOUND','RECONCILIATION_CASE_NOT_ACTIVE','IDEMPOTENCY_CONFLICT'].includes(error?.code)) {
+        if (['OUTBOX_EVENT_NOT_FOUND','RECONCILIATION_CASE_NOT_ACTIVE','IDEMPOTENCY_CONFLICT','INVESTIGATION_CLOSED'].includes(error?.code)) {
           throw new HttpError(409, error.code, 'Reconciliation investigation note conflicts with current state');
         }
         throw error;
