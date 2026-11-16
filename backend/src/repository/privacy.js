@@ -175,7 +175,12 @@ export async function deleteUserPrivacyBundle(userId, replacement) {
               last_error='RECIPIENT_ERASED'
         WHERE event_type='NOTIFICATION_DISPATCH'
           AND aggregate_type='notification'
-          AND payload->>'userId'=$1
+          AND EXISTS (
+            SELECT 1
+              FROM notifications n
+             WHERE n.id=outbox_events.aggregate_id
+               AND n.user_id=$1
+          )
           AND status IN ('PENDING','PROCESSING')`,
       [userId],
     );

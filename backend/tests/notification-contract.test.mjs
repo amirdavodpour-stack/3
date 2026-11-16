@@ -13,6 +13,7 @@ const notificationRoutes=fs.readFileSync(new URL('../src/routes/notification_rou
 const mobile=fs.readFileSync(new URL('../../lib/features/notifications/notifications_page.dart',import.meta.url),'utf8');
 const notificationRepo=fs.readFileSync(new URL('../../lib/core/notifications/notification_repository.dart',import.meta.url),'utf8');
 const notificationModel=fs.readFileSync(new URL('../../lib/core/notifications/notification.dart',import.meta.url),'utf8');
+const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
 
 test('notification persistence has user isolation and preference defaults',()=>{
   assert.match(schema,/CREATE TABLE IF NOT EXISTS notifications/);
@@ -61,7 +62,7 @@ test('mobile notifications are repository-backed and typed',()=>{
 });
 
 
-const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
+
 const applicationsRepo=fs.readFileSync(new URL('../src/repository/applications.js',import.meta.url),'utf8');
 const outboxRepo=fs.readFileSync(new URL('../src/repository/outbox.js',import.meta.url),'utf8');
 const cancellationMigration=fs.readFileSync(new URL('../src/db/migrations/054_outbox_notification_cancellation.js',import.meta.url),'utf8');
@@ -76,4 +77,31 @@ test('notification Outbox dispatch uses explicit cancellation and an account-era
   assert.ok(applicationsRepo.indexOf('FOR SHARE') < applicationsRepo.indexOf('FOR UPDATE'));
   assert.match(cancellationMigration,/CANCELLED/);
   assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
+});
+
+
+test('new notification Outbox events use a content-free v2 payload and dispatch reads canonical database content',()=>{
+  const producerStart=notificationsRepo.indexOf('export async function queueNotificationWithClient(');
+  const producer=notificationsRepo.slice(producerStart);
+  assert.match(producer,/const eventPayload = \{\s*schemaVersion:\s*2,\s*channel\s*\}/s);
+  assert.match(producer,/JSON\.stringify\(eventPayload\)/);
+
+  const dispatchStart=notificationsRepo.indexOf('export async function dispatchNotificationOutbox(');
+  const dispatch=notificationsRepo.slice(dispatchStart);
+  assert.match(dispatch,/SELECT id,user_id,type,title,body,data\s+FROM notifications/);
+  assert.match(dispatch,/await deliverTargets\(\{[^}]*notificationId, userId, notification/s);
+
+  const notificationHandlerStart=handlers.indexOf("} else if (event.event_type === 'NOTIFICATION_DISPATCH')");
+  const notificationHandler=handlers.slice(notificationHandlerStart);
+  assert.match(notificationHandler,/notification\.title/);
+  assert.match(notificationHandler,/notification\.body/);
+  assert.match(notificationHandler,/notification\.data/);
+  assert.doesNotMatch(notificationHandler,/payload\.(title|body|data|userId|notificationId)/);
+});
+
+
+test('account erasure identifies notification Outbox rows through canonical aggregate identity',()=>{
+  const deletion=privacyRepo.slice(privacyRepo.indexOf('export async function deleteUserPrivacyBundle'));
+  assert.match(deletion,/EXISTS\s*\(\s*SELECT 1\s+FROM notifications n\s+WHERE n\.id=outbox_events\.aggregate_id\s+AND n\.user_id=\$1/s);
+  assert.doesNotMatch(deletion,/payload->>'userId'/);
 });
