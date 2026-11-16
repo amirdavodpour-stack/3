@@ -19,6 +19,31 @@ test('approval decision bypasses interactive prompts in auto mode',()=>{
   assert.equal(resolveApprovalDecision('prompt'),null);
 });
 
+test('GitHub Actions dispatch validates and checks out an explicit feature target ref',()=>{
+  const workflow=readFileSync(new URL('../../.github/workflows/free-llm-agent.yml',import.meta.url),'utf8');
+  assert.match(workflow,/target_ref:[\s\S]*?description:[^\n]*[Ff]eature branch[^\n]*Main\/master[\s\S]*?required:\s*true[\s\S]*?default:\s*"feat\/google-sign-in-2026-09-20"[\s\S]*?type:\s*string/);
+  assert.match(workflow,/group:[^\n]*inputs\.target_ref/);
+  assert.match(workflow,/TARGET_REF:\s*\$\{\{\s*inputs\.target_ref\s*\}\}/);
+  assert.match(workflow,/ref:\s*\$\{\{\s*inputs\.target_ref\s*\}\}/);
+  assert.match(workflow,/git check-ref-format --branch "\$TARGET_REF"/);
+  assert.match(workflow,/main\|master\|refs\/heads\/main\|refs\/heads\/master/);
+  const validateIndex=workflow.indexOf('- name: Validate target ref');
+  const checkoutIndex=workflow.indexOf('- name: Checkout target feature branch');
+  assert.ok(validateIndex >= 0 && checkoutIndex > validateIndex, 'protected target validation must run before checkout');
+  assert.match(workflow,/default:\s*false/);
+  assert.match(workflow,/case "\$\{TARGET_REF,,\}" in[\s\S]*?main\|master[\s\S]*?exit 1/);
+  assert.match(workflow,/test -n "\$\{OPENROUTER_API_KEY\}\$\{GROQ_API_KEY\}\$\{GEMINI_API_KEY\}"/);
+  assert.match(workflow,/printf 'TARGET_REF=%s\\n' \"\$TARGET_REF\"/);
+  assert.match(workflow,/agent-target-ref\.txt/);
+  assert.doesNotMatch(workflow,/ref:\s*\$\{\{\s*github\.ref_name\s*\}\}/);
+});
+
+test('agent workflow contract gate runs when the dispatch workflow changes',()=>{
+  const contract=readFileSync(new URL('../../.github/workflows/free-llm-agent-contract.yml',import.meta.url),'utf8');
+  assert.match(contract,/pull_request:[\s\S]*?\.github\/workflows\/free-llm-agent\.yml/);
+  assert.match(contract,/push:[\s\S]*?branches:[\s\S]*?feat\/google-sign-in-2026-09-20[\s\S]*?paths:[\s\S]*?\.github\/workflows\/free-llm-agent\.yml/);
+});
+
 test('GitHub Actions agent workflow is manual and has provider fallback wiring',()=>{
   const workflow=readFileSync(new URL('../../.github/workflows/free-llm-agent.yml',import.meta.url),'utf8');
   assert.match(workflow,/workflow_dispatch:/);
