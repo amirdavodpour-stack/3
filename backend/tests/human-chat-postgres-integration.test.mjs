@@ -239,6 +239,8 @@ test('admin dispute resolution atomically admits one decision and recovers its e
   });
   assert.equal(resumed.claimed,true);
   assert.equal(resumed.resumed,true);
+  assert.equal(resumed?.dispute?.resolutionReason,'first administrator decision',
+    'expired-lease takeover must retain the original reason for the same decision');
   assert.notEqual(resumed.token,winner.token,'expired claim must receive a new fencing token');
 
   const stale = await completeJobDisputeResolution(disputeId,{
@@ -5824,7 +5826,7 @@ test('HELD payment can be released only by the matching active admin dispute REL
   }
 });
 
-test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold', { skip: !enabled }, async () => {
+test('admin HOLD preserves the escrow hold and a fresh RELEASE records its reason in the final audit', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   await ensureFixtureAdminWriteStepUp();
   const ownerId = await createTransferTestUser(pool, 'dispute-hold-owner');
@@ -5870,12 +5872,39 @@ test('admin HOLD keeps the dispute in ADMIN_REVIEW and preserves the escrow hold
     assert.equal(paymentRows[0]?.status,'HELD');
     const nextClaim=await claimJobDisputeResolution(disputeId,{resolution:'RELEASE',reason:'Work later completed',adminId:fixture.adminId,sessionJti:PANEL_TEST_SESSION_JTI});
     assert.equal(nextClaim?.claimed,true,'the same held case must remain resolvable after new evidence arrives');
-    await pool.query(
-      `UPDATE job_disputes SET status='ADMIN_REVIEW',resolution=NULL,resolution_reason='',resolved_by=NULL,
-        resolution_lease_token=NULL,resolution_lease_until=NULL WHERE id=$1`,
+    assert.equal(nextClaim?.dispute?.resolutionReason,'Work later completed',
+      'a new RELEASE decision must replace the previous HOLD reason');
+
+    const releaseCompleted=await completeJobDisputeResolution(disputeId,{
+      resolution:'RELEASE',
+      token:nextClaim.token,
+    });
+    assert.equal(releaseCompleted?.status,'RESOLVED');
+    assert.equal(releaseCompleted?.resolution,'RELEASE');
+    assert.equal(releaseCompleted?.resolutionReason,'Work later completed');
+
+    const { rows: releaseAuditRows }=await pool.query(
+      `SELECT action,actor_id,meta
+         FROM audit_logs
+        WHERE action='ADMIN_DISPUTE_RESOLVE'
+          AND entity_type='job_dispute'
+          AND entity_id=$1
+          AND meta->>'resolution'='RELEASE'`,
       [disputeId],
     );
+    assert.equal(releaseAuditRows.length,1,
+      'a completed fresh RELEASE must append exactly one final resolution audit');
+    assert.equal(releaseAuditRows[0]?.actor_id,fixture.adminId);
+    assert.equal(releaseAuditRows[0]?.meta?.resolution,'RELEASE');
+    assert.equal(releaseAuditRows[0]?.meta?.reason,'Work later completed',
+      'the final RELEASE audit must record the fresh decision reason, not the earlier HOLD reason');
+    assert.equal(releaseAuditRows[0]?.meta?.outcomeStatus,'RESOLVED');
+
   } finally {
+    if(disputeId) await pool.query(
+      "DELETE FROM audit_logs WHERE entity_type='job_dispute' AND entity_id=$1",
+      [disputeId],
+    );
     if(disputeId) await pool.query('DELETE FROM job_disputes WHERE id=$1',[disputeId]);
     await pool.query('DELETE FROM payments WHERE id=$1',[paymentId]);
     await pool.query('DELETE FROM jobs WHERE id=$1',[jobId]);
