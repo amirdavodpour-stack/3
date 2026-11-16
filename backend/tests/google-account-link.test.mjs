@@ -1,0 +1,562 @@
+import test, { after } from 'node:test';
+import assert from 'node:assert/strict';
+import { createAuthRoutes } from '../src/routes/auth_routes.js';
+import { HttpError } from '../src/api/http_error.js';
+import { requireFields, stringField } from '../src/policies/validation.js';
+import { createAuthLegacyAdapter } from '../src/application/legacy/auth_legacy.js';
+
+const originalDatabaseUrl = process.env.DATABASE_URL;
+process.env.DATABASE_URL = 'postgres://unit-test.invalid/hope';
+after(() => {
+  if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+  else process.env.DATABASE_URL = originalDatabaseUrl;
+});
+
+function makeRoutes({
+  user = { id: 'user-1', email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: null },
+  identity = { subject: 'google-subject-1', email: 'member@example.com', email_verified: true, displayName: 'Member' },
+  repository = {},
+  authenticated = true,
+  audit = async () => {},
+  config = {},
+  verifyFailure = null,
+  legacy: legacyOverrides = {},
+  withTransaction = async (callback) => callback(),
+} = {}) {
+  const repo = {
+    findUserByGoogleSubject: async () => null,
+    linkGoogleSubject: async (userId, subject) => ({ ...user, id: userId, googleSubject: subject }),
+    ...repository,
+  };
+  const routes = createAuthRoutes({
+    authUser: async () => authenticated ? user : null,
+    authUserView: (value) => ({ id: value.id, email: value.email, googleSubject: value.googleSubject ?? null }),
+    getUserByEmail: async () => null,
+    issueSession: async () => ({ accessToken: 'unused', refreshToken: 'unused' }),
+    deliverPasswordReset: async () => {},
+    findUser: async () => null,
+    readBody: async () => ({ idToken: 'verified-google-id-token' }),
+    sendJson: async (_res, status, data) => ({ status, data }),
+    HttpError,
+    requireFields,
+    repo,
+    config: { googleAuthEnabled: true, googleOAuthClientId: 'test-client', ...config },
+    now: () => '2026-10-28T00:00:00.000Z',
+    hashPassword: async () => 'unused',
+    verifyPassword: async () => false,
+    passwordNeedsRehash: () => false,
+    PASSWORD_MAX_LENGTH: 128,
+    randomToken: () => 'r'.repeat(48),
+    sha256: (value) => value,
+    signAccessToken: () => 'unused',
+    createAudit: audit,
+    DUMMY_PASSWORD_HASH: 'dummy',
+    logEvent: () => {},
+    rateLimitAuthAccount: async () => true,
+    stringField,
+    id: () => 'unused',
+    withTransaction,
+    legacy: {
+      findUserByGoogleSubject: async () => null,
+      linkGoogleSubject: async (userId, subject) => ({ ...user, id: userId, googleSubject: subject }),
+      save: async () => {},
+      ...legacyOverrides,
+    },
+    verifyGoogleIdToken: async (idToken, audience) => {
+      if (verifyFailure) throw verifyFailure;
+      assert.equal(idToken, 'verified-google-id-token');
+      assert.equal(audience, 'test-client');
+      return identity;
+    },
+  });
+  return { routes, repo };
+}
+
+const request = { method: 'POST' };
+const response = {};
+
+test('explicit Google account link binds the verified identity and delegates its audit to the repository', async () => {
+  let auditEntry;
+  const { routes, repo } = makeRoutes({ audit: async (...args) => { auditEntry = args; } });
+  let linked;
+  repo.linkGoogleSubject = async (userId, subject, options) => {
+    linked = { userId, subject, options };
+    return { id: userId, email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: subject };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.equal(result.data.linked, true);
+  assert.deepEqual(linked, { userId: 'user-1', subject: 'google-subject-1', options: { promoteToPrimaryAdmin: false } });
+  assert.equal(auditEntry, undefined, 'PostgreSQL route must not write the same audit after the repository transaction');
+});
+
+
+test('verified primary-owner Google linking requests the narrowly scoped bootstrap without a post-commit route audit', async () => {
+  const user = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    displayName: 'Primary owner',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const identity = {
+    subject: 'verified-primary-owner-subject',
+    email: 'amir.davodpour@gmail.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Primary owner',
+  };
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    user,
+    identity,
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { ...user, googleSubject: args[1], role: args[2]?.promoteToPrimaryAdmin ? 'ADMIN' : user.role };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(linkedArguments, [
+    'owner-1',
+    'verified-primary-owner-subject',
+    { promoteToPrimaryAdmin: true },
+  ]);
+  assert.equal(auditEntry, undefined, 'primary-owner link audit is committed inside the repository transaction');
+});
+
+test('an already-linked primary owner with a stale USER role can complete bootstrap idempotently', async () => {
+  const user = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    displayName: 'Primary owner',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: 'verified-primary-owner-subject',
+  };
+  const identity = {
+    subject: 'verified-primary-owner-subject',
+    email: 'amir.davodpour@gmail.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Primary owner',
+  };
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    user,
+    identity,
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { ...user, role: args[2]?.promoteToPrimaryAdmin ? 'ADMIN' : user.role };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.equal(result.data.linked, true);
+  assert.equal(result.data.alreadyLinked, true);
+  assert.deepEqual(linkedArguments, [
+    'owner-1',
+    'verified-primary-owner-subject',
+    { promoteToPrimaryAdmin: true },
+  ]);
+  assert.equal(auditEntry, undefined);
+});
+
+test('Google linking by an ordinary account never requests primary-admin promotion', async () => {
+  let linkedArguments;
+  let auditEntry;
+  const { routes, repo } = makeRoutes({
+    audit: async (...args) => { auditEntry = args; },
+  });
+  repo.linkGoogleSubject = async (...args) => {
+    linkedArguments = args;
+    return { id: args[0], email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: args[1] };
+  };
+
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(linkedArguments, [
+    'user-1',
+    'google-subject-1',
+    { promoteToPrimaryAdmin: false },
+  ]);
+  assert.equal(auditEntry, undefined);
+});
+
+test('legacy auth adapter mirrors the explicit primary-admin bootstrap option', () => {
+  const primaryOwner = {
+    id: 'owner-1',
+    email: 'amir.davodpour@gmail.com',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const ordinaryUser = {
+    id: 'user-1',
+    email: 'member@example.com',
+    role: 'USER',
+    status: 'ACTIVE',
+    googleSubject: null,
+  };
+  const db = {
+    collection: { users: [primaryOwner, ordinaryUser], refreshTokens: [], emailVerificationTokens: [] },
+    touch: () => {},
+  };
+  const legacy = createAuthLegacyAdapter({
+    db,
+    findUser: (id) => db.collection.users.find((user) => user.id === id),
+    issueSession: async () => ({}),
+    withTransaction: async (callback) => callback(),
+    now: () => '2026-11-04T00:00:00.000Z',
+  });
+
+  const promoted = legacy.linkGoogleSubject(primaryOwner.id, 'verified-primary-owner-subject', {
+    promoteToPrimaryAdmin: true,
+  });
+  const ordinary = legacy.linkGoogleSubject(ordinaryUser.id, 'ordinary-google-subject', {
+    promoteToPrimaryAdmin: false,
+  });
+  const forgedPromotion = legacy.linkGoogleSubject(ordinaryUser.id, 'ordinary-google-subject', {
+    promoteToPrimaryAdmin: true,
+  });
+
+  assert.equal(promoted.role, 'ADMIN');
+  assert.equal(ordinary.role, 'USER');
+  assert.equal(forgedPromotion, null);
+  assert.equal(ordinaryUser.role, 'USER');
+});
+
+
+test('Google-only account can establish a password through verified email reset without losing its Google identity', async () => {
+  const users = [];
+  let resetToken = null;
+  let requestBody = {};
+  let deliveredResetToken = null;
+  const auditActions = [];
+  const identity = {
+    subject: 'google-password-recovery-subject',
+    email: 'google-only@example.com',
+    email_verified: true,
+    authoritativeEmail: true,
+    displayName: 'Google Only',
+  };
+  const repo = {
+    findUserByGoogleSubject: async (subject) => users.find((user) => user.googleSubject === subject) || null,
+    createUserWithProvider: async (userDraft) => {
+      const user = { ...userDraft };
+      users.push(user);
+      return user;
+    },
+    insertResetToken: async (token) => {
+      resetToken = { ...token };
+      return resetToken;
+    },
+    findResetTokenForUse: async (tokenHash) => {
+      if (!resetToken || resetToken.tokenHash !== tokenHash || resetToken.usedAt) return null;
+      if (new Date(resetToken.expiresAt).getTime() <= Date.now()) return null;
+      return { token: resetToken, user: users.find((user) => user.id === resetToken.userId) || null };
+    },
+    consumeResetTokenAndChangePassword: async (tokenId, userId, passwordHash) => {
+      const user = users.find((candidate) => candidate.id === userId);
+      if (!user || !resetToken || resetToken.id !== tokenId || resetToken.usedAt) return false;
+      user.passwordHash = passwordHash;
+      user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+      resetToken.usedAt = '2026-11-04T00:00:00.000Z';
+      return true;
+    },
+  };
+  const routes = createAuthRoutes({
+    authUser: async () => null,
+    authUserView: (user) => ({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      googleSubject: user.googleSubject || null,
+    }),
+    getUserByEmail: async (email) => users.find((user) => user.email === String(email).toLowerCase()) || null,
+    issueSession: async (user) => ({
+      accessToken: 'session-for-' + user.id,
+      refreshToken: 'refresh-for-' + user.id,
+    }),
+    deliverPasswordReset: async ({ token }) => { deliveredResetToken = token; },
+    deliverEmailVerification: async () => {},
+    findUser: async () => null,
+    readBody: async () => requestBody,
+    sendJson: async (_res, status, data) => ({ status, data }),
+    HttpError,
+    requireFields,
+    repo,
+    config: {
+      googleAuthEnabled: true,
+      googleOAuthClientId: 'test-client',
+      resetTokenTtlSeconds: 3600,
+      emailVerificationTokenTtlSeconds: 3600,
+      authRateLimitMax: 20,
+      rateLimitWindowMs: 60_000,
+      exposeResetTokenInDevelopment: false,
+    },
+    now: () => '2026-11-04T00:00:00.000Z',
+    hashPassword: async (password) => 'hash:' + password,
+    verifyPassword: async (password, hash) => hash === 'hash:' + password,
+    passwordNeedsRehash: () => false,
+    PASSWORD_MAX_LENGTH: 128,
+    randomToken: (length) => length === 48 ? 'g'.repeat(length) : 'r'.repeat(length),
+    sha256: (value) => 'sha256:' + value,
+    signAccessToken: () => 'unused',
+    createAudit: async (action) => { auditActions.push(action); },
+    DUMMY_PASSWORD_HASH: 'hash:dummy-password',
+    logEvent: () => {},
+    rateLimitAuth: async () => true,
+    rateLimitAuthAccount: async () => true,
+    stringField,
+    id: () => 'generated-user-id',
+    legacy: {},
+    verifyGoogleIdToken: async (idToken, audience) => {
+      assert.equal(idToken, 'google-id-token');
+      assert.equal(audience, 'test-client');
+      return identity;
+    },
+  });
+
+  requestBody = { idToken: 'google-id-token' };
+  const registered = await routes({ method: 'POST' }, {}, ['auth', 'google']);
+  assert.equal(registered.status, 201);
+  assert.equal(registered.data.user.email, identity.email);
+  assert.equal(registered.data.user.role, 'USER');
+  assert.equal(users.length, 1);
+  const user = users[0];
+  assert.equal(user.status, 'ACTIVE');
+  assert.equal(user.googleSubject, identity.subject);
+  assert.notEqual(user.passwordHash, 'hash:NewSecurePassword123');
+
+  requestBody = { email: identity.email };
+  const resetRequested = await routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'request']);
+  assert.equal(resetRequested.status, 202);
+  assert.equal(resetRequested.data.ok, true);
+  assert.ok(deliveredResetToken);
+  assert.equal(resetRequested.data.resetToken, undefined);
+  assert.equal(resetToken?.userId, user.id);
+
+  requestBody = { token: deliveredResetToken, password: 'NewSecurePassword123' };
+  const resetConfirmed = await routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'confirm']);
+  assert.equal(resetConfirmed.status, 200);
+  assert.equal(resetConfirmed.data.ok, true);
+  assert.equal(user.passwordHash, 'hash:NewSecurePassword123');
+  assert.equal(user.googleSubject, identity.subject, 'password recovery must preserve the linked Google subject');
+  assert.equal(user.sessionVersion, 1);
+
+  await assert.rejects(
+    routes({ method: 'POST' }, {}, ['auth', 'password-reset', 'confirm']),
+    (error) => error?.status === 400 && error?.code === 'INVALID_RESET_TOKEN',
+  );
+
+  requestBody = { email: identity.email, password: 'NewSecurePassword123' };
+  const passwordLogin = await routes({ method: 'POST' }, {}, ['auth', 'login']);
+  assert.equal(passwordLogin.status, 200);
+  assert.equal(passwordLogin.data.user.googleSubject, identity.subject);
+  assert.equal(passwordLogin.data.accessToken, 'session-for-' + user.id);
+
+  requestBody = { idToken: 'google-id-token' };
+  const googleLogin = await routes({ method: 'POST' }, {}, ['auth', 'google']);
+  assert.equal(googleLogin.status, 200);
+  assert.equal(googleLogin.data.user.googleSubject, identity.subject);
+  assert.equal(googleLogin.data.accessToken, 'session-for-' + user.id);
+  assert.equal(auditActions.includes('AUTH_GOOGLE_REGISTER'), true);
+  assert.equal(auditActions.includes('AUTH_PASSWORD_RESET'), true);
+});
+
+test('Google account linking rejects a verified Google identity whose email differs from the signed-in account', async () => {
+  let linked = false;
+  const { routes, repo } = makeRoutes({
+    identity: { subject: 'google-subject-1', email: 'attacker@example.com', email_verified: true, displayName: 'Other' },
+  });
+  repo.linkGoogleSubject = async () => { linked = true; return {}; };
+
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 403 && error?.code === 'GOOGLE_LINK_EMAIL_MISMATCH',
+  );
+  assert.equal(linked, false);
+});
+
+test('Google account linking rejects a subject already associated with a different user', async () => {
+  let linked = false;
+  const { routes, repo } = makeRoutes({
+    repository: { findUserByGoogleSubject: async () => ({ id: 'another-user', email: 'other@example.com', googleSubject: 'google-subject-1' }) },
+  });
+  repo.linkGoogleSubject = async () => { linked = true; return {}; };
+
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 409 && error?.code === 'GOOGLE_IDENTITY_ALREADY_LINKED',
+  );
+  assert.equal(linked, false);
+});
+
+test('Google account linking requires an authenticated HOPE account', async () => {
+  const { routes } = makeRoutes({ authenticated: false });
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 401,
+  );
+});
+
+
+test('Google account linking maps a uniqueness race to a stable conflict response', async () => {
+  const { routes } = makeRoutes({
+    repository: {
+      linkGoogleSubject: async () => {
+        const error = new Error('duplicate google subject');
+        error.code = '23505';
+        throw error;
+      },
+    },
+  });
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 409 && error?.code === 'GOOGLE_IDENTITY_ALREADY_LINKED',
+  );
+});
+
+test('Google account linking is idempotent when the same identity is already linked', async () => {
+  const user = { id: 'user-1', email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: 'google-subject-1' };
+  const { routes } = makeRoutes({ user });
+  const result = await routes(request, response, ['auth', 'google', 'link']);
+  assert.equal(result.status, 200);
+  assert.equal(result.data.linked, true);
+  assert.equal(result.data.alreadyLinked, true);
+});
+
+test('Google account linking refuses to replace a different Google identity', async () => {
+  const user = { id: 'user-1', email: 'member@example.com', displayName: 'Member', role: 'USER', status: 'ACTIVE', googleSubject: 'previous-subject' };
+  const { routes } = makeRoutes({ user });
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 409 && error?.code === 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+  );
+});
+
+test('Google account linking rejects invalid identity tokens before persistence', async () => {
+  let linked = false;
+  const { routes } = makeRoutes({
+    verifyFailure: new Error('INVALID_GOOGLE_TOKEN'),
+    repository: { linkGoogleSubject: async () => { linked = true; return {}; } },
+  });
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 401 && error?.code === 'INVALID_GOOGLE_TOKEN',
+  );
+  assert.equal(linked, false);
+});
+
+test('Google account linking fails closed when Google authentication is disabled', async () => {
+  const { routes } = makeRoutes({ config: { googleAuthEnabled: false } });
+  await assert.rejects(
+    routes(request, response, ['auth', 'google', 'link']),
+    (error) => error?.status === 503 && error?.code === 'GOOGLE_AUTH_UNAVAILABLE',
+  );
+});
+
+test('Google account linking works in the legacy adapter path and persists the association', async () => {
+  const original = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  try {
+    let saved = false;
+    let linked;
+    const { routes } = makeRoutes({
+      legacy: {
+        findUserByGoogleSubject: async () => null,
+        linkGoogleSubject: async (userId, subject) => {
+          linked = { userId, subject };
+          return { id: userId, email: 'member@example.com', displayName: 'Member', googleSubject: subject };
+        },
+        save: async () => { saved = true; },
+      },
+    });
+    const result = await routes(request, response, ['auth', 'google', 'link']);
+    assert.equal(result.status, 200);
+    assert.deepEqual(linked, { userId: 'user-1', subject: 'google-subject-1' });
+    assert.equal(saved, true);
+  } finally {
+    process.env.DATABASE_URL = original;
+  }
+});
+
+test('legacy primary-owner Google link rolls back subject and role when its audit fails', async () => {
+  const original=process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  const user={
+    id:'owner-legacy-atomic',
+    email:'amir.davodpour@gmail.com',
+    displayName:'Primary owner',
+    role:'USER',
+    status:'ACTIVE',
+    googleSubject:null,
+    sessionVersion:4,
+    adminPanelVerifiedAt:'2026-11-06T00:00:00.000Z',
+    adminPanelVerifiedSessionJti:'old-admin-jti',
+    adminPanelVerifiedScope:'WRITE',
+  };
+  const state={users:[user],audit:[]};
+  let transactionActive=false;
+  let saveCalled=false;
+  const db={
+    collection:state,
+    touch(name){assert.equal(name,'users');},
+    async save(){assert.equal(transactionActive,true,'legacy save must occur within transaction');saveCalled=true;},
+  };
+  const legacy=createAuthLegacyAdapter({db,findUser:(id)=>state.users.find((item)=>item.id===id),issueSession:async()=>({}),withTransaction:async(callback)=>callback(),now:()=> '2026-11-06T20:00:00.000Z'});
+  const snapshot={...user};
+  const withTransaction=async(callback)=>{
+    transactionActive=true;
+    try {
+      const result=await callback();
+      return result;
+    } catch(error) {
+      Object.assign(user,snapshot);
+      state.audit.length=0;
+      throw error;
+    } finally {
+      transactionActive=false;
+    }
+  };
+  try {
+    const {routes}=makeRoutes({
+      user,
+      identity:{subject:'verified-owner-subject',email:'amir.davodpour@gmail.com',authoritativeEmail:true,displayName:'Primary owner'},
+      legacy,
+      withTransaction,
+      audit:async(action)=>{
+        assert.equal(transactionActive,true,'AUTH_GOOGLE_LINK audit must share the mutation transaction');
+        assert.equal(action,'AUTH_GOOGLE_LINK');
+        throw new Error('R05 forced legacy Google-link audit failure');
+      },
+    });
+    await assert.rejects(
+      routes(request,response,['auth','google','link']),
+      /R05 forced legacy Google-link audit failure/,
+    );
+    assert.equal(saveCalled,true,'legacy state save must be attempted inside transaction before audit commit');
+    assert.equal(user.googleSubject,null);
+    assert.equal(user.role,'USER');
+    assert.equal(user.sessionVersion,4);
+    assert.equal(user.adminPanelVerifiedAt,snapshot.adminPanelVerifiedAt);
+    assert.equal(user.adminPanelVerifiedSessionJti,snapshot.adminPanelVerifiedSessionJti);
+    assert.equal(user.adminPanelVerifiedScope,snapshot.adminPanelVerifiedScope);
+  } finally {
+    if(original===undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL=original;
+  }
+});

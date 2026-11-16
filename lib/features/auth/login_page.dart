@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -33,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   bool obscure = true;
   bool loading = false;
   bool _capabilitiesLookupAttempted = false;
+  bool _googleLogoPrecacheStarted = false;
   BackendCapabilities? _backendCapabilities;
 
   bool get _canUseGoogleSignIn =>
@@ -42,6 +42,18 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Prime the small bundled logo before the first Google CTA frame. The
+    // login screen is captured first on cold start, so no earlier route has
+    // necessarily warmed Flutter's asset image cache yet.
+    if (!_googleLogoPrecacheStarted) {
+      _googleLogoPrecacheStarted = true;
+      unawaited(
+        precacheImage(
+          const AssetImage('assets/branding/google_g.png'),
+          context,
+        ),
+      );
+    }
     if (_capabilitiesLookupAttempted) return;
     _capabilitiesLookupAttempted = true;
     try {
@@ -169,8 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.maybePop(context),
-                    icon: HugeIcon(
-                      icon: Localizations.localeOf(context).languageCode == 'en'
+                    icon: HopeIcon( Localizations.localeOf(context).languageCode == 'en'
                           ? HopeV2Icons.arrowLeft
                           : HopeV2Icons.arrowRight,
                       size: 21,
@@ -211,21 +222,24 @@ class _LoginPageState extends State<LoginPage> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             key: const ValueKey('auth-google-sign-in'),
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF1F1F1F),
-                              side: const BorderSide(color: Color(0xFFDADCE0)),
-                              minimumSize: const Size.fromHeight(48),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            style: HopeV2ButtonStyles.googleSignIn(context),
                             onPressed: loading ? null : submitGoogle,
-                            icon: Image.asset(
-                              'assets/branding/google_g.png',
-                              width: 20,
-                              height: 20,
-                              excludeFromSemantics: true,
+                            icon: Container(
+                              key: const ValueKey('auth-google-sign-in-logo-surface'),
+                              width: 24,
+                              height: 24,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Image.asset(
+                                key: const ValueKey('auth-google-sign-in-logo'),
+                                'assets/branding/google_g.png',
+                                width: 18,
+                                height: 18,
+                                excludeFromSemantics: true,
+                              ),
                             ),
                             label: Text(l10n.signInWithGoogle),
                           ),
@@ -249,7 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.emailLabel,
-                          prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, key: ValueKey('auth-email-field-icon')),
+                          prefixIcon: const Icon(HopeV2Icons.mail, size: 18, key: ValueKey('auth-email-field-icon')),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -259,10 +273,9 @@ class _LoginPageState extends State<LoginPage> {
                         textDirection: TextDirection.ltr,
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
-                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, key: ValueKey('auth-password-field-icon')),
+                          prefixIcon: const Icon(HopeV2Icons.password, size: 18, key: ValueKey('auth-password-field-icon')),
                           suffixIcon: IconButton(
-                            icon: HugeIcon(
-                              icon: obscure
+                            icon: HopeIcon( obscure
                                   ? HopeV2Icons.viewOff
                                   : HopeV2Icons.view,
                               size: 20,
@@ -286,6 +299,7 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
+                          style: HopeV2ButtonStyles.auditedGreenPrimaryCta(context),
                           onPressed: loading ? null : submit,
                           child: loading
                               ? const SizedBox(
@@ -308,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                         context.read<AuthController>().continueAsGuest();
                         Navigator.maybePop(context);
                       },
-                icon: const HugeIcon(icon: HopeV2Icons.workshop, size: 19),
+                icon: const HopeIcon( HopeV2Icons.workshop, size: 19),
                 label: Text(l10n.continueAsGuest),
               ),
               const SizedBox(height: 8),

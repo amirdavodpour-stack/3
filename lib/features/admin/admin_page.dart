@@ -265,8 +265,17 @@ class _AdminPageState extends State<AdminPage>
                   ),
                 const SizedBox(height: 10),
                 FutureBuilder<HopeAdminSummary>(
-                    future: _summary,
-                    builder: (context, s) => _summaryGrid(context, s.data)),
+                  future: _summary,
+                  builder: (context, s) {
+                    if (s.connectionState == ConnectionState.waiting) {
+                      return _summaryGrid(context, null);
+                    }
+                    if (s.hasError) {
+                      return _errorState(context, s.error, retry: _reload);
+                    }
+                    return _summaryGrid(context, s.data);
+                  },
+                ),
                 const SizedBox(height: 8),
                 PremiumQuickActionStrip(
                   domain: HopeProductDomain.control,
@@ -319,7 +328,7 @@ class _AdminPageState extends State<AdminPage>
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _actionBusy ? null : _showGrantAdminDialog,
-                    icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                    icon: const Icon(HopeV2Icons.admin, size: 20),
                     label: Text(_t('افزودن مدیر جدید', 'Add new administrator')),
                   ),
                 ],
@@ -392,7 +401,7 @@ class _AdminPageState extends State<AdminPage>
         future: _users,
         builder: (context, snapshot) {
           final admins = (snapshot.data ?? const <HopeAdminUser>[])
-              .where((u) => u.role.toUpperCase() == 'ADMIN')
+              .where((u) => u.role.trim().toUpperCase() == 'ADMIN')
               .toList(growable: false);
           return PremiumPanel(
             padding: const EdgeInsets.all(14),
@@ -401,7 +410,33 @@ class _AdminPageState extends State<AdminPage>
               const SizedBox(height: 6),
               Text(_t('افزودن، لغو نقش و خروج اجباری نشست‌های مدیران فقط در اختیار مالک است.', 'Promoting admins, revoking their role, and forcing session revocation are owner-only controls.')),
               const SizedBox(height: 10),
-              if (admins.isEmpty) Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
+              if (snapshot.connectionState == ConnectionState.waiting)
+                Semantics(
+                  liveRegion: true,
+                  child: Padding(
+                    key: const ValueKey('admin-management-loading'),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(_t('در حال بارگذاری مدیران', 'Loading administrators')),
+                      ],
+                    ),
+                  ),
+                )
+              else if (snapshot.hasError)
+                KeyedSubtree(
+                  key: const ValueKey('admin-management-error'),
+                  child: _errorState(context, snapshot.error, retry: _reload),
+                )
+              else if (admins.isEmpty)
+                Text(_t('مدیر دیگری ثبت نشده است.', 'No administrators found.'))
               else ...admins.map((u) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -412,8 +447,8 @@ class _AdminPageState extends State<AdminPage>
                   trailing: u.id == _currentAdminId
                       ? Chip(label: Text(_t('مالک فعلی', 'Current owner')))
                       : Wrap(spacing: 6, children: [
-                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(Icons.logout)),
-                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(Icons.remove_moderator_outlined)),
+                          IconButton(tooltip: _t('خروج همه نشست‌ها', 'Revoke sessions'), onPressed: _actionBusy ? null : () => _revokeAdminSessions(u), icon: const Icon(HopeV2Icons.logout)),
+                          IconButton(tooltip: _t('لغو نقش مدیر', 'Revoke admin'), onPressed: _actionBusy ? null : () => _revokeAdmin(u), icon: const Icon(HopeV2Icons.removeRole)),
                         ]),
                 ),
               )),
@@ -487,24 +522,60 @@ class _AdminPageState extends State<AdminPage>
         'icon': HopeV2Icons.completed,
       },
     ];
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
-    return GridView.extent(
-      maxCrossAxisExtent: 340,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.45,
-      children: items.map((item) {
-        final key = item['key']! as String;
-        return PremiumStatCard(
-          label: item['label']! as String,
-          value: '${m?[key] ?? 0}',
-          icon: item['icon']!,
-          accent: Theme.of(context).colorScheme.primary,
-          compact: MediaQuery.sizeOf(context).width < 600,
+    Widget summaryCard(Map<String, Object> item, {required bool compact}) {
+      final key = item['key']! as String;
+      return PremiumStatCard(
+        label: item['label']! as String,
+        value: m == null ? '—' : '${m[key] ?? 0}',
+        icon: item['icon']!,
+        accent: Theme.of(context).colorScheme.primary,
+        compact: compact,
+      );
+    }
+
+    return LayoutBuilder(
+      key: m == null ? const ValueKey('admin-summary-loading') : null,
+      builder: (context, constraints) {
+        if (enlargedText) {
+          const gap = 10.0;
+          final columns =
+              (constraints.maxWidth / (340 + gap)).ceil().clamp(1, 4).toInt();
+          final cardWidth =
+              (constraints.maxWidth - gap * (columns - 1)) / columns;
+          // Longer labels need room to wrap; fixed-aspect compact tiles hide
+          // meaningful text at enlarged system scales.
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: [
+              for (final item in items)
+                SizedBox(
+                  width: cardWidth,
+                  child: summaryCard(item, compact: false),
+                ),
+            ],
+          );
+        }
+
+        return GridView.extent(
+          maxCrossAxisExtent: 340,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.45,
+          children: items
+              .map(
+                (item) => summaryCard(
+                  item,
+                  compact: MediaQuery.sizeOf(context).width < 600,
+                ),
+              )
+              .toList(),
         );
-      }).toList(),
+      },
     );
   }
   Widget _errorState(BuildContext context, Object? error,
@@ -692,6 +763,10 @@ class _AdminPageState extends State<AdminPage>
             padding: const EdgeInsets.only(top: 14),
             children: list.take(100).map<Widget>((u) {
               final status = u.status;
+              final isEn = Localizations.localeOf(context).languageCode == 'en';
+              final reviewDetail = status == 'SUSPENDED' && u.statusReviewDueAt != null
+                  ? '\\n${isEn ? 'Human review due' : 'موعد بازبینی انسانی'}: ${u.statusReviewDueAt}\\n${u.statusReviewReason ?? ''}'
+                  : '';
               return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: PremiumPanel(
@@ -702,7 +777,7 @@ class _AdminPageState extends State<AdminPage>
                               child: Text(_initial(u.displayName))),
                           title: Text(u.displayName),
                           subtitle: Text(
-                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}'),
+                              '${u.email.isEmpty ? '—' : u.email} • ${_userRoleLabel(u.role)} • ${_userStatusLabel(status)}$reviewDetail'),
                           trailing: u.role == 'ADMIN'
                               ? null
                               : IconButton(
@@ -770,8 +845,27 @@ class _AdminPageState extends State<AdminPage>
   Future<void> _moderateJob(String id, String status) =>
       _runAction(() => _applicationRegistry(context).adminCommands.moderateJob(id, status));
 
-  Future<void> _setUserStatus(String id, String status) => _runAction(
-      () => _applicationRegistry(context).adminCommands.setUserStatus(id, status));
+  Future<void> _setUserStatus(String id, String status) async {
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final isSuspending = status == 'SUSPENDED';
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => _AdminUserStatusDialog(
+        isSuspending: isSuspending,
+        isEn: isEn,
+      ),
+    );
+    if (!mounted || reason == null || reason.trim().length < 3) return;
+    final dueAt = isSuspending
+        ? DateTime.now().add(const Duration(hours: 72))
+        : null;
+    await _runAction(() => _applicationRegistry(context).adminCommands.setUserStatus(
+          id,
+          status,
+          reason: reason,
+          reviewDueAt: dueAt,
+        ));
+  }
 
   Future<void> _removeJob(String id) async {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
@@ -801,6 +895,80 @@ class _AdminPageState extends State<AdminPage>
     if (confirmed != true || !mounted) return;
     await _runAction(
       () => _applicationRegistry(context).adminCommands.deleteJob(id),
+    );
+  }
+}
+
+class _AdminUserStatusDialog extends StatefulWidget {
+  const _AdminUserStatusDialog({
+    required this.isSuspending,
+    required this.isEn,
+  });
+
+  final bool isSuspending;
+  final bool isEn;
+
+  @override
+  State<_AdminUserStatusDialog> createState() => _AdminUserStatusDialogState();
+}
+
+class _AdminUserStatusDialogState extends State<_AdminUserStatusDialog> {
+  final TextEditingController _reasonController = TextEditingController();
+  bool _canSubmit = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuspending = widget.isSuspending;
+    final isEn = widget.isEn;
+    return AlertDialog(
+      title: Text(isSuspending
+          ? (isEn ? 'Temporarily suspend user?' : 'تعلیق موقت کاربر؟')
+          : (isEn ? 'Reactivate user?' : 'رفع تعلیق کاربر؟')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(isSuspending
+              ? (isEn
+                  ? 'A human review is due within 72 hours. The account will not be reactivated automatically.'
+                  : 'موعد بازبینی انسانی ۷۲ ساعت دیگر است. حساب به‌صورت خودکار فعال نمی‌شود.')
+              : (isEn
+                  ? 'Enter the human review outcome and reason for lifting the suspension.'
+                  : 'نتیجه بازبینی انسانی و علت رفع تعلیق را وارد کنید.')),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reasonController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 1000,
+            onChanged: (value) => setState(() => _canSubmit = value.trim().length >= 3),
+            decoration: InputDecoration(
+              labelText: isEn ? 'Reason (required)' : 'علت (الزامی)',
+              hintText: isEn
+                  ? 'Describe the risk or review decision'
+                  : 'ریسک یا تصمیم بازبینی را توضیح دهید',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(isEn ? 'Cancel' : 'انصراف'),
+        ),
+        FilledButton(
+          onPressed: _canSubmit
+              ? () => Navigator.pop(context, _reasonController.text.trim())
+              : null,
+          child: Text(isEn ? 'Confirm' : 'تأیید'),
+        ),
+      ],
     );
   }
 }

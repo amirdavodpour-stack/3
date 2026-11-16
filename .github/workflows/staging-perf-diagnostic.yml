@@ -11,18 +11,19 @@ jobs:
     name: Staging performance diagnostic
     runs-on: ubuntu-latest
     env:
-      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
-      STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN || secrets.METRICS_TOKEN }}
+      STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.4.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '24'
 
       - name: Run targeted endpoint diagnostic
+        env:
+          STAGING_METRICS_TOKEN: ${{ secrets.STAGING_METRICS_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/perf-diagnostic
@@ -33,6 +34,10 @@ jobs:
 
           const baseUrl = String(process.env.STAGING_BASE_URL || '').replace(/\/$/, '');
           if (!/^https:\/\/[^\s]+$/.test(baseUrl)) throw new Error('STAGING_BASE_URL must be an HTTPS URL');
+          const target = new URL(baseUrl);
+          if (target.hostname.toLowerCase() === 'v2hope-production-7e9e.up.railway.app') {
+            throw new Error('Production host is forbidden for staging performance diagnostics');
+          }
           const metricsToken = String(process.env.STAGING_METRICS_TOKEN || '');
           const endpoints = ['/live', '/health', '/api/v1/jobs'];
 
@@ -194,7 +199,7 @@ jobs:
           NODE
 
       - name: Upload diagnostic evidence
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hope-staging-perf-diagnostic-${{ github.run_id }}
           path: artifacts/perf-diagnostic/staging-perf-diagnostic.json

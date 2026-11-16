@@ -64,9 +64,9 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
     _section(_t('شواهد ثبت‌شده','Recorded evidence'), (d['context']?['evidence'] as List? ?? const []).map((x)=>'${x['action'] ?? '—'} • ${x['createdAt'] ?? '—'}').join('\n')),
     const SizedBox(height:10),
     Wrap(spacing:8, runSpacing:8, children:[
-      _action(d,'RELEASE',_t('پرداخت','Release'),Icons.payments),
-      _action(d,'REFUND',_t('بازپرداخت','Refund'),Icons.undo),
-      _action(d,'HOLD',_t('نگه‌داشتن','Hold'),Icons.pause_circle_outline),
+      _action(d,'RELEASE',_t('آزادسازی پس از تکمیل','Release after completion'),HopeV2Icons.payments),
+      _action(d,'REFUND',_t('بازپرداخت کامل و لغو Job','Full refund and cancel job'),HopeV2Icons.refund),
+      _action(d,'HOLD',_t('نگه‌داشتن؛ پرونده باز می‌ماند','Hold; keep case open'),HopeV2Icons.pause),
     ])
   ]))));
 
@@ -100,7 +100,14 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
         ),
       );
   Widget _section(String title,String body)=>Padding(padding:const EdgeInsets.only(top:10),child:PremiumPanel(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:6),Text(body.isEmpty?'—':body)])));
-  Widget _action(Map<String,dynamic> d,String resolution,String label,IconData icon)=>OutlinedButton.icon(onPressed:_busy||!_hasPermission('admin.resolve_disputes')||'${d['status']??''}'=='RESOLVED'?null:()=>_resolve(d,resolution,label),icon:Icon(icon),label:Text(label));
+  Widget _action(Map<String,dynamic> d,String resolution,String label,IconData icon) {
+    final releaseNeedsCompletion = resolution == 'RELEASE' && '${d['jobStatus'] ?? ''}'.toUpperCase() != 'COMPLETED';
+    return OutlinedButton.icon(
+      onPressed:_busy || !_hasPermission('admin.resolve_disputes') || '${d['status'] ?? ''}' == 'RESOLVED' || releaseNeedsCompletion ? null : () => _resolve(d,resolution,label),
+      icon:Icon(icon),
+      label:Text(label),
+    );
+  }
 
   Future<void> _resolve(Map<String,dynamic> d,String resolution,String label) async {
     final id='${d['id']??''}';
@@ -118,6 +125,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
   @override
   Widget build(BuildContext context) {
     final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final enlargedText = MediaQuery.textScalerOf(context).scale(1) > 1.2;
     return Directionality(
       textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
       child: Scaffold(
@@ -222,7 +230,7 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const HopeIconTile(
-                                        Icons.gavel_outlined,
+                                        HopeV2Icons.legal,
                                         size: 36,
                                         filled: true,
                                       ),
@@ -234,8 +242,11 @@ class _AdminDisputesPageState extends State<AdminDisputesPage> {
                                             Text(
                                               '${row['jobTitle'] ?? _t('اختلاف همکاری', 'Work dispute')}',
                                               style: HopeV2Type.section(context),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: enlargedText ? null : 2,
+                                              softWrap: true,
+                                              overflow: enlargedText
+                                                  ? TextOverflow.visible
+                                                  : TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 4),
                                             Text(

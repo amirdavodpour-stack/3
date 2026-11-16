@@ -113,7 +113,7 @@ class _StepRow extends StatelessWidget {
                     ),
                   ),
                   child: HopeIcon(
-                    step.complete ? Icons.check_rounded : step.icon,
+                    step.complete ? HopeV2Icons.completed : step.icon,
                     size: compact ? 14 : 18,
                     color: iconColor,
                   ),

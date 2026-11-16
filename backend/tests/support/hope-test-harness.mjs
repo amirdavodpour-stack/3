@@ -8,8 +8,10 @@ export function makeTempEnv(prefix) {
   process.env.STORAGE_DIR = path.join(tmp, 'storage');
   process.env.NODE_ENV = 'test';
   process.env.AUTH_RATE_LIMIT_MAX = '1000';
+  process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
   process.env.GENERAL_RATE_LIMIT_MAX = '5000';
   process.env.METRICS_TOKEN = 'metrics-test-token-0123456789abcdef';
+  process.env.ADMIN_PANEL_USERNAME = process.env.ADMIN_PANEL_USERNAME || 'hope-admin';
   return tmp;
 }
 
@@ -35,8 +37,25 @@ export async function register(json, email, displayName = email) {
     method: 'POST',
     body: JSON.stringify({email, password: 'pass123456789', displayName}),
   });
-  if (r.status !== 201) throw new Error(`register failed ${email}: ${r.status} ${JSON.stringify(r.body)}`);
-  return r.body.data;
+  if (r.status !== 202 || r.body?.data?.verificationRequired !== true || !r.body.data.verificationCode) {
+    throw new Error(`register verification failed ${email}: ${r.status} ${JSON.stringify(r.body)}`);
+  }
+  const verified = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({code: r.body.data.verificationCode}),
+  });
+  if (verified.status !== 200) throw new Error(`email verification failed ${email}: ${verified.status} ${JSON.stringify(verified.body)}`);
+  return verified.body.data;
+}
+
+export async function unlockAdminPanel(json, user) {
+  const response = await json('/admin/access', {
+    method: 'POST',
+    headers: {Authorization: `Bearer ${user.accessToken}`},
+    body: JSON.stringify({name: user.user?.displayName ?? user.displayName ?? user.user?.email, username: process.env.ADMIN_PANEL_USERNAME}),
+  });
+  if (response.status !== 200) throw new Error(`Admin Panel unlock failed: ${response.status} ${JSON.stringify(response.body)}`);
+  return response;
 }
 
 export async function closeApi({server, db, tmp}) {

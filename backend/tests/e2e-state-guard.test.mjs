@@ -8,9 +8,10 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-state-'));
 process.env.DATA_FILE = path.join(tmp, 'hope.json');
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
+// State-transition coverage uses the simulator, whose file-mode path does not require SQL wallet funding.
+process.env.PAYMENT_PROVIDER = 'simulator';
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
-const { creditWallet } = await import('../src/wallet_ledger.js');
 const server = createServer();
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}/api/v1`;
@@ -38,7 +39,6 @@ test('every lifecycle action is rejected when the job is in the wrong state', as
   assert.equal((await json(`/jobs/${job.id}/start`, { method: 'POST', headers: { Authorization: `Bearer ${provider.accessToken}` } })).status, 409);
   assert.equal((await json(`/jobs/${job.id}/deliver`, { method: 'POST', headers: { Authorization: `Bearer ${provider.accessToken}` } })).status, 409);
 
-  await creditWallet({userId: owner.user.id, amount:'1000', idempotencyKey:'state-seed-funds', referenceType:'TEST_TOP_UP', metadata:{test:'e2e-state-guard'}});
   assert.equal((await json(`/payments/fund/${job.id}`, { method: 'POST', headers: { Authorization: `Bearer ${owner.accessToken}`, 'Idempotency-Key': 'state-2' }, body: '{}' })).status, 201);
 
   // FUNDED (not yet started): cannot deliver or accept-delivery before starting.

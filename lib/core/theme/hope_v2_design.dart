@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 /// HOPE V2 design primitives.
 ///
@@ -18,6 +17,21 @@ class HopeV2Colors {
 
   static const primary = Color(0xFF6366F1);
   static const primaryAction = Color(0xFF4F46E5);
+  /// Dark-green fill for the specific primary CTAs marked in the 2026-10-20 visual audit.
+  /// Keep the global indigo brand/action ramp unchanged.
+  static const markedPrimaryActionDarkGreen = Color(0xFF2E7B5A);
+  // Use the official Google Identity button themes rather than a brand-adjacent
+  // custom mint fill: Google's dark palette for dark HOPE surfaces and neutral
+  // palette for light surfaces. Keep the standard multicolor G untouched.
+  static const googleSignInSurface = Color(0xFF131314);
+  static const googleSignInBorder = Color(0xFF8E918F);
+  static const googleSignInForeground = Color(0xFFE3E3E3);
+  static const googleSignInDisabledSurface = Color(0xFF242528);
+  static const googleSignInDisabledForeground = Color(0xFF8E918F);
+  static const googleSignInLightSurface = Color(0xFFF2F2F2);
+  static const googleSignInLightForeground = Color(0xFF1F1F1F);
+  static const googleSignInDisabledLightSurface = Color(0xFFE8EAED);
+  static const googleSignInDisabledLightForeground = Color(0xFF4F5358);
   static const primaryOnLight = Color(0xFF4F46E5);
   static const successOnLight = Color(0xFF166534);
   static const warningOnLight = Color(0xFF92400E);
@@ -133,6 +147,52 @@ class HopeV2Colors {
   static const walletBalanceMetricFill = Color(0x0BFFFFFF);
   static const walletBalanceMetricBorder = Color(0x0FFFFFFF);
   static const walletBalanceMetricBorderEmphasized = Color(0x3DFFFFFF);
+}
+
+/// Centralized styles for audited primary CTAs and third-party authentication.
+/// Google Sign-In follows official theme palettes independently of HOPE action colors.
+class HopeV2ButtonStyles {
+  const HopeV2ButtonStyles._();
+
+  static ButtonStyle googleSignIn(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return OutlinedButton.styleFrom(
+      backgroundColor: dark
+          ? HopeV2Colors.googleSignInSurface
+          : HopeV2Colors.googleSignInLightSurface,
+      foregroundColor: dark
+          ? HopeV2Colors.googleSignInForeground
+          : HopeV2Colors.googleSignInLightForeground,
+      disabledBackgroundColor: dark
+          ? HopeV2Colors.googleSignInDisabledSurface
+          : HopeV2Colors.googleSignInDisabledLightSurface,
+      disabledForegroundColor: dark
+          ? HopeV2Colors.googleSignInDisabledForeground
+          : HopeV2Colors.googleSignInDisabledLightForeground,
+      side: dark
+          ? const BorderSide(color: HopeV2Colors.googleSignInBorder, width: 1)
+          : BorderSide.none,
+      minimumSize: const Size.fromHeight(48),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+
+  static ButtonStyle auditedGreenPrimaryCta(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return FilledButton.styleFrom(
+      backgroundColor: HopeV2Colors.markedPrimaryActionDarkGreen,
+      foregroundColor: HopeV2Colors.darkText,
+      disabledBackgroundColor: isDark
+          ? HopeV2Colors.darkSurface
+          : HopeV2Colors.disabledLight,
+      disabledForegroundColor: isDark
+          ? HopeV2Colors.darkMuted
+          : HopeV2Colors.muted,
+      overlayColor: HopeV2Colors.darkBackground.withValues(alpha: 0.12),
+    );
+  }
 }
 
 /// Muted decorative identities for opportunity artwork and its matching card
@@ -363,71 +423,239 @@ class HopeV2TonalPalettes {
 /// Canonical icon vocabulary. Keep navigation and recurring product concepts
 /// on this set so the interface reads as one designed system rather than a
 /// collection of unrelated Material defaults.
+/// Canonical Cupertino/SF-style icon vocabulary for all product surfaces.
+/// Keep one stable semantic name per concept so screens never choose glyphs locally.
 class HopeV2Icons {
   const HopeV2Icons._();
 
-  // HOPE's product icon language is Hugeicons Stroke Rounded. The package
-  // provides 6,000+ consistent SVG icons with controlled stroke weight.
-  // Keep recurring concepts here so screens never pick arbitrary glyphs.
-  static const home = HugeIcons.strokeRoundedHome01;
-  static const homeSelected = HugeIcons.strokeRoundedHome02;
-  static const workshop = HugeIcons.strokeRoundedBriefcase01;
-  static const workshopSelected = HugeIcons.strokeRoundedBriefcase02;
-  static const activity = HugeIcons.strokeRoundedActivity01;
-  static const activitySelected = HugeIcons.strokeRoundedActivity02;
-  static const wallet = HugeIcons.strokeRoundedWallet01;
-  static const walletSelected = HugeIcons.strokeRoundedWallet02;
-  static const profile = HugeIcons.strokeRoundedUser;
-  static const profileSelected = HugeIcons.strokeRoundedUserAccount;
+  // Primary navigation: outline / filled pairs.
+  static const IconData home = CupertinoIcons.house;
+  static const IconData homeSelected = CupertinoIcons.house_fill;
+  static const IconData workshop = CupertinoIcons.briefcase;
+  static const IconData workshopSelected = CupertinoIcons.briefcase_fill;
+  static const IconData activity = CupertinoIcons.waveform_path;
+  static const IconData activitySelected = CupertinoIcons.waveform_path_ecg;
+  static const IconData wallet = CupertinoIcons.creditcard;
+  static const IconData walletSelected = CupertinoIcons.creditcard_fill;
+  static const IconData profile = CupertinoIcons.person_crop_circle;
+  static const IconData profileSelected = CupertinoIcons.person_crop_circle_fill;
 
-  static const mission = HugeIcons.strokeRoundedFlash;
-  static const job = HugeIcons.strokeRoundedWorkHistory;
-  static const featured = HugeIcons.strokeRoundedSparkles;
-  static const match = HugeIcons.strokeRoundedUserCheck01;
-  static const location = HugeIcons.strokeRoundedLocation01;
-  static const category = HugeIcons.strokeRoundedTag01;
-  static const distance = HugeIcons.strokeRoundedLocationUser01;
-  static const protectedFunds = HugeIcons.strokeRoundedShield01;
-  static const payments = HugeIcons.strokeRoundedMoney01;
-  static const transferIn = HugeIcons.strokeRoundedMoneyReceive01;
-  static const transferOut = HugeIcons.strokeRoundedMoneySend01;
-  static const completed = HugeIcons.strokeRoundedTaskDone01;
-  static const pending = HugeIcons.strokeRoundedHourglass;
-  static const secure = HugeIcons.strokeRoundedLock;
-  static const insights = HugeIcons.strokeRoundedActivitySpark;
-  static const savedSearches = HugeIcons.strokeRoundedBookmark01;
-  static const mail = HugeIcons.strokeRoundedMail01;
-  static const view = HugeIcons.strokeRoundedView;
-  static const viewOff = HugeIcons.strokeRoundedViewOff;
-  static const password = HugeIcons.strokeRoundedLockPassword;
-  static const copy = HugeIcons.strokeRoundedCopy01;
-  static const verified = HugeIcons.strokeRoundedCheckmarkBadge02;
-  static const error = HugeIcons.strokeRoundedCancelCircle;
-  static const description = HugeIcons.strokeRoundedFile01;
-  static const skills = HugeIcons.strokeRoundedBrain02;
-  static const message = HugeIcons.strokeRoundedMessage01;
-  static const route = HugeIcons.strokeRoundedRoute01;
-  static const android = HugeIcons.strokeRoundedAndroid;
-  static const apple = HugeIcons.strokeRoundedApple;
-  static const web = HugeIcons.strokeRoundedGlobe;
-  static const device = HugeIcons.strokeRoundedDeviceAccess;
-  static const add = HugeIcons.strokeRoundedAdd01;
-  static const menu = HugeIcons.strokeRoundedMenu01;
-  static const refresh = HugeIcons.strokeRoundedRefresh;
-  static const search = HugeIcons.strokeRoundedSearch01;
-  static const filter = HugeIcons.strokeRoundedFilter;
-  static const close = HugeIcons.strokeRoundedCancel01;
-  static const notifications = HugeIcons.strokeRoundedNotification01;
-  static const translate = HugeIcons.strokeRoundedLanguageCircle;
-  static const userAdd = HugeIcons.strokeRoundedUserAdd01;
-  static const login = HugeIcons.strokeRoundedLogin01;
-  static const arrowLeft = HugeIcons.strokeRoundedArrowLeft01;
-  static const arrowRight = HugeIcons.strokeRoundedArrowRight01;
+  // Discover, opportunities and matching.
+  static const IconData mission = CupertinoIcons.bolt;
+  static const IconData job = CupertinoIcons.doc_text;
+  static const IconData featured = CupertinoIcons.star;
+  static const IconData match = CupertinoIcons.sparkles;
+  static const IconData location = CupertinoIcons.location;
+  static const IconData category = CupertinoIcons.tag;
+  static const IconData distance = CupertinoIcons.location_north;
+  static const IconData skills = CupertinoIcons.wrench;
+  static const IconData description = CupertinoIcons.doc_richtext;
+  static const IconData route = CupertinoIcons.map;
+  static const IconData android = CupertinoIcons.device_phone_portrait;
+  static const IconData apple = CupertinoIcons.device_laptop;
+  static const IconData web = CupertinoIcons.globe;
+  static const IconData device = CupertinoIcons.device_phone_portrait;
+
+  // Financial actions and lifecycle.
+  static const IconData protectedFunds = CupertinoIcons.lock_shield;
+  static const IconData secure = CupertinoIcons.lock;
+  static const IconData payments = CupertinoIcons.doc_on_clipboard;
+  static const IconData transferIn = CupertinoIcons.arrow_down_left;
+  static const IconData transferOut = CupertinoIcons.arrow_up_right;
+  static const IconData completed = CupertinoIcons.checkmark_circle;
+  static const IconData success = CupertinoIcons.checkmark_circle;
+  static const IconData pending = CupertinoIcons.hourglass;
+  static const IconData error = CupertinoIcons.xmark_circle;
+  static const IconData insights = CupertinoIcons.chart_bar;
+  static const IconData savedSearches = CupertinoIcons.bookmark;
+  static const IconData deposit = CupertinoIcons.arrow_down_circle;
+  static const IconData withdraw = CupertinoIcons.arrow_up_circle;
+  static const IconData history = CupertinoIcons.clock;
+  static const IconData budget = CupertinoIcons.doc_chart;
+  static const IconData deadline = CupertinoIcons.calendar;
+  static const IconData escrow = CupertinoIcons.lock_shield;
+
+  // Forms, communication and utilities.
+  static const IconData mail = CupertinoIcons.envelope;
+  static const IconData email = CupertinoIcons.envelope;
+  static const IconData at = CupertinoIcons.at;
+  static const IconData view = CupertinoIcons.eye;
+  static const IconData viewOff = CupertinoIcons.eye_slash;
+  static const IconData password = CupertinoIcons.lock;
+  static const IconData lockOpen = CupertinoIcons.lock_open;
+  static const IconData copy = CupertinoIcons.doc_on_doc;
+  static const IconData verified = CupertinoIcons.checkmark_seal;
+  static const IconData message = CupertinoIcons.chat_bubble_text;
+  static const IconData add = CupertinoIcons.plus;
+  static const IconData menu = CupertinoIcons.line_horizontal_3;
+  static const IconData refresh = CupertinoIcons.arrow_clockwise;
+  static const IconData search = CupertinoIcons.search;
+  static const IconData filter = CupertinoIcons.slider_horizontal_3;
+  static const IconData close = CupertinoIcons.xmark;
+  static const IconData notifications = CupertinoIcons.bell;
+  static const IconData translate = CupertinoIcons.textformat;
+  static const IconData userAdd = CupertinoIcons.person_crop_circle_badge_plus;
+  static const IconData login = CupertinoIcons.arrow_right_square;
+  static const IconData logout = CupertinoIcons.escape;
+  static const IconData arrowLeft = CupertinoIcons.arrow_left;
+  static const IconData arrowRight = CupertinoIcons.arrow_right;
+  static const IconData save = CupertinoIcons.bookmark;
+  static const IconData share = CupertinoIcons.share;
+  static const IconData roleSwitch = CupertinoIcons.repeat;
+  static const IconData transfer = CupertinoIcons.arrow_left_right;
+  static const IconData empty = CupertinoIcons.tray;
+  static const IconData offline = CupertinoIcons.wifi_slash;
+  static const IconData info = CupertinoIcons.info;
+  static const IconData warning = CupertinoIcons.exclamationmark_triangle;
+  static const IconData upload = CupertinoIcons.tray_arrow_up;
+  static const IconData attachment = CupertinoIcons.paperclip;
+  static const IconData download = CupertinoIcons.tray_arrow_down;
+  static const IconData pause = CupertinoIcons.pause_circle;
+  static const IconData refund = CupertinoIcons.arrow_uturn_left;
+  static const IconData flag = CupertinoIcons.flag;
+  static const IconData play = CupertinoIcons.play_circle;
+  static const IconData campaign = CupertinoIcons.speaker;
+  static const IconData validation = CupertinoIcons.exclamationmark_triangle;
+  static const IconData conflict = CupertinoIcons.arrow_2_circlepath;
+  static const IconData retry = CupertinoIcons.arrow_clockwise;
+  static const IconData permission = CupertinoIcons.lock;
+  static const IconData rateLimit = CupertinoIcons.hourglass_tophalf_fill;
+  static const IconData legal = CupertinoIcons.hammer;
+  static const IconData assign = CupertinoIcons.person_crop_circle_badge_checkmark;
+  static const IconData account = CupertinoIcons.person_crop_circle;
+  static const IconData moderation = CupertinoIcons.shield;
+  static const IconData identity = CupertinoIcons.person_crop_circle;
+  static const IconData admin = CupertinoIcons.lock_shield;
+  static const IconData removeRole = CupertinoIcons.person_crop_circle_badge_minus;
+  static const IconData partial = CupertinoIcons.chart_pie;
 }
 
-/// Editorial navigation uses one deliberately distinct Cupertino icon family.
-/// The rest of the product keeps its HugeIcons vocabulary; these five
-/// high-frequency destinations share familiar outline/filled pairs.
+/// Resolves a restrained identity/semantic tint for icon tiles and empty states.
+///
+/// The mapping is by product concept, not by screen theme: botanical green is
+/// a peer accent for work and money-in actions; teal marks information and
+/// communication; blue marks trust/identity; warm clay marks featured content;
+/// amber/red remain reserved for pending and negative states. Unmapped actions
+/// keep the indigo brand role. Readable text must not use these decorative tints.
+class HopeV2IconAccents {
+  const HopeV2IconAccents._();
+
+  static const List<IconData> _green = <IconData>[
+    HopeV2Icons.mission,
+    HopeV2Icons.job,
+    HopeV2Icons.workshop,
+    HopeV2Icons.workshopSelected,
+    HopeV2Icons.activity,
+    HopeV2Icons.activitySelected,
+    HopeV2Icons.wallet,
+    HopeV2Icons.walletSelected,
+    HopeV2Icons.payments,
+    HopeV2Icons.transferIn,
+    HopeV2Icons.completed,
+    HopeV2Icons.success,
+    HopeV2Icons.deposit,
+    HopeV2Icons.insights,
+    HopeV2Icons.budget,
+    HopeV2Icons.refund,
+  ];
+  static const List<IconData> _teal = <IconData>[
+    HopeV2Icons.message,
+    HopeV2Icons.mail,
+    HopeV2Icons.email,
+    HopeV2Icons.info,
+    HopeV2Icons.search,
+    HopeV2Icons.refresh,
+    HopeV2Icons.notifications,
+    HopeV2Icons.attachment,
+    HopeV2Icons.download,
+    HopeV2Icons.upload,
+    HopeV2Icons.partial,
+    HopeV2Icons.category,
+    HopeV2Icons.savedSearches,
+    HopeV2Icons.translate,
+  ];
+  static const List<IconData> _blue = <IconData>[
+    HopeV2Icons.protectedFunds,
+    HopeV2Icons.secure,
+    HopeV2Icons.escrow,
+    HopeV2Icons.verified,
+    HopeV2Icons.moderation,
+    HopeV2Icons.identity,
+    HopeV2Icons.account,
+    HopeV2Icons.profile,
+    HopeV2Icons.profileSelected,
+    HopeV2Icons.admin,
+    HopeV2Icons.assign,
+    HopeV2Icons.userAdd,
+    HopeV2Icons.legal,
+    HopeV2Icons.location,
+    HopeV2Icons.distance,
+    HopeV2Icons.route,
+    HopeV2Icons.android,
+    HopeV2Icons.apple,
+    HopeV2Icons.device,
+    HopeV2Icons.web,
+  ];
+  static const List<IconData> _clay = <IconData>[
+    HopeV2Icons.featured,
+    HopeV2Icons.match,
+    HopeV2Icons.campaign,
+    HopeV2Icons.flag,
+    HopeV2Icons.play,
+  ];
+  static const List<IconData> _amber = <IconData>[
+    HopeV2Icons.pending,
+    HopeV2Icons.warning,
+    HopeV2Icons.rateLimit,
+    HopeV2Icons.deadline,
+    HopeV2Icons.history,
+  ];
+  static const List<IconData> _red = <IconData>[
+    HopeV2Icons.error,
+    HopeV2Icons.offline,
+    HopeV2Icons.withdraw,
+    HopeV2Icons.transferOut,
+    HopeV2Icons.validation,
+    HopeV2Icons.conflict,
+    HopeV2Icons.removeRole,
+  ];
+
+  /// Resolves a role tint. Text must use semantic text colors, never these accents.
+  static Color resolve(Object? icon, {required Brightness brightness}) {
+    final dark = brightness == Brightness.dark;
+    final green = dark
+        ? HopeV2TonalPalettes.forest.shade300
+        : HopeV2TonalPalettes.forest.shade700;
+    final teal = dark
+        ? HopeV2TonalPalettes.info.shade300
+        : HopeV2TonalPalettes.info.shade700;
+    final blue = dark
+        ? HopeV2TonalPalettes.trust.shade300
+        : HopeV2TonalPalettes.trust.shade700;
+    final clay = dark
+        ? HopeV2TonalPalettes.featured.shade300
+        : HopeV2TonalPalettes.featured.shade700;
+    final amber = dark
+        ? HopeV2TonalPalettes.warning.shade200
+        : HopeV2TonalPalettes.warning.shade800;
+    final red = dark
+        ? HopeV2TonalPalettes.danger.shade300
+        : HopeV2TonalPalettes.danger.shade700;
+    final indigo = dark ? HopeV2Colors.primaryDark : HopeV2Colors.primaryAction;
+
+    if (icon is! IconData) return indigo;
+    if (_green.contains(icon)) return green;
+    if (_teal.contains(icon)) return teal;
+    if (_blue.contains(icon)) return blue;
+    if (_clay.contains(icon)) return clay;
+    if (_amber.contains(icon)) return amber;
+    if (_red.contains(icon)) return red;
+    return indigo;
+  }
+}
+
+/// Primary navigation uses the same Cupertino family with outline/filled pairs.
+/// Domain actions resolve through HopeV2Icons so every screen shares one vocabulary.
 class HopeV2NavigationIcons {
   const HopeV2NavigationIcons._();
 
@@ -826,6 +1054,13 @@ class HopeV2ChartColors {
   static Color reserved(BuildContext context) => _isDark(context)
       ? HopeV2TonalPalettes.warning.shade300
       : HopeV2TonalPalettes.warning.shade700;
+
+  /// Match-score rings, component bars, and analytics trends. Teal belongs to
+  /// information/data visualization; green/red/amber remain reserved for cash
+  /// in/out/held states, and the global indigo action ramp remains unchanged.
+  static Color matchSignal(BuildContext context) => _isDark(context)
+      ? HopeV2TonalPalettes.info.shade400
+      : HopeV2TonalPalettes.info.shade700;
 }
 
 class HopeV2Shadows {
@@ -911,5 +1146,5 @@ class HopeV2Type {
   static TextStyle eyebrow(BuildContext context) => Theme.of(context)
       .textTheme
       .labelLarge!
-      .copyWith(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .4);
+      .copyWith(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: .4);
 }

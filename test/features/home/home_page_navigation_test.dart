@@ -61,6 +61,11 @@ class _AuthRepo implements AuthRepository {
     );
   }
   @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
+  @override
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String e) async {}
@@ -395,7 +400,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.byType(PremiumNavigationBar),
-        matching: find.text('Work'),
+        matching: find.text('Workshop'),
       ),
     );
     await tester.pumpAndSettle();

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/google_sign_in_service.dart';
+import '../../core/config/backend_capabilities.dart';
 import '../../core/profile/profile_repository.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
@@ -31,6 +34,19 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late final ProfileController _controller;
+  bool _capabilitiesLookupAttempted = false;
+  bool _googleLinkBusy = false;
+  BackendCapabilities? _backendCapabilities;
+
+  bool get _canLinkGoogleAccount {
+    if (context.read<AuthController>().user?['googleLinked'] == true) return false;
+    if (_backendCapabilities?.googleSignIn != true) return false;
+    try {
+      return context.read<GoogleSignInService?>()?.isConfigured ?? false;
+    } on ProviderNotFoundException {
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -45,6 +61,15 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_capabilitiesLookupAttempted) {
+      _capabilitiesLookupAttempted = true;
+      try {
+        final repository = context.read<BackendCapabilitiesRepository>();
+        unawaited(_loadBackendCapabilities(repository));
+      } on ProviderNotFoundException {
+        _backendCapabilities = null;
+      }
+    }
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id == _loadedUserId) return;
     _loadedUserId = id;
@@ -86,6 +111,57 @@ class _ProfilePageState extends State<ProfilePage> {
     };
     if (route != null) {
       Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Future<void> _loadBackendCapabilities(
+    BackendCapabilitiesRepository repository,
+  ) async {
+    try {
+      final capabilities = await repository.load();
+      if (!mounted) return;
+      setState(() => _backendCapabilities = capabilities);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _backendCapabilities = null);
+    }
+  }
+
+  Future<void> _linkGoogleAccount() async {
+    if (_googleLinkBusy) return;
+    GoogleSignInService? google;
+    try {
+      google = context.read<GoogleSignInService?>();
+    } on ProviderNotFoundException {
+      google = null;
+    }
+    if (google == null || !google.isConfigured || _backendCapabilities?.googleSignIn != true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t(context, 'اتصال گوگل در دسترس نیست.', 'Google account linking is unavailable.'))),
+        );
+      }
+      return;
+    }
+    setState(() => _googleLinkBusy = true);
+    try {
+      await context.read<AuthController>().linkGoogleAccount(google);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t(context, 'حساب گوگل با موفقیت متصل شد.', 'Google account linked successfully.'))),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiErrorMessage(
+            error,
+            fallback: _t(context, 'اتصال حساب گوگل ناموفق بود.', 'Could not link the Google account.'),
+          )),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _googleLinkBusy = false);
     }
   }
 
@@ -160,7 +236,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                   fontWeight: FontWeight.w900,
                                 ),
                           ),
-
+                          if (snapshot.hasData && !snapshot.hasError)
+                            Semantics(
+                              container: true,
+                              label: _t(
+                                context,
+                                'اعتماد و پروفایل حرفه‌ای',
+                              'Trust & professional profile',
+                            ),
+                              child: ExcludeSemantics(
+                                child: PremiumTag(
+                                  domain: HopeProductDomain.trust,
+                                  icon: HopeV2Icons.secure,
+                                  label: _t(context, 'اعتماد', 'Trust'),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -169,7 +260,6 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 8),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
@@ -195,7 +285,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         profile = _controller.loadProfile();
                       });
                     },
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: const Icon(HopeV2Icons.refresh),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
@@ -370,11 +460,32 @@ class _ProfilePageState extends State<ProfilePage> {
 padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
+                if (_canLinkGoogleAccount) ...[
+                  ListTile(
+                    key: const ValueKey('profile-link-google-account'),
+                    leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
+                    title: Text(_t(context, 'اتصال حساب گوگل', 'Link Google account')),
+                    subtitle: Text(_t(
+                      context,
+                      'حساب گوگل تأییدشده با همان ایمیل را متصل کنید.',
+                      'Link a verified Google account with the same email address.',
+                    )),
+                    trailing: _googleLinkBusy
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const HopeIcon(HopeV2Icons.arrowRight, size: 19),
+                    onTap: _googleLinkBusy ? null : _linkGoogleAccount,
+                  ),
+                  const Divider(height: 1, indent: 72),
+                ],
                 ListTile(
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
                   subtitle: Text(_t(context, 'مدیریت دستگاه‌های فعال برای Push', 'Manage devices enabled for Push notifications')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HopeIcon( HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.notificationDevices()),
                 ),
                 const Divider(height: 1, indent: 72),
@@ -382,7 +493,7 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                   leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'حریم خصوصی و داده‌ها', 'Privacy & data')),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
-                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
+                  trailing: const HopeIcon( HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
                 ),
               ],
@@ -398,10 +509,21 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               ),
             ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.push(context, HopeRoutes.about()),
-            icon: const HopeIcon(HopeV2Icons.insights, size: 19),
-            label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
+          ConstrainedBox(
+            // Keep the full visual and semantic target at least 48dp even when
+            // inherited compact-density styles interact with enlarged text.
+            constraints: const BoxConstraints(minHeight: 48),
+            child: OutlinedButton.icon(
+              key: const ValueKey('profile-about-hope-semantic-target'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                tapTargetSize: MaterialTapTargetSize.padded,
+                visualDensity: VisualDensity.standard,
+              ),
+              onPressed: () => Navigator.push(context, HopeRoutes.about()),
+              icon: const HopeIcon(HopeV2Icons.insights, size: 19),
+              label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
+            ),
           ),
           const SizedBox(height: 8),
           ListTile(
@@ -671,8 +793,9 @@ padding: const EdgeInsets.symmetric(vertical: 6),
               final compact = constraints.maxWidth < 500;
               return ListTile(
                 dense: compact,
+                minTileHeight: compact ? 48 : null,
                 visualDensity: compact
-                    ? const VisualDensity(horizontal: -2, vertical: -1)
+                    ? const VisualDensity(horizontal: -2, vertical: 0)
                     : null,
                 leading: const HopeIconTile(HopeV2Icons.secure),
                 title: Text(
@@ -767,7 +890,13 @@ padding: const EdgeInsets.symmetric(vertical: 6),
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 500) {
-                final itemWidth = (constraints.maxWidth - 10) / 2;
+                final enlargedText =
+                    MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                // A single column gives enlarged setting labels enough width;
+                // the ordinary compact layout remains the denser two-column grid.
+                final itemWidth = enlargedText
+                    ? constraints.maxWidth
+                    : (constraints.maxWidth - 10) / 2;
 
                 Widget compactToggle({
                   required Object icon,
@@ -782,8 +911,11 @@ padding: const EdgeInsets.symmetric(vertical: 6),
                       secondary: HopeIconTile(icon, size: 36),
                       title: Text(
                         title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: enlargedText ? null : 2,
+                        softWrap: true,
+                        overflow: enlargedText
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),

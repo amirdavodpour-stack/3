@@ -162,19 +162,20 @@ void main() {
     expect(await store.accessToken, isNull);
   });
 
-  test('register applies the returned session the same way login does',
-      () async {
+  test('registration does not persist a session before email verification', () async {
     final server = await _FakeAuthServer.start();
     addTearDown(server.close);
     server.handlers['/auth/register'] = (request, body) async {
       expect(body['displayName'], 'کاربر تازه');
+      await _respondJson(request, 202, {
+        'data': {'verificationRequired': true, 'email': 'new@example.com'},
+      });
+    };
+    server.handlers['/auth/email/verify'] = (request, body) async {
+      expect(body['code'], 'verification-code-123456');
       await _respondJson(request, 200, {
         'data': {
-          'user': {
-            'id': 'u2',
-            'email': 'new@example.com',
-            'displayName': 'کاربر تازه'
-          },
+          'user': {'id': 'u2', 'email': 'new@example.com', 'displayName': 'کاربر تازه'},
           'accessToken': 'access-2',
           'refreshToken': 'refresh-2',
         }
@@ -186,9 +187,15 @@ void main() {
     final auth = AuthController(ApiAuthRepository(api), store);
 
     await auth.register('new@example.com', 'super-secret', 'کاربر تازه');
+    expect(auth.isAuthenticated, isFalse);
+    expect(await store.accessToken, isNull);
+    expect(await store.refreshToken, isNull);
 
+    await auth.verifyEmail('verification-code-123456');
     expect(auth.isAuthenticated, isTrue);
     expect(auth.user?['id'], 'u2');
+    expect(await store.accessToken, 'access-2');
+    expect(await store.refreshToken, 'refresh-2');
   });
 
   test('restoreSession rehydrates a previously saved session', () async {

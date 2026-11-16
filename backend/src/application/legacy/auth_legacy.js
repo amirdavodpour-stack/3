@@ -13,6 +13,29 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
       user.passwordHash = passwordHash;
       db.touch('users');
     },
+    findUserByGoogleSubject(subject) {
+      return db.collection.users.find((user) => user.googleSubject === subject) || null;
+    },
+    linkGoogleSubject(userId, subject, { promoteToPrimaryAdmin = false } = {}) {
+      const user = db.collection.users.find((item) => item.id === userId);
+      if (!user || user.status !== 'ACTIVE' || (user.googleSubject && user.googleSubject !== subject)) return null;
+      if (promoteToPrimaryAdmin && String(user.email || '').trim().toLowerCase() !== 'amir.davodpour@gmail.com') return null;
+      if (!String(subject || '').trim()) return null;
+      const duplicate = db.collection.users.find((item) => item.id !== userId && item.googleSubject === subject);
+      if (duplicate) {
+        const error = new Error('GOOGLE_IDENTITY_ALREADY_LINKED');
+        error.code = '23505';
+        throw error;
+      }
+      user.googleSubject = subject;
+      if (promoteToPrimaryAdmin) user.role = 'ADMIN';
+      user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+      user.adminPanelVerifiedAt = null;
+      user.adminPanelVerifiedSessionJti = null;
+      user.adminPanelVerifiedScope = null;
+      db.touch('users');
+      return user;
+    },
     async rotateRefreshToken({ presentedHash, issue }) {
       const item = db.collection.refreshTokens.find((t) => t.tokenHash === presentedHash);
       if (!item || new Date(item.expiresAt).getTime() <= Date.now()) return { kind: 'invalid' };
@@ -56,6 +79,35 @@ export function createAuthLegacyAdapter({ db, findUser, issueSession, withTransa
     },
     insertResetToken(token) {
       return db.insert('resetTokens', token);
+    },
+    insertEmailVerificationToken(token) {
+      for (const existing of db.collection.emailVerificationTokens.filter((item) => item.userId === token.userId && !item.usedAt)) {
+        existing.usedAt = now();
+      }
+      db.touch('emailVerificationTokens');
+      return db.insert('emailVerificationTokens', token);
+    },
+    invalidateEmailVerificationToken(tokenHash) {
+      const token = db.collection.emailVerificationTokens.find((item) => item.tokenHash === tokenHash && !item.usedAt);
+      if (!token) return false;
+      token.usedAt = now();
+      db.touch('emailVerificationTokens');
+      return true;
+    },
+    consumeEmailVerificationToken(tokenHash) {
+      const token = db.collection.emailVerificationTokens.find((item) =>
+        item.tokenHash === tokenHash && !item.usedAt && new Date(item.expiresAt).getTime() > Date.now(),
+      );
+      if (!token) return null;
+      const user = findUser(token.userId);
+      if (!user || user.status !== 'PENDING_EMAIL_VERIFICATION') return null;
+      token.usedAt = now();
+      user.status = 'ACTIVE';
+      for (const existing of db.collection.emailVerificationTokens.filter((item) => item.userId === user.id && !item.usedAt)) {
+        existing.usedAt = now();
+      }
+      db.touch('users', 'emailVerificationTokens');
+      return user;
     },
     async save() { await db.save(); },
     markResetDeliveryFailed(tokenHash) {

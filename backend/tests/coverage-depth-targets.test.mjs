@@ -27,7 +27,7 @@ test('row mappers cover user, offer, payment, application, candidate and vertica
     session_version: '2', createdAt: now,
   });
   assert.deepEqual(user, {
-    id: 'u1', email: 'u@example.com', passwordHash: 'hash', displayName: 'User', role: 'USER', status: 'ACTIVE',
+    id: 'u1', email: 'u@example.com', googleSubject: null, passwordHash: 'hash', displayName: 'User', role: 'USER', status: 'ACTIVE',
     sessionVersion: 2, createdAt: now.toISOString(),
   });
 
@@ -173,8 +173,8 @@ test('database runtime exposes safe no-pool behavior', async () => {
 test('migration orchestrator loads, checksums, applies and rolls back migrations deterministically', async () => {
   const { loadMigrations, checksumMigration, migrationStatus, assertNoDrift, runMigrations, rollbackLastMigration } = await import('../src/db/migrations.js');
   const migrations = await loadMigrations();
-  assert.equal(migrations.length, 23);
-  assert.deepEqual(migrations.map((m) => m.version), Array.from({ length: 23 }, (_, i) => i + 1));
+  assert.ok(migrations.length >= 23);
+  assert.deepEqual(migrations.map((m) => m.version), Array.from({ length: migrations.length }, (_, i) => i + 1));
   for (const migration of migrations) assert.match(checksumMigration(migration), /^[0-9a-f]{64}$/);
 
   const applied = new Map();
@@ -214,11 +214,14 @@ test('migration orchestrator loads, checksums, applies and rolls back migrations
   const driftCheck = await assertNoDrift(client);
   assert.ok(driftCheck.every((row) => row.state === 'applied'));
 
+  const forwardOnly = migrations.find((migration) => migration.version === 23);
+  applied.clear();
+  applied.set(23, {version: 23, name: forwardOnly.name, checksum: checksumMigration(forwardOnly), applied_at: now, execution_ms: 0});
   await assert.rejects(
     () => rollbackLastMigration(client),
-    /Migration 023 is a forward-only financial data repair/,
+    /Rollback 23_legacy_wallet_transaction_canonical_backfill failed: Migration 023 is a forward-only financial data repair/,
   );
-  assert.equal(applied.size, 23);
+  assert.equal(applied.size, 1);
   const afterRollback = await migrationStatus(client);
   assert.equal(afterRollback.find((row) => row.version === 23).state, 'applied');
 });
@@ -233,8 +236,10 @@ test('repository boundary methods fail closed when PostgreSQL pool is unavailabl
     const mod = await import(`../src/repository/${file}`);
     for (const [name, fn] of Object.entries(mod)) {
       if (typeof fn !== 'function') continue;
+      if (file === 'payment_refunds.js' && name === 'refundablePaymentStateAllowed') continue;
       let args = Array.from({ length: fn.length }, () => undefined);
       if (file === 'admin.js' && name === 'moderateJob') args = ['job-id', 'DRAFT'];
+      if (file === 'storage.js' && name === 'deleteUploadIntents') args = [['00000000-0000-4000-8000-000000000001']];
       if (file === 'trust.js' && name === 'listCandidatesForComparison') args = ['job-id', ['application-id']];
       await assert.rejects(
         Promise.resolve().then(() => fn(...args)),

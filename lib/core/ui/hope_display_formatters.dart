@@ -56,7 +56,7 @@ class HopeDisplayFormatter {
     return localizeDigits(NumberFormat.decimalPattern('en_US').format(parsed), locale: locale);
   }
 
-  /// Formats a ledger amount without changing stored values or wallet arithmetic.
+  /// Formats a Toman amount without changing stored values or wallet arithmetic.
   /// Persian output is isolated LTR so the sign and unit remain in a stable order.
   static String signedMoney(
     Object? value, {

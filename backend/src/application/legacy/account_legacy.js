@@ -19,6 +19,7 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
         analyticsEvents: db.collection.analyticsEvents.filter((x) => x.userId === userId),
         crashReports: db.collection.crashReports.filter((x) => x.userId === userId),
         trustReports: db.collection.trustReports.filter((x) => x.reporterId === userId),
+        savedSearches: db.collection.savedSearches.filter((x) => x.userId === userId),
       };
     },
 
@@ -38,13 +39,28 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       db.collection.notificationDevices = db.collection.notificationDevices.filter((x) => x.userId !== userId);
       db.collection.notificationPreferences = db.collection.notificationPreferences.filter((x) => x.userId !== userId);
       db.collection.notifications = db.collection.notifications.filter((x) => x.userId !== userId);
+      db.collection.savedSearches = db.collection.savedSearches.filter((x) => x.userId !== userId);
+      // Preserve application lifecycle records while removing personal resume content.
+      db.collection.jobApplications.forEach((x) => { if (x.candidateId === userId) { x.resumeText = ''; x.skills = ''; } });
       db.collection.analyticsEvents = db.collection.analyticsEvents.filter((x) => x.userId !== userId);
       db.collection.crashReports = db.collection.crashReports.filter((x) => x.userId !== userId);
+      // Keep shared Trust and Safety reports while unlinking the deleted reporter.
+      db.collection.trustReports.forEach((report) => {
+        if (report.reporterId === userId) {
+          report.reporterId = null;
+          report.reporterDeletedAt = deletedAt;
+        }
+      });
       const user = findUser(userId);
       if (user) Object.assign(user, {
         email: replacement.email,
         passwordHash: replacement.passwordHash,
         displayName: 'Deleted user',
+        role: 'USER',
+        googleSubject: null,
+        adminPanelVerifiedAt: null,
+        adminPanelVerifiedSessionJti: null,
+        adminPanelVerifiedScope: null,
         status: 'DELETED',
         sessionVersion: Number(user.sessionVersion || 0) + 1,
         deletedAt,
@@ -52,7 +68,7 @@ export function createAccountLegacyAdapter({ db, findUser, now }) {
       for (const job of db.collection.jobs) {
         if (job.providerId === userId && ['DRAFT', 'PUBLISHED'].includes(job.status)) job.providerId = null;
       }
-      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'analyticsEvents', 'crashReports', 'users', 'jobs');
+      db.touch('refreshTokens', 'resetTokens', 'notificationDevices', 'notificationPreferences', 'notifications', 'savedSearches', 'jobApplications', 'analyticsEvents', 'crashReports', 'trustReports', 'users', 'jobs');
       await db.save();
       return true;
     },

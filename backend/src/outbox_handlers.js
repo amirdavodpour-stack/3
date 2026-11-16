@@ -3,7 +3,8 @@ import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentRelea
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
 import { logEvent, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
-import { completePayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
+import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
+import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
@@ -34,13 +35,62 @@ export async function processOutboxEvent(event) {
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
     } else if (event.event_type === 'PAYOUT_EXECUTE') {
+      if (!isInternalWalletPayoutEnabled({ paymentProvider: config.paymentProvider })) {
+        const disabled = await failPayoutOutbox({
+          eventId:event.id,
+          payoutId:payload.payoutId,
+          error:'PAYOUT_PROVIDER_NOT_ENABLED',
+          failureCode:'PAYOUT_PROVIDER_NOT_ENABLED',
+          leaseToken:event.lease_token,
+        });
+        if (!disabled?.completed) throw new Error(`OUTBOX_PAYOUT_DISABLED_COMMIT_FAILED:${disabled?.reason || 'UNKNOWN'}`);
+        recordOutboxFailed();
+        logEvent({ level:'warn', action:'OUTBOX_PAYOUT_DISABLED', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
+        return { processed:false, disabled:true };
+      }
       const result = await paymentProvider.createPayout({ payoutId: payload.payoutId, amount: payload.amount, currency: payload.currency, idempotencyKey: payload.idempotencyKey });
       if (result.status === 'UNKNOWN') {
-        const unknown = await markPayoutUnknown({ eventId:event.id, payoutId:payload.payoutId, reason:'PROVIDER_UNKNOWN', leaseToken:event.lease_token });
-        if (!unknown?.marked) throw new Error(`PAYOUT_UNKNOWN_COMMIT_FAILED:${unknown?.reason || 'UNKNOWN'}`);
+        let unknown;
+        try {
+          unknown = await markPayoutUnknown({
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            reason:'PROVIDER_UNKNOWN',
+            leaseToken:event.lease_token,
+          });
+        } catch (error) {
+          // The provider outcome is ambiguous. Do not send this event through
+          // failOutboxEvent: terminal payout failure would unlock funds even
+          // though the provider may have completed the disbursement.
+          logEvent({
+            level:'error',
+            action:'OUTBOX_PAYOUT_UNKNOWN_PERSISTENCE_FAILED',
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            error:error?.message || String(error),
+          });
+          return { processed:false, unknown:true, persistencePending:true };
+        }
+        if (!unknown?.marked) {
+          logEvent({
+            level:'error',
+            action:'OUTBOX_PAYOUT_UNKNOWN_REQUIRES_RECONCILIATION',
+            eventId:event.id,
+            payoutId:payload.payoutId,
+            reason:unknown?.reason || 'UNKNOWN',
+          });
+          return { processed:false, unknown:true, persistencePending:true };
+        }
         recordOutboxProcessed();
-        logEvent({ level:'warn', action:'OUTBOX_PAYOUT_UNKNOWN', eventId:event.id, eventType:event.event_type, payoutId:payload.payoutId });
-        return { processed:true, unknown:true };
+        logEvent({
+          level:unknown.requiresReconciliation ? 'error' : 'warn',
+          action:unknown.requiresReconciliation ? 'OUTBOX_PAYOUT_UNKNOWN_RECONCILIATION_OPENED' : 'OUTBOX_PAYOUT_UNKNOWN',
+          eventId:event.id,
+          eventType:event.event_type,
+          payoutId:payload.payoutId,
+          reason:unknown.reconciliationReason || null,
+        });
+        return { processed:true, unknown:true, requiresReconciliation:unknown.requiresReconciliation };
       }
       if (result.status !== 'SUCCEEDED' || !result.providerRef) throw new Error(result.status === 'FAILED' ? (result.errorCode || 'PAYOUT_PROVIDER_FAILED') : 'PAYOUT_PROVIDER_UNCONFIRMED');
       const completed = await completePayoutOutbox({ eventId:event.id, payoutId:payload.payoutId, providerRef:result.providerRef, leaseToken:event.lease_token });

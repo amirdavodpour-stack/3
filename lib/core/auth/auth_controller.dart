@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'auth_repository.dart';
 import 'google_sign_in_service.dart';
+import '../network/api_client.dart';
 import '../network/api_error_presenter.dart';
 import '../storage/secure_store.dart';
 import '../telemetry/telemetry_service.dart';
@@ -70,12 +71,46 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<void> linkGoogleAccount(GoogleSignInService google) async {
+    await _auth(() async {
+      if (repository is! GoogleAccountLinkRepository) {
+        throw ApiException('GOOGLE_LINK_UNAVAILABLE', 'Google account linking is unavailable.');
+      }
+      final GoogleAccountLinkRepository linkRepository =
+          repository as GoogleAccountLinkRepository;
+      final linkedUserId = user?['id'];
+      final idToken = await google.authenticate();
+      await linkRepository.linkGoogleAccount(idToken);
+      if (linkedUserId != null && user?['id'] == linkedUserId) {
+        final updatedUser = <String, dynamic>{...user!, 'googleLinked': true};
+        await store.saveUser(updatedUser);
+        user = updatedUser;
+        notifyListeners();
+      }
+      await telemetry?.track('google_account_linked');
+    });
+  }
+
   Future<void> register(
       String email, String password, String displayName) async {
     await _auth(() async {
-      final session = await RegisterUseCase(repository)(email, password, displayName);
+      await RegisterUseCase(repository)(email, password, displayName);
+      await telemetry?.track('signup_verification_requested');
+    });
+  }
+
+  Future<void> verifyEmail(String code) async {
+    await _auth(() async {
+      final session = await repository.verifyEmail(code);
       await _applySession(session);
-      await telemetry?.track('signup_completed');
+      await telemetry?.track('email_verification_completed');
+    });
+  }
+
+  Future<void> resendEmailVerification(String email) async {
+    await _auth(() async {
+      await repository.resendEmailVerification(email);
+      await telemetry?.track('email_verification_resent');
     });
   }
 

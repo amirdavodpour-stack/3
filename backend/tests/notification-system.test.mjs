@@ -10,6 +10,7 @@ process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
 process.env.AUTH_RATE_LIMIT_MAX = '1000';
 process.env.GENERAL_RATE_LIMIT_MAX = '5000';
+process.env.ADMIN_PANEL_USERNAME = 'hope-admin';
 
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
@@ -18,6 +19,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}/api/v1`;
 const json = (url, options={}) => fetch(base+url,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
 async function register(email) { const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email.split('@')[0]})}); assert.equal(r.status,201); return r.body.data; }
+async function unlockAdminPanel(admin) { const r=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin'})}); assert.equal(r.status,200,JSON.stringify(r.body)); }
 
 test('notification preferences are created with safe defaults and can be updated', async()=>{
   const u=await register('notify-prefs@example.com');
@@ -66,7 +68,7 @@ test('application flow generates candidate and employer notifications without le
   assert.equal(created.status,201); const pub=await json(`/jobs/${created.body.data.id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}}); assert.equal(pub.status,200);
   const applied=await json('/applications',{method:'POST',headers:{Authorization:`Bearer ${candidate.accessToken}`},body:JSON.stringify({jobId:created.body.data.id,resumeText:'A sufficiently detailed professional resume.',skills:'testing'})}); assert.equal(applied.status,201);
   const ownerNotices=await json('/notifications',{headers:{Authorization:`Bearer ${owner.accessToken}`}}); assert.ok(ownerNotices.body.data.items.some(n=>n.type==='JOB_APPLICATION_RECEIVED'));
-  const admin=await register('notify-admin@example.com'); db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN';
+  const admin=await register('notify-admin@example.com'); db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN'; await db.save(); await unlockAdminPanel(admin);
   const shortlisted=await json(`/admin/applications/${applied.body.data.id}/shortlist`,{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(shortlisted.status,200);
   const candidateNotices=await json('/notifications',{headers:{Authorization:`Bearer ${candidate.accessToken}`}}); assert.ok(candidateNotices.body.data.items.some(n=>n.type==='APPLICATION_SHORTLISTED'));
 });

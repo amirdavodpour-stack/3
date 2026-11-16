@@ -7,7 +7,7 @@ test('repository ports expose only capability-specific operations', () => {
     'listJobViews','insertJob','updateJobSimple','transitionJobWithPayment',
     'findJobApplication','insertJobApplication','transitionCandidateApplication',
     'findPaymentByJob','fundJobAtomic','createRefundAtomic','enqueuePaymentRelease','applyPaymentWebhookAtomic','getAdminFinancialSummary',
-    'getAdminSummary','listAdminUsers','listAdminJobs','listAdminApplications','listAdminAudit','setUserStatus','moderateJob','deleteJob','listTrustReports','updateTrustReportStatus','transitionJobApplication','selectJobApplication',
+    'getAdminSummary','listAdminUsers','getAdminUser','listAdminJobs','listAdminApplications','listAdminAudit','grantAdminByEmail','revokeAdminById','revokeUserSessions','setUserStatus','moderateJob','deleteJob','listTrustReports','updateTrustReportStatus','transitionJobApplication','selectJobApplication',
     'listCategories','getUserPrivacyBundle','listDeletableUserUploadKeys','deleteUserPrivacyBundle',
   ].map((name) => [name, () => name]));
   const ports = createRepositoryPorts(repo);

@@ -13,6 +13,7 @@ import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,6 +110,23 @@ class _Repo implements MarketplaceRepository {
 
   @override
   Future<void> publishOpportunity(String id) async {}
+}
+
+class _LoadingExploreRepo extends _Repo {
+  final Completer<List<HopeJob>> pendingJobs =
+      Completer<List<HopeJob>>();
+
+  @override
+  Future<List<HopeJob>> listOpportunities({
+    required String? city,
+    required bool personalizedRecommendations,
+    double? latitude,
+    double? longitude,
+    String? search,
+    String? kind,
+    String? visibility,
+    String? categoryId,
+  }) => pendingJobs.future;
 }
 
 class _RankedExploreRepo extends _Repo {
@@ -343,6 +361,80 @@ void main() {
     },
   );
 
+  testWidgets(
+    'wide Explore opportunity cards size to content instead of square grid cells',
+    (tester) async {
+      tester.view.physicalSize = const Size(1024, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _Repo());
+      await tester.pumpAndSettle();
+
+      final cards = find.byType(OpportunityCard);
+      expect(cards, findsWidgets);
+      expect(
+        tester.getSize(cards.first).height,
+        lessThanOrEqualTo(320),
+        reason: 'Wide Explore opportunity cards should not reserve a fixed-aspect grid cell when their content is short.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Explore loading placeholders match horizontal compact cards on phones',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'Phone Explore loading should reserve a horizontal compact summary, not a tall image-first card.',
+        );
+        expect(
+          tester.getSize(skeletons.at(index)).width,
+          greaterThan(300),
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Explore loading follows the padded content width at the 420dp breakpoint',
+    (tester) async {
+      tester.view.physicalSize = const Size(440, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(tester, _LoadingExploreRepo());
+      await tester.pump();
+
+      final skeletons = find.byType(OpportunitySkeletonCard);
+      expect(skeletons, findsNWidgets(2));
+      for (var index = 0; index < 2; index++) {
+        expect(
+          tester.getSize(skeletons.at(index)).height,
+          lessThanOrEqualTo(132),
+          reason: 'A 440dp window loses 28dp to the compact page frame, so its 412dp content uses the horizontal phone card layout.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('jobs page requests categories and opportunities',
       (tester) async {
     final repo = _Repo();
@@ -388,7 +480,7 @@ void main() {
           const ValueKey('hope-opportunity-refinement-launcher'),
         ),
       ),
-      const Size(48, 48),
+      const Size(50, 50),
     );
     expect(
       find.byKey(const ValueKey('hope-opportunity-refinement-active-count')),
@@ -495,7 +587,7 @@ void main() {
 
       expect((filter.top - search.top).abs(), lessThan(5));
       expect((resultCount.top - search.top).abs(), lessThan(10));
-      expect(filter.size, const Size(48, 48));
+      expect(filter.size, const Size(50, 50));
       expect(kindFilter.height, greaterThanOrEqualTo(48));
       expect(kindFilter.top - filter.bottom, lessThan(20));
       expect(
@@ -581,6 +673,16 @@ void main() {
       const ValueKey('hope-opportunity-refinement-active-count'),
     );
     expect(activeCount, findsOneWidget);
+    final activeCountText = find.descendant(
+      of: activeCount,
+      matching: find.byType(Text),
+    );
+    expect(activeCountText, findsOneWidget);
+    expect(
+      tester.widget<Text>(activeCountText).style?.fontSize,
+      greaterThanOrEqualTo(12),
+      reason: 'The active-filter count is a meaningful numeric status label and must stay readable.',
+    );
     expect(find.text('۱', skipOffstage: false), findsWidgets);
   });
 
@@ -1028,6 +1130,96 @@ void main() {
     },
   );
 
+
+  testWidgets(
+    'Wave54 Explore refinement launcher exposes a semantic tap target',
+    (tester) async {
+      final semanticsHandle = tester.ensureSemantics();
+      try {
+        await _pump(tester, _Repo(), locale: const Locale('en'));
+        await tester.pumpAndSettle();
+
+        final launcher =
+            find.bySemanticsIdentifier('hope-opportunity-refinement-launcher');
+        expect(launcher, findsOneWidget);
+        expect(
+          tester.getSemantics(launcher).getSemanticsData()
+              .hasAction(SemanticsAction.tap),
+          isTrue,
+          reason: 'The Explore refinement launcher must expose an actual tap action.',
+        );
+        expect(
+          tester.getSize(launcher).height,
+          greaterThanOrEqualTo(48),
+          reason: 'The Explore refinement launcher must remain at least 48dp high.',
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        semanticsHandle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'Wave53 Explore kind filter labels stay on one line at 1.5x text scale',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pump(
+        tester,
+        _Repo(),
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      final filter = find.byKey(
+        const ValueKey('hope-explore-kind-filters'),
+      );
+      expect(filter, findsOneWidget);
+      expect(
+        tester.widget<SingleChildScrollView>(filter).scrollDirection,
+        Axis.horizontal,
+        reason: 'Enlarged Explore filters must preserve each label natural width.',
+      );
+
+      for (final label in ['All', 'Jobs', 'Missions']) {
+        final labelFinder = find.descendant(
+          of: filter,
+          matching: find.text(label),
+        );
+        expect(labelFinder, findsOneWidget);
+        final boxes = tester
+            .renderObject<RenderParagraph>(labelFinder)
+            .getBoxesForSelection(
+              TextSelection(baseOffset: 0, extentOffset: label.length),
+            );
+        expect(
+          boxes,
+          hasLength(1),
+          reason: '$label must remain on a single readable line at 1.5x.',
+        );
+      }
+
+      final missionLabel = find.descendant(
+        of: filter,
+        matching: find.text('Missions'),
+      );
+      final missionChip = find.ancestor(
+        of: missionLabel,
+        matching: find.byType(ChoiceChip),
+      );
+      await tester.ensureVisible(missionChip);
+      await tester.tap(missionChip);
+      await tester.pumpAndSettle();
+      expect(tester.widget<ChoiceChip>(missionChip).selected, isTrue);
+      expect(tester.getSize(filter).height, greaterThanOrEqualTo(48));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'Wave 29 final Explore opportunity stays reachable above the fixed dock at 360x640',

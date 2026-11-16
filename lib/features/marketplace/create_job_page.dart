@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -383,8 +382,7 @@ class _CreatePublishRetryState extends StatelessWidget {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const HugeIcon(
-                          icon: HopeV2Icons.refresh,
+                      : const HopeIcon( HopeV2Icons.refresh,
                           size: 18,
                         ),
                   label: Text(

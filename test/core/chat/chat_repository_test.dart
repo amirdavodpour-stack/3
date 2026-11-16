@@ -61,4 +61,33 @@ void main() {
       throwsA(isA<FormatException>()),
     );
   });
+
+  test('conversation model maps preview, unread and organization fields', () {
+    final value = HopeChatConversation.fromMap({
+      'id':'c1','kind':'JOB','jobId':'j1','status':'OPEN','title':'Project',
+      'otherUserName':'Partner','lastMessageBody':'Ready for review',
+      'lastMessageType':'TEXT','lastMessageAt':'2026-10-17T10:00:00Z',
+      'unreadCount':3,'isPinned':true,'isImportant':true,'isArchived':false,
+    });
+    expect(value.lastMessageBody, 'Ready for review');
+    expect(value.unreadCount, 3);
+    expect(value.isPinned, isTrue);
+    expect(value.isImportant, isTrue);
+    expect(value.isArchived, isFalse);
+  });
+
+  test('message model maps attachment metadata and read receipts', () {
+    final value = HopeChatMessage.fromMap({
+      'id':'m1','conversationId':'c1','senderId':'u1','senderName':'Partner',
+      'body':'Attachment','messageType':'ATTACHMENT','createdAt':'2026-10-17T10:00:00Z',
+      'attachments':[{'id':'a1','filename':'brief.pdf','contentType':'application/pdf','size':2048,'downloadPath':'/messaging/attachments/a1/content'}],
+      'readReceipts':[{'userId':'u2','userName':'Reader','readAt':'2026-10-17T10:01:00Z'}],
+    });
+    expect(value.messageType, 'ATTACHMENT');
+    expect(value.attachments.single.filename, 'brief.pdf');
+    expect(value.attachments.single.size, 2048);
+    expect(value.attachments.single.downloadPath, '/messaging/attachments/a1/content');
+    expect(value.readReceipts.single.userId, 'u2');
+  });
+
 }

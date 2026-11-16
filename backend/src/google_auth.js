@@ -30,6 +30,7 @@ export async function verifyGoogleIdToken(idToken, audience) {
     picture: payload.picture ? String(payload.picture) : null,
     locale: payload.locale ? String(payload.locale) : null,
     hostedDomain: payload.hd ? String(payload.hd).trim().toLowerCase() : null,
+    issuedAt: Number(payload.iat),
     authoritativeEmail: String(payload.email).toLowerCase().endsWith('@gmail.com') || Boolean(payload.hd),
   };
 }

@@ -24,6 +24,14 @@ class _Wave24AuthRepository implements AuthRepository {
   Future<AuthSession> register(String email, String password, String name) =>
       throw UnimplementedError();
   @override
+  Future<AuthSession> verifyEmail(String code) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> resendEmailVerification(String email) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String email) async {}

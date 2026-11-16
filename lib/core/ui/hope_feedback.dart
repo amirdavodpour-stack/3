@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/hope_v2_design.dart';
+
 enum HopeFeedbackTone { info, success, warning, error }
 
 /// Canonical transient acknowledgement surface.
@@ -45,9 +47,9 @@ class HopeFeedback {
   }
 
   static IconData _iconFor(HopeFeedbackTone tone) => switch (tone) {
-        HopeFeedbackTone.info => Icons.info_outline_rounded,
-        HopeFeedbackTone.success => Icons.check_circle_outline_rounded,
-        HopeFeedbackTone.warning => Icons.warning_amber_rounded,
-        HopeFeedbackTone.error => Icons.error_outline_rounded,
+        HopeFeedbackTone.info => HopeV2Icons.info,
+        HopeFeedbackTone.success => HopeV2Icons.success,
+        HopeFeedbackTone.warning => HopeV2Icons.warning,
+        HopeFeedbackTone.error => HopeV2Icons.error,
       };
 }

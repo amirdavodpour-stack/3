@@ -29,6 +29,7 @@ abstract interface class JobDetailRepository {
   Future<void> candidateAction(String jobId, String candidateId, String action);
   Future<Map<String, dynamic>> compareCandidates(String jobId, List<String> applicationIds);
   Future<void> reportJob(String jobId, {required String reason, String details = ''});
+  Future<Map<String, dynamic>> openDispute(String jobId);
 }
 
 class ApiJobDetailRepository implements JobDetailRepository {
@@ -95,4 +96,15 @@ class ApiJobDetailRepository implements JobDetailRepository {
         auth: true,
         body: {'reason': reason.trim(), 'details': details.trim()},
       ).then((_) {});
+
+  @override
+  Future<Map<String, dynamic>> openDispute(String jobId) async {
+    final raw = await _api.request(
+      'POST',
+      '/jobs/${Uri.encodeComponent(jobId)}/dispute',
+      auth: true,
+      body: const <String, dynamic>{},
+    );
+    return Map<String, dynamic>.from(raw as Map);
+  }
 }

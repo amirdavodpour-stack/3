@@ -177,15 +177,19 @@ void main() {
   test('home places the primary discovery feed before active work', () {
     final source = _read('lib/features/home/premium_home_feed.dart');
     final build = source.indexOf('Widget build(BuildContext context)');
-    final discovery = source.indexOf('_opportunitySections(context, jobs, settings)', build);
+    final discovery = source.indexOf('_opportunitySections(', build);
     final active = source.indexOf('_activeWork(context)', build);
     expect(discovery, greaterThanOrEqualTo(0));
     expect(active, greaterThan(discovery));
   });
 
-  test('main navigation names the work center explicitly', () {
+  test('main navigation exposes the canonical work-center destination', () {
     final source = _read('lib/features/home/home_page.dart');
-    expect(source, contains("_t(context, 'کار', 'Work')"));
+    // Keep this structural contract aligned with the visible copy contract in
+    // home_page_test.dart, which protects the localized Workshop/کارگاه label.
+    expect(source, contains("ValueKey('hope-nav-work')"));
+    expect(source, contains("_t(context, 'کارگاه', 'Workshop')"));
+    expect(source, contains('2 => TransactionsPage('));
   });
 
   test('secondary navigation groups expose HOPE product domains', () {
@@ -247,7 +251,7 @@ void main() {
 
   test('profile trust heading precedes professional state', () {
     final source = _read('lib/features/profile/profile_page.dart');
-    final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
+    final trust = source.indexOf("'اعتماد و پروفایل حرفه‌ای'");
     final professional = source.lastIndexOf('FutureBuilder<HopeProviderProfile>');
     expect(trust, greaterThanOrEqualTo(0));
     expect(professional, greaterThan(trust));

@@ -1,6 +1,8 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeTempEnv, startApiServer, register, closeApi } from './support/hope-test-harness.mjs';
+import { normalizeCrash } from '../src/analytics.js';
+import { sanitizeTelemetryProperties } from '../src/privacy.js';
 
 const tmp = makeTempEnv('hope-analytics-privacy-delta-');
 const api = await startApiServer();
@@ -113,3 +115,36 @@ test('privacy export is user-scoped and account deletion requires exact confirma
 });
 
 after(async () => closeApi({...api, tmp}));
+
+
+test('analytics and crash sanitizers redact compound PII field names', () => {
+  const properties = sanitizeTelemetryProperties({
+    recipientName: 'Private Person',
+    homeLocation: 'Berlin',
+    lat: 52.52,
+    platform: 'ANDROID',
+    safeCount: 3,
+  });
+  assert.equal(properties.recipientName, undefined);
+  assert.equal(properties.homeLocation, undefined);
+  assert.equal(properties.lat, undefined);
+  assert.equal(properties.platform, 'ANDROID');
+  assert.equal(properties.safeCount, 3);
+
+  const crash = normalizeCrash({
+    message: 'crash report',
+    fingerprint: 'crash-pii-1234',
+    platform: 'WEB',
+    context: {
+      recipientName: 'Private Person',
+      homeLocation: 'Berlin',
+      coordinates: { latitude: 52.52, longitude: 13.405 },
+      nested: { email_address: 'private@example.com', safe: true },
+    },
+  });
+  assert.equal(crash.context.recipientName, undefined);
+  assert.equal(crash.context.homeLocation, undefined);
+  assert.equal(crash.context.coordinates, undefined);
+  assert.equal(crash.context.nested.email_address, undefined);
+  assert.equal(crash.context.nested.safe, true);
+});

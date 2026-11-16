@@ -17,13 +17,12 @@ test('legacy wallet backfill exists as a forward-only migration', () => {
   assert.match(migrationSource, /forward-only financial data repair/);
 });
 
-test('migration runner enforces contiguous migration versions through 23', () => {
+test('migration runner enforces contiguous migration versions through the current migration head', () => {
   const runner = fs.readFileSync(path.resolve(process.cwd(), 'src/db/migrations.js'), 'utf8');
   const migrationFiles = fs.readdirSync(path.resolve(process.cwd(), 'src/db/migrations'))
     .filter((name) => /^\d+_[a-z0-9_]+\.js$/i.test(name))
     .sort();
   const versions = migrationFiles.map((name) => Number(name.split('_', 1)[0]));
-  assert.equal(versions.at(-1), 23);
-  assert.equal(new Set(versions).size, versions.length);
+  assert.deepEqual(versions, Array.from({length: migrationFiles.length}, (_, index) => index + 1));
   assert.match(runner, /migrations\[i\]\.version !== migrations\[i - 1\]\.version \+ 1/);
 });

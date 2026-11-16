@@ -75,7 +75,7 @@ const viewCategories = process.env.DATABASE_URL ? await repo.listCategories() : 
 
 const sessionLegacy = createSessionLegacyAdapter({ db });
 const sessionService = createSessionService({ config, repo, logEvent, now, legacy: sessionLegacy });
-const { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset } = sessionService;
+const { getUserById, getUserByEmail, authUser, issueSession, deliverPasswordReset, deliverEmailVerification } = sessionService;
 
 const notificationLegacy = createNotificationLegacy({ db, now });
 const notificationRoutes = createNotificationRoutes({
@@ -94,7 +94,7 @@ const analyticsLegacy = createAnalyticsLegacy({ db });
 const { analyticsRoutes, analyticsAdminRoutes } = createAnalyticsRoutes({
   authUser, requireAdmin, readBody, sendJson, HttpError, sanitizeTelemetryProperties,
   recordAnalyticsEvent, recordCrash, logEvent, repo, getProductFunnelSummary,
-  localProductFunnelSummary, legacy: analyticsLegacy,
+  localProductFunnelSummary, legacy: analyticsLegacy, config,
 });
 
 async function notifyApplicationCandidate(applicationId, type, title, body) {
@@ -129,7 +129,9 @@ const storageRoutes = createStorageRoutes({
 
 
 const adminRoutes = createAdminRoutes({
-  authUser, requireAdmin, readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases,
+  authUser, requireAdmin, jobDisputeRoutes: (...args) => jobDisputeRoutes(...args),
+  readBody, sendJson, HttpError, enumField, repo, adminUseCases, legacyAdmin: adminLegacy, config, now, paymentUseCases, withTransaction,
+  verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH, PASSWORD_MAX_LENGTH,
   createAudit: (...args) => createAudit(...args), findUser, getJob: (...args) => getJob(...args),
   notifyApplicationCandidate: (...args) => notifyApplicationCandidate(...args), URL,
   listUnknownPayouts: repo.listUnknownPayouts,
@@ -147,10 +149,10 @@ const accountRoutes = createAccountRoutes({
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
 const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
 const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
-const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo });
+const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo, storage, config });
 const configRoutes = createConfigRoutes({ sendJson, config });
 const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
-const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
+const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, config, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
 const recommendationProfileRoutes = createRecommendationProfileRoutes({
   authUser,
   readBody,
@@ -187,10 +189,10 @@ const {
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
-  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount, verifyGoogleIdToken,
+  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, deliverEmailVerification, findUser, rateLimitAuth, rateLimitAuthAccount, verifyGoogleIdToken,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
-  id: db.id, legacy: authLegacy,
+  id: db.id, legacy: authLegacy, withTransaction,
 });
 const providerRoutes = createProviderRoutes({ authUser, getProvider, publicUser, repo, sendJson, HttpError, now, id: appLegacy.id, insertProvider: appLegacy.insertProvider, legacy: { jobs: process.env.DATABASE_URL ? [] : appLegacy.jobs() } });
 const paymentRoutes = createPaymentRoutes({
@@ -200,7 +202,7 @@ const paymentRoutes = createPaymentRoutes({
   processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, logEvent, now,
 });
 
-const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent, ensureJobChat: repo.ensureJobChat });
+const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent, ensureJobChat: repo.ensureJobChat });
 const offerRoutes = createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy: offerLegacy, id: db.id, getJob, getUserById, enforceJobState, createAudit, now, jobView, ensureJobChat: repo.ensureJobChat });
 const savedSearchLegacy = createSavedSearchLegacy({ db, textField, now });
 const savedSearchRoutes = createSavedSearchRoutes({ authUser, repo, legacy: savedSearchLegacy, readBody, sendJson, HttpError, textField });

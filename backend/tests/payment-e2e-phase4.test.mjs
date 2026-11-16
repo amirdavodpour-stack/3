@@ -5,13 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hope-finance-'));
-process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
+process.env.DATA_FILE=path.join(tmp,'hope.json'); process.env.STORAGE_DIR=path.join(tmp,'storage'); process.env.NODE_ENV='test'; process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT='true'; process.env.PAYMENT_PROVIDER='simulator'; process.env.PAYMENT_CURRENCY='TOMAN'; process.env.ADMIN_PANEL_USERNAME='hope-admin'; process.env.PAYMENT_WEBHOOK_SECRET='test-webhook-secret'; process.env.AUTH_RATE_LIMIT_MAX='1000'; process.env.GENERAL_RATE_LIMIT_MAX='5000';
 const { createServer }=await import('../src/app.js');
 const { db }=await import('../src/db.js');
 const server=createServer(); await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const base=`http://127.0.0.1:${server.address().port}/api/v1`;
 const json=(u,o={})=>fetch(base+u,{...o,headers:{'content-type':'application/json',...(o.headers||{})}}).then(async r=>({status:r.status,body:await r.json()}));
-const reg=async(email)=>{const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email})});assert.equal(r.status,201);return r.body.data;};
+const reg=async(email)=>{const r=await json('/auth/register',{method:'POST',body:JSON.stringify({email,password:'pass123456789',displayName:email})});assert.equal(r.status,202);assert.equal(r.body.data.verificationRequired,true);const verified=await json('/auth/email/verify',{method:'POST',body:JSON.stringify({code:r.body.data.verificationCode})});assert.equal(verified.status,200);return verified.body.data;};
 const category=async()=> (await json('/categories')).body.data[0].id;
 const createMission=async(owner)=>{const r=await json('/jobs',{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`},body:JSON.stringify({title:'Mission',description:'Valid mission',categoryId:await category(),jobType:'FIXED',budgetType:'FIXED',budgetMin:1000000,budgetMax:1000000,duration:2,acceptanceCriteria:'Done',city:'تهران',kind:'MISSION',visibility:'PUBLIC'})});assert.equal(r.status,201);const p=await json(`/jobs/${r.body.data.id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});assert.equal(p.status,200);return p.body.data;};
 
@@ -27,16 +27,106 @@ test('mission funding exposes exact fee breakdown and creates a balanced local l
   const debit=ledger.body.data.ledger.reduce((s,e)=>s+Number(e.debit||0),0);const credit=ledger.body.data.ledger.reduce((s,e)=>s+Number(e.credit||0),0);assert.equal(debit,credit);assert.equal(ledger.body.data.ledger.length,3);
 });
 
+
+test('unlinked primary administrator cannot read another job financials', async()=>{
+  const owner=await reg('financial-boundary-owner@example.com');
+  const provider=await reg('financial-boundary-provider@example.com');
+  const job=await createMission(owner);
+  const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'financial boundary'})});
+  assert.equal(offer.status,201);
+  const accepted=await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
+  assert.equal(accepted.status,200);
+  const funded=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'financial-boundary-fund'},body:'{}'});
+  assert.equal(funded.status,201);
+
+  const unlinked=await reg('amir.davodpour@gmail.com');
+  const row=db.collection.users.find(u=>u.id===unlinked.user.id);
+  row.role='ADMIN';
+  row.googleSubject=null;
+  await db.save();
+
+  const read=await json(`/payments/financials/${job.id}`,{headers:{Authorization:`Bearer ${unlinked.accessToken}`}});
+  assert.equal(read.status,403);
+  assert.equal(read.body.error.code,'PRIMARY_ADMIN_IDENTITY_REQUIRED');
+});
+
 test('fund is idempotent and cannot be refunded twice', async()=>{
   const owner=await reg('refund-owner@example.com'); const provider=await reg('refund-provider@example.com'); const job=await createMission(owner);
   const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
   await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
   const a=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},body:'{}'});assert.equal(a.status,201);
   const b=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},body:'{}'});assert.equal(b.status,200);assert.equal(b.body.data.id,a.body.data.id);
+  const storedJob = db.collection.jobs.find((row) => row.id === job.id);
+  const originalBudgetMin = storedJob.budgetMin;
+  const originalBudgetMax = storedJob.budgetMax;
+  storedJob.budgetMin = 2000000;
+  storedJob.budgetMax = 2000000;
+  await db.save();
+  const mismatch = await json(`/payments/fund/${job.id}`, {
+    method:'POST',
+    headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'same'},
+    body:'{}',
+  });
+  assert.equal(mismatch.status, 409);
+  assert.equal(mismatch.body.error.code, 'IDEMPOTENCY_CONFLICT');
+  storedJob.budgetMin = originalBudgetMin;
+  storedJob.budgetMax = originalBudgetMax;
+  await db.save();
   const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-1'},body:'{}'});assert.equal(refund.status,200);assert.equal(refund.body.data.status,'REFUNDED');
+  assert.equal(db.collection.jobs.find((row)=>row.id===job.id)?.status,'CANCELLED',
+    'a full pre-work refund must cancel the funded job rather than re-open assignment');
+  assert.equal(db.collection.jobs.find((row)=>row.id===job.id)?.status,'CANCELLED',
+    'a full pre-work refund must cancel the funded job rather than re-open assignment');
   const again=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-2'},body:'{}'});assert.equal(again.status,409);assert.equal(again.body.error.code,'INVALID_PAYMENT_STATE');
 });
 
+
+
+test('self-service refund after work has started requires dispute resolution', async () => {
+  const suffix=Date.now();
+  const owner=await reg(`refund-started-owner-${suffix}@example.com`);
+  const provider=await reg(`refund-started-provider-${suffix}@example.com`);
+  const job=await createMission(owner);
+  const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
+  assert.equal(offer.status,201);
+  const accepted=await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
+  assert.equal(accepted.status,200);
+  const funded=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started-fund'},body:'{}'});
+  assert.equal(funded.status,201);
+
+  const storedJob=db.collection.jobs.find((row)=>row.id===job.id);
+  storedJob.status='IN_PROGRESS';
+  await db.save();
+
+  const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started'},body:'{}'});
+  assert.equal(refund.status,409);
+  assert.equal(refund.body.error.code,'REFUND_REQUIRES_DISPUTE');
+  assert.equal(db.collection.payments.find((row)=>row.jobId===job.id)?.status,'HELD');
+  assert.equal(db.collection.refunds.filter((row)=>row.paymentId===funded.body.data.id).length,0);
+});
+
+
+test('self-service refund after work has started requires dispute resolution', async () => {
+  const owner=await reg('refund-started-owner@example.com');
+  const provider=await reg('refund-started-provider@example.com');
+  const job=await createMission(owner);
+  const offer=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${provider.accessToken}`},body:JSON.stringify({jobId:job.id,price:1000000,message:'accept'})});
+  assert.equal(offer.status,201);
+  const accepted=await json(`/offers/${offer.body.data.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`}});
+  assert.equal(accepted.status,200);
+  const funded=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started-fund'},body:'{}'});
+  assert.equal(funded.status,201);
+
+  const storedJob=db.collection.jobs.find((row)=>row.id===job.id);
+  storedJob.status='IN_PROGRESS';
+  await db.save();
+
+  const refund=await json(`/payments/refund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${owner.accessToken}`,'Idempotency-Key':'refund-started'},body:'{}'});
+  assert.equal(refund.status,409);
+  assert.equal(refund.body.error.code,'REFUND_REQUIRES_DISPUTE');
+  assert.equal(db.collection.payments.find((row)=>row.jobId===job.id)?.status,'HELD');
+  assert.equal(db.collection.refunds.filter((row)=>row.paymentId===funded.body.data.id).length,0);
+});
 
 test('concurrent funding with distinct idempotency keys creates at most one payment', async () => {
   const owner = await reg('concurrency-owner@example.com');
@@ -79,7 +169,13 @@ test('job funding uses first-month salary and thirty-percent employer commission
 });
 
 test('admin financial summary totals fees, charges and payouts', async()=>{
-  const admin=await reg('finance-admin@example.com'); db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN'; const summary=await json('/admin/finance/summary',{headers:{Authorization:`Bearer ${admin.accessToken}`}}); assert.equal(summary.status,200); assert.ok(summary.body.data.payments>=1); assert.ok(summary.body.data.platformFees>=0); assert.ok(summary.body.data.ledgerEntries>=1);
+  const admin=await reg('finance-admin@example.com');
+  db.collection.users.find(u=>u.id===admin.user.id).role='ADMIN';
+  await db.save();
+  const unlocked=await json('/admin/access',{method:'POST',headers:{Authorization:`Bearer ${admin.accessToken}`},body:JSON.stringify({name:admin.user.displayName,username:'hope-admin',password:'pass123456789'})});
+  assert.equal(unlocked.status,200);
+  const summary=await json('/admin/finance/summary',{headers:{Authorization:`Bearer ${admin.accessToken}`}});
+  assert.equal(summary.status,200); assert.ok(summary.body.data.payments>=1); assert.ok(summary.body.data.platformFees>=0); assert.ok(summary.body.data.ledgerEntries>=1);
 });
 
 test('webhook requires signature and replays are harmless', async()=>{

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:ui' show SemanticsFlag;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show debugDumpRenderTree;
+import 'package:flutter/rendering.dart'
+    show debugDumpRenderTree, RenderParagraph;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/marketplace/category.dart';
 import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
@@ -190,6 +190,11 @@ Future<void> _advance(WidgetTester tester) async {
     next.hitTestable(),
     findsOneWidget,
     reason: 'The persistent Create Opportunity action must stay available.',
+  );
+  final button = tester.widget<FilledButton>(next);
+  expect(
+    button.style?.backgroundColor?.resolve({}),
+    HopeV2Colors.markedPrimaryActionDarkGreen,
   );
   await tester.tap(next);
   await tester.pumpAndSettle();
@@ -800,6 +805,41 @@ void main() {
   );
 
   testWidgets(
+    'Wave 45 English creation progress keeps step labels on one line at 1.5x',
+    (tester) async {
+      final repo = _FakeMarket();
+      await _pump(
+        tester,
+        repo,
+        width: 360,
+        height: 640,
+        textScale: 1.5,
+        locale: const Locale('en'),
+      );
+      await _open(tester);
+
+      final progress = find.byKey(
+        const ValueKey('create-opportunity-progress'),
+      );
+      final criteria = find.descendant(
+        of: progress,
+        matching: find.text('Criteria'),
+      );
+      expect(criteria, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(criteria);
+      final boxes = paragraph.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 8),
+      );
+      expect(
+        boxes,
+        hasLength(1),
+        reason: 'A single-word wizard label must not break mid-word at 1.5x text scale.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'Wave 44 progress and action dock remain fixed while the active step scrolls',
     (tester) async {
       final repo = _FakeMarket();
@@ -942,16 +982,16 @@ void main() {
       );
       await _open(tester);
 
-      final previousIcon = tester.widget<HugeIcon>(
+      final previousIcon = tester.widget<HopeIcon>(
         find.descendant(
           of: find.byKey(const ValueKey('create-opportunity-previous-step')),
-          matching: find.byType(HugeIcon),
+          matching: find.byType(HopeIcon),
         ),
       );
-      final nextIcon = tester.widget<HugeIcon>(
+      final nextIcon = tester.widget<HopeIcon>(
         find.descendant(
           of: find.byKey(const ValueKey('create-opportunity-next-step')),
-          matching: find.byType(HugeIcon),
+          matching: find.byType(HopeIcon),
         ),
       );
 

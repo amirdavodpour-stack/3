@@ -350,7 +350,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('گردش وجه'), findsOneWidget);
-      expect(find.text('دفترکل'), findsOneWidget);
+      expect(find.text('تراکنش'), findsOneWidget);
       expect(find.text('رزرو'), findsOneWidget);
       expect(find.text('آزادسازی'), findsOneWidget);
       expect(

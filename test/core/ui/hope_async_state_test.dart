@@ -4,6 +4,7 @@ import 'package:hope_mobile/core/network/api_client.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/hope_async_state.dart';
+import 'package:hope_mobile/core/ui/components.dart';
 
 void main() {
   testWidgets('all async state kinds expose a deterministic semantic contract',
@@ -46,7 +47,7 @@ void main() {
       ),
     );
 
-    final icon = tester.widget<Icon>(find.byIcon(Icons.schedule_rounded));
+    final icon = tester.widget<Icon>(find.byIcon(HopeV2Icons.pending));
     expect(icon.color, HopeV2Colors.warning);
   });
 
@@ -89,7 +90,7 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byIcon(Icons.hourglass_empty_rounded), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.pending), findsOneWidget);
   });
 
   test('maps transport and authorization failures to truthful state kinds',
@@ -120,6 +121,25 @@ void main() {
     );
   });
 
+  testWidgets('semantic error state uses the compact kinetic glyph frame', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: HopeAsyncState(
+            kind: HopeStateKind.error,
+            title: 'Connection failed',
+            message: 'Try again when the service is available.',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(HopeKineticGlyph), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.error), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('async state action is constrained to the shared touch minimum',
       (tester) async {
     await tester.pumpWidget(
@@ -142,4 +162,25 @@ void main() {
     final button = find.byType(FilledButton);
     expect(tester.getSize(button).height, greaterThanOrEqualTo(HopeV2Touch.minimum));
   });
+
+  testWidgets('successful async state uses the botanical green peer accent',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: HopeAsyncState(
+            kind: HopeStateKind.success,
+            title: 'Complete',
+            message: 'The operation completed.',
+          ),
+        ),
+      ),
+    );
+
+    final icon = tester.widget<Icon>(find.byIcon(HopeV2Icons.success));
+    expect(icon.color, HopeV2TonalPalettes.forest.shade300);
+    expect(tester.takeException(), isNull);
+  });
+
 }

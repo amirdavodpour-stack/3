@@ -21,6 +21,11 @@ class _AuthRepo implements AuthRepository {
   @override Future<AuthSession> loginWithGoogle(String _) => throw UnimplementedError();
   @override Future<AuthSession> login(String _, String __) => throw UnimplementedError();
   @override Future<AuthSession> register(String _, String __, String ___) => throw UnimplementedError();
+  @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
   @override Future<void> logout() async {}
   @override Future<void> requestPasswordReset(String _) async {}
 }
@@ -38,6 +43,8 @@ class _DetailRepo implements JobDetailRepository {
   Future<Map<String, dynamic>> compareCandidates(String _, List<String> __) async => const {};
   @override
   Future<void> reportJob(String _, {required String reason, String details = ''}) async {}
+  @override
+  Future<Map<String, dynamic>> openDispute(String _) async => const {'dispute': {'id': 'd1', 'status': 'OPEN'}, 'payment': {'status': 'HELD'}};
 }
 
 class _TxRepo implements TransactionRepository {
@@ -201,7 +208,7 @@ void main() {
     ),
   );
   await tester.pump();
-  expect(tester.getSize(find.byType(PremiumHero)).height, 176);
+  expect(tester.getSize(find.byType(PremiumHero)).height, 146);
   expect(tester.takeException(), isNull);
 });
 

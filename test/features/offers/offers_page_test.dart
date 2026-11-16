@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
@@ -264,6 +265,51 @@ void main() {
   );
 
 testWidgets(
+  'offer message avoids ellipsis at 1.5x on a compact viewport',
+  (tester) async {
+    tester.view.physicalSize = const Size(320, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final message = List.filled(
+      10,
+      'Every milestone includes a clear deliverable, review window, and acceptance criteria.',
+    ).join(' ');
+    final offer = HopeOffer(
+      id: 'long-message-offer',
+      jobId: 'job-1',
+      providerId: 'provider-1',
+      price: '2500000',
+      message: message,
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+      jobTitle: 'Compact offer',
+    );
+
+    await tester.pumpWidget(
+      _host(
+        _FixedOfferRepository([offer]),
+        locale: const Locale('en'),
+        textScale: 1.5,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final messageFinder = find.text(message);
+    expect(messageFinder, findsOneWidget);
+    final paragraph = tester.renderObject<RenderParagraph>(messageFinder);
+    expect(
+      paragraph.didExceedMaxLines,
+      isFalse,
+      reason: 'The full offer message must stay readable when system text is enlarged on a compact viewport.',
+    );
+    expect(tester.takeException(), isNull);
+  },
+);
+
+testWidgets(
   'Wave46 offers loading and empty states remain mutually exclusive',
   (tester) async {
     final repository = _PendingOfferRepository();
@@ -307,6 +353,10 @@ testWidgets('accepting an offer disables the financial action until completion',
 
     final acceptButton = find.widgetWithText(FilledButton, 'Accept offer');
     expect(acceptButton, findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(acceptButton).style?.backgroundColor?.resolve({}),
+      HopeV2Colors.markedPrimaryActionDarkGreen,
+    );
 
     await tester.tap(acceptButton);
     await tester.pump();
@@ -382,51 +432,228 @@ testWidgets('accepting an offer disables the financial action until completion',
   });
 
   testWidgets(
-    'offer status filters stay in one horizontal rail within a 360dp viewport',
+    'offer status rail keeps every filter fully reachable in RTL/LTR and enlarged text',
     (tester) async {
-      tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final repository = _SequencedOfferRepository();
-      await tester.pumpWidget(_host(repository));
-      await tester.pumpAndSettle();
 
-      final rail = find.byKey(
-        const ValueKey('offers-status-filter-scroll'),
-      );
-      expect(rail, findsOneWidget);
-      expect(
-        tester.widget<SingleChildScrollView>(rail).scrollDirection,
-        Axis.horizontal,
-      );
-      final scrollbar = find.ancestor(
-        of: rail,
-        matching: find.byType(Scrollbar),
-      );
-      expect(scrollbar, findsOneWidget);
-      expect(tester.widget<Scrollbar>(scrollbar).thumbVisibility, isTrue);
-      expect(
-        tester.getSize(rail).height,
-        lessThan(64),
-        reason: 'The status filters should not wrap into a second row above offers.',
-      );
-
-      final filterLabels = [
-        find.textContaining('All ('),
-        find.textContaining('Pending ('),
-        find.textContaining('Accepted ('),
-        find.textContaining('Rejected ('),
+      const scenarios = [
+        (locale: Locale('en'), width: 320.0, textScale: 1.0),
+        (locale: Locale('fa'), width: 320.0, textScale: 1.0),
+        (locale: Locale('en'), width: 360.0, textScale: 1.5),
+        (locale: Locale('fa'), width: 360.0, textScale: 1.5),
       ];
-      for (final filter in filterLabels) {
-        expect(filter, findsOneWidget);
-        await tester.ensureVisible(filter);
+      for (final scenario in scenarios) {
+        tester.view.physicalSize = Size(scenario.width, 640);
+        await tester.pumpWidget(
+          _host(
+            _SequencedOfferRepository(),
+            locale: scenario.locale,
+            textScale: scenario.textScale,
+          ),
+        );
         await tester.pumpAndSettle();
-        final bounds = tester.getRect(filter);
-        expect(bounds.left, greaterThanOrEqualTo(0));
-        expect(bounds.right, lessThanOrEqualTo(360));
+
+        final rail = find.byKey(
+          const ValueKey('offers-status-filter-scroll'),
+        );
+        expect(rail, findsOneWidget);
+        expect(
+          tester.widget<SingleChildScrollView>(rail).scrollDirection,
+          Axis.horizontal,
+        );
+        final scrollbar = find.ancestor(
+          of: rail,
+          matching: find.byType(Scrollbar),
+        );
+        expect(scrollbar, findsOneWidget);
+        expect(tester.widget<Scrollbar>(scrollbar).thumbVisibility, isTrue);
+        final railBounds = tester.getRect(rail);
+        expect(
+          railBounds.height,
+          lessThan(64),
+          reason: 'The status filters should stay in one compact horizontal rail.',
+        );
+
+        final prefixes = scenario.locale.languageCode == 'en'
+            ? const ['All (', 'Pending (', 'Accepted (', 'Rejected (']
+            : const ['همه (', 'در انتظار بررسی (', 'پذیرفته‌شده (', 'رد شده ('];
+
+        final leadingChip = find.ancestor(
+          of: find.textContaining(prefixes.first),
+          matching: find.byType(PremiumFilterChip),
+        );
+        expect(leadingChip, findsOneWidget);
+        expect(
+          tester.widget<PremiumFilterChip>(leadingChip).selected,
+          isTrue,
+          reason: 'The logical leading All filter remains active in both directions.',
+        );
+        final leadingBounds = tester.getRect(leadingChip);
+        expect(
+          railBounds.bottom - leadingBounds.bottom,
+          greaterThanOrEqualTo(6),
+          reason: 'The horizontal scrollbar thumb must have a visible gutter below the filter chip hit area.',
+        );
+        final isRtl = scenario.locale.languageCode == 'fa';
+        expect(leadingBounds.left, greaterThanOrEqualTo(railBounds.left));
+        expect(leadingBounds.right, lessThanOrEqualTo(railBounds.right));
+        if (isRtl) {
+          expect(
+            leadingBounds.right,
+            lessThanOrEqualTo(railBounds.right - 12),
+            reason: 'The RTL leading filter must have at least 12dp breathing room from the right viewport edge.',
+          );
+        } else {
+          expect(
+            leadingBounds.left,
+            greaterThanOrEqualTo(railBounds.left + 12),
+            reason: 'The LTR leading filter must have at least 12dp breathing room from the left viewport edge.',
+          );
+        }
+
+        expect(
+          Directionality.of(tester.element(rail)),
+          isRtl ? TextDirection.rtl : TextDirection.ltr,
+          reason: 'The status rail must inherit the requested locale direction.',
+        );
+
+        if (isRtl) {
+          expect(
+            find.byKey(const ValueKey('offers-status-filter-scroll-cue')),
+            findsOneWidget,
+            reason: 'The compact Persian status rail must disclose its horizontal scroll affordance.',
+          );
+          expect(
+            find.text('برای دیدن فیلترهای دیگر، افقی بکشید'),
+            findsOneWidget,
+            reason: 'The Persian horizontal-scroll cue must be localized and visible.',
+          );
+        }
+
+        for (final prefix in prefixes) {
+          final filterLabel = find.textContaining(prefix);
+          expect(filterLabel, findsOneWidget);
+          final chip = find.ancestor(
+            of: filterLabel,
+            matching: find.byType(PremiumFilterChip),
+          );
+          expect(chip, findsOneWidget);
+          expect(
+            tester.getSize(chip).height,
+            greaterThanOrEqualTo(48),
+            reason: 'Every status chip needs a rendered 48dp touch target.',
+          );
+        }
+
+        final railScrollable = find.descendant(
+          of: rail,
+          matching: find.byType(Scrollable),
+        ).first;
+        final scrollPosition =
+            tester.state<ScrollableState>(railScrollable).position;
+        expect(
+          scrollPosition.maxScrollExtent,
+          greaterThan(0),
+          reason: 'The narrow status rail must retain genuine horizontal scroll extent.',
+        );
+        await tester.drag(rail, Offset(isRtl ? 400 : -400, 0));
+        await tester.pumpAndSettle();
+        expect(
+          scrollPosition.pixels,
+          greaterThan(0),
+          reason: 'A real horizontal swipe must move the Offers rail in both RTL and LTR.',
+        );
+
+        final terminalChip = find.ancestor(
+          of: find.textContaining(prefixes.last),
+          matching: find.byType(PremiumFilterChip),
+        );
+        bool terminalFilterFullyVisible() {
+          final chipBounds = tester.getRect(terminalChip);
+          final viewportBounds = tester.getRect(rail);
+          return chipBounds.left >= viewportBounds.left &&
+              chipBounds.right <= viewportBounds.right;
+        }
+
+        for (var attempt = 0;
+            attempt < 6 && !terminalFilterFullyVisible();
+            attempt++) {
+          await tester.drag(rail, Offset(isRtl ? 180 : -180, 0));
+          await tester.pumpAndSettle();
+        }
+        expect(
+          terminalFilterFullyVisible(),
+          isTrue,
+          reason: 'Repeated physical swipes must bring the final Offers filter fully into view.',
+        );
+        final terminalBounds = tester.getRect(terminalChip);
+        final endRailBounds = tester.getRect(rail);
+        expect(
+          terminalBounds.left,
+          greaterThanOrEqualTo(endRailBounds.left),
+          reason: 'The final status chip must be fully reachable at the end of the rail.',
+        );
+        expect(
+          terminalBounds.right,
+          lessThanOrEqualTo(endRailBounds.right),
+          reason: 'The final status chip must be fully reachable at the end of the rail.',
+        );
+        if (isRtl) {
+          expect(
+            terminalBounds.left,
+            greaterThanOrEqualTo(endRailBounds.left + 12),
+            reason: 'The RTL terminal filter must have at least 12dp breathing room from the left viewport edge.',
+          );
+        } else {
+          expect(
+            terminalBounds.right,
+            lessThanOrEqualTo(endRailBounds.right - 12),
+            reason: 'The LTR terminal filter must have at least 12dp breathing room from the right viewport edge.',
+          );
+        }
+        await tester.tap(terminalChip);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<PremiumFilterChip>(terminalChip).selected,
+          isTrue,
+          reason: 'The final status filter must be tappable and reflect its selected state after a real swipe.',
+        );
+        bool leadingFilterFullyVisible() {
+          final chipBounds = tester.getRect(leadingChip);
+          final viewportBounds = tester.getRect(rail);
+          return chipBounds.left >= viewportBounds.left &&
+              chipBounds.right <= viewportBounds.right;
+        }
+
+        for (var attempt = 0;
+            attempt < 6 && !leadingFilterFullyVisible();
+            attempt++) {
+          await tester.drag(rail, Offset(isRtl ? -180 : 180, 0));
+          await tester.pumpAndSettle();
+        }
+        expect(
+          leadingFilterFullyVisible(),
+          isTrue,
+          reason: 'A reverse physical swipe must restore the leading Offers filter fully into view.',
+        );
+        final restoredLeadingBounds = tester.getRect(leadingChip);
+        final restoredRailBounds = tester.getRect(rail);
+        expect(
+          restoredLeadingBounds.left,
+          greaterThanOrEqualTo(restoredRailBounds.left),
+          reason: 'A reverse swipe must return the first filter fully into view.',
+        );
+        expect(
+          restoredLeadingBounds.right,
+          lessThanOrEqualTo(restoredRailBounds.right),
+          reason: 'A reverse swipe must return the first filter fully into view.',
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
       }
-      expect(tester.takeException(), isNull);
     },
   );
 
@@ -473,6 +700,70 @@ testWidgets('accepting an offer disables the financial action until completion',
       expect(
         find.descendant(of: bottomSheet, matching: find.text(internalJobId)),
         findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'offer details remain scrollable without overflow at 1.5x on a compact viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final message = List.filled(
+        16,
+        'Each delivery includes a documented outcome, review window, acceptance conditions, and a clear handoff.',
+      ).join(' ');
+      final offer = HopeOffer(
+        id: 'long-details-offer',
+        jobId: 'job-1',
+        providerId: 'provider-1',
+        price: '2500000',
+        message: message,
+        status: 'PENDING',
+        createdAt: '2020-01-02T03:04:05.000Z',
+        updatedAt: null,
+        jobTitle: 'A detailed collaboration offer',
+      );
+
+      await tester.pumpWidget(
+        _host(
+          _FixedOfferRepository([offer]),
+          locale: const Locale('en'),
+          textScale: 1.5,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A detailed collaboration offer').first);
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(BottomSheet);
+      expect(sheet, findsOneWidget);
+      final detailScroll = find.descendant(
+        of: sheet,
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(
+        detailScroll,
+        findsOneWidget,
+        reason: 'Long offer details must scroll within the sheet on a short viewport.',
+      );
+
+      final messageFinder = find.descendant(
+        of: sheet,
+        matching: find.text(message),
+      );
+      expect(messageFinder, findsOneWidget);
+      await tester.scrollUntilVisible(
+        messageFinder,
+        120,
+        scrollable: find.descendant(
+          of: sheet,
+          matching: find.byType(Scrollable),
+        ),
       );
       expect(tester.takeException(), isNull);
     },
@@ -530,6 +821,46 @@ testWidgets('accepting an offer disables the financial action until completion',
     expect(find.text('rejected-offer'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Offers horizontal scrollbar ignores the system bottom inset',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(bottom: 24);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+
+      await tester.pumpWidget(
+        _host(
+          _FixedOfferRepository([
+            _offer(id: 'pending-offer', status: 'PENDING'),
+            _offer(id: 'accepted-offer', status: 'ACCEPTED'),
+            _offer(id: 'rejected-offer', status: 'REJECTED'),
+          ]),
+          locale: const Locale('fa'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(
+        const ValueKey('offers-status-filter-scroll'),
+      );
+      expect(rail, findsOneWidget);
+      final scrollbar = find.ancestor(
+        of: rail,
+        matching: find.byType(Scrollbar),
+      );
+      expect(scrollbar, findsOneWidget);
+      expect(
+        MediaQuery.paddingOf(tester.element(scrollbar)).bottom,
+        0,
+        reason: 'System bottom padding must not offset the horizontal thumb into the chip rail.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'offers status filters remain a single horizontal rail on compact viewports',

@@ -60,7 +60,7 @@ void main() {
 
       expect(
         find.text(
-          locale.languageCode == 'en' ? '2,000,000 TOMAN' : '2,000,000 تومان',
+          locale.languageCode == 'en' ? '2,000,000 TOMAN' : '۲٬۰۰۰٬۰۰۰ تومان',
         ),
         findsOneWidget,
       );

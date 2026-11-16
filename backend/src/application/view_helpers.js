@@ -11,7 +11,7 @@ export function createAppViewHelpers({ repo, config, getUserById, now, HttpError
 
   const categoryBy = (id) => categories.find((c) => c.id === id || c.slug === id);
   const publicUser = (u) => (u ? { id: u.id, displayName: u.displayName, role: u.role } : null);
-  const authUserView = (u) => ({ ...publicUser(u), email: u.email });
+  const authUserView = (u) => ({ ...publicUser(u), email: u.email, googleLinked: Boolean(u.googleSubject) });
 
   async function categoryView(id) {
     if (env.DATABASE_URL) {

@@ -1,4 +1,5 @@
 import { HttpError } from '../api/http_error.js';
+import { normalizeFinancialAmount } from '../financial.js';
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9._~:-]+$/;
 
@@ -46,6 +47,32 @@ export function paymentAmountForJob(job) {
     return value.toString();
   } catch {
     throw new HttpError(400, 'INVALID_AMOUNT', 'Job budget is invalid');
+  }
+}
+
+export function assertFundingReplayMatches({
+  existing,
+  idempotencyKey,
+  payerId,
+  payeeId,
+  requestedAmount,
+  requestedCurrency,
+}) {
+  if (!existing || !idempotencyKey || existing.idempotencyKey !== idempotencyKey) return;
+
+  const existingCurrency = String(existing.currency || requestedCurrency || 'TOMAN').toUpperCase();
+  const expectedCurrency = String(requestedCurrency || existing.currency || 'TOMAN').toUpperCase();
+  let sameAmount = false;
+  try {
+    sameAmount = existingCurrency === expectedCurrency &&
+      String(normalizeFinancialAmount(existingCurrency, existing.amount)) ===
+      String(normalizeFinancialAmount(expectedCurrency, requestedAmount));
+  } catch {
+    sameAmount = false;
+  }
+
+  if (existing.payerId !== payerId || existing.payeeId !== payeeId || !sameAmount) {
+    throw new HttpError(409, 'IDEMPOTENCY_CONFLICT', 'Idempotency key was already used for different payment parameters');
   }
 }
 

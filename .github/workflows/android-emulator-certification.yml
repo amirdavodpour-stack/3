@@ -20,12 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING || 'https://v2hope-production-7e9e.up.railway.app' }}
+      API_BASE_URL_STAGING: ${{ secrets.STAGING_BASE_URL || secrets.API_BASE_URL_STAGING }}
       CI_DEVICE_INTEGRATION: 'true'
       HOPE_ENV: staging
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Java 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - name: Setup Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -60,7 +66,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); console.log(u.hostname)")"
+          : "${API_BASE_URL_STAGING:?API_BASE_URL_STAGING is required; configure STAGING_BASE_URL or API_BASE_URL_STAGING}"
+          host="$(node -e "const u=new URL(process.env.API_BASE_URL_STAGING); if(u.protocol!=='https:') throw new Error('API_BASE_URL_STAGING must use HTTPS'); if(u.hostname.toLowerCase()==='v2hope-production-7e9e.up.railway.app') throw new Error('Production host is forbidden for Android emulator staging certification'); console.log(u.hostname)")"
           ips="$(getent ahostsv4 "$host" | awk '{print $1}' | sort -u | paste -sd, -)"
           test -n "$ips" || { echo "Runner DNS could not resolve $host." >&2; exit 1; }
           echo "Resolved $host to $ips"
@@ -115,7 +122,7 @@ jobs:
 
       - name: Upload Android certification evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a0 # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hope-android-emulator-certification-${{ github.run_id }}
           path: |

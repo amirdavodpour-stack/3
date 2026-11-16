@@ -375,54 +375,191 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
 
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
+    final title = item.jobTitle.isEmpty
+        ? _t('فرصت', 'Opportunity')
+        : item.jobTitle;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final compactLargeText =
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.medium &&
+            textScale > 1.2;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: PremiumPanel(
         quiet: true,
-        padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 11 : 13,
+        padding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width <
+                  HopeV2Breakpoints.compact
+              ? 11
+              : 13,
+          vertical: compactLargeText
+              ? 3
+              : (MediaQuery.sizeOf(context).width <
+                      HopeV2Breakpoints.compact
+                  ? 11
+                  : 13),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HopeIconTile(
-                  item.status == 'ACCEPTED'
-                      ? HopeV2Icons.completed
-                      : HopeV2Icons.mission,
-                  size: 36,
-                  filled: true,
+            if (compactLargeText)
+              Tooltip(
+                message: title,
+                child: Text(
+                  title,
+                  // The status is already conveyed by the semantic status tag
+                  // below; use the full width for the complete, readable title.
+                  softWrap: true,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.jobTitle.isEmpty ? _t('فرصت', 'Opportunity') : item.jobTitle,
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIconTile(
+                    item.status == 'ACCEPTED'
+                        ? HopeV2Icons.completed
+                        : HopeV2Icons.mission,
+                    size: 36,
+                    filled: true,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Tooltip(
+                      message: title,
+                      child: Text(
+                        title,
+                        softWrap: true,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 5),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
-                          if (item.jobCity?.isNotEmpty == true)
-                            PremiumTag(icon: HopeV2Icons.location, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
+            SizedBox(height: compactLargeText ? 2 : 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: compactLargeText ? 2 : 4,
+              children: [
+                PremiumTag(
+                  icon: HopeV2Icons.activity,
+                  label: item.statusLabelFor(english: _isEnglish),
+                  color: color,
                 ),
+                if (item.jobCity?.isNotEmpty == true)
+                  if (textScale > 1.2)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final availableWidth = (constraints.maxWidth - 34)
+                            .clamp(0.0, double.infinity)
+                            .toDouble();
+                        final painter = TextPainter(
+                          text: TextSpan(
+                            text: item.jobCity!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              height: 1,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          textDirection: Directionality.of(context),
+                          textScaler: MediaQuery.textScalerOf(context),
+                          maxLines: 1,
+                        )..layout(maxWidth: availableWidth);
+                        // Keep common short city names in the compact tag.
+                        // Only the longer names need the wrap-capable surface,
+                        // and only when actual measured text width confirms it.
+                        final requiresWrap =
+                            item.jobCity!.trim().length > 24 &&
+                                painter.didExceedMaxLines;
+                        painter.dispose();
+
+                        if (!requiresWrap) {
+                          return PremiumTag(
+                            icon: HopeV2Icons.location,
+                            label: item.jobCity!,
+                            color: Theme.of(context).colorScheme.outline,
+                          );
+                        }
+
+                        return Semantics(
+                          container: true,
+                          label: item.jobCity!,
+                          excludeSemantics: true,
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 24),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withValues(alpha: .07),
+                              borderRadius:
+                                  BorderRadius.circular(HopeV2Radii.chip),
+                              border: Border.all(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outline
+                                    .withValues(alpha: .16),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: ExcludeSemantics(
+                                    child: HopeIcon(
+                                      HopeV2Icons.location,
+                                      size: 14,
+                                      color:
+                                          Theme.of(context).colorScheme.outline,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    item.jobCity!,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    PremiumTag(
+                      icon: HopeV2Icons.location,
+                      label: item.jobCity!,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
               ],
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: compactLargeText ? 3 : 9),
             _timeline(item),
             if (item.status.toUpperCase() == 'ACCEPTED' &&
                 item.jobId.trim().isNotEmpty) ...[
@@ -439,7 +576,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 8),
+            SizedBox(height: compactLargeText ? 2 : 8),
             Row(
               children: [
                 Expanded(
@@ -500,6 +637,100 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     final current = stages.indexOf(item.status);
     final stageColor = _statusColor(context, item.status);
     final colors = Theme.of(context).colorScheme;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+
+    // A six-column rail compresses meaningful stage names at small widths and
+    // enlarged scales. Reflow to three columns so all six labels remain readable.
+    // Status semantics, ordering, tooltips and reached/active colors are unchanged.
+    if (textScale > 1.2 ||
+        MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          const gap = 6.0;
+          const runGap = 3.0;
+          const columns = 3;
+          final itemWidth =
+              (constraints.maxWidth - gap * (columns - 1)) / columns;
+          return Wrap(
+            spacing: gap,
+            runSpacing: textScale > 1.2 ? runGap : gap,
+            children: List.generate(stages.length, (index) {
+              final stage = stages[index];
+              final reached = current >= 0 && index <= current;
+              final active = index == current;
+              final label = _timelineStageLabel(stage);
+              return SizedBox(
+                width: itemWidth,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: textScale > 1.2 ? 3 : 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? stageColor.withValues(alpha: .08)
+                        : colors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: active
+                          ? stageColor.withValues(alpha: .36)
+                          : colors.outlineVariant.withValues(alpha: .62),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                              reached ? stageColor : colors.outlineVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Semantics(
+                          key: ValueKey(
+                            'application-timeline-${item.id}-$stage',
+                          ),
+                          label: label,
+                          selected: active,
+                          child: Tooltip(
+                            message: label,
+                            child: Text(
+                              // Enlarged text uses two responsive rows; allow a
+                              // longer localized stage name to wrap fully rather
+                              // than clipping it inside an intentionally compact tile.
+                              label,
+                              softWrap: true,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontSize: 12,
+                                    height: 1.1,
+                                    fontWeight: active
+                                        ? FontWeight.w900
+                                        : FontWeight.w700,
+                                    color: active
+                                        ? stageColor
+                                        : colors.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          );
+        },
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(stages.length, (index) {
@@ -541,12 +772,12 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                   message: label,
                   child: Text(
                     label,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 9.5,
+                          fontSize: 12,
                           height: 1.1,
                           fontWeight:
                               active ? FontWeight.w900 : FontWeight.w600,

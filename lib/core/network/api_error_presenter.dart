@@ -10,6 +10,8 @@ String apiErrorMessage(Object error, {String fallback = 'عملیات ناموف
         return 'نیاز به ورود مجدد دارید.';
       case 'FORBIDDEN':
         return 'دسترسی به این بخش مجاز نیست.';
+      case 'ACCOUNT_FINANCIAL_OBLIGATIONS_PENDING':
+        return 'برای حذف حساب، ابتدا موجودی کیف پول را تعیین تکلیف کنید و پرداخت‌ها یا برداشت‌های در انتظار را به سرانجام برسانید.';
       case 'JOB_NOT_HIRABLE':
         return 'این موقعیت دیگر قابل استخدام نیست.';
       case 'CANDIDATE_ALREADY_HIRED':
@@ -20,6 +22,14 @@ String apiErrorMessage(Object error, {String fallback = 'عملیات ناموف
         return 'ورود با گوگل هنوز برای این نسخه فعال نشده است.';
       case 'GOOGLE_ACCOUNT_LINK_REQUIRED':
         return 'این ایمیل قبلاً حساب HOPE دارد؛ ابتدا با رمز عبور وارد شوید و بعد گوگل را متصل کنید.';
+      case 'GOOGLE_LINK_EMAIL_MISMATCH':
+        return 'ایمیل حساب گوگل باید با ایمیل حساب HOPE شما یکسان باشد.';
+      case 'GOOGLE_IDENTITY_ALREADY_LINKED':
+        return 'این حساب گوگل به حساب دیگری متصل است.';
+      case 'GOOGLE_ACCOUNT_ALREADY_LINKED':
+        return 'برای این حساب HOPE قبلاً یک حساب گوگل متصل شده است.';
+      case 'GOOGLE_LINK_UNAVAILABLE':
+        return 'اتصال حساب گوگل در این نسخه در دسترس نیست.';
       case 'INVALID_GOOGLE_TOKEN':
         return 'احراز هویت گوگل تأیید نشد. دوباره تلاش کنید.';
       case 'GOOGLE_SIGN_IN_CANCELED':

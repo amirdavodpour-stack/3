@@ -62,6 +62,8 @@ export const config = {
   healthRateLimitMax: positiveIntegerEnv('HEALTH_RATE_LIMIT_MAX', 120, { min: 1, max: 1000 }),
   resetTokenTtlSeconds: positiveIntegerEnv('RESET_TOKEN_TTL', 900, { min: 60, max: 86400 }),
   exposeResetTokenInDevelopment: process.env.EXPOSE_RESET_TOKEN_IN_DEVELOPMENT === 'true',
+  emailVerificationTokenTtlSeconds: positiveIntegerEnv('EMAIL_VERIFICATION_TOKEN_TTL_SECONDS', 3600, { min: 300, max: 86400 }),
+  exposeEmailVerificationCodeInDevelopment: process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT === 'true',
   internalWalletUserTopUpEnabled: process.env.INTERNAL_WALLET_USER_TOPUP_ENABLED === 'true',
   internalWalletAdminCreditEnabled: process.env.INTERNAL_WALLET_ADMIN_CREDIT_ENABLED === 'true',
   googleAuthEnabled: process.env.GOOGLE_AUTH_ENABLED === 'true',
@@ -69,6 +71,11 @@ export const config = {
   adminPanelUsername: process.env.ADMIN_PANEL_USERNAME || '',
   adminPanelAllowedEmail: process.env.ADMIN_PANEL_ALLOWED_EMAIL || 'amir.davodpour@gmail.com',
   adminPanelVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
+  adminPanelReadVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_READ_VERIFICATION_MINUTES', 15, { min: 5, max: 120 }),
+  adminPanelWriteVerificationMinutes: positiveIntegerEnv('ADMIN_PANEL_WRITE_VERIFICATION_MINUTES', 5, { min: 1, max: 15 }),
+  adminMfaRequired: process.env.ADMIN_MFA_REQUIRED === 'true' || process.env.NODE_ENV === 'production',
+  adminMfaEncryptionKey: process.env.ADMIN_MFA_ENCRYPTION_KEY || '',
+  adminMfaEnrollmentMinutes: positiveIntegerEnv('ADMIN_MFA_ENROLLMENT_MINUTES', 10, { min: 5, max: 30 }),
   paymentProvider: process.env.PAYMENT_PROVIDER || 'simulator',
   paymentCurrency: process.env.PAYMENT_CURRENCY || 'USD',
   paymentWebhookSecret: process.env.PAYMENT_WEBHOOK_SECRET || '',
@@ -147,6 +154,8 @@ if (process.env.NODE_ENV === 'production') {
   if (config.googleAuthEnabled && !config.googleOAuthClientId) throw new Error('GOOGLE_OAUTH_CLIENT_ID must be set when GOOGLE_AUTH_ENABLED=true');
   if (!config.adminPanelUsername || config.adminPanelUsername.length < 4 || config.adminPanelUsername.length > 120) throw new Error('ADMIN_PANEL_USERNAME must be configured for production admin access');
   if (!config.adminPanelAllowedEmail || !config.adminPanelAllowedEmail.includes('@')) throw new Error('ADMIN_PANEL_ALLOWED_EMAIL must be configured for production admin access');
+  if (!config.adminMfaRequired) throw new Error('ADMIN_MFA_REQUIRED=true is mandatory in production');
+  if (Buffer.byteLength(config.adminMfaEncryptionKey, 'utf8') < 32) throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be at least 32 bytes in production');
   if (config.paymentProvider === 'internal' && config.paymentCurrency !== 'TOMAN') throw new Error('PAYMENT_CURRENCY=TOMAN is required when PAYMENT_PROVIDER=internal');
   if (config.paymentProvider === 'webhook') {
     if (!config.paymentProviderToken || config.paymentProviderToken.length < 24) throw new Error('PAYMENT_PROVIDER_TOKEN must be set and sufficiently long in production');

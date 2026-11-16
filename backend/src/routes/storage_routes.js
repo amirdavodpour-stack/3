@@ -8,7 +8,22 @@ const MIME_EXTENSIONS = new Map([
   ['image/jpeg', new Set(['.jpg', '.jpeg'])],
   ['image/webp', new Set(['.webp'])],
   ['text/plain', new Set(['.txt', '.text', '.log'])],
+  ['audio/mp4', new Set(['.m4a', '.mp4'])],
+  ['audio/mpeg', new Set(['.mp3'])],
+  ['audio/wav', new Set(['.wav', '.wave'])],
 ]);
+
+export function normalizeUploadContentType(contentType, filename) {
+  const declared = String(contentType || '').trim().toLowerCase();
+  if (MIME_EXTENSIONS.has(declared)) return declared;
+  // Multipart clients can default to application/octet-stream; infer only from the allowlist.
+  if (declared !== '' && declared !== 'application/octet-stream') return declared;
+  const extension = path.extname(String(filename || '')).toLowerCase();
+  for (const [type, extensions] of MIME_EXTENSIONS) {
+    if (extensions.has(extension)) return type;
+  }
+  return declared;
+}
 
 export function createStorageRoutes({ authUser, storage, config, readBody, readMultipartSingleFile, requireFields, stringField, sendJson, HttpError, repo, legacy, id, now, logEvent }) {
   function validateFilenameForContentType(filename, contentType) {
@@ -25,22 +40,26 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
     if (req.method === 'POST' && parts[1] === 'upload') {
       const file = await readMultipartSingleFile(req);
       try {
-        const contentType = String(file.contentType || '').toLowerCase();
+        const contentType = normalizeUploadContentType(file.contentType, file.filename);
+        if (!MIME_EXTENSIONS.has(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
         validateFilenameForContentType(file.filename, contentType);
+        file.contentType = contentType;
         await storage.put(file);
+
+        const data = { key: file.key, filename: file.filename, contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
+        const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType, size: file.size, createdAt: now() };
+        try {
+          if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
+        } catch (error) {
+          try { await storage.delete({ key: file.key }); } catch (cleanupError) { logEvent({ level: 'error', action: 'ORPHAN_UPLOAD_CLEANUP_FAILED', key: file.key, message: cleanupError?.message || String(cleanupError) }); }
+          if (error?.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
+          throw error;
+        }
+        return await sendJson(res, 201, data);
       } finally {
         try { await fs.promises.unlink(file.path); } catch {}
+        file.release?.();
       }
-      const contentType = String(file.contentType || '').toLowerCase();
-      const data = { key: file.key, filename: file.filename, contentType, size: file.size, uploadedBy: user.id, createdAt: now() };
-      const uploadDraft = { id: id(), storageKey: file.key, uploadedBy: user.id, contentType, size: file.size, createdAt: now() };
-      try {
-        if (process.env.DATABASE_URL) await repo.insertUpload(uploadDraft); else legacy.insertUpload(uploadDraft);
-      } catch (error) {
-        try { await storage.delete({ key: file.key }); } catch (cleanupError) { logEvent({ level: 'error', action: 'ORPHAN_UPLOAD_CLEANUP_FAILED', key: file.key, message: cleanupError?.message || String(cleanupError) }); }
-        throw error;
-      }
-      return sendJson(res, 201, data);
     }
     if (req.method === 'POST' && parts[1] === 'presign') {
       const body = await readBody(req); requireFields(body, ['filename', 'contentType']);
@@ -57,6 +76,7 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
         return sendJson(res, 200, { ...result, intentId: intent.id, uploadedBy: user.id });
       } catch (error) {
         if (error?.message === 'DIRECT_UPLOAD_UNSUPPORTED') throw new HttpError(409, 'DIRECT_UPLOAD_UNSUPPORTED', 'Direct upload requires S3-compatible storage');
+        if (error?.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
         throw error;
       }
     }
@@ -85,7 +105,11 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
         await storage.validateObject({ key, contentType });
         let completed;
         try { completed = await repo.completeUploadAtomic({ intentId: intent.id, key, userId: user.id, contentType, size: head.size, createdAt: now() }); }
-        catch (e) { if (e.code === 'INVALID_UPLOAD_INTENT') throw new HttpError(403, 'INVALID_UPLOAD_INTENT', 'Upload intent is invalid or expired'); throw e; }
+        catch (e) {
+          if (e.code === 'INVALID_UPLOAD_INTENT') throw new HttpError(403, 'INVALID_UPLOAD_INTENT', 'Upload intent is invalid or expired');
+          if (e.code === 'ACCOUNT_INACTIVE') throw new HttpError(403, 'ACCOUNT_INACTIVE', 'Account is not active');
+          throw e;
+        }
         const created = completed.upload;
         return sendJson(res, completed.existing ? 200 : 201, { id: created.id, key, filename, contentType, size: created.size, uploadedBy: created.uploadedBy, createdAt: created.createdAt });
       }

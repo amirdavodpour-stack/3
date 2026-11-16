@@ -7,6 +7,7 @@ import 'package:hope_mobile/core/admin/admin_repository.dart';
 import 'package:hope_mobile/core/marketplace/application.dart';
 import 'package:hope_mobile/core/marketplace/job.dart';
 import 'package:hope_mobile/features/admin/admin_page.dart';
+import 'package:hope_mobile/features/admin/admin_access_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -15,13 +16,20 @@ import 'package:provider/provider.dart';
 /// in-memory AdminRepository fake, so tests are order-independent and touch
 /// no real network or shared global state.
 class _FakeAdmin implements AdminRepository {
-  _FakeAdmin({this.failJobs = false, this.primaryAdmin = false});
+  _FakeAdmin({this.failJobs = false, this.primaryAdmin = false, this.mfaEnabled = true});
 
-  /// Only [listJobs] can fail (it powers the initially-active tab, whose
-  /// FutureBuilder observes the error future from the very first frame, so
-  /// no unobserved async error can be raised).
+  /// The active Jobs tab observes its future immediately, so this fake can
+  /// surface errors there without leaving unhandled async errors.
   bool failJobs = false;
+  bool failSummary = false;
+  bool failUsers = false;
+  Completer<HopeAdminSummary>? summaryGate;
+  Completer<List<HopeAdminUser>>? usersGate;
   final bool primaryAdmin;
+  bool mfaEnabled;
+  bool failMfaStatus = false;
+  bool failVerificationAfterCapture = false;
+  final List<Map<String, dynamic>> verificationRequests = [];
 
   /// When true the next state-mutating action throws (error-path coverage).
   bool failNextAction = false;
@@ -44,7 +52,11 @@ class _FakeAdmin implements AdminRepository {
   List<HopeAdminAuditEvent> audit = const [];
 
   @override
-  Future<HopeAdminSummary> getSummary() async => summary;
+  Future<HopeAdminSummary> getSummary() async {
+    if (summaryGate != null) return summaryGate!.future;
+    if (failSummary) throw Exception('summary down');
+    return summary;
+  }
 
   @override
   Future<List<HopeJob>> listJobs() async {
@@ -65,6 +77,8 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<List<HopeAdminUser>> listUsers() async {
     calls.add('users');
+    if (usersGate != null) return usersGate!.future;
+    if (failUsers) throw Exception('users down');
     return users;
   }
 
@@ -100,8 +114,8 @@ class _FakeAdmin implements AdminRepository {
   }
 
   @override
-  Future<void> setUserStatus(String id, String status) async {
-    calls.add('status:$id:$status');
+  Future<void> setUserStatus(String id, String status, {required String reason, DateTime? reviewDueAt}) async {
+    calls.add('status:$id:$status:$reason:' + (reviewDueAt?.toIso8601String() ?? ''));
     if (failNextAction) throw Exception('action boom');
   }
 
@@ -124,6 +138,32 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<void> revokeUserSessions(String id) async {
     calls.add('revoke-sessions:$id');
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAdminMfaStatus() async {
+    if (failMfaStatus) throw Exception('MFA status unavailable');
+    return {
+        'enabled': mfaEnabled,
+        'enrollmentPending': false,
+        'recoveryCodesRemaining': mfaEnabled ? 10 : 0,
+      };
+  }
+
+  @override
+  Future<Map<String, dynamic>> beginAdminMfaEnrollment(String name, String username, {String? password, String? idToken}) async => {
+        'pending': true,
+        'secret': 'ABCDEFGHIJKLMNOPQRSTUV234567ABCD',
+        'otpauthUri': 'otpauth://totp/HOPEv2%3Aadmin%40example.test?secret=ABCDEFGHIJKLMNOPQRSTUV234567ABCD&issuer=HOPEv2',
+      };
+
+  @override
+  Future<Map<String, dynamic>> confirmAdminMfaEnrollment(String code) async {
+    mfaEnabled = true;
+    return {
+      'enabled': true,
+      'recoveryCodes': List<String>.generate(10, (index) => 'A' * 31 + index.toString()),
+    };
   }
 
   @override
@@ -165,7 +205,14 @@ class _FakeAdmin implements AdminRepository {
 
   @override
   Future<Map<String, dynamic>> getCrashSummary({int days = 30}) async => const {};
-  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username) async => const {'verified': true};
+  @override Future<Map<String, dynamic>> verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = 'WRITE'}) async {
+    verificationRequests.add({
+      'name': name, 'username': username, 'password': password, 'idToken': idToken,
+      'totpCode': totpCode, 'recoveryCode': recoveryCode, 'scope': scope,
+    });
+    if (failVerificationAfterCapture) throw Exception('test stops before navigation');
+    return {'verified': true, 'scope': scope};
+  }
   @override Future<void> lockPanel() async {}
   @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
   @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
@@ -205,6 +252,8 @@ Future<void> _pump(
   _FakeAdmin repo, {
   double width = 900,
   double height = 2400,
+  double textScale = 1,
+  bool settle = true,
 }) async {
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
@@ -212,6 +261,13 @@ Future<void> _pump(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(MaterialApp(
     theme: ThemeData.light(),
+    builder: (context, child) {
+      final media = MediaQuery.of(context);
+      return MediaQuery(
+        data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      );
+    },
     locale: const Locale('en'),
     supportedLocales: const [Locale('en'), Locale('fa')],
     localizationsDelegates: const [
@@ -221,6 +277,33 @@ Future<void> _pump(
       GlobalCupertinoLocalizations.delegate,
     ],
     home: Provider<AdminRepository>.value(value: repo, child: const AdminPage()),
+  ));
+  if (settle) await tester.pumpAndSettle();
+}
+
+Future<void> _pumpAdminAccess(
+  WidgetTester tester,
+  _FakeAdmin repo, {
+  Locale locale = const Locale('en'),
+}) async {
+  tester.view.physicalSize = const Size(600, 1100);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  await tester.pumpWidget(MaterialApp(
+    theme: ThemeData.light(),
+    locale: locale,
+    supportedLocales: const [Locale('en'), Locale('fa')],
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    home: Provider<AdminRepository>.value(
+      value: repo,
+      child: const AdminAccessPage(),
+    ),
   ));
   await tester.pumpAndSettle();
 }
@@ -234,6 +317,58 @@ Future<void> _openTab(WidgetTester tester, String label) async {
 
 
 void main() {
+  testWidgets('admin access requires a second factor and offers scoped access', (tester) async {
+    final repo = _FakeAdmin(mfaEnabled: true);
+    await _pumpAdminAccess(tester, repo);
+    expect(find.text('Two-factor authentication is enabled'), findsOneWidget);
+    expect(find.text('Read only — 15 minutes'), findsOneWidget);
+    expect(find.text('Admin actions — 5 minutes'), findsOneWidget);
+    expect(find.text('Verify password and second factor'), findsOneWidget);
+    expect(find.text('Verify Google and second factor'), findsOneWidget);
+  });
+
+  testWidgets('admin can enroll authenticator and receives one-time recovery codes', (tester) async {
+    final repo = _FakeAdmin(mfaEnabled: false);
+    await _pumpAdminAccess(tester, repo);
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin name'), 'Operations Admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin username'), 'hope-admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Current password'), 'current-password');
+    await tester.tap(find.text('Set up with password'));
+    await tester.pumpAndSettle();
+    expect(find.text('ABCDEFGHIJKLMNOPQRSTUV234567ABCD'), findsOneWidget);
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Six-digit code'), '123456');
+    await tester.tap(find.text('Confirm and enable'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recovery codes — shown once'), findsOneWidget);
+    expect(repo.mfaEnabled, isTrue);
+    expect(find.textContaining('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0'), findsOneWidget);
+  });
+
+  testWidgets('admin unlock sends the chosen MFA factor and selected READ scope', (tester) async {
+    final repo = _FakeAdmin(mfaEnabled: true)..failVerificationAfterCapture = true;
+    await _pumpAdminAccess(tester, repo);
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin name'), 'Operations Admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Admin username'), 'hope-admin');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Current password'), 'current-password');
+    await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.decoration?.labelText == 'Six-digit code'), '123456');
+    await tester.tap(find.text('Read only — 15 minutes'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Verify password and second factor'));
+    await tester.pumpAndSettle();
+    expect(repo.verificationRequests, hasLength(1));
+    expect(repo.verificationRequests.single['totpCode'], '123456');
+    expect(repo.verificationRequests.single['recoveryCode'], isNull);
+    expect(repo.verificationRequests.single['scope'], 'READ');
+  });
+
+  testWidgets('admin access fails closed when MFA status cannot be fetched', (tester) async {
+    final repo = _FakeAdmin()..failMfaStatus = true;
+    await _pumpAdminAccess(tester, repo);
+    expect(find.textContaining('MFA status is unavailable. Admin access remains locked.'), findsOneWidget);
+    expect(find.text('Verify password and second factor'), findsNothing);
+  });
+
+
 
   testWidgets('only the primary administrator sees administrator-management controls',
       (tester) async {
@@ -373,6 +508,98 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'admin summary metric cards adapt height and retain labels at 1.5x text scale',
+    (tester) async {
+      await _pump(
+        tester,
+        _FakeAdmin(),
+        width: 390,
+        height: 844,
+        textScale: 1.5,
+      );
+
+      final stats = find.byType(PremiumStatCard);
+      expect(stats, findsNWidgets(6));
+      expect(
+        tester.getSize(stats.first).height,
+        greaterThan(80),
+        reason: 'Enlarged text must not be forced into the short fixed-aspect summary cells.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'admin dashboard distinguishes loading and failure from empty/zero, then recovers on retry',
+    (tester) async {
+      final summaryGate = Completer<HopeAdminSummary>();
+      final usersGate = Completer<List<HopeAdminUser>>();
+      final repo = _FakeAdmin(primaryAdmin: true)
+        ..summaryGate = summaryGate
+        ..usersGate = usersGate;
+
+      await _pump(tester, repo, settle: false);
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('admin-summary-loading')), findsOneWidget);
+      expect(find.byKey(const ValueKey('admin-management-loading')), findsOneWidget);
+      expect(find.text('No administrators found.'), findsNothing);
+      expect(find.text('0'), findsNothing,
+          reason: 'Loading metrics must not masquerade as real zero counts.');
+
+      summaryGate.completeError(Exception('summary unavailable'));
+      usersGate.completeError(Exception('administrator list unavailable'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('admin-summary-loading')), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-loading')), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-error')), findsOneWidget);
+      expect(find.text('Retry'), findsNWidgets(2));
+      expect(find.text('No administrators found.'), findsNothing,
+          reason: 'A failed list request must not be presented as an empty administrator list.');
+
+      repo
+        ..summaryGate = null
+        ..usersGate = null
+        ..summary = const HopeAdminSummary(values: {
+          'users': 701,
+          'published_opportunities': 5,
+          'missions': 2,
+          'jobs': 3,
+          'pending_applications': 1,
+          'audit_events': 9,
+        })
+        ..users = [
+          const HopeAdminUser(
+            id: 'owner-1',
+            displayName: 'Owner',
+            email: 'owner@example.com',
+            role: 'ADMIN',
+            status: 'ACTIVE',
+            primaryAdmin: true,
+          ),
+          const HopeAdminUser(
+            id: 'admin-2',
+            displayName: 'Ops',
+            email: 'ops@example.com',
+            role: ' ADMIN ',
+            status: 'ACTIVE',
+          ),
+        ];
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Retry').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('701'), findsOneWidget);
+      expect(find.text('Ops'), findsOneWidget);
+      expect(find.text('No administrators found.'), findsNothing);
+      expect(find.byKey(const ValueKey('admin-management-error')), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()
@@ -449,7 +676,16 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(suspend, findsOneWidget);
     await tester.tap(suspend);
     await tester.pumpAndSettle();
-    expect(repo.calls, contains('status:u1:SUSPENDED'));
+    expect(find.text('Reason (required)'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Temporary hold pending manual review');
+    await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(FilledButton, 'Confirm');
+    expect(confirm, findsOneWidget);
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(find.text('Reason (required)'), findsNothing);
+    expect(repo.calls.any((call) => call.startsWith('status:u1:SUSPENDED:Temporary hold pending manual review:')), isTrue);
 
     // Audit log tab: system actor fallback for empty actor name.
     await _openTab(tester, 'Audit log');
@@ -529,6 +765,15 @@ testWidgets('admin action runner ignores duplicate submissions while busy',
     expect(activate, findsOneWidget);
     await tester.tap(activate);
     await tester.pumpAndSettle();
-    expect(repo.calls, contains('status:u3:ACTIVE'));
+    expect(find.text('Reason (required)'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'Manual review completed; restriction lifted');
+    await tester.pumpAndSettle();
+    final confirm = find.widgetWithText(FilledButton, 'Confirm');
+    expect(confirm, findsOneWidget);
+    expect(tester.widget<FilledButton>(confirm).onPressed, isNotNull);
+    await tester.tap(confirm);
+    await tester.pumpAndSettle();
+    expect(find.text('Reason (required)'), findsNothing);
+    expect(repo.calls.any((call) => call.startsWith('status:u3:ACTIVE:Manual review completed; restriction lifted:')), isTrue);
   });
 }

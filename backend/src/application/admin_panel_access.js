@@ -36,16 +36,17 @@ export function isPrimaryAdminEmail(email) {
   return normalize(email).toLowerCase() === PRIMARY_ADMIN_EMAIL;
 }
 
-export function shouldBootstrapPrimaryAdmin({ email, verifiedIdentity = false } = {}) {
-  return Boolean(verifiedIdentity) && isPrimaryAdminEmail(email);
+export function shouldBootstrapPrimaryAdmin({ email, verifiedIdentity = false, googleSubject } = {}) {
+  return Boolean(verifiedIdentity) && Boolean(normalize(googleSubject)) && isPrimaryAdminEmail(email);
 }
 
 export function isPrimaryAdmin(user) {
-  return user?.role === 'ADMIN' && isPrimaryAdminEmail(user.email);
+  return user?.role === 'ADMIN' && isPrimaryAdminEmail(user.email) && Boolean(normalize(user.googleSubject));
 }
 
 export function getAdminPermissions(user) {
   if (user?.role !== 'ADMIN') return [];
+  if (isPrimaryAdminEmail(user.email) && !normalize(user.googleSubject)) return [];
   if (isPrimaryAdmin(user)) return Object.values(ADMIN_PERMISSIONS);
   return [...OPERATIONAL_ADMIN_PERMISSIONS];
 }

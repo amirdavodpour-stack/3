@@ -7,9 +7,10 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hope-e2e-'));
 if (!process.env.DATABASE_URL) process.env.DATA_FILE = path.join(tmp, 'hope.json');
 process.env.STORAGE_DIR = path.join(tmp, 'storage');
 process.env.NODE_ENV = 'test';
+// This offline marketplace E2E exercises the simulator path, not the SQL-only internal wallet ledger.
+process.env.PAYMENT_PROVIDER = 'simulator';
 const { createServer } = await import('../src/app.js');
 const { db } = await import('../src/db.js');
-const { creditWallet } = await import('../src/wallet_ledger.js');
 const server = createServer();
 const closeServer = () => new Promise((resolve) => {
   if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
@@ -27,7 +28,6 @@ test('full marketplace flow', async () => {
   r=await json(`/jobs/${job.id}/publish`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`}}); assert.equal(r.status,200);
   r=await json('/offers',{method:'POST',headers:{Authorization:`Bearer ${bob.accessToken}`},body:JSON.stringify({jobId:job.id,price:120,message:'yes'})}); assert.equal(r.status,201); offer=r.body.data;
   r=await json(`/offers/${offer.id}/accept`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`}}); assert.equal(r.status,200);
-  await creditWallet({userId: alice.user.id, amount:'1000', idempotencyKey:'e2e-seed-funds', referenceType:'TEST_TOP_UP', metadata:{test:'e2e-flow'}});
   r=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`,'Idempotency-Key':'e2e-1'},body:'{}'}); assert.equal(r.status,201); const firstPayment=r.body.data;
   r=await json(`/payments/fund/${job.id}`,{method:'POST',headers:{Authorization:`Bearer ${alice.accessToken}`,'Idempotency-Key':'e2e-1'},body:'{}'}); assert.equal(r.status,200); assert.equal(r.body.data.id,firstPayment.id);
   r=await json(`/jobs/${job.id}/start`,{method:'POST',headers:{Authorization:`Bearer ${bob.accessToken}`}}); assert.equal(r.status,200);

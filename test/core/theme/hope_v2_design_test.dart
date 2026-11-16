@@ -1,8 +1,10 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
 import 'package:hope_mobile/core/theme/hope_v2_design.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
@@ -25,10 +27,23 @@ void main() {
     expect(HopeV2Motion.standard, const Duration(milliseconds: 240));
   });
 
+  test('Material NavigationBar theme preserves a 12sp meaningful-label floor', () {
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      final labelStyle = theme.navigationBarTheme.labelTextStyle?.resolve({});
+      expect(
+        labelStyle?.fontSize,
+        greaterThanOrEqualTo(12),
+        reason: 'Material NavigationBar labels must not fall below the 12sp meaningful-text floor.',
+      );
+    }
+  });
+
   test('FilledButton theme roles meet WCAG AA contrast in light and dark modes', () {
     final light = AppTheme.light().colorScheme;
     expect(light.primary, AppColors.primaryAction);
     expect(light.onPrimary, AppColors.surface);
+    expect(light.tertiary, HopeV2TonalPalettes.forest.shade600);
+    expect(light.onTertiary, AppColors.surface);
     expect(
       _contrastRatio(light.onPrimary, light.primary),
       greaterThanOrEqualTo(4.5),
@@ -37,10 +52,198 @@ void main() {
     final dark = AppTheme.dark().colorScheme;
     expect(dark.primary, AppColors.primaryDark);
     expect(dark.onPrimary, AppColors.ink);
+    expect(dark.tertiary, HopeV2TonalPalettes.forest.shade300);
+    expect(dark.onTertiary, HopeV2TonalPalettes.forest.shade900);
     expect(
       _contrastRatio(dark.onPrimary, dark.primary),
       greaterThanOrEqualTo(4.5),
     );
+  });
+
+  test('annotated dark-green CTA token meets WCAG AA and preserves indigo brand tokens', () {
+    expect(HopeV2Colors.markedPrimaryActionDarkGreen, const Color(0xFF2E7B5A));
+    expect(
+      _contrastRatio(HopeV2Colors.darkText, HopeV2Colors.markedPrimaryActionDarkGreen),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
+    expect(HopeV2Colors.primaryDark, const Color(0xFF818CF8));
+    expect(HopeV2Colors.success, const Color(0xFF166534));
+  });
+
+  testWidgets('audited green CTA keeps disabled state neutral in light and dark themes', (tester) async {
+    late ButtonStyle darkStyle;
+    await tester.pumpWidget(
+      Theme(
+        data: AppTheme.dark(),
+        child: Builder(
+          builder: (context) {
+            darkStyle = HopeV2ButtonStyles.auditedGreenPrimaryCta(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(darkStyle.backgroundColor?.resolve({}), HopeV2Colors.markedPrimaryActionDarkGreen);
+    expect(darkStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.darkSurface);
+    expect(darkStyle.foregroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.darkMuted);
+    expect(
+      _contrastRatio(darkStyle.foregroundColor!.resolve({})!, darkStyle.backgroundColor!.resolve({})!),
+      greaterThanOrEqualTo(4.5),
+    );
+    final darkPressedFill = Color.alphaBlend(
+      darkStyle.overlayColor!.resolve({WidgetState.pressed})!,
+      darkStyle.backgroundColor!.resolve({})!,
+    );
+    expect(
+      _contrastRatio(darkStyle.foregroundColor!.resolve({})!, darkPressedFill),
+      greaterThanOrEqualTo(4.5),
+    );
+
+    late ButtonStyle lightStyle;
+    await tester.pumpWidget(
+      Theme(
+        data: AppTheme.light(),
+        child: Builder(
+          builder: (context) {
+            lightStyle = HopeV2ButtonStyles.auditedGreenPrimaryCta(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    expect(lightStyle.backgroundColor?.resolve({}), HopeV2Colors.markedPrimaryActionDarkGreen);
+    expect(lightStyle.backgroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.disabledLight);
+    expect(lightStyle.foregroundColor?.resolve({WidgetState.disabled}), HopeV2Colors.muted);
+    expect(
+      _contrastRatio(lightStyle.foregroundColor!.resolve({})!, lightStyle.backgroundColor!.resolve({})!),
+      greaterThanOrEqualTo(4.5),
+    );
+    final lightPressedFill = Color.alphaBlend(
+      lightStyle.overlayColor!.resolve({WidgetState.pressed})!,
+      lightStyle.backgroundColor!.resolve({})!,
+    );
+    expect(
+      _contrastRatio(lightStyle.foregroundColor!.resolve({})!, lightPressedFill),
+      greaterThanOrEqualTo(4.5),
+    );
+  });
+
+  testWidgets(
+    'Google sign-in button uses official dark and neutral themes with readable labels',
+    (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        final dark = brightness == Brightness.dark;
+        final theme = dark ? AppTheme.dark() : AppTheme.light();
+        late ButtonStyle googleStyle;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            // Avoid sampling the previous palette during MaterialApp's default
+            // animated theme transition between the light and dark iterations.
+            themeAnimationDuration: Duration.zero,
+            home: Builder(
+              builder: (context) {
+                googleStyle = HopeV2ButtonStyles.googleSignIn(context);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        final expectedSurface = dark
+            ? const Color(0xFF131314)
+            : const Color(0xFFF2F2F2);
+        final expectedForeground = dark
+            ? const Color(0xFFE3E3E3)
+            : const Color(0xFF1F1F1F);
+        final expectedDisabledSurface = dark
+            ? const Color(0xFF242528)
+            : const Color(0xFFE8EAED);
+        final expectedDisabledForeground = dark
+            ? const Color(0xFF8E918F)
+            : const Color(0xFF4F5358);
+
+        expect(googleStyle.backgroundColor?.resolve({}), expectedSurface);
+        expect(googleStyle.foregroundColor?.resolve({}), expectedForeground);
+        expect(
+          googleStyle.backgroundColor?.resolve({WidgetState.disabled}),
+          expectedDisabledSurface,
+        );
+        expect(
+          googleStyle.foregroundColor?.resolve({WidgetState.disabled}),
+          expectedDisabledForeground,
+        );
+        expect(
+          googleStyle.side?.resolve({}),
+          dark
+              ? const BorderSide(color: Color(0xFF8E918F), width: 1)
+              : BorderSide.none,
+        );
+        expect(
+          _contrastRatio(expectedForeground, expectedSurface),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          _contrastRatio(expectedDisabledForeground, expectedDisabledSurface),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+
+      expect(HopeV2Colors.primaryAction, const Color(0xFF4F46E5));
+    },
+  );
+
+  testWidgets('match-score chart token is teal in both themes, not the indigo action hue',
+      (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      late BuildContext chartContext;
+      final theme = brightness == Brightness.dark ? AppTheme.dark() : AppTheme.light();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Theme(
+            data: theme,
+            child: Builder(
+              builder: (context) {
+                chartContext = context;
+                expect(
+                  Theme.of(context).brightness,
+                  brightness,
+                  reason: 'The chart palette test must evaluate the requested theme.',
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      final expected = brightness == Brightness.dark
+          ? HopeV2TonalPalettes.info.shade400
+          : HopeV2TonalPalettes.info.shade700;
+      final actual = HopeV2ChartColors.matchSignal(chartContext);
+      expect(actual, expected);
+      expect(actual, isNot(theme.colorScheme.primary));
+      expect(
+        HopeV2ChartColors.cashIn(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.success.shade400
+            : HopeV2TonalPalettes.success.shade700,
+        reason: 'Semantic cash-in green is not rebranded as a data-chart accent.',
+      );
+      expect(
+        HopeV2ChartColors.cashOut(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.danger.shade400
+            : HopeV2TonalPalettes.danger.shade700,
+      );
+      expect(
+        HopeV2ChartColors.reserved(chartContext),
+        brightness == Brightness.dark
+            ? HopeV2TonalPalettes.warning.shade300
+            : HopeV2TonalPalettes.warning.shade700,
+      );
+    }
   });
 
   test('indigo action pairings meet WCAG AA with editorial surfaces', () {
@@ -409,12 +612,46 @@ void main() {
     expect(text.maxLines, 1);
   });
 
-  test('HOPE action icon vocabulary is backed by Hugeicons data', () {
-    expect(HopeV2Icons.search, isA<List<List>>());
-    expect(HopeV2Icons.menu, isA<List<List>>());
-    expect(HopeV2Icons.refresh, isA<List<List>>());
-    expect(HopeV2Icons.add, isA<List<List>>());
-    expect(HopeV2Icons.notifications, isA<List<List>>());
+  test('HOPE action icon vocabulary uses the Cupertino font package consistently', () {
+    final icons = <IconData>[
+      HopeV2Icons.home,
+      HopeV2Icons.homeSelected,
+      HopeV2Icons.workshop,
+      HopeV2Icons.wallet,
+      HopeV2Icons.profile,
+      HopeV2Icons.search,
+      HopeV2Icons.menu,
+      HopeV2Icons.refresh,
+      HopeV2Icons.add,
+      HopeV2Icons.notifications,
+      HopeV2Icons.mission,
+      HopeV2Icons.activity,
+      HopeV2Icons.activitySelected,
+      HopeV2Icons.insights,
+      HopeV2Icons.partial,
+      HopeV2Icons.description,
+      HopeV2Icons.assign,
+      HopeV2Icons.protectedFunds,
+      HopeV2Icons.transferIn,
+      HopeV2Icons.transferOut,
+      HopeV2Icons.verified,
+      HopeV2Icons.error,
+      HopeV2Icons.empty,
+      HopeV2Icons.offline,
+      HopeV2Icons.history,
+      HopeV2Icons.deadline,
+      HopeV2Icons.deposit,
+      HopeV2Icons.withdraw,
+    ];
+    expect(icons, isNotEmpty);
+    expect(
+      icons.every(
+        (icon) =>
+            icon.fontFamily == CupertinoIcons.iconFont &&
+            icon.fontPackage == CupertinoIcons.iconFontPackage,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('premium filter chip exposes disabled and loading states',
@@ -534,7 +771,7 @@ void main() {
     }
   });
 
-  testWidgets('HopeIconTile renders canonical Hugeicons action tokens',
+  testWidgets('HopeIconTile renders canonical Cupertino action tokens',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -550,9 +787,9 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byIcon(HopeV2Icons.search), findsOneWidget);
   });
-  testWidgets('compatibility status and empty-state primitives accept canonical icons',
+  testWidgets('status and empty-state primitives accept canonical Cupertino icons',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -575,7 +812,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(HugeIcon), findsWidgets);
+    expect(find.byType(Icon), findsWidgets);
   });
 
 
@@ -1059,5 +1296,173 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+
+  test('icon accents distribute the HOPE multi-accent genome by product role', () {
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.light),
+      HopeV2TonalPalettes.forest.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.wallet, brightness: Brightness.dark),
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.message, brightness: Brightness.light),
+      HopeV2TonalPalettes.info.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.profile, brightness: Brightness.dark),
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.featured, brightness: Brightness.light),
+      HopeV2TonalPalettes.featured.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.pending, brightness: Brightness.dark),
+      HopeV2TonalPalettes.warning.shade200,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.error, brightness: Brightness.light),
+      HopeV2TonalPalettes.danger.shade700,
+    );
+    expect(
+      HopeV2IconAccents.resolve(HopeV2Icons.home, brightness: Brightness.light),
+      HopeV2Colors.primaryAction,
+    );
+  });
+
+  testWidgets(
+    'meaningful tags and compact progress labels keep the 12sp minimum',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const lifecycleLabels = [
+        'تأمین وجه',
+        'در امانت',
+        'در حال انجام',
+        'تحویل',
+        'تأیید',
+        'تسویه',
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: MediaQuery(
+            data: MediaQueryData.fromView(tester.view).copyWith(
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: const Scaffold(
+              body: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PremiumTag(label: 'تکمیل‌شده', allowWrap: true),
+                    HopeCreationProgress(activeIndex: 1),
+                    HopeLifecycleRail(
+                      labels: lifecycleLabels,
+                      icons: [
+                        Icons.account_balance_wallet_outlined,
+                        Icons.lock_outline,
+                        Icons.work_outline,
+                        Icons.upload_outlined,
+                        Icons.verified_outlined,
+                        Icons.payments_outlined,
+                      ],
+                      current: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in ['تکمیل‌شده', ...lifecycleLabels]) {
+        final target = find.text(label);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Meaningful state label "$label" must not be smaller than 12sp.',
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(target).didExceedMaxLines,
+          isFalse,
+          reason: 'Meaningful state label "$label" must not be clipped.',
+        );
+      }
+
+      for (final label in ['نوع', 'جزئیات', 'مبلغ', 'شرایط', 'بازبینی']) {
+        final target = find.text(label);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Creation progress label "$label" must be at least 12sp.',
+        );
+      }
+      for (final digit in ['۱', '۲', '۳', '۴', '۵']) {
+        final target = find.text(digit);
+        expect(target, findsOneWidget);
+        expect(
+          tester.widget<Text>(target).style?.fontSize,
+          greaterThanOrEqualTo(12),
+          reason: 'Progress ordinal "$digit" must be at least 12sp.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('default icon tiles render green, teal, clay and trust accents by role',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const Scaffold(
+          body: Column(
+            children: [
+              HopeIconTile(HopeV2Icons.wallet),
+              HopeIconTile(HopeV2Icons.message),
+              HopeIconTile(HopeV2Icons.featured),
+              HopeIconTile(HopeV2Icons.profile),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.wallet)).color,
+      HopeV2TonalPalettes.forest.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.message)).color,
+      HopeV2TonalPalettes.info.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.featured)).color,
+      HopeV2TonalPalettes.featured.shade300,
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(HopeV2Icons.profile)).color,
+      HopeV2TonalPalettes.trust.shade300,
+    );
+    expect(tester.takeException(), isNull);
+  });
 
 }

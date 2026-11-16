@@ -19,7 +19,12 @@ runtime_contracts=(
   'private const val HOPE_SCREENSHOT_FRAME_RETRY_INTERVAL_MS'
   'private const val HOPE_SCREENSHOT_LOG_TAG'
   'private var hopeScreenshotCapturePhase = "idle"'
-  'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED'
+  'private var hopeScreenshotFreshFramesRemaining = 0'
+  'HOPE_SCREENSHOT_CAPTURE_REQUEST:'
+  'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:'
+  'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:'
+  'MessageDigest.getInstance("SHA-256")'
+  'HOPE_SCREENSHOT_CAPTURE_COMPLETE:'
   'HOPE_SCREENSHOT_PIXELCOPY_START:'
   'HOPE_SCREENSHOT_PIXELCOPY_CALLBACK:'
   'private fun scheduleHopeFreshFrameRetry('
@@ -37,7 +42,6 @@ done
 dart_contracts=(
   "const _hopeRuntimeScreenshotChannel = MethodChannel('hope.runtime/screenshot');"
   "invokeMethod<Uint8List>("
-  "'screenshotName': marker"
   "'forceFreshFrame': forceFreshFrame"
   'required WidgetTester tester'
 )
@@ -49,9 +53,39 @@ for contract in "${dart_contracts[@]}"; do
 done
 
 
-grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot,' "$test_file"
-grep -Fq 'var _runtimeHasCapturedScreenshot = false;' "$test_file"
+grep -Fq "int _runtimeFreshFrameCount(String marker)" "$test_file"
+grep -Fq "if (marker.startsWith('register-')) return 1;" "$test_file"
+grep -Fq "if (marker.startsWith('password-reset-')) return 1;" "$test_file"
+register_capture_block="$(sed -n '/^  if (child is RegisterPage) {/,/^  if (child is PasswordResetPage) {/p' "$test_file")"
+register_ready_line="$(grep -nF 'await _waitForRuntimeRegisterGoogleCta(tester);' <<<"$register_capture_block" | head -n1 | cut -d: -f1)"
+register_capture_line="$(grep -nF 'await _captureRuntimeScreenshot(marker, tester: tester);' <<<"$register_capture_block" | head -n1 | cut -d: -f1)"
+if [[ -z "$register_ready_line" || -z "$register_capture_line" || "$register_ready_line" -ge "$register_capture_line" ]]; then
+  echo "FAIL: Register capture must wait for the Google CTA to be fully painted before requesting its one fresh frame." >&2
+  exit 1
+fi
+grep -Fq "final freshFrameCount = _runtimeFreshFrameCount(marker);" "$test_file"
+grep -Fq "forceFreshFrame: freshFrameCount > 0," "$test_file"
+# Inspect only the invokeMethod payload. A whole-file grep is insufficient because
+# reportData also has a screenshotName field unrelated to the native method call.
+capture_payload="$(sed -n '/final bytes = await _hopeRuntimeScreenshotChannel.invokeMethod<Uint8List>(/,/^[[:space:]]*);/p' "$test_file")"
+if ! grep -Fq "'screenshotName': marker" <<<"$capture_payload"; then
+  echo "FAIL: Dart screenshot channel payload must send screenshotName to match MainActivity." >&2
+  exit 1
+fi
+if grep -Fq "'name': marker" <<<"$capture_payload"; then
+  echo "FAIL: stale name key found in native screenshot channel payload." >&2
+  exit 1
+fi
+if ! grep -Fq "'freshFramesRequired': freshFramesRequired" <<<"$capture_payload"; then
+  echo "FAIL: native screenshot payload must carry the screen-specific fresh frame count." >&2
+  exit 1
+fi
+grep -Fq 'call.argument<String>("screenshotName") ?: "unlabelled"' "$main_activity"
 grep -Fq 'call.argument<Boolean>("forceFreshFrame") ?: false' "$main_activity"
+grep -Fq 'call.argument<Int>("freshFramesRequired")' "$main_activity"
+grep -Fq 'freshFramesRequired.coerceIn(1, 2)' "$main_activity"
+grep -Fq 'HOPE_HOST_CAPTURE_DIGEST_MATCH:' "$script_file"
+grep -Fq 'HOPE_SCREENSHOT_CAPTURE_COMPLETE:$marker:bytes=' "$script_file"
 grep -Fq 'HOPE_SCREENSHOT_SOURCE:native-primary:' "$test_file"
 grep -Fq 'HOPE_SCREENSHOT_READY:' "$test_file"
 if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
@@ -60,11 +94,11 @@ if grep -Fq 'await binding.takeScreenshot(marker)' "$test_file"; then
 fi
 grep -Fq 'onScreenshot:' "$driver_file"
 grep -Fq 'writeAsBytes(image, flush: true)' "$driver_file"
-grep -Fq 'flutter drive --no-pub --no-dds' "$script_file"
+grep -Fq 'flutter drive --keep-app-running --no-pub --no-dds' "$script_file"
 grep -Fq 'HOPE_RUNTIME_DRIVER_BUILD_MODE:self-build' "$script_file"
 # Self-build includes Flutter/Gradle compilation before VM-service connection.
 grep -Fq 'DRIVER_CONNECT_TIMEOUT_SECONDS="${HOPE_DRIVER_CONNECT_TIMEOUT_SECONDS:-420}"' "$script_file"
-grep -Fq 'emulator-options: -no-window -no-snapshot -gpu swiftshader' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
+grep -Fq 'emulator-options: -no-window -no-snapshot -wipe-data -gpu swiftshader' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq -- '-feature -Vulkan' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"; then
   echo "FAIL: runtime evidence must not use the generic software GPU alias" >&2
@@ -72,34 +106,24 @@ if grep -Fq -- '-gpu software' "$repo_root/.github/workflows/hope-ui-runtime-evi
 fi
 grep -Fq ': > "$log_path"' "$script_file"
 
-# Regression: use the target page's already committed ImageReader frame if present.
-# Register first so a racing new frame is not lost; only request an additional frame
-# when no current target frame can be acquired. This prevents static Home deadlocks.
-listener_line="$(grep -nF 'imageReader.setOnImageAvailableListener(' "$main_activity" | sed -n '2p' | cut -d: -f1)"
-current_target_line="$(grep -nF 'val currentTargetFrameAvailable = flutterView.acquireLatestImageViewFrame()' "$main_activity" | cut -d: -f1)"
-if [ -z "$listener_line" ] || [ -z "$current_target_line" ] || [ "$listener_line" -ge "$current_target_line" ]; then
-  echo "FAIL: force-fresh capture must register its ImageReader listener before checking the target frame" >&2
+# Regression: strict auth capture must not accept an already-queued pre-target image.
+# Drain at the marker boundary. Register's CTA-readiness gate runs before capture, so one
+# later ImageReader delivery is enough; do not wait for a second repaint that a settled,
+# static auth page may never produce. Password Reset also requires one later delivery.
+# Other screenshots keep the committed-frame fast path.
+grep -Fq 'if (forceFreshFrame) freshFramesRequired.coerceIn(1, 2) else 0' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_DRAINED:$screenshotName:available=$queuedFrameDrained' "$main_activity"
+grep -Fq 'hopeScreenshotFreshFramesRemaining > 1' "$main_activity"
+grep -Fq 'hopeScreenshotFreshFramesRemaining -= 1' "$main_activity"
+grep -Fq 'requestHopeFrame()' "$main_activity"
+if grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' "$main_activity"; then
+  echo "FAIL: strict screenshot capture must not accept an already-queued image as target" >&2
   exit 1
 fi
-target_frame_block="$(sed -n "$((current_target_line - 3)),$((current_target_line + 15))p" "$main_activity")"
-grep -Fq '// HOPE_SCREENSHOT_FORCE_FRESH_FRAME' <<<"$target_frame_block"
-grep -Fq 'currentTargetFrameAvailable &&' <<<"$target_frame_block"
-grep -Fq 'HOPE_SCREENSHOT_CURRENT_TARGET_FRAME_ACCEPTED' <<<"$target_frame_block"
-grep -Fq 'scheduleHopeFreshFrameRetry(' "$main_activity"
-grep -Fq 'HOPE_SCREENSHOT_TIMEOUT:phase=' "$main_activity"
-grep -Fq 'forceFreshFrame: _runtimeHasCapturedScreenshot' "$test_file"
-grep -Fq 'const _nativeScreenshotCaptureTimeout = Duration(seconds: 18);' "$test_file"
-grep -Fq ').timeout(' "$test_file"
-grep -Fq '_nativeScreenshotCaptureTimeout,' "$test_file"
-grep -Fq 'Future<bool> _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
-grep -Fq 'await _dragScrollableTowardEndWithFallbackOffsets(' "$test_file"
-grep -Fq 'var stableAtBottomFrames = 0;' "$test_file"
-grep -Fq 'while (sweeps < 20 && stableAtBottomFrames < 2)' "$test_file"
-grep -Fq 'stableFrames=$stableAtBottomFrames' "$test_file"
-if grep -Fq 'if (selectedState.position.pixels <= before + 0.5 &&' "$test_file"; then
-  echo "FAIL: T10 scroll-end must not abort on the first no-progress drag; it must try alternate offsets." >&2
-  exit 1
-fi
+grep -Fq 'HOPE_SCREENSHOT_STALE_FRAME_REJECTED:' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_IMAGE_AVAILABLE:$hopeScreenshotRequestName:phase=' "$main_activity"
+grep -Fq 'HOPE_SCREENSHOT_FRAME_REQUEST_SENT:$hopeScreenshotRequestName:count=' "$main_activity"
+grep -Fq "HOPE_SCREENSHOT_SCHEDULE_FRAME_RECEIVED:\$marker" "$test_file"
 if grep -Fq -- '--use-application-binary' "$script_file"; then
   echo "FAIL: runtime evidence must not use --use-application-binary" >&2
   exit 1
@@ -152,6 +176,9 @@ grep -Fq 'run_host_batch_session responsive-a' "$script_file"
 grep -Fq 'run_host_batch_session responsive-b' "$script_file"
 grep -Fq 'run_host_batch_session responsive-c' "$script_file"
 grep -Fq 'responsive-c) responsive_batch="3"' "$script_file"
+grep -Fq '"responsive-720x1280-financial-insights-fa-rtl"' "$script_file"
+grep -Fq '"responsive-720x1280-financial-insights-en-ltr"' "$script_file"
+grep -Fq 'pages.entries.skip(4).take(3)' "$test_file"
 # Baseline capture must remain one Driver/VM-service session; the proven green
 # certification run captured the complete locale baseline without repeated
 # emulator-side teardown/startup cycles.
@@ -226,6 +253,7 @@ if [ ! -s "$talkback_helper" ]; then
   exit 1
 fi
 grep -Fq 'com.android.talkback' "$talkback_helper"
+grep -Fq 'HOPE_TALKBACK_PACKAGE' "$talkback_helper"
 grep -Fq 'com.google.android.marvin.talkback.TalkBackService' "$talkback_helper"
 grep -Fq 'settings put secure enabled_accessibility_services' "$talkback_helper"
 grep -Fq 'settings put secure accessibility_enabled 1' "$talkback_helper"
@@ -246,13 +274,21 @@ workflow_file="$repo_root/.github/workflows/hope-ui-runtime-evidence.yml"
 grep -Fq 'Checkout pinned Google TalkBack source' "$workflow_file"
 grep -Fq '229212fdf5842191d0a93fc95d9ca1423b346866' "$workflow_file"
 grep -Fq 'Build pinned Google TalkBack accessibility service' "$workflow_file"
+grep -Fq 'com.hopev2.ci.talkback' "$workflow_file"
+grep -Fq 'HOPE_TALKBACK_PACKAGE: com.hopev2.ci.talkback' "$workflow_file"
 grep -Fq "HOPE_TALKBACK_REQUIRED: '1'" "$workflow_file"
 
-# A static candidate-match fixture intentionally exposes no tap callbacks; its
-# semantic labels/nodes remain required, while actionable semantics stay
-# mandatory on all other captured surfaces.
-grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"
+# Candidate Matches exposes a real keyed details action; the exact-head
+# TalkBack pass must audit its tap semantics and measurable target bounds too.
+grep -Fq 'final shouldRevealCandidateMatchesTarget =' "$test_file"
+grep -Fq 'candidate-match-details-candidate-user-1' "$test_file"
+grep -Fq 'shouldRevealCandidateMatchesTarget' "$test_file"
 grep -Fq 'actionableNodeCount < 1' "$test_file"
+grep -Fq 'if (targetBoundsCheckedCount == 0)' "$test_file"
+if grep -Fq "final requiresTapAction = marker != 'candidate-matches-fa-rtl';" "$test_file"; then
+  echo "FAIL: Candidate Matches must not be exempt from tap-action requirements." >&2
+  exit 1
+fi
 
 # T10 regression: service presence under "Binding services" must not count as bound.
 if ! grep -Fq 'Bound services:' "$talkback_helper" ||
@@ -280,5 +316,66 @@ grep -Fq 'hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_
   echo "FAIL: authorized runtime captures must remain serialized per PR." >&2
   exit 1
 }
+
+
+# If auth-tail recovery overwrites named PNGs, its native SHA log must feed the final validator.
+auth_recovery_run_line="$(grep -nF 'run_host_batch_session baseline-d "${auth_tail_screens[@]}" || true' "$script_file" | head -n1 | cut -d: -f1)"
+auth_recovery_merge_line="$(grep -nF 'cat "$runner_temp/hope-baseline-d-runtime.log" >> "$runner_temp/hope-baseline-runtime.log"' "$script_file" | head -n1 | cut -d: -f1)"
+if [ -z "$auth_recovery_run_line" ] || [ -z "$auth_recovery_merge_line" ] || [ "$auth_recovery_merge_line" -le "$auth_recovery_run_line" ]; then
+  echo "FAIL: auth-tail recovery's native marker/digest log must be merged before final baseline capture validation." >&2
+  exit 1
+fi
+
+# Exercise the real capture-set validator against missing, matching, and mismatching
+# native-return digests. This keeps byte provenance fail-closed without requiring an emulator.
+grep -Fq 'HOPE_HOST_CAPTURE_FAILED:$set_name:$marker:native-digest-missing' "$script_file"
+digest_test_tmp="$(mktemp -d)"
+trap 'rm -rf "$digest_test_tmp"' EXIT
+digest_test_evidence="$digest_test_tmp/evidence"
+mkdir -p "$digest_test_evidence"
+printf '\211PNG\r\n\032\nHOPE_TEST_PNG' > "$digest_test_evidence/register-fa-rtl.png"
+evidence_dir="$digest_test_evidence"
+validator_function="$(sed -n '/^validate_capture_set() {/,/^}/p' "$script_file")"
+if [ -z "$validator_function" ]; then
+  echo "FAIL: could not extract validate_capture_set for digest contract verification." >&2
+  exit 1
+fi
+eval "$validator_function"
+
+digest_test_log="$digest_test_tmp/native.log"
+: > "$digest_test_log"
+if validate_capture_set "digest-missing" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/missing.log" 2>&1; then
+  echo "FAIL: capture validation accepted a named PNG without a native-return digest." >&2
+  exit 1
+fi
+grep -Fq 'HOPE_HOST_CAPTURE_FAILED:digest-missing:register-fa-rtl:native-digest-missing' "$digest_test_tmp/missing.log" || {
+  echo "FAIL: missing native digest was not classified as a hard capture failure." >&2
+  exit 1
+}
+
+# Combined integrity-only checks intentionally use /dev/null after per-batch validation.
+validate_capture_set "digest-integrity-only" "/dev/null" "register-fa-rtl" > /dev/null
+
+expected_digest="$(sha256sum "$digest_test_evidence/register-fa-rtl.png" | awk '{print $1}')"
+expected_bytes="$(wc -c < "$digest_test_evidence/register-fa-rtl.png" | tr -d '[:space:]')"
+printf 'I/HopeRuntimeScreenshot( 1): HOPE_SCREENSHOT_CAPTURE_COMPLETE:register-fa-rtl:bytes=%s:sha256=%s\n' "$expected_bytes" "$expected_digest" > "$digest_test_log"
+validate_capture_set "digest-match" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/match.log"
+grep -Fq "HOPE_HOST_CAPTURE_DIGEST_MATCH:register-fa-rtl:$expected_digest" "$digest_test_tmp/match.log" || {
+  echo "FAIL: matching native-return and host PNG digests were not accepted." >&2
+  exit 1
+}
+
+printf 'I/HopeRuntimeScreenshot( 1): HOPE_SCREENSHOT_CAPTURE_COMPLETE:register-fa-rtl:bytes=%s:sha256=%064d\n' "$expected_bytes" 0 > "$digest_test_log"
+if validate_capture_set "digest-mismatch" "$digest_test_log" "register-fa-rtl" > "$digest_test_tmp/mismatch.log" 2>&1; then
+  echo "FAIL: capture validation accepted a mismatching native-return digest." >&2
+  exit 1
+fi
+grep -Fq 'native-host-digest-mismatch' "$digest_test_tmp/mismatch.log" || {
+  echo "FAIL: mismatching native-return digest was not classified correctly." >&2
+  exit 1
+}
+rm -rf "$digest_test_tmp"
+trap - EXIT
+
 
 echo "PASS: Flutter rendered-screenshot transport contract"

@@ -24,6 +24,11 @@ class _SmokeAuthRepository implements AuthRepository {
           String email, String password, String displayName) =>
       throw UnimplementedError();
   @override
+  Future<AuthSession> verifyEmail(String code) => throw UnimplementedError();
+  @override
+  Future<void> resendEmailVerification(String email) async {}
+
+  @override
   Future<void> logout() async {}
   @override
   Future<void> requestPasswordReset(String email) async {}

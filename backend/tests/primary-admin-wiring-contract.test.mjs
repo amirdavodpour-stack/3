@@ -19,3 +19,83 @@ test('admin promotion endpoint is primary-owner-only and audit logged', () => {
   assert.match(ports, /grantAdminByEmail/);
   assert.match(repo, /PRIMARY_ADMIN_ONLY/);
 });
+test('primary-admin privileges require a linked verified Google identity at every authorization layer', () => {
+  const access = read('backend/src/application/admin_panel_access.js');
+  const validation = read('backend/src/policies/validation.js');
+  const auth = read('backend/src/routes/auth_routes.js');
+  const repo = read('backend/src/repository/admin.js');
+  const legacy = read('backend/src/application/legacy/admin_legacy.js');
+
+  assert.match(access, /shouldBootstrapPrimaryAdmin\(\{ email, verifiedIdentity = false, googleSubject \}/);
+  assert.match(access, /Boolean\(normalize\(googleSubject\)\)/);
+  assert.match(access, /isPrimaryAdminEmail\(user\.email\) && Boolean\(normalize\(user\.googleSubject\)\)/);
+  assert.match(access, /isPrimaryAdminEmail\(user\.email\) && !normalize\(user\.googleSubject\)/);
+  assert.match(validation, /PRIMARY_ADMIN_IDENTITY_REQUIRED/);
+  assert.match(validation, /isPrimaryAdminEmail\(user\.email\) && !String\(user\.googleSubject \|\| ''\)\.trim\(\)/);
+  assert.match(auth, /shouldBootstrapPrimaryAdmin\(\{ email: identity\.email, verifiedIdentity: true, googleSubject: identity\.subject \}\)/);
+  const grantStart = repo.indexOf('export async function grantAdminByEmail(');
+  const grant = repo.slice(grantStart);
+  const revokeStart = repo.indexOf('export async function revokeAdminById(');
+  const revokeEnd = repo.indexOf('export async function revokeUserSessions(', revokeStart);
+  const revoke = repo.slice(revokeStart, revokeEnd);
+
+  assert.match(grant, /google_subject/);
+  assert.match(grant, /actor\.status !== 'ACTIVE'/);
+  assert.match(grant, /actor\.google_subject/);
+  assert.match(grant, /target\.status !== 'ACTIVE'/);
+  assert.match(grant, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
+  assert.match(grant, /ORDER BY id\s+FOR UPDATE/);
+  assert.match(grant, /INSERT INTO audit_logs/);
+  assert.match(grant, /ADMIN_ROLE_GRANT/);
+  assert.match(revoke, /google_subject/);
+  assert.match(revoke, /PRIMARY_ADMIN_ONLY/);
+  assert.match(legacy, /actor\.status !== 'ACTIVE'/);
+  assert.match(legacy, /target\.googleSubject/);
+  assert.match(legacy, /ADMIN_PROVIDER_IDENTITY_REQUIRED/);
+});
+
+test('primary administrator panel unlock enforces the configured allowed email', () => {
+  const route = read('backend/src/routes/admin_routes.js');
+  assert.match(
+    route,
+    /expectedEmail:\s*isPrimaryAdminEmail\(me\.email\)\s*\?\s*config\.adminPanelAllowedEmail\s*:\s*undefined/,
+  );
+});
+
+
+test('admin panel unlock requires one recent step-up proof and independent account/IP throttles', () => {
+  const route = read('backend/src/routes/admin_routes.js');
+  const app = read('backend/src/app.js');
+  const googleAuth = read('backend/src/google_auth.js');
+  const page = read('lib/features/admin/admin_access_page.dart');
+  const repository = read('lib/core/admin/admin_repository.dart');
+
+  assert.ok(route.includes('rateLimitAuth(req, config.authRateLimitMax, config.rateLimitWindowMs)'));
+  assert.ok(route.includes('rateLimitAuthAccount(`admin-panel:${me.id}`, config.authRateLimitMax, config.rateLimitWindowMs)'));
+  assert.ok(route.includes('hasPassword === hasGoogle'));
+  assert.ok(route.includes('verifyPassword(password, me.passwordHash || DUMMY_PASSWORD_HASH)'));
+  assert.ok(route.includes('verifyGoogleIdToken(idToken, config.googleOAuthClientId)'));
+  assert.ok(route.includes('identity.subject !== me.googleSubject'));
+  assert.ok(route.includes('identity?.email') && route.includes('me.email'));
+  assert.ok(route.includes('identity?.issuedAt'));
+  assert.ok(route.includes("createAudit('ADMIN_PANEL_UNLOCK'") && route.includes('method'));
+  assert.ok(app.includes('verifyPassword, verifyGoogleIdToken, rateLimitAuth, rateLimitAuthAccount, DUMMY_PASSWORD_HASH'));
+  assert.ok(googleAuth.includes('issuedAt: Number(payload.iat)'));
+  assert.ok(page.includes('obscureText: true'));
+  assert.ok(page.includes('GoogleSignInService'));
+  assert.ok(page.includes('.authenticate()'));
+  assert.ok(repository.includes('verifyPanelAccess(String name, String username, {String? password, String? idToken, String? totpCode, String? recoveryCode, String scope = \'WRITE\'})'));
+});
+
+test('migration 050 audits the verified-provider primary-owner access invariant and clears stale sessions', () => {
+  const migration = read('backend/src/db/migrations/050_primary_admin_identity_policy_audit.js');
+  assert.match(migration, /PRIMARY_ADMIN_IDENTITY_POLICY_ENFORCED/);
+  assert.match(migration, /actor_id/);
+  assert.match(migration, /googleSubjectLinked/);
+  assert.match(migration, /session_version\s*=\s*session_version\s*\+\s*1/);
+  assert.match(migration, /admin_panel_verified_scope\s*=\s*NULL/);
+  assert.match(migration, /UPDATE refresh_tokens/);
+  assert.match(migration, /migrationVersion/);
+  assert.match(migration, /NOT EXISTS/);
+  assert.match(migration, /cannot be rolled back/i);
+});

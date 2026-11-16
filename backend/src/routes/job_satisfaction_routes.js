@@ -2,6 +2,8 @@ import { assertAutomatedAiAccess, assertSystemAiTask } from '../application/ai_a
 import { buildSatisfactionAnalysisPrompt, evaluateSettlementGate, SATISFACTION_QUESTIONS, parseSatisfactionAnalysis } from '../services/job_satisfaction.js';
 import { analyzeDisputeWithAI } from '../services/dispute_resolution.js';
 
+const DISPUTE_HOLDABLE_PAYMENT_STATUSES = new Set(['HELD','RELEASE_PENDING','RELEASE_FAILED']);
+
 export function createJobSatisfactionRoutes({
   authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases,
   askAI, processPaymentReleaseNow, createAudit, notifyUser, NOTIFICATION_TYPES, now,
@@ -12,7 +14,7 @@ export function createJobSatisfactionRoutes({
     return null;
   };
 
-  async function ensureDisputeIfNeeded(job, feedback) {
+  async function ensureDisputeIfNeeded(job, feedback, payment) {
     if (!Array.isArray(feedback) || feedback.length < 2) return null;
     const conflict =
       feedback.some((item) => item.completedAsAgreed !== true || item.aiSentiment !== 'SATISFIED') ||
@@ -21,12 +23,21 @@ export function createJobSatisfactionRoutes({
     if (!conflict) return null;
 
     const existing = await repo.getJobDispute(job.id);
-    const dispute = existing || await repo.createJobDispute({
-      jobId: job.id,
-      triggerType: 'SATISFACTION_CONFLICT',
+    if (existing?.status === 'RESOLVED') return existing;
+    if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
+      return null;
+    }
+    // Satisfaction conflicts can race an already-enqueued owner release.
+    // Escrow hold and dispute creation must commit or roll back together.
+    const opened = await repo.openJobDisputeWithHold({
+      jobId:job.id,
+      paymentId:payment.id,
+      openedBy:existing?.openedBy ?? null,
+      triggerType:'SATISFACTION_CONFLICT',
     });
-    if (!dispute) return null;
-    if (['AI_ANALYZED', 'ADMIN_REVIEW', 'RESOLVED'].includes(dispute.status)) return dispute;
+    if (!opened?.opened) return null;
+    const dispute = opened.dispute;
+    if (['AI_ANALYZED', 'ADMIN_REVIEW'].includes(dispute.status)) return dispute;
 
     const context = await repo.getJobDisputeContext(job.id);
     assertAutomatedAiAccess({ route: 'dispute-resolution', source: 'SYSTEM' });
@@ -60,8 +71,27 @@ export function createJobSatisfactionRoutes({
       paymentStatus: payment?.status,
       feedback,
     });
+    const existingDispute = await repo.getJobDispute(job.id);
+    if (existingDispute && existingDispute.status !== 'RESOLVED') {
+      if (existingDispute.status === 'RESOLVING') {
+        return { gate, payment: payment || null, autoReleased: false, dispute: existingDispute };
+      }
+      if (!payment || !DISPUTE_HOLDABLE_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())) {
+        return { gate, payment: payment || null, autoReleased: false, dispute: null };
+      }
+      const opened = await repo.openJobDisputeWithHold({
+        jobId:job.id,
+        paymentId:payment.id,
+        openedBy:existingDispute.openedBy ?? null,
+        triggerType:existingDispute.triggerType || 'USER',
+      });
+      if (!opened?.opened) {
+        return { gate, payment: payment || null, autoReleased: false, dispute: null };
+      }
+      return { gate, payment: { ...payment, status:'HELD' }, autoReleased: false, dispute: opened.dispute };
+    }
     if (!gate.ready || !payment) {
-      const dispute = await ensureDisputeIfNeeded(job, feedback);
+      const dispute = await ensureDisputeIfNeeded(job, feedback, payment);
       return { gate, payment: payment || null, autoReleased: false, dispute };
     }
 

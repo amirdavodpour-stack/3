@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hope_mobile/core/theme/app_theme.dart';
@@ -44,6 +45,114 @@ class _Wave24InsightsRepository implements FinancialInsightsRepository {
         bySource: [
           HopeFinancialSource(source: 'JOB', credit: '500000', debit: '120000', amount: '380000'),
         ],
+      );
+}
+
+class _LargeCashFlowAxisInsightsRepository
+    implements FinancialInsightsRepository {
+  const _LargeCashFlowAxisInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '1500000',
+          lockedBalance: '250000',
+          totalInflow: '7900000',
+          totalOutflow: '5200000',
+          totalReserved: '1200000',
+          netCashFlow: '2700000',
+        ),
+        monthlyCashFlow: [
+          HopeMonthlyCashFlow(
+            month: '2026-05',
+            label: 'اردیبهشت',
+            inflow: '1950000',
+            outflow: '1250000',
+            reserved: '350000',
+            net: '350000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-06',
+            label: 'خرداد',
+            inflow: '1600000',
+            outflow: '1100000',
+            reserved: '300000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-07',
+            label: 'تیر',
+            inflow: '1750000',
+            outflow: '1300000',
+            reserved: '250000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-08',
+            label: 'مرداد',
+            inflow: '1450000',
+            outflow: '950000',
+            reserved: '300000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-09',
+            label: 'شهریور',
+            inflow: '1800000',
+            outflow: '1200000',
+            reserved: '400000',
+            net: '200000',
+          ),
+          HopeMonthlyCashFlow(
+            month: '2026-10',
+            label: 'مهر',
+            inflow: '1350000',
+            outflow: '900000',
+            reserved: '350000',
+            net: '100000',
+          ),
+        ],
+        balanceTrend: [
+          HopeBalancePoint(date: '2026-05', balance: '700000'),
+          HopeBalancePoint(date: '2026-06', balance: '820000'),
+          HopeBalancePoint(date: '2026-07', balance: '950000'),
+          HopeBalancePoint(date: '2026-08', balance: '1000000'),
+          HopeBalancePoint(date: '2026-09', balance: '1100000'),
+          HopeBalancePoint(date: '2026-10', balance: '1200000'),
+        ],
+        bySource: [
+          HopeFinancialSource(
+            source: 'JOB',
+            credit: '7900000',
+            debit: '5200000',
+            amount: '2700000',
+          ),
+        ],
+      );
+}
+
+class _LongSummaryInsightsRepository implements FinancialInsightsRepository {
+  const _LongSummaryInsightsRepository();
+
+  @override
+  Future<HopeFinancialInsights> getInsights({int months = 6}) async =>
+      const HopeFinancialInsights(
+        currency: 'TOMAN',
+        months: 6,
+        summary: HopeFinancialSummary(
+          availableBalance: '987654321098765432',
+          lockedBalance: '876543210987654321',
+          totalInflow: '765432109876543210',
+          totalOutflow: '654321098765432109',
+          totalReserved: '543210987654321098',
+          netCashFlow: '432109876543210987',
+        ),
+        monthlyCashFlow: [],
+        balanceTrend: [],
+        bySource: [],
       );
 }
 
@@ -239,6 +348,75 @@ class _NonFiniteCashFlowInsightsRepository implements FinancialInsightsRepositor
 }
 
 void main() {
+  test('balance-chart tick labels use compact localized months', () {
+    expect(formatBalanceTrendAxisLabel('2026-05', 'en'), 'May');
+    expect(formatBalanceTrendAxisLabel('2026-05', 'fa'), 'اردیبهشت');
+    expect(formatBalanceTrendAxisLabel('2026-08-01', 'fa'), 'مرداد');
+    expect(formatBalanceTrendAxisLabel('2026-10', 'en'), 'Oct');
+    expect(formatBalanceTrendAxisLabel('2026-13', 'en'), '2026-13');
+    expect(formatBalanceTrendAxisLabel('not-a-date', 'fa'), 'not-a-date');
+  });
+
+  testWidgets(
+    'financial snapshot preserves long metric labels and amounts at 1.5x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _LongSummaryInsightsRepository(),
+          child: MaterialApp(
+            locale: const Locale('en'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.5),
+              ),
+              child: child!,
+            ),
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final summary = find.byType(PremiumPanel).first;
+      final metricTexts = tester.widgetList<Text>(
+        find.descendant(of: summary, matching: find.byType(Text)),
+      ).where((text) {
+        final value = text.data ?? '';
+        return RegExp(r'-?[\d,]+\s*TOMAN').hasMatch(value) ||
+            const {
+              'Available',
+              'Locked',
+              'Inflow',
+              'Outflow',
+              'Total reserved',
+              'Net cash flow',
+            }.contains(value);
+      }).toList(growable: false);
+
+      expect(metricTexts, hasLength(12));
+      expect(
+        metricTexts.every(
+          (text) => text.maxLines == null && text.overflow == TextOverflow.visible,
+        ),
+        isTrue,
+        reason: 'Large text must never clip a recorded financial label or amount in the summary card.',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Wave 43 financial snapshot exposes the recorded reserved total and net cash flow',
     (tester) async {
@@ -336,6 +514,59 @@ void main() {
       } finally {
         handle.dispose();
       }
+    },
+  );
+
+  testWidgets(
+    'financial insights hides implementation-only accounting terms from displayed copy',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      for (final locale in [const Locale('fa'), const Locale('en')]) {
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _Wave24InsightsRepository(),
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              locale: locale,
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('لجر'), findsNothing);
+        expect(find.textContaining('ledger'), findsNothing);
+        expect(find.textContaining('transaction reference'), findsNothing);
+        expect(find.textContaining('نوع مرجع تراکنش'), findsNothing);
+        expect(
+          find.text(locale.languageCode == 'en' ? 'Financial insights' : 'تحلیل مالی'),
+          findsOneWidget,
+        );
+
+        final balanceTitle = find.text(
+          locale.languageCode == 'en' ? 'Balance trend' : 'روند موجودی',
+        );
+        await tester.scrollUntilVisible(
+          balanceTitle,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('لجر'), findsNothing);
+        expect(find.textContaining('ledger'), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -501,8 +732,8 @@ void main() {
   testWidgets(
     'monthly cash-flow chart advertises horizontal navigation only when needed',
     (tester) async {
-      const hintFa = 'برای دیدن ماه‌های دیگر، نمودار را افقی بکشید';
-      const hintEn = 'Swipe the chart sideways to view other months';
+      const hintFa = 'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید';
+      const hintEn = 'Swipe the cash-flow chart sideways to view other months';
       for (final width in [360.0, 1200.0]) {
         tester.view.physicalSize = Size(width, 900);
         tester.view.devicePixelRatio = 1;
@@ -731,6 +962,20 @@ void main() {
           await tester.drag(pageList, const Offset(0, -400));
           await tester.pumpAndSettle();
         }
+        expect(
+          find.byKey(const ValueKey('financial-balance-scroll-hint')),
+          findsOneWidget,
+          reason: 'Six recorded months on a 360dp viewport must expose the horizontal-scroll cue.',
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(
+              const ValueKey('financial-balance-scroll-hint'),
+            ),
+            matching: find.text('برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید'),
+          ),
+          findsOneWidget,
+        );
         final balanceAxis = find.byKey(
           const ValueKey('financial-balance-y-axis'),
         );
@@ -1283,17 +1528,17 @@ void main() {
             .color;
 
         expect(
-          legendColor(Icons.call_received_rounded),
+          legendColor(HopeV2Icons.transferIn),
           expectedInflow,
           reason: 'Cash inflow uses the success family, not the brand action hue.',
         );
         expect(
-          legendColor(Icons.call_made_rounded),
+          legendColor(HopeV2Icons.transferOut),
           expectedOutflow,
           reason: 'Cash outflow has a distinct danger/negative-flow series.',
         );
         expect(
-          legendColor(Icons.lock_outline_rounded),
+          legendColor(HopeV2Icons.secure),
           expectedReserved,
           reason: 'Reserved cash uses the amber pending family.',
         );
@@ -1302,6 +1547,392 @@ void main() {
 
       await verifySeries(Brightness.light);
       await verifySeries(Brightness.dark);
+    },
+  );
+
+
+  testWidgets(
+    'financial chart axes and scroll cues keep readable 12sp text at 2x',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: MediaQuery(
+              data: MediaQueryData.fromView(tester.view).copyWith(
+                textScaler: TextScaler.linear(2),
+              ),
+              child: const FinancialInsightsPage(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cashFlowHint = find.text(
+        'برای دیدن ماه‌های دیگر، نمودار جریان وجه را افقی بکشید',
+      );
+      await tester.scrollUntilVisible(
+        cashFlowHint,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(cashFlowHint, findsOneWidget);
+      expect(
+        tester.widget<Text>(cashFlowHint).style?.fontSize,
+        greaterThanOrEqualTo(12),
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(cashFlowHint).didExceedMaxLines,
+        isFalse,
+        reason: 'The chart scroll cue must wrap instead of truncating at 2x.',
+      );
+
+      final cashFlowUnit = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit'),
+      );
+      expect(tester.widget<Text>(cashFlowUnit).style?.fontSize, greaterThanOrEqualTo(12));
+      final cashFlowAxis = find.byKey(
+        const ValueKey('financial-cashflow-y-axis'),
+      );
+      for (final tick in tester.widgetList<Text>(
+        find.descendant(of: cashFlowAxis, matching: find.byType(Text)),
+      )) {
+        expect(tick.style?.fontSize, greaterThanOrEqualTo(12));
+        expect(
+          tester.renderObject<RenderParagraph>(find.byWidget(tick)).didExceedMaxLines,
+          isFalse,
+          reason: 'Cash-flow tick labels must not be ellipsized at 2x.',
+        );
+      }
+
+      final balanceHint = find.text(
+        'برای دیدن ماه‌های دیگر، نمودار موجودی را افقی بکشید',
+      );
+      await tester.scrollUntilVisible(
+        balanceHint,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(balanceHint, findsOneWidget);
+      expect(
+        tester.widget<Text>(balanceHint).style?.fontSize,
+        greaterThanOrEqualTo(12),
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(balanceHint).didExceedMaxLines,
+        isFalse,
+        reason: 'The balance scroll cue must wrap instead of truncating at 2x.',
+      );
+      final balanceAxis = find.byKey(
+        const ValueKey('financial-balance-y-axis'),
+      );
+      for (final tick in tester.widgetList<Text>(
+        find.descendant(of: balanceAxis, matching: find.byType(Text)),
+      )) {
+        expect(tick.style?.fontSize, greaterThanOrEqualTo(12));
+        expect(
+          tester.renderObject<RenderParagraph>(find.byWidget(tick)).didExceedMaxLines,
+          isFalse,
+          reason: 'Balance tick labels must not be ellipsized at 2x.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Persian cash-flow axis uses consistent compact million labels on a tall 360dp viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _LargeCashFlowAxisInsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final axis = find.byKey(
+        const ValueKey('financial-cashflow-y-axis'),
+      );
+      await tester.scrollUntilVisible(
+        axis,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(axis, findsOneWidget);
+
+      final ticks = find.descendant(
+        of: axis,
+        matching: find.byType(Text),
+      );
+      expect(ticks, findsNWidgets(5));
+      expect(find.text('۲م'), findsOneWidget);
+      expect(find.text('۱٫۵م'), findsOneWidget);
+      expect(find.text('۱م'), findsOneWidget);
+      expect(find.text('۰٫۵م'), findsOneWidget);
+      expect(find.text('۵۰۰هزار'), findsNothing);
+      for (var index = 0; index < ticks.evaluate().length; index++) {
+        final tickFinder = ticks.at(index);
+        final tick = tester.widget<Text>(tickFinder);
+        final context = tester.element(tickFinder);
+        final painter = TextPainter(
+          text: TextSpan(text: tick.data, style: tick.style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          locale: Localizations.localeOf(context),
+          maxLines: 1,
+        )..layout();
+        final singleLineWidth = painter.width;
+        painter.dispose();
+
+        expect(
+          singleLineWidth,
+          lessThanOrEqualTo(tester.getSize(tickFinder).width + 0.5),
+          reason:
+              'Persian cash-flow tick "${tick.data}" must fit its axis width without wrapping.',
+        );
+        expect(
+          tick.maxLines,
+          1,
+          reason:
+              'Persian cash-flow tick "${tick.data}" must not wrap into stacked fragments.',
+        );
+        expect(
+          tick.softWrap,
+          isFalse,
+          reason: 'Persian cash-flow tick "${tick.data}" must stay on one line.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'short Persian cash-flow chart uses three major axis ticks without crowding',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Future<void> verifyAtScale(double textScale) async {
+        await tester.pumpWidget(
+          Provider<FinancialInsightsRepository>.value(
+            value: const _LargeCashFlowAxisInsightsRepository(),
+            child: MaterialApp(
+              theme: AppTheme.dark(),
+              locale: const Locale('fa'),
+              supportedLocales: const [Locale('fa'), Locale('en')],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              builder: (context, child) => MediaQuery(
+                data: MediaQueryData.fromView(tester.view).copyWith(
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: child!,
+              ),
+              home: const FinancialInsightsPage(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final axis = find.byKey(
+          const ValueKey('financial-cashflow-y-axis'),
+        );
+        await tester.scrollUntilVisible(
+          axis,
+          140,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(axis, findsOneWidget);
+
+        final ticks = find.descendant(
+          of: axis,
+          matching: find.byType(Text),
+        );
+        expect(ticks, findsNWidgets(3));
+        expect(find.text('۲م'), findsOneWidget);
+        expect(find.text('۱م'), findsOneWidget);
+        expect(find.text('۰'), findsOneWidget);
+        expect(find.text('۵۰۰هزار'), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+
+      await verifyAtScale(1.0);
+      await verifyAtScale(1.5);
+    },
+  );
+
+  testWidgets(
+    'Persian balance-chart y-axis ticks fit on one line at 360dp',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final axis = find.byKey(
+        const ValueKey('financial-balance-y-axis'),
+      );
+      await tester.scrollUntilVisible(
+        axis,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(axis, findsOneWidget);
+
+      final ticks = find.descendant(
+        of: axis,
+        matching: find.byType(Text),
+      );
+      expect(ticks, findsNWidgets(3));
+      for (var index = 0; index < ticks.evaluate().length; index++) {
+        final tickFinder = ticks.at(index);
+        final tick = tester.widget<Text>(tickFinder);
+        final context = tester.element(tickFinder);
+        final painter = TextPainter(
+          text: TextSpan(text: tick.data, style: tick.style),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          locale: Localizations.localeOf(context),
+          maxLines: 1,
+        )..layout();
+        final singleLineWidth = painter.width;
+        painter.dispose();
+
+        expect(
+          singleLineWidth,
+          lessThanOrEqualTo(tester.getSize(tickFinder).width + 0.5),
+          reason:
+              'Persian balance tick "${tick.data}" must fit its axis width without wrapping.',
+        );
+        expect(
+          tick.maxLines,
+          1,
+          reason: 'Persian balance tick "${tick.data}" must not wrap into stacked fragments.',
+        );
+        expect(
+          tick.softWrap,
+          isFalse,
+          reason: 'Persian balance tick "${tick.data}" must stay on one line.',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'cash-flow axis unit aligns with the tick-label edge in Persian RTL',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        Provider<FinancialInsightsRepository>.value(
+          value: const _Wave24InsightsRepository(),
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: const Locale('fa'),
+            supportedLocales: const [Locale('fa'), Locale('en')],
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const FinancialInsightsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final unit = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit'),
+      );
+      await tester.scrollUntilVisible(
+        unit,
+        140,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(unit, findsOneWidget);
+      expect(tester.widget<Text>(unit).data, 'تومان');
+
+      final unitAlignment = find.byKey(
+        const ValueKey('financial-cashflow-axis-unit-alignment'),
+      );
+      expect(unitAlignment, findsOneWidget);
+      expect(
+        tester.widget<Align>(unitAlignment).alignment,
+        AlignmentDirectional.centerEnd,
+        reason:
+            'In Persian RTL, the unit should share the inner axis edge with the tick labels, not float at the outer card edge.',
+      );
+
+      final topTick = find.byKey(
+        const ValueKey('financial-cashflow-y-tick-4'),
+      );
+      expect(topTick, findsOneWidget);
+      expect(tester.widget<Text>(topTick).textAlign, TextAlign.end);
+      expect(tester.takeException(), isNull);
     },
   );
 

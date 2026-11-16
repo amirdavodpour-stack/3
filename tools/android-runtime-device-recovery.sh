@@ -46,3 +46,66 @@ hope_android_device_ready() {
   echo "HOPE_ADB_READY_FAILED:serial=$serial attempts=$attempts" >&2
   return 1
 }
+
+
+# Restore the HOPE launcher after Flutter Driver sessions before the bound
+# TalkBack semantics pass. Flutter's repeated install/driver lifecycle can leave
+# the package registered without a resolvable launcher activity on API 35.
+# Resolve the manifest-declared launcher dynamically; if resolution is stale,
+# reinstall the already-built exact debug APK once, then fail with diagnostics.
+hope_android_app_activity_ready() {
+  local serial="${1:-${ANDROID_SERIAL:-emulator-5554}}"
+  local package="${2:-com.hope.marketplace}"
+  local apk="${3:-build/app/outputs/flutter-apk/app-debug.apk}"
+  local package_path activity launch_output
+
+  if [[ ! -s "$apk" ]]; then
+    echo "FAIL: HOPE debug APK is unavailable for launcher recovery: $apk" >&2
+    return 1
+  fi
+
+  package_path="$(adb -s "$serial" shell pm path "$package" 2>&1 | tr -d '\r' || true)"
+  if ! grep -Eq '^package:' <<<"$package_path"; then
+    echo "HOPE_APP_PACKAGE_MISSING: reinstalling exact runtime APK for $package"
+    if ! adb -s "$serial" install -r "$apk"; then
+      echo "FAIL: could not reinstall HOPE runtime APK after package disappeared." >&2
+      return 1
+    fi
+  fi
+
+  activity="$(adb -s "$serial" shell cmd package resolve-activity --brief \
+    -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" 2>&1 |
+    tr -d '\r' | grep -F "$package/" | tail -n 1 || true)"
+  if [[ -z "$activity" ]]; then
+    echo "HOPE_APP_ACTIVITY_UNRESOLVED: reinstalling exact runtime APK once"
+    adb -s "$serial" shell dumpsys package "$package" 2>&1 || true
+    adb -s "$serial" install -r "$apk" || {
+      echo "FAIL: could not reinstall HOPE APK to recover launcher resolution." >&2
+      return 1
+    }
+    activity="$(adb -s "$serial" shell cmd package resolve-activity --brief \
+      -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" 2>&1 |
+      tr -d '\r' | grep -F "$package/" | tail -n 1 || true)"
+  fi
+
+  case "$activity" in
+    "$package/"*) ;;
+    *)
+      echo "FAIL: launcher activity still cannot be resolved for $package." >&2
+      adb -s "$serial" shell cmd package query-activities --brief \
+        -a android.intent.action.MAIN -c android.intent.category.LAUNCHER "$package" 2>&1 || true
+      adb -s "$serial" shell dumpsys package "$package" 2>&1 || true
+      return 1
+      ;;
+  esac
+
+  if ! launch_output="$(adb -s "$serial" shell am start -W -n "$activity" 2>&1)" ||
+     ! grep -Fq 'Status: ok' <<<"$launch_output"; then
+    printf '%s\n' "$launch_output" >&2
+    echo "FAIL: resolved HOPE launcher activity did not start: $activity" >&2
+    adb -s "$serial" shell dumpsys activity activities 2>&1 || true
+    return 1
+  fi
+  printf '%s\n' "$launch_output"
+  echo "HOPE_APP_ACTIVITY_LAUNCHED:$activity"
+}

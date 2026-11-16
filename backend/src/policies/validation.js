@@ -1,4 +1,5 @@
 import { HttpError } from '../api/http_error.js';
+import { isPrimaryAdminEmail } from '../application/admin_panel_access.js';
 
 export const JOB_TYPES = new Set(['FIXED', 'HOURLY', 'TASK']);
 export const JOB_KINDS = new Set(['MISSION', 'JOB']);
@@ -87,6 +88,9 @@ export function enumField(value, allowed, field) {
 
 export function requireAdmin(user) {
   if (user?.role !== 'ADMIN') throw new HttpError(403, 'FORBIDDEN', 'Admin access required');
+  if (isPrimaryAdminEmail(user.email) && !String(user.googleSubject || '').trim()) {
+    throw new HttpError(403, 'PRIMARY_ADMIN_IDENTITY_REQUIRED', 'Link a verified Google account before administering HOPE');
+  }
   return user;
 }
 
