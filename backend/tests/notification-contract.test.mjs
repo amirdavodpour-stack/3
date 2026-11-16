@@ -59,3 +59,21 @@ test('mobile notifications are repository-backed and typed',()=>{
   assert.match(mobile,/loadNotificationPreferences/);
   assert.match(mobile,/updateNotificationPreferences/);
 });
+
+
+const privacyRepo=fs.readFileSync(new URL('../src/repository/privacy.js',import.meta.url),'utf8');
+const applicationsRepo=fs.readFileSync(new URL('../src/repository/applications.js',import.meta.url),'utf8');
+const outboxRepo=fs.readFileSync(new URL('../src/repository/outbox.js',import.meta.url),'utf8');
+const cancellationMigration=fs.readFileSync(new URL('../src/db/migrations/054_outbox_notification_cancellation.js',import.meta.url),'utf8');
+
+test('notification Outbox dispatch uses explicit cancellation and an account-erasure recipient barrier',()=>{
+  assert.match(notificationsRepo,/export async function dispatchNotificationOutbox/);
+  assert.match(handlers,/dispatchNotificationOutbox/);
+  assert.match(privacyRepo,/NOTIFICATION_OUTBOX_CANCELLED_ACCOUNT_ERASURE/);
+  assert.match(notificationsRepo,/SELECT id,status FROM users WHERE id=\$1 FOR SHARE/);
+  assert.match(notificationsRepo,/RECIPIENT_UNAVAILABLE/);
+  assert.match(applicationsRepo,/SELECT id,status FROM users WHERE id=\$1 FOR SHARE/);
+  assert.ok(applicationsRepo.indexOf('FOR SHARE') < applicationsRepo.indexOf('FOR UPDATE'));
+  assert.match(cancellationMigration,/CANCELLED/);
+  assert.match(outboxRepo,/currentStatus === 'CANCELLED'.*alreadyCancelled/s);
+});

@@ -347,6 +347,7 @@ export async function failOutboxEvent({ eventId, error, maxAttempts, backoffSeco
     // Do not let a stale failure callback regress a terminal outbox state.
     if (currentStatus === 'DONE') return { terminal:false, alreadyDone:true, attempts };
     if (currentStatus === 'FAILED') return { terminal:true, alreadyFailed:true, attempts };
+    if (currentStatus === 'CANCELLED') return { terminal:true, alreadyCancelled:true, attempts };
     if (leaseToken && String(lockedEvent.lease_token) !== String(leaseToken)) {
       return { terminal:false, stale:true, attempts };
     }

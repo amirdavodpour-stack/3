@@ -27,8 +27,15 @@ export async function transitionAdminJobApplication(id,fromStatuses,toStatus,{ac
   }
   return withSqlTransaction(async(client)=>{
     const {actor}=await lockAuthorizedAdminActor(client,{actorId,sessionJti,verificationMinutes,requiredScope:'WRITE'});
-    const {rows:references}=await client.query('SELECT job_id FROM job_applications WHERE id=$1',[id]);
+    const {rows:references}=await client.query('SELECT job_id,candidate_id FROM job_applications WHERE id=$1',[id]);
     if(!references[0]) return null;
+    // Recipient first, then job/application: this mirrors account erasure's
+    // user-first lock order and avoids a job -> user inversion.
+    const {rows:recipientRows}=await client.query(
+      'SELECT id,status FROM users WHERE id=$1 FOR SHARE',
+      [references[0].candidate_id],
+    );
+    if(!recipientRows[0] || String(recipientRows[0].status || '').toUpperCase()==='DELETED') return null;
     const {rows:jobs}=await client.query('SELECT id FROM jobs WHERE id=$1 FOR UPDATE',[references[0].job_id]);
     if(!jobs[0]) return null;
     const {rows:applications}=await client.query('SELECT * FROM job_applications WHERE id=$1 FOR UPDATE',[id]);

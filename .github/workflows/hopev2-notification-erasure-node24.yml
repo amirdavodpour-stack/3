@@ -1,0 +1,49 @@
+name: HOPEv2 Notification Erasure Node 24 Verification
+
+on:
+  push:
+    branches:
+      - fix/hopev2-notification-erasure-cancellation-20261110
+    paths:
+      - ".github/workflows/hopev2-notification-erasure-node24.yml"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - "backend/src/repository/notifications.js"
+      - "backend/src/repository/privacy.js"
+      - "backend/src/outbox_handlers.js"
+      - "backend/src/db/migrations/054_outbox_notification_cancellation.js"
+      - "backend/tests/notification-contract.test.mjs"
+      - "backend/tests/postgres-notification-erasure-integration.test.mjs"
+      - "backend/tests/outbox-contract.test.mjs"
+      - "backend/tests/privacy-v2.test.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-notification-erasure-node24-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  notification-erasure-node24:
+    name: Notification erasure fast regressions (Node 24)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up repository-required Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run backend syntax checks
+        working-directory: backend
+        run: npm run check
+      - name: Run backend fast regressions
+        working-directory: backend
+        run: npm run test:fast

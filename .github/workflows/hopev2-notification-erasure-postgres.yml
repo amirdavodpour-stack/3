@@ -1,0 +1,63 @@
+name: HOPEv2 Notification Erasure PostgreSQL 17
+
+on:
+  push:
+    branches:
+      - fix/hopev2-notification-erasure-cancellation-20261110
+    paths:
+      - ".github/workflows/hopev2-notification-erasure-postgres.yml"
+      - "backend/src/repository/notifications.js"
+      - "backend/src/repository/privacy.js"
+      - "backend/src/outbox_handlers.js"
+      - "backend/src/db/migrations/054_outbox_notification_cancellation.js"
+      - "backend/tests/notification-contract.test.mjs"
+      - "backend/tests/postgres-notification-erasure-integration.test.mjs"
+      - "backend/tools/run-chat-postgres-isolated.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hopev2-notification-erasure-postgres-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  notification-erasure-postgres:
+    name: Notification erasure and Outbox concurrency (PostgreSQL 17)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hope_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      REQUIRE_INTEGRATION: "1"
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/hope_test
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up repository-required Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24.22.2
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run isolated PostgreSQL 17 integration tests
+        working-directory: backend
+        run: npm run test:chat-postgres:isolated
