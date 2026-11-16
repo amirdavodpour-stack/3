@@ -21,6 +21,7 @@ if (enabled) {
   mockServerBase = `http://127.0.0.1:${port}`;
 
   process.env.NODE_ENV = 'test';
+  process.env.EXPOSE_EMAIL_VERIFICATION_CODE_IN_DEVELOPMENT = 'true';
   process.env.PAYMENT_PROVIDER = 'webhook';
   process.env.PAYMENT_CURRENCY = 'TOMAN';
   process.env.PAYMENT_PROVIDER_TOKEN = 'postgres-e2e-mock-provider-token-32-chars';
@@ -70,8 +71,16 @@ const register = async (label) => {
       displayName: label,
     }),
   });
-  assert.equal(result.status, 201);
-  return result.body.data;
+  assert.equal(result.status, 202);
+  assert.equal(result.body.data.verificationRequired, true);
+  assert.ok(result.body.data.verificationCode);
+  const verified = await json('/auth/email/verify', {
+    method: 'POST',
+    body: JSON.stringify({ code: result.body.data.verificationCode }),
+  });
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.data.emailVerified, true);
+  return verified.body.data;
 };
 
 const createFundableMission = async (owner, provider) => {
