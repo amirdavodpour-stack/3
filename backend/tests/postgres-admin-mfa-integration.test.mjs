@@ -282,3 +282,141 @@ test('PostgreSQL MFA setup and completion reject a revoked session version while
     await pool.query('DELETE FROM users WHERE id=$1',[userId]);
   }
 });
+
+
+test('PostgreSQL MFA factor consumption, exact-session unlock and audit commit or roll back together', {
+  skip:!enabled,
+  timeout:30_000,
+}, async () => {
+  const userId=crypto.randomUUID();
+  const email=`admin-mfa-unlock-atomic-${userId}@example.test`;
+  const sessionJti=`admin-mfa-unlock-session-${userId}`;
+  const encryptionKey='hope-postgres-mfa-encryption-key-with-adequate-entropy';
+  const secret=mfa.generateTotpSecret();
+  const secretCiphertext=mfa.encryptTotpSecret(secret,encryptionKey);
+  const nowMs=Date.now();
+  const counter=Math.floor(nowMs/30_000);
+  const totpCode=mfa.generateTotpCode(secret,nowMs);
+  const factor=mfa.verifyTotpCode(secret,totpCode,nowMs,{lastAcceptedCounter:counter-1});
+  assert.equal(factor.valid,true);
+  const recovery=mfa.generateRecoveryCodes(10);
+  const recoveryCiphertext=mfa.encryptRecoveryCodes(recovery.codes,encryptionKey);
+  const deliveryId=crypto.randomUUID();
+  await pool.query(
+    `INSERT INTO users(id,email,password_hash,display_name,role,status,session_version,created_at,google_subject)
+     VALUES($1,$2,'integration-hash','Atomic MFA Unlock Admin','ADMIN','ACTIVE',0,NOW(),$3)`,
+    [userId,email,`google-${userId}`],
+  );
+  const functionName=`fail_mfa_unlock_audit_${userId.replaceAll('-','')}`;
+  const triggerName=`fail_mfa_unlock_audit_trigger_${userId.replaceAll('-','')}`;
+
+  try {
+    assert.equal(await repository.beginAdminMfaEnrollment(
+      userId,secretCiphertext,new Date(nowMs+10*60_000).toISOString(),
+      {expiresInMinutes:10,sessionJti},sessionJti,0,
+    ),true);
+    assert.equal(await repository.completeAdminMfaEnrollment(userId,{
+      secretCiphertext,
+      recoveryCodeHashes:recovery.hashes,
+      recoveryCodesCiphertext:recoveryCiphertext,
+      recoveryDeliveryId:deliveryId,
+      lastTotpCounter:counter-1,
+      sessionJti,
+      sessionVersion:0,
+      auditMeta:{recoveryCodesIssued:10,sessionJti},
+    }),true);
+    await pool.query(
+      `UPDATE admin_mfa_credentials
+          SET recovery_codes_ciphertext=NULL,
+              recovery_codes_acknowledged_at=NOW()
+        WHERE user_id=$1`,
+      [userId],
+    );
+
+    await pool.query(`CREATE FUNCTION ${functionName}() RETURNS trigger AS $body$
+      BEGIN
+        IF NEW.action='ADMIN_PANEL_UNLOCK' AND NEW.actor_id::text=TG_ARGV[0] THEN
+          RAISE EXCEPTION 'R05 forced ADMIN_PANEL_UNLOCK audit failure';
+        END IF;
+        RETURN NEW;
+      END;
+    $body$ LANGUAGE plpgsql`);
+    await pool.query(
+      `CREATE TRIGGER ${triggerName} BEFORE INSERT ON audit_logs
+       FOR EACH ROW EXECUTE FUNCTION ${functionName}('${userId}')`,
+    );
+
+    await assert.rejects(
+      repository.verifyAdminPanelMfaAndUnlock(userId,{
+        sessionJti,
+        sessionVersion:0,
+        scope:'WRITE',
+        factor:{method:'totp',counter:factor.counter,secretCiphertext},
+        auditMeta:{expiresInMinutes:5,method:'password',mfaMethod:'totp'},
+      }),
+      /R05 forced ADMIN_PANEL_UNLOCK audit failure/,
+      'an audit failure must abort factor consumption and unlock state together',
+    );
+
+    const {rows:afterRollback}=await pool.query(
+      `SELECT c.last_totp_counter,u.admin_panel_verified_at,
+              u.admin_panel_verified_session_jti,u.admin_panel_verified_scope
+         FROM admin_mfa_credentials c
+         JOIN users u ON u.id=c.user_id
+        WHERE c.user_id=$1`,
+      [userId],
+    );
+    assert.equal(Number(afterRollback[0].last_totp_counter),counter-1,
+      'the TOTP counter must remain reusable when the unlock audit rolls back');
+    assert.equal(afterRollback[0].admin_panel_verified_at,null);
+    assert.equal(afterRollback[0].admin_panel_verified_session_jti,null);
+    assert.equal(afterRollback[0].admin_panel_verified_scope,null);
+    const {rows:missingAudit}=await pool.query(
+      `SELECT id FROM audit_logs WHERE action='ADMIN_PANEL_UNLOCK' AND actor_id=$1`,
+      [userId],
+    );
+    assert.equal(missingAudit.length,0);
+
+    await pool.query(`DROP TRIGGER ${triggerName} ON audit_logs`);
+    await pool.query(`DROP FUNCTION ${functionName}()`);
+    const unlocked=await repository.verifyAdminPanelMfaAndUnlock(userId,{
+      sessionJti,
+      sessionVersion:0,
+      scope:'WRITE',
+      factor:{method:'totp',counter:factor.counter,secretCiphertext},
+      auditMeta:{expiresInMinutes:5,method:'password',mfaMethod:'totp'},
+    });
+    assert.ok(unlocked);
+    assert.equal(unlocked.scope,'WRITE');
+
+    const {rows:afterCommit}=await pool.query(
+      `SELECT c.last_totp_counter,u.admin_panel_verified_session_jti,
+              u.admin_panel_verified_scope,a.action,a.meta
+         FROM admin_mfa_credentials c
+         JOIN users u ON u.id=c.user_id
+         JOIN audit_logs a ON a.actor_id=u.id
+        WHERE c.user_id=$1 AND a.action='ADMIN_PANEL_UNLOCK'`,
+      [userId],
+    );
+    assert.equal(afterCommit.length,1);
+    assert.equal(Number(afterCommit[0].last_totp_counter),factor.counter);
+    assert.equal(afterCommit[0].admin_panel_verified_session_jti,sessionJti);
+    assert.equal(afterCommit[0].admin_panel_verified_scope,'WRITE');
+    assert.equal(afterCommit[0].action,'ADMIN_PANEL_UNLOCK');
+    assert.equal(afterCommit[0].meta.sessionJti,sessionJti);
+    assert.equal(afterCommit[0].meta.mfaMethod,'totp');
+
+    assert.equal(await repository.verifyAdminPanelMfaAndUnlock(userId,{
+      sessionJti,
+      sessionVersion:0,
+      scope:'WRITE',
+      factor:{method:'totp',counter:factor.counter,secretCiphertext},
+      auditMeta:{expiresInMinutes:5,method:'password',mfaMethod:'totp'},
+    }),null,'a successfully consumed TOTP counter cannot unlock the panel twice');
+  } finally {
+    await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON audit_logs`).catch(()=>{});
+    await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(()=>{});
+    await pool.query('DELETE FROM audit_logs WHERE actor_id=$1 OR entity_id=$1',[userId]).catch(()=>{});
+    await pool.query('DELETE FROM users WHERE id=$1',[userId]).catch(()=>{});
+  }
+});

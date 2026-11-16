@@ -3,14 +3,50 @@ import { requirePool } from './context.js';
 import { userFromRow } from './mappers.js';
 
 const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
-export async function insertRefreshToken(token) {
-  const { rows } = await requirePool().query(`INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`, [token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,token.createdAt,token.revokedAt,token.replacedBy]);
-  return { id:rows[0].id, userId:rows[0].user_id, tokenHash:rows[0].token_hash, familyId:rows[0].family_id, expiresAt:rows[0].expires_at?.toISOString?.() ?? rows[0].expires_at, createdAt:rows[0].created_at?.toISOString?.() ?? rows[0].created_at, revokedAt:rows[0].revoked_at ? (rows[0].revoked_at.toISOString?.() ?? rows[0].revoked_at) : null, replacedBy:rows[0].replaced_by };
+export async function insertRefreshToken(token, expectedSessionVersion) {
+  const version = Number(expectedSessionVersion);
+  if (!Number.isSafeInteger(version) || version < 0) return null;
+
+  return withSqlTransaction(async (client) => {
+    // Login can spend substantial time verifying credentials before issuing a
+    // session. Serialize issuance with logout, password reset and admin revoke.
+    const { rows: owners } = await client.query(
+      `SELECT id,status,session_version FROM users WHERE id=$1 FOR UPDATE`,
+      [token.userId],
+    );
+    const owner = owners[0];
+    if (
+      !owner ||
+      owner.status !== 'ACTIVE' ||
+      Number(owner.session_version) !== version
+    ) {
+      return null;
+    }
+
+    const { rows } = await client.query(
+      `INSERT INTO refresh_tokens(
+         id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by,session_version
+       ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,token.createdAt,token.revokedAt,token.replacedBy,version],
+    );
+    const row = rows[0];
+    return {
+      id:row.id,
+      userId:row.user_id,
+      tokenHash:row.token_hash,
+      familyId:row.family_id,
+      sessionVersion:Number(row.session_version),
+      expiresAt:row.expires_at?.toISOString?.() ?? row.expires_at,
+      createdAt:row.created_at?.toISOString?.() ?? row.created_at,
+      revokedAt:row.revoked_at ? (row.revoked_at.toISOString?.() ?? row.revoked_at) : null,
+      replacedBy:row.replaced_by,
+    };
+  });
 }
 export async function findRefreshTokenByHash(tokenHash) {
   const { rows } = await requirePool().query(`SELECT * FROM refresh_tokens WHERE token_hash=$1`, [tokenHash]);
   const r=rows[0];
-  return r ? { id:r.id,userId:r.user_id,tokenHash:r.token_hash,familyId:r.family_id,expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at,revokedAt:r.revoked_at ? (r.revoked_at.toISOString?.() ?? r.revoked_at) : null,replacedBy:r.replaced_by } : null;
+  return r ? { id:r.id,userId:r.user_id,tokenHash:r.token_hash,familyId:r.family_id,sessionVersion:Number(r.session_version),expiresAt:r.expires_at?.toISOString?.() ?? r.expires_at,createdAt:r.created_at?.toISOString?.() ?? r.created_at,revokedAt:r.revoked_at ? (r.revoked_at.toISOString?.() ?? r.revoked_at) : null,replacedBy:r.replaced_by } : null;
 }
 export async function rotateRefreshToken(oldHash, nextToken, familyId) {
   return withSqlTransaction(async (client) => {
@@ -56,6 +92,21 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
       return { kind:'reuse' };
     }
 
+    if (Number(r.session_version) !== Number(user.sessionVersion || 0)) {
+      await client.query(
+        `UPDATE refresh_tokens
+            SET revoked_at=COALESCE(revoked_at,NOW())
+          WHERE family_id=$1 AND revoked_at IS NULL`,
+        [r.family_id],
+      );
+      await client.query(
+        `INSERT INTO audit_logs(id,action,actor_id,entity_type,entity_id,meta,created_at)
+         VALUES(gen_random_uuid(),'AUTH_REFRESH_SESSION_GENERATION_MISMATCH',$1,'user',$1,$2::jsonb,NOW())`,
+        [userId,JSON.stringify({tokenFamilyId:r.family_id})],
+      );
+      return { kind:'invalid' };
+    }
+
     if (new Date(r.expires_at).getTime() <= Date.now() || String(familyId || r.family_id) !== String(r.family_id) || !nextToken?.tokenHash) {
       return { kind:'invalid' };
     }
@@ -64,17 +115,33 @@ export async function rotateRefreshToken(oldHash, nextToken, familyId) {
       [r.id,nextToken.tokenHash],
     );
     const { rows: created } = await client.query(
-      `INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by) VALUES($1,$2,$3,$4,$5,$6,NULL,NULL) RETURNING *`,
-      [nextToken.id,userId,nextToken.tokenHash,r.family_id,nextToken.expiresAt,nextToken.createdAt],
+      `INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by,session_version) VALUES($1,$2,$3,$4,$5,$6,NULL,NULL,$7) RETURNING *`,
+      [nextToken.id,userId,nextToken.tokenHash,r.family_id,nextToken.expiresAt,nextToken.createdAt,Number(r.session_version)],
     );
-    return {kind:'ok',user,token:{id:created[0].id,userId:created[0].user_id,tokenHash:created[0].token_hash,familyId:created[0].family_id,expiresAt:created[0].expires_at?.toISOString?.() ?? created[0].expires_at,createdAt:created[0].created_at?.toISOString?.() ?? created[0].created_at,revokedAt:null,replacedBy:null}};
+    return {kind:'ok',user,token:{id:created[0].id,userId:created[0].user_id,tokenHash:created[0].token_hash,familyId:created[0].family_id,sessionVersion:Number(created[0].session_version),expiresAt:created[0].expires_at?.toISOString?.() ?? created[0].expires_at,createdAt:created[0].created_at?.toISOString?.() ?? created[0].created_at,revokedAt:null,replacedBy:null}};
   });
 }
 export async function revokeRefreshFamily(familyId) {
   await requirePool().query(`UPDATE refresh_tokens SET revoked_at=COALESCE(revoked_at,NOW()) WHERE family_id=$1 AND revoked_at IS NULL`,[familyId]);
 }
-export async function updatePasswordHash(userId, passwordHash) {
-  const { rows } = await requirePool().query(`UPDATE users SET password_hash=$2 WHERE id=$1 RETURNING id`, [userId, passwordHash]);
+export async function updatePasswordHash(userId, passwordHash, expectedPasswordHash, expectedSessionVersion) {
+  const version = Number(expectedSessionVersion);
+  if (
+    typeof expectedPasswordHash !== 'string' ||
+    !Number.isSafeInteger(version) ||
+    version < 0
+  ) {
+    return false;
+  }
+  const { rows } = await requirePool().query(
+    `UPDATE users
+        SET password_hash=$2
+      WHERE id=$1
+        AND password_hash=$3
+        AND session_version=$4
+      RETURNING id`,
+    [userId,passwordHash,expectedPasswordHash,version],
+  );
   return Boolean(rows[0]);
 }
 export async function logoutUser(userId) {

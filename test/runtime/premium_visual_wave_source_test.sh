@@ -110,15 +110,23 @@ if printf '%s\n' "$register_capture_block" | grep -Eq 'Future<void>\.delayed'; t
 fi
 
 password_reset_block="$(sed -n '/if (child is PasswordResetPage)/,/if (child is WalletPage)/p' "$runtime_driver")"
-password_reset_capture_block="$(printf '%s\n' "$password_reset_block" | sed '/if (child is PasswordResetPage)/,/return;/p')"
+password_reset_capture_block="$(printf '%s\n' "$password_reset_block" | sed -n '/if (child is PasswordResetPage)/,/return;/p')"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED"
-printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(PasswordResetPage), findsOneWidget"
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'final resetPage = find.byType(PasswordResetPage);'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'expect(resetPage, findsOneWidget'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'final resetCopy = HopeCopy.of(tester.element(resetPage));'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'find.text(resetCopy.copy_reset_password_18b5d1c)'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'find.text(resetCopy.copy_send_request_0480e80)'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'HOPE_RUNTIME_PASSWORD_RESET_CONTENT_READY'
+printf '%s\n' "$password_reset_capture_block" | grep -Fq 'await tester.pump();'
+pump_count="$(printf '%s\n' "$password_reset_capture_block" | grep -Fc 'await tester.pump();')"
+test "$pump_count" -eq 1
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(RegisterPage), findsNothing"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "expect(find.byType(TextField), findsOneWidget"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "password-reset-\$localeMarker"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq "HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE"
 printf '%s\n' "$password_reset_capture_block" | grep -Fq 'await _captureRuntimeScreenshot(marker, tester: tester)'
-if printf '%s\n' "$password_reset_capture_block" | grep -Eq 'await tester\.pump|Future<void>\.delayed'; then
+if printf '%s\n' "$password_reset_capture_block" | grep -Eq 'Future<void>\.delayed|await tester\.pumpAndSettle'; then
   echo "FAIL: PasswordReset runtime capture must remain direct after surface preparation" >&2
   exit 1
 fi

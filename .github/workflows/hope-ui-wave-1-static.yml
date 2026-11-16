@@ -8,6 +8,7 @@ on:
       - feat/google-sign-in-2026-09-20
       - feat/ui-v2-wave-1-execution-2026-10-07
       - fix/hopev2-visual-audit-v1-v2-2026-10-20
+      - fix/hopev2-auth-hardening-20261107
 
 concurrency:
   # Isolate verification by exact commit so a wedged older runner cannot starve the current head.

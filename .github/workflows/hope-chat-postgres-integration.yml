@@ -5,6 +5,7 @@ on:
     branches:
       - feat/ui-v2-wave-1-execution-2026-10-07
       - fix/hopev2-visual-audit-v1-v2-2026-10-20
+      - fix/hopev2-auth-hardening-20261107
     paths:
       - "backend/src/app.js"
       - "backend/src/config.js"
