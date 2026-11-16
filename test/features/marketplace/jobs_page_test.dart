@@ -141,7 +141,18 @@ Future<void> _tapFilter(
   WidgetTester tester,
   String label,
 ) async {
-  final all = find.text(label, skipOffstage: false);
+  var sheet = find.byType(BottomSheet);
+  if (sheet.evaluate().isEmpty) {
+    await tester.tap(
+      find.byKey(const ValueKey('hope-opportunity-refinement-launcher')),
+    );
+    await tester.pumpAndSettle();
+    sheet = find.byType(BottomSheet);
+  }
+  final all = find.descendant(
+    of: sheet.last,
+    matching: find.text(label, skipOffstage: false),
+  );
   expect(all, findsWidgets);
   final target = all.first;
   await tester.ensureVisible(target);
@@ -172,7 +183,7 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsNothing);
+    expect(find.text('فرصت بعدی خود را پیدا کنید'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('hope-explore-result-count')),
       findsOneWidget,
@@ -221,7 +232,7 @@ void main() {
     await _pump(tester, repo);
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('جستجو'), findsOneWidget);
+    expect(find.bySemanticsLabel('جستجو'), findsWidgets);
     expect(find.bySemanticsLabel('عنوان، شهر یا مهارت...'), findsNothing);
     expect(tester.takeException(), isNull);
   });

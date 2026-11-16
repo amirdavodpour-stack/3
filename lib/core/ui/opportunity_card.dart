@@ -484,6 +484,7 @@ class OpportunityCard extends StatelessWidget {
     final company = _companyName();
     final mode = _workMode(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _mediaHeader(
@@ -794,6 +795,7 @@ class OpportunityCard extends StatelessWidget {
     ];
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -982,6 +984,7 @@ class OpportunityCard extends StatelessWidget {
     required HopeCopy copy,
   }) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _mediaHeader(

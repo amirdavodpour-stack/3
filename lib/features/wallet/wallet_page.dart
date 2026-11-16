@@ -759,6 +759,7 @@ class _WalletPageState extends State<WalletPage> {
             SizedBox(height: compact ? 2 : 3),
             Text(
               _money(wallet.totalBalance),
+              key: const ValueKey('wallet-total-balance'),
               maxLines: 2,
               softWrap: true,
               style: TextStyle(

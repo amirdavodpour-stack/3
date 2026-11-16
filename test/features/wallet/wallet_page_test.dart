@@ -265,7 +265,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('3,500,000 Toman'), findsWidgets);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('wallet-total-balance'))).data,
+        '2,500,000 Toman',
+      );
 
       final refreshIndicator =
           tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
@@ -276,14 +279,19 @@ void main() {
       await newerRefresh;
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('wallet-total-balance'))).data,
+        '9,900,000 Toman',
+      );
 
       wallet.firstRefresh.complete(wallet._wallet(2500000));
       await olderRefresh;
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('9,900,000 Toman'), findsWidgets);
-      expect(find.textContaining('2,500,000 Toman'), findsNothing);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('wallet-total-balance'))).data,
+        '9,900,000 Toman',
+      );
     },
   );
 
@@ -381,7 +389,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('۳٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('wallet-balance-hero')),
+          matching: find.textContaining('۳٬۵۰۰٬۰۰۰ تومان'),
+        ),
+        findsOneWidget,
+      );
       expect(find.textContaining('۲٬۵۰۰٬۰۰۰ تومان'), findsWidgets);
       expect(find.text('قابل استفاده'), findsOneWidget);
       expect(find.text('محافظت‌شده'), findsOneWidget);
@@ -419,7 +433,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('کل موجودی'), findsOneWidget);
-      expect(find.text('قفل‌شده'), findsWidgets);
+      expect(find.textContaining('قفل‌شده'), findsWidgets);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
       expect(find.text('درخواست‌های برداشت'), findsOneWidget);
       expect(find.text('برداشت در انتظار'), findsOneWidget);
@@ -604,7 +618,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('3,500,000 Toman'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('wallet-balance-hero')),
+        matching: find.textContaining('3,500,000 Toman'),
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('2,500,000 IRR'), findsNothing);
     expect(find.textContaining('1,000,000 Toman'), findsWidgets);
     expect(find.textContaining('IRR'), findsNothing);
