@@ -58,6 +58,10 @@ jobs:
         working-directory: backend
         run: timeout --foreground --signal=TERM --kill-after=30s 8m npm ci
 
+      - name: Verify Main CI performance smoke isolation
+        working-directory: backend
+        run: node --test --test-name-pattern='Main CI performance smoke is opt-in and cannot target Production' tests/release-hardening-contract.test.mjs
+
       - name: Backend static check
         id: backend_static_check
         continue-on-error: true

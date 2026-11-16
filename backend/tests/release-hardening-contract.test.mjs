@@ -167,6 +167,7 @@ test('Main CI performance smoke is opt-in and cannot target Production', () => {
   assert.match(job, /PERF_BASE_URL is required; production fallback is disabled/);
   assert.match(job, /must use HTTPS/);
   assert.match(job, /Production host is forbidden/);
+  assert.match(workflow, /name: Verify Main CI performance smoke isolation[\s\S]*?node --test --test-name-pattern='Main CI performance smoke is opt-in and cannot target Production' tests\/release-hardening-contract\.test\.mjs/);
 });
 
 test('staging certification requires a real external staging base URL and does not fall back to localhost', () => {
