@@ -98,8 +98,6 @@ class _OffersPageState extends State<OffersPage> {
     final rows = _filter == 'ALL'
         ? all
         : all.where((x) => x.status.toUpperCase() == _filter).toList();
-    final pendingCount = all.where((x) => x.status.toUpperCase() == 'PENDING').length;
-    final acceptedCount = all.where((x) => x.status.toUpperCase() == 'ACCEPTED').length;
 
     return Scaffold(
       body: RefreshIndicator(

@@ -1,18 +1,15 @@
-import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import '../../core/theme/app_theme.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/transactions/wallet.dart';
 import '../../core/transactions/wallet_repository.dart';
 import '../../core/network/api_client.dart';
 import '../../core/ui/components.dart';
-import '../../core/ui/copy.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_signature_components.dart';
 import '../../core/ui/hope_display_formatters.dart';
@@ -547,16 +544,6 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  int get _pendingPayoutCount => _payouts.where((p) => const {
-        'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
-      }.contains(p.status.toUpperCase())).length;
-
-  int get _pendingPayoutAmount => _payouts
-      .where((p) => const {
-            'REQUESTED', 'RESERVED', 'PROCESSING', 'UNKNOWN'
-          }.contains(p.status.toUpperCase()))
-      .fold<int>(0, (sum, payout) => sum + payout.amount);
-
   Object _payoutIcon(String status) {
     switch (status.toUpperCase()) {
       case 'SUCCEEDED': return HopeV2Icons.completed;
@@ -581,7 +568,7 @@ class _WalletPageState extends State<WalletPage> {
     if (index == 3) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;

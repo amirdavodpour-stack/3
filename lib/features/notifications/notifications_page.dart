@@ -10,7 +10,6 @@ import '../../core/network/api_error_presenter.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_async_state.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/uploads/upload_queue.dart';

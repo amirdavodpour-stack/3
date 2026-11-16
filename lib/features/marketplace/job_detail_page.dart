@@ -206,8 +206,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
     if (repository == null) return;
 
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _EmployerCandidateMatchesLoader(
+      HopeRoutes.page(
+        _EmployerCandidateMatchesLoader(
           future: repository.listForJob(job.id),
           jobTitle: job.title,
         ),
@@ -667,7 +667,6 @@ class _JobDetailPageState extends State<JobDetailPage> {
   Widget build(BuildContext context) {
     final j = widget.job;
     final isJob = j.isJob;
-    final visibility = j.visibility;
     final currentUserId =
         context.read<AuthController?>()?.user?['id']?.toString();
     final isOwner =

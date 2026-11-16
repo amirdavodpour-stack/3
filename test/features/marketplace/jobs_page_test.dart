@@ -7,7 +7,6 @@ import 'package:hope_mobile/core/marketplace/marketplace_repository.dart';
 import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/features/jobs/jobs_page.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
-import 'package:hope_mobile/core/ui/components.dart';
 import 'package:hope_mobile/core/ui/opportunity_card.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';

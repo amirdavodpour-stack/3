@@ -1,4 +1,3 @@
-import '../../core/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +5,6 @@ import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
 import '../../core/profile/profile_repository.dart';
-import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/theme_controller.dart';
@@ -72,7 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (index == 4) return;
     if (index == 0) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AppRouter()),
+        HopeRoutes.home(),
         (_) => false,
       );
       return;

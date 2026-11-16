@@ -451,20 +451,4 @@ class _JobsFilterHeader extends StatelessWidget {
     );
   }
 
-  Widget _chip(
-    BuildContext context,
-    String text,
-    bool selected,
-    VoidCallback onTap, {
-    Object? icon,
-  }) =>
-      Padding(
-        padding: const EdgeInsetsDirectional.only(end: HopeV2Spacing.sm),
-        child: PremiumFilterChip(
-          label: text,
-          selected: selected,
-          onTap: onTap,
-          icon: icon,
-        ),
-      );
 }

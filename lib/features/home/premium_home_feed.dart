@@ -12,7 +12,6 @@ import '../../core/theme/hope_v2_design.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/transactions/wallet.dart';
 import '../../core/ui/components.dart';
-import '../../core/ui/brand.dart';
 import '../../core/ui/copy.dart';
 import '../../core/ui/opportunity_card.dart';
 import '../../core/ui/hope_async_state.dart';
@@ -303,38 +302,6 @@ class _PremiumHomeFeedState extends State<PremiumHomeFeed> {
       ),
     );
   }
-  Widget _heroCapability({
-    required Object icon,
-    required String label,
-    required Color accent,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: .07),
-        borderRadius: BorderRadius.circular(HopeV2Radii.pill),
-        border: Border.all(
-          color: accent.withValues(alpha: .14),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HopeIcon(icon, size: 12, color: accent, strokeWidth: 1.8),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: accent,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<HopeSettingsController>();

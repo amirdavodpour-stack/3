@@ -1,7 +1,5 @@
 export 'hope_product_architecture.dart';
 
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import '../theme/hope_v2_design.dart';

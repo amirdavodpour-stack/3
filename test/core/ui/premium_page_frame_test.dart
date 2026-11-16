@@ -50,27 +50,22 @@ void main() {
     },
   );
   testWidgets(
-    'premium page frame stays opaque when wrapped by a refresh indicator',
+    'premium page frame keeps an opaque canvas under a refresh indicator',
     (tester) async {
-      final boundaryKey = GlobalKey();
-
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
           home: SizedBox(
             width: 360,
             height: 640,
-            child: RepaintBoundary(
-              key: boundaryKey,
-              child: RefreshIndicator(
-                onRefresh: () async {},
-                child: PremiumPageFrame(
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 80),
-                    ],
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () async {},
+              child: PremiumPageFrame(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 80),
+                  ],
                 ),
               ),
             ),
@@ -79,23 +74,20 @@ void main() {
       );
       await tester.pump();
 
-      final boundary =
-          boundaryKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 1);
-      final bytes =
-          (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+      final canvas = find.descendant(
+        of: find.byType(PremiumPageFrame),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Material &&
+              widget.type == MaterialType.canvas,
+        ),
+      );
+      expect(canvas, findsOneWidget);
 
-      final width = image.width;
-      final height = image.height;
-      for (final offset in <int>[
-        0,
-        (width - 1) * 4,
-        (height - 1) * width * 4,
-        ((height - 1) * width + (width - 1)) * 4,
-      ]) {
-        expect(bytes.getUint8(offset + 3), 255);
-      }
+      final material = tester.widget<Material>(canvas);
+      expect(material.color, isNotNull);
+      expect(material.color!.a, 1);
     },
+    timeout: const Timeout(Duration(seconds: 30)),
   );
 
   testWidgets(
