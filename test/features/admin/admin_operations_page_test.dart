@@ -747,11 +747,9 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
-}
 
-
-testWidgets(
-  'primary admin records a digest-bound attestation, closes unresolved without financial resolution, and can reopen',
+  testWidgets(
+    'primary admin records a digest-bound attestation, closes unresolved without financial resolution, and can reopen',
   (tester) async {
     tester.view.physicalSize = const Size(390, 2600);
     tester.view.devicePixelRatio = 1;
@@ -847,3 +845,4 @@ testWidgets(
     expect(tester.takeException(), isNull);
   },
 );
+}
