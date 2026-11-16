@@ -772,7 +772,7 @@ void main() {
   testWidgets(
     'primary admin records a digest-bound attestation, closes unresolved without financial resolution, and can reopen',
   (tester) async {
-    tester.view.physicalSize = const Size(390, 2600);
+    tester.view.physicalSize = const Size(390, 5000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
