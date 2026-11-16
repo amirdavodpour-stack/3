@@ -226,6 +226,37 @@ class _FakeAdmin implements AdminRepository {
   Future<List<Map<String, dynamic>>> listUnknownPayouts({int limit = 100}) async => const [];
 
   @override
+  Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({int limit = 50, String? cursor}) async => const {
+        'cases': <Map<String, dynamic>>[],
+        'hasMore': false,
+        'nextCursor': null,
+      };
+
+  @override
+  Future<Map<String, dynamic>> listOutboxEventReconciliationNotes(
+    String caseId, {
+    int limit = 25,
+    String? cursor,
+  }) async => const {
+        'notes': <Map<String, dynamic>>[],
+        'hasMore': false,
+        'nextCursor': null,
+      };
+
+  @override
+  Future<Map<String, dynamic>> appendOutboxEventReconciliationNote(
+    String caseId, {
+    required String reason,
+    required String evidenceReference,
+    required Map<String, dynamic> verification,
+    required String idempotencyKey,
+  }) async => const {
+        'action': 'INVESTIGATION_NOTE_ADDED',
+        'caseStatus': 'INVESTIGATING',
+        'replayed': false,
+      };
+
+  @override
   Future<Map<String, dynamic>> resolveUnknownPayout(String id, {required String decision, String? providerRef, String? reason}) async => const {};
 
   @override

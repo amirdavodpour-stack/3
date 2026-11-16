@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createAdminRoutes } from '../src/routes/admin_routes.js';
+import { HttpError } from '../src/api/http_error.js';
 
 const screen = fs.readFileSync(
   new URL('../../lib/features/admin/admin_operations_page.dart', import.meta.url),
@@ -26,4 +28,498 @@ test('admin payout cards display case type, severity, state and expected/observe
   assert.match(payoutCard, /expected/);
   assert.match(payoutCard, /observed/);
   assert.match(payoutCard, /CRITICAL/);
+});
+
+test('admin outbox-event reconciliation queue is read-only and requires payout visibility permission', async () => {
+  const admin = {
+    id:'outbox-reconciliation-admin',
+    email:'ops-outbox@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-admin',
+    sessionJti:'outbox-reconciliation-session',
+  };
+  const cases = [{
+    id:'00000000-0000-4000-8000-000000000101',
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'outbox_event',
+    resourceId:'00000000-0000-4000-8000-000000000102',
+    severity:'CRITICAL',
+    status:'OPEN',
+    expected:{payoutId:'00000000-0000-4000-8000-000000000103'},
+    observed:{reason:'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+    eventType:'PAYOUT_EXECUTE',
+    eventStatus:'DONE',
+  }];
+  const calls = [];
+  let readChecks = 0;
+  const page = {cases,hasMore:true,nextCursor:'next-cursor'};
+  const repo = {
+    async isAdminPanelVerified(...args) {
+      readChecks += 1;
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return true;
+    },
+    async listActiveOutboxEventReconciliationCases(options) {
+      calls.push(options);
+      return page;
+    },
+  };
+  const route = createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>{
+      if(candidate?.role!=='ADMIN') throw new HttpError(403,'FORBIDDEN','Administrator access required');
+      return candidate;
+    },
+    readBody:async(req)=>req.body||{},
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{
+      adminMfaRequired:true,
+      adminPanelReadVerificationMinutes:15,
+      adminPanelWriteVerificationMinutes:5,
+    },
+  });
+  const response = await route(
+    {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events?limit=25&cursor=opaque-cursor',headers:{host:'localhost'}},
+    {},
+    ['admin','reconciliation-cases','outbox-events'],
+  );
+  assert.equal(response.status,200);
+  assert.deepEqual(response.data,page);
+  assert.equal(readChecks,1);
+  assert.deepEqual(calls,[{limit:'25',cursor:'opaque-cursor'}]);
+});
+
+test('non-administrators cannot read event-scoped payout reconciliation cases', async () => {
+  let listCalls = 0;
+  const route = createAdminRoutes({
+    authUser:async()=>({id:'user-1',role:'USER',status:'ACTIVE'}),
+    requireAdmin:(candidate)=>{
+      if(candidate?.role!=='ADMIN') throw new HttpError(403,'FORBIDDEN','Administrator access required');
+      return candidate;
+    },
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo:{
+      async listActiveOutboxEventReconciliationCases() { listCalls += 1; return []; },
+    },
+    config:{adminMfaRequired:false},
+  });
+  await assert.rejects(
+    route(
+      {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events',headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events'],
+    ),
+    (error)=>error?.status===403 && error?.code==='FORBIDDEN',
+  );
+  assert.equal(listCalls,0);
+});
+
+const adminRepositorySource = fs.readFileSync(
+  new URL('../../lib/core/admin/admin_repository.dart', import.meta.url),
+  'utf8',
+);
+
+test('admin repository exposes a cursor-paginated event reconciliation read API', () => {
+  assert.match(adminRepositorySource, /listActiveOutboxEventReconciliationCases/);
+  assert.match(adminRepositorySource, /\/admin\/reconciliation-cases\/outbox-events/);
+  assert.match(adminRepositorySource, /nextCursor/);
+  assert.match(adminRepositorySource, /hasMore/);
+});
+
+test('admin operations renders event quarantine independently from unknown payout cards', () => {
+  assert.match(screen, /_outboxEventReconciliationCases/);
+  assert.match(screen, /_loadMoreOutboxEventCases/);
+  assert.match(screen, /listActiveOutboxEventReconciliationCases/);
+  assert.match(screen, /Outbox event integrity cases|Outbox event reconciliation|پرونده‌های یکپارچگی رویداد Outbox/);
+  assert.match(screen, /_reconciliationCaseCard\([^)]*showResourceLocator:\s*true/);
+});
+
+test('event-scoped reconciliation cards identify the Outbox event and observed state', () => {
+  assert.match(screen, /showResourceLocator/);
+  assert.match(screen, /resourceId/);
+  assert.match(screen, /eventType/);
+  assert.match(screen, /eventStatus/);
+});
+
+test('event reconciliation queue requires current-session READ step-up verification', async () => {
+  let listCalls = 0;
+  const route = createAdminRoutes({
+    authUser:async()=>({
+      id:'outbox-read-stepup-admin',
+      email:'ops@example.test',
+      role:'ADMIN',
+      status:'ACTIVE',
+      sessionJti:'outbox-read-session',
+    }),
+    requireAdmin:(candidate)=>{
+      if(candidate?.role!=='ADMIN') throw new HttpError(403,'FORBIDDEN','Administrator access required');
+      return candidate;
+    },
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo:{
+      async isAdminPanelVerified(...args) {
+        assert.deepEqual(args,['outbox-read-stepup-admin',15,'outbox-read-session','READ']);
+        return false;
+      },
+      async listActiveOutboxEventReconciliationCases() {
+        listCalls += 1;
+        return [];
+      },
+    },
+    config:{
+      adminMfaRequired:true,
+      adminPanelReadVerificationMinutes:15,
+    },
+  });
+  await assert.rejects(
+    route(
+      {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events',headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PANEL_LOCKED',
+  );
+  assert.equal(listCalls,0);
+});
+
+test('invalid event reconciliation cursors return a client error without querying data', async () => {
+  const admin = {
+    id:'outbox-cursor-admin',
+    email:'ops@example.test',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-cursor',
+    sessionJti:'outbox-cursor-session',
+  };
+  const route = createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo:{
+      async isAdminPanelVerified() { return true; },
+      async listActiveOutboxEventReconciliationCases() {
+        const error=new Error('INVALID_RECONCILIATION_CURSOR');
+        error.code='INVALID_RECONCILIATION_CURSOR';
+        throw error;
+      },
+    },
+    config:{
+      adminMfaRequired:true,
+      adminPanelReadVerificationMinutes:15,
+    },
+  });
+  await assert.rejects(
+    route(
+      {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events?cursor=broken',headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events'],
+    ),
+    (error)=>error?.status===400 && error?.code==='INVALID_RECONCILIATION_CURSOR',
+  );
+});
+
+
+test('primary administrator can append an evidence-only note to an exact active Outbox reconciliation case', async () => {
+  const admin = {
+    id:'primary-event-case-admin',
+    email:'amir.davodpour@gmail.com',
+    displayName:'Primary Administrator',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'primary-event-case-google',
+    sessionJti:'primary-event-case-session',
+  };
+  const caseId='00000000-0000-4000-8000-000000000201';
+  const body={
+    reason:'Correlate the event identity against the canonical payout evidence.',
+    evidenceReference:'incident:case-201',
+    verification:{
+      eventIdentity:'MISMATCH_CONFIRMED',
+      canonicalPayout:'NOT_VERIFIED',
+      providerOutcome:'NOT_CHECKED',
+    },
+    idempotencyKey:'event-investigation-note-201',
+  };
+  const calls=[];
+  const repo={
+    async isAdminPanelVerified(...args) {
+      assert.deepEqual(args,[admin.id,5,admin.sessionJti,'WRITE']);
+      return true;
+    },
+    async appendOutboxEventReconciliationNote(input) {
+      calls.push(input);
+      return {
+        id:'00000000-0000-4000-8000-000000000202',
+        caseId,
+        eventId:'00000000-0000-4000-8000-000000000203',
+        action:'INVESTIGATION_NOTE_ADDED',
+        caseStatus:'INVESTIGATING',
+        replayed:false,
+      };
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async(req)=>req.body||{},
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
+  });
+  const result=await route(
+    {
+      method:'POST',
+      url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,
+      body,
+      headers:{host:'localhost'},
+    },
+    {},
+    ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+  );
+  assert.equal(result.status,200);
+  assert.equal(result.data.action,'INVESTIGATION_NOTE_ADDED');
+  assert.equal(result.data.caseStatus,'INVESTIGATING');
+  assert.deepEqual(calls,[{
+    ...body,
+    caseId,
+    actorId:admin.id,
+    sessionJti:admin.sessionJti,
+    verificationMinutes:5,
+  }]);
+});
+
+test('operational administrators cannot append Outbox reconciliation investigation notes', async () => {
+  let writes=0;
+  const route=createAdminRoutes({
+    authUser:async()=>({
+      id:'operational-event-case-admin',
+      email:'ops-event-case@example.test',
+      displayName:'Operations Administrator',
+      role:'ADMIN',
+      status:'ACTIVE',
+      googleSubject:'operations-event-case-google',
+      sessionJti:'operations-event-case-session',
+    }),
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({
+      reason:'Investigate this event using independently referenced evidence.',
+      evidenceReference:'incident:case-204',
+      verification:{
+        eventIdentity:'UNRESOLVED',
+        canonicalPayout:'NOT_VERIFIED',
+        providerOutcome:'NOT_CHECKED',
+      },
+      idempotencyKey:'event-investigation-note-204',
+    }),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo:{
+      async isAdminPanelVerified() { return true; },
+      async appendOutboxEventReconciliationNote() { writes+=1; return {}; },
+    },
+    config:{adminMfaRequired:true,adminPanelWriteVerificationMinutes:5},
+  });
+  await assert.rejects(
+    route(
+      {
+        method:'POST',
+        url:'/api/v1/admin/reconciliation-cases/outbox-events/00000000-0000-4000-8000-000000000204/investigation-notes',
+        headers:{host:'localhost'},
+      },
+      {},
+      ['admin','reconciliation-cases','outbox-events','00000000-0000-4000-8000-000000000204','investigation-notes'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PERMISSION_DENIED',
+  );
+  assert.equal(writes,0);
+});
+
+
+test('payout-visible admins can read bounded event-scoped investigation-note history without sensitive session data', async () => {
+  const admin = {
+    id:'outbox-note-history-admin',
+    email:'ops-history@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-history-admin',
+    sessionJti:'outbox-note-history-session',
+  };
+  const caseId='00000000-0000-4000-8000-000000000301';
+  const expected={
+    notes:[{
+      id:'00000000-0000-4000-8000-000000000302',
+      caseId,
+      eventId:'00000000-0000-4000-8000-000000000303',
+      action:'INVESTIGATION_NOTE_ADDED',
+      reason:'Canonical event identity remains under investigation.',
+      evidenceReference:'incident:outbox-301',
+      verification:{eventIdentity:'UNRESOLVED',canonicalPayout:'NOT_VERIFIED',providerOutcome:'NOT_CHECKED'},
+      actorDisplayName:'Primary Administrator',
+      createdAt:'2026-11-15T12:00:00.123456Z',
+    }],
+    hasMore:true,
+    nextCursor:'opaque-note-cursor',
+  };
+  const calls=[];
+  let readChecks = 0;
+  const repo={
+    async isAdminPanelVerified(...args) {
+      readChecks += 1;
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return true;
+    },
+    async listOutboxEventReconciliationNotes(input) {
+      calls.push(input);
+      return expected;
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+  const result=await route(
+    {
+      method:'GET',
+      url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes?limit=25&cursor=opaque%20note%20cursor`,
+      headers:{host:'localhost'},
+    },
+    {},
+    ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+  );
+  assert.equal(result.status,200);
+  assert.deepEqual(result.data,expected);
+  assert.equal(readChecks,1);
+  assert.deepEqual(calls,[{caseId,limit:'25',cursor:'opaque note cursor'}]);
+});
+
+
+test('event reconciliation reads reject a stale READ step-up before querying case or note data', async () => {
+  const admin = {
+    id:'outbox-read-step-up-admin',
+    email:'ops-read@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-read-admin',
+    sessionJti:'stale-outbox-read-session',
+  };
+  let readChecks = 0;
+  let caseListCalls = 0;
+  let noteListCalls = 0;
+  const caseId='00000000-0000-4000-8000-000000000305';
+  const repo = {
+    async isAdminPanelVerified(...args) {
+      readChecks += 1;
+      assert.deepEqual(args,[admin.id,15,admin.sessionJti,'READ']);
+      return false;
+    },
+    async listActiveOutboxEventReconciliationCases() {
+      caseListCalls += 1;
+      return {cases:[],hasMore:false,nextCursor:null};
+    },
+    async listOutboxEventReconciliationNotes() {
+      noteListCalls += 1;
+      return {notes:[],hasMore:false,nextCursor:null};
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+
+  await assert.rejects(
+    route(
+      {method:'GET',url:'/api/v1/admin/reconciliation-cases/outbox-events',headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PANEL_LOCKED',
+  );
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===403 && error?.code==='ADMIN_PANEL_LOCKED',
+  );
+  assert.equal(readChecks,2);
+  assert.equal(caseListCalls,0);
+  assert.equal(noteListCalls,0);
+});
+
+test('event-scoped investigation-note history maps invalid cursors and unknown cases to safe errors', async () => {
+  const admin={
+    id:'outbox-note-history-admin',
+    email:'ops-history@example.test',
+    displayName:'Operations Admin',
+    role:'ADMIN',
+    status:'ACTIVE',
+    googleSubject:'google-outbox-history-admin',
+    sessionJti:'outbox-note-history-session',
+  };
+  const repo={
+    async isAdminPanelVerified() { return true; },
+    async listOutboxEventReconciliationNotes({cursor}) {
+      if(cursor==='bad') throw Object.assign(new Error('INVALID_RECONCILIATION_CURSOR'),{code:'INVALID_RECONCILIATION_CURSOR'});
+      throw Object.assign(new Error('RECONCILIATION_CASE_NOT_FOUND'),{code:'RECONCILIATION_CASE_NOT_FOUND'});
+    },
+  };
+  const route=createAdminRoutes({
+    authUser:async()=>admin,
+    requireAdmin:(candidate)=>candidate,
+    readBody:async()=>({}),
+    sendJson:(_res,status,data)=>({status,data}),
+    HttpError,
+    URL:globalThis.URL,
+    repo,
+    config:{adminMfaRequired:true,adminPanelReadVerificationMinutes:15},
+  });
+  const caseId='00000000-0000-4000-8000-000000000304';
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes?cursor=bad`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===400 && error?.code==='INVALID_RECONCILIATION_CURSOR',
+  );
+  await assert.rejects(
+    route(
+      {method:'GET',url:`/api/v1/admin/reconciliation-cases/outbox-events/${caseId}/investigation-notes`,headers:{host:'localhost'}},
+      {},
+      ['admin','reconciliation-cases','outbox-events',caseId,'investigation-notes'],
+    ),
+    (error)=>error?.status===404 && error?.code==='RECONCILIATION_CASE_NOT_FOUND',
+  );
 });

@@ -28,6 +28,15 @@ class _FakeAdminOperations implements AdminRepository {
       'currency': 'TOMAN',
     },
   ];
+  List<Map<String, dynamic>> outboxEventCases = const [];
+  List<Map<String, dynamic>> nextOutboxEventCases = const [];
+  int outboxEventCaseCalls = 0;
+  bool viewPayoutsPermission = true;
+  bool manageReconciliationPermission = false;
+  int outboxNoteHistoryCalls = 0;
+  int appendOutboxNoteCalls = 0;
+  final Map<String,List<Map<String,dynamic>>> outboxNotesByCase = {};
+  final List<Map<String,dynamic>> submittedOutboxNotes = [];
   List<Map<String, dynamic>> reports = const [
     {
       'id': 'r1',
@@ -88,6 +97,75 @@ class _FakeAdminOperations implements AdminRepository {
       payouts;
 
   @override
+  Future<Map<String, dynamic>> listActiveOutboxEventReconciliationCases({
+    int limit = 50,
+    String? cursor,
+  }) async {
+    outboxEventCaseCalls += 1;
+    if (cursor == null) {
+      return {
+        'cases': outboxEventCases,
+        'hasMore': nextOutboxEventCases.isNotEmpty,
+        'nextCursor': nextOutboxEventCases.isNotEmpty ? 'next-event-cursor' : null,
+      };
+    }
+    return {
+      'cases': nextOutboxEventCases,
+      'hasMore': false,
+      'nextCursor': null,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> listOutboxEventReconciliationNotes(
+    String caseId, {
+    int limit = 25,
+    String? cursor,
+  }) async {
+    outboxNoteHistoryCalls += 1;
+    final rows = outboxNotesByCase[caseId] ?? const <Map<String,dynamic>>[];
+    return {
+      'notes': rows.take(limit).toList(growable:false),
+      'hasMore': rows.length > limit,
+      'nextCursor': rows.length > limit ? 'next-note-cursor' : null,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> appendOutboxEventReconciliationNote(
+    String caseId, {
+    required String reason,
+    required String evidenceReference,
+    required Map<String,dynamic> verification,
+    required String idempotencyKey,
+  }) async {
+    appendOutboxNoteCalls += 1;
+    submittedOutboxNotes.add({
+      'caseId':caseId,
+      'reason':reason,
+      'evidenceReference':evidenceReference,
+      'verification':verification,
+      'idempotencyKey':idempotencyKey,
+    });
+    outboxNotesByCase.putIfAbsent(caseId, () => []).insert(0, {
+      'id':'note-${appendOutboxNoteCalls}',
+      'caseId':caseId,
+      'eventId':'event-for-$caseId',
+      'action':'INVESTIGATION_NOTE_ADDED',
+      'reason':reason,
+      'evidenceReference':evidenceReference,
+      'verification':verification,
+      'actorDisplayName':'Primary Administrator',
+      'createdAt':'2026-11-15T12:00:00.000000Z',
+    });
+    return {
+      'action':'INVESTIGATION_NOTE_ADDED',
+      'caseStatus':'INVESTIGATING',
+      'replayed':false,
+    };
+  }
+
+  @override
   Future<Map<String, dynamic>> resolveUnknownPayout(
     String id, {
     required String decision,
@@ -112,10 +190,14 @@ class _FakeAdminOperations implements AdminRepository {
   @override Future<void> revokeAdministrator(String id) async {}
   @override Future<void> revokeUserSessions(String id) async {}
   @override
-  Future<Map<String, dynamic>> getPanelAccess() async => const {
+  Future<Map<String, dynamic>> getPanelAccess() async => {
         'verified': true,
         'primaryAdmin': true,
-        'permissions': ['admin.resolve_payouts'],
+        'permissions': [
+          'admin.resolve_payouts',
+          if (viewPayoutsPermission) 'admin.view_payouts',
+          if (manageReconciliationPermission) 'admin.manage_reconciliation_cases',
+        ],
       };
   @override
   Future<Map<String, dynamic>> getAdminMfaStatus() async => const {
@@ -318,6 +400,223 @@ void main() {
       repository.resolveResult.complete(const {});
       await tester.pumpAndSettle();
       expect(repository.resolveCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'event-scoped critical cases render separately and load additional cursor pages',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final repository = _FakeAdminOperations()
+        ..outboxEventCases = [
+          {
+            'id': 'case-01',
+            'caseType': 'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+            'resourceType': 'outbox_event',
+            'resourceId': 'event-01-00000000-0000-4000-8000-000000000001',
+            'severity': 'CRITICAL',
+            'status': 'OPEN',
+            'expected': {'eventType': 'PAYOUT_EXECUTE'},
+            'observed': {'reason': 'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+            'eventType': 'PAYOUT_EXECUTE',
+            'eventStatus': 'DONE',
+            'aggregateType': 'PAYOUT',
+            'aggregateId': 'payout-01',
+          },
+        ]
+        ..nextOutboxEventCases = [
+          {
+            'id': 'case-02',
+            'caseType': 'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+            'resourceType': 'outbox_event',
+            'resourceId': 'event-02-00000000-0000-4000-8000-000000000002',
+            'severity': 'HIGH',
+            'status': 'INVESTIGATING',
+            'expected': {'eventType': 'PAYOUT_EXECUTE'},
+            'observed': {'reason': 'PAYOUT_HOLD_LINKAGE_MISMATCH'},
+            'eventType': 'PAYOUT_EXECUTE',
+            'eventStatus': 'DONE',
+          },
+        ];
+
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unknown payouts'));
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Outbox event integrity cases'), findsOneWidget);
+      expect(find.text('PAYOUT OUTBOX INTEGRITY MISMATCH'), findsOneWidget);
+      expect(find.textContaining('Resource: Outbox event'), findsOneWidget);
+      expect(find.textContaining('Event type: PAYOUT_EXECUTE'), findsOneWidget);
+      expect(find.textContaining('Event status: DONE'), findsOneWidget);
+      expect(find.text('event-01-00000000-0000-4000-8000-000000000001'), findsOneWidget);
+      expect(find.text('event-02-00000000-0000-4000-8000-000000000002'), findsNothing);
+      expect(repository.outboxEventCaseCalls, 1);
+      expect(repository.resolveCalls, 0,
+          reason: 'event-scoped cases are inspection-only and must not invoke payout resolution');
+
+      expect(tester.getCenter(find.text('Load more cases')).dy, lessThan(2000));
+      await tester.tap(find.text('Load more cases'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('event-02-00000000-0000-4000-8000-000000000002'), findsOneWidget);
+      expect(repository.outboxEventCaseCalls, 2);
+      expect(repository.resolveCalls, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+
+  testWidgets(
+    'primary administrator can inspect event-note history and append an evidence-only note',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const caseId = 'case-01';
+      final repository = _FakeAdminOperations()
+        ..manageReconciliationPermission = true
+        ..outboxEventCases = [
+          {
+            'id':caseId,
+            'caseType':'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+            'resourceType':'outbox_event',
+            'resourceId':'event-01',
+            'severity':'CRITICAL',
+            'status':'OPEN',
+            'expected':{'eventType':'PAYOUT_EXECUTE'},
+            'observed':{'reason':'PAYOUT_OUTBOX_IDENTITY_MISMATCH'},
+            'eventType':'PAYOUT_EXECUTE',
+            'eventStatus':'DONE',
+          },
+        ]
+        ..outboxNotesByCase[caseId] = [
+          {
+            'id':'previous-note',
+            'caseId':caseId,
+            'eventId':'event-01',
+            'action':'INVESTIGATION_NOTE_ADDED',
+            'reason':'The canonical payout mapping is still being checked.',
+            'evidenceReference':'incident:previous-note',
+            'verification':{
+              'eventIdentity':'UNRESOLVED',
+              'canonicalPayout':'NOT_VERIFIED',
+              'providerOutcome':'NOT_CHECKED',
+            },
+            'actorDisplayName':'Primary Administrator',
+            'createdAt':'2026-11-15T11:00:00.000000Z',
+          },
+        ];
+
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unknown payouts'));
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+      expect(find.text('Outbox event integrity cases'), findsOneWidget);
+      expect(find.text('Investigation notes'), findsOneWidget);
+      expect(repository.outboxNoteHistoryCalls, 0);
+
+      await tester.tap(find.text('Investigation notes'));
+      await tester.pumpAndSettle();
+      expect(repository.outboxNoteHistoryCalls, 1);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('outbox-note-reason-previous-note'))).data,
+        contains('The canonical payout mapping is still being checked.'),
+      );
+      expect(
+        tester.widget<SelectableText>(find.byKey(const ValueKey('outbox-note-evidence-previous-note'))).data,
+        contains('incident:previous-note'),
+      );
+
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-investigation-reason-case-01')),
+        'Confirmed the event identity mismatch after independent review.',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('outbox-investigation-evidence-case-01')),
+        'incident:outbox-2026-11-15-01',
+      );
+      await tester.ensureVisible(find.text('Add investigation note'));
+      await tester.pump();
+      await tester.tap(find.text('Add investigation note'));
+      await tester.pumpAndSettle();
+
+      expect(repository.appendOutboxNoteCalls, 1);
+      expect(repository.submittedOutboxNotes.single['caseId'], caseId);
+      expect(repository.submittedOutboxNotes.single['reason'],
+          'Confirmed the event identity mismatch after independent review.');
+      expect(repository.submittedOutboxNotes.single['evidenceReference'],
+          'incident:outbox-2026-11-15-01');
+      expect(repository.submittedOutboxNotes.single['verification'], {
+        'eventIdentity':'UNRESOLVED',
+        'canonicalPayout':'NOT_VERIFIED',
+        'providerOutcome':'NOT_CHECKED',
+      });
+      expect(repository.submittedOutboxNotes.single['idempotencyKey'], isNotEmpty);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('outbox-note-reason-note-1'))).data,
+        contains('Confirmed the event identity mismatch after independent review.'),
+      );
+      expect(repository.resolveCalls, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'operational administrators can inspect but cannot see the event-note composer',
+    (tester) async {
+      final repository = _FakeAdminOperations()
+        ..manageReconciliationPermission = false
+        ..outboxEventCases = [
+          {
+            'id':'case-ops-01',
+            'caseType':'PAYOUT_UNKNOWN_COMMIT_INCONSISTENCY',
+            'resourceType':'outbox_event',
+            'resourceId':'event-ops-01',
+            'severity':'CRITICAL',
+            'status':'INVESTIGATING',
+            'expected':const <String,dynamic>{},
+            'observed':const <String,dynamic>{},
+            'eventType':'PAYOUT_EXECUTE',
+            'eventStatus':'DONE',
+          },
+        ];
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Unknown payouts'));
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outbox event integrity cases'), findsOneWidget);
+      expect(find.text('Investigation notes'), findsOneWidget);
+      expect(find.text('Add investigation note'), findsNothing);
+      expect(repository.outboxNoteHistoryCalls, 0);
+      expect(repository.appendOutboxNoteCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'event reconciliation queue stays hidden and is not fetched without payout view permission',
+    (tester) async {
+      final repository = _FakeAdminOperations()..viewPayoutsPermission = false;
+      await tester.pumpWidget(_host(repository));
+      await tester.pumpAndSettle();
+
+      expect(repository.outboxEventCaseCalls, 0);
+      expect(find.text('Outbox event integrity cases'), findsNothing);
+
+      await tester.tap(find.text('Unknown payouts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Access restricted'), findsOneWidget);
+      expect(repository.resolveCalls, 0);
+      expect(tester.takeException(), isNull);
     },
   );
 }
