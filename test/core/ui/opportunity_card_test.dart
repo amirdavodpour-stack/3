@@ -22,6 +22,7 @@ void main() {
       'visibility': 'PUBLIC',
       'status': 'OPEN',
       'city': 'تهران',
+      'distanceKm': 1.5,
       'recommendationScore': 0.91,
       'companyName': 'استودیو هُپ',
       'workMode': 'REMOTE',
@@ -41,11 +42,14 @@ void main() {
         ],
         theme: ThemeData(brightness: Brightness.dark),
         home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: OpportunityCard(
-              job: job,
-              variant: OpportunityCardVariant.standard,
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.standard,
+              ),
             ),
           ),
         ),
@@ -207,11 +211,14 @@ void main() {
           ],
           theme: ThemeData(brightness: Brightness.dark),
           home: Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: OpportunityCard(
-                job: job,
-                variant: OpportunityCardVariant.featuredScan,
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.featuredScan,
+                ),
               ),
             ),
           ),
@@ -566,11 +573,14 @@ void main() {
           ],
           theme: ThemeData(brightness: Brightness.dark),
           home: Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: OpportunityCard(
-                job: job,
-                variant: OpportunityCardVariant.featuredScan,
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.featuredScan,
+                ),
               ),
             ),
           ),

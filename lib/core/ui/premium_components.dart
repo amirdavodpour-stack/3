@@ -762,6 +762,29 @@ class PremiumHeader extends StatelessWidget {
                     child: trailing!,
                   ),
                 if (trailing != null) const SizedBox(height: 4),
+                if (resolvedDomain != null && eyebrow.trim().isNotEmpty) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PremiumDomainMarker(
+                        domain: resolvedDomain,
+                        compact: true,
+                      ),
+                      const SizedBox(width: HopeV2Spacing.sm),
+                      Flexible(
+                        child: Text(
+                          eyebrow.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: HopeV2Type.eyebrow(context).copyWith(
+                            color: resolvedDomain.spec.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: dense ? 4 : 6),
+                ],
                 titleBlock,
               ],
             );

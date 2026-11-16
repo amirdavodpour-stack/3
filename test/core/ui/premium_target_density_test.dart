@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:hope_mobile/core/ui/hope_product_architecture.dart';
 import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/core/ui/premium_lifecycle.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
@@ -29,6 +30,7 @@ void main() {
             padding: EdgeInsets.all(16),
             child: PremiumHeader(
               dense: true,
+              page: HopePageId.explore,
               eyebrow: 'کاوش',
               title: 'فرصت بعدی خود را پیدا کنید',
               subtitle: 'کار و مأموریت‌های متناسب با مسیر کاری شما.',
@@ -78,13 +80,16 @@ void main() {
         ],
         theme: ThemeData(brightness: Brightness.dark),
         home: const Scaffold(
-          body: Padding(
-            padding: EdgeInsets.all(16),
-            child: PremiumLifecycle(
-              compact: true,
-              title: 'مسیر مالی و انجام کار',
-              subtitle: 'وضعیت چرخه',
-              steps: steps,
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: PremiumLifecycle(
+                compact: true,
+                title: 'مسیر مالی و انجام کار',
+                subtitle: 'وضعیت چرخه',
+                steps: steps,
+              ),
             ),
           ),
         ),

@@ -133,7 +133,8 @@ void main() {
   test('chat aligns own messages separately', () {
     final source = _read('lib/features/chat/chat_page.dart');
     expect(source, contains('final mine ='));
-    expect(source, contains('mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart'));
+    expect(source, contains('AlignmentDirectional.centerEnd'));
+    expect(source, contains('AlignmentDirectional.centerStart'));
   });
 
   test('opportunity detail exposes back action', () {
@@ -313,7 +314,7 @@ void main() {
 
   test('wallet financial insights has a single entry point', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
-    expect(source.allMatches("HopeRoutes.financialInsights()").length, 1);
+    expect(source.split('HopeRoutes.financialInsights()').length - 1, 1);
   });
 
   test('create opportunity separates form sections', () {

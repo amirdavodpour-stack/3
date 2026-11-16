@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../transactions/wallet.dart';
 import '../marketplace/job.dart';
@@ -227,7 +226,10 @@ class HopeWalletFlowSignature extends StatelessWidget {
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   String _money(BuildContext context, int value) {
-    return "${NumberFormat.decimalPattern('en_US').format(value)} ${wallet.currency == 'TOMAN' ? _t(context, 'تومان', 'Toman') : wallet.currency}";
+    return HopeDisplayFormatter.money(
+      value,
+      locale: Localizations.localeOf(context).languageCode,
+    );
   }
 
   @override
@@ -240,7 +242,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
     })>[
       (
         icon: HopeV2Icons.wallet,
-        label: _t(context, 'کل موجودی', 'Total'),
+        label: _t(context, 'موجودی کل دفترکل', 'Ledger total'),
         value: _money(context, wallet.totalBalance),
         color: HopeV2Colors.primary,
       ),
@@ -252,7 +254,7 @@ class HopeWalletFlowSignature extends StatelessWidget {
       ),
       (
         icon: HopeV2Icons.payments,
-        label: _t(context, 'قابل استفاده', 'Available'),
+        label: _t(context, 'قابل انتقال', 'Available to transfer'),
         value: _money(context, wallet.availableBalance),
         color: HopeV2Colors.secondary,
       ),
