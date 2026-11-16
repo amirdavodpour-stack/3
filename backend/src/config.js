@@ -133,8 +133,17 @@ if (process.env.NODE_ENV === 'production') {
   if (config.accessSecret.length < 32 || config.refreshSecret.length < 32) throw new Error('Access and refresh secrets must be at least 32 characters in production');
   if (config.accessSecret === config.refreshSecret) throw new Error('Access and refresh secrets must be different in production');
   if (!config.metricsToken || config.metricsToken.length < 24) throw new Error('METRICS_TOKEN must be set and sufficiently long in production');
-  if (config.alertWebhookUrl && !config.alertWebhookUrl.startsWith('https://')) throw new Error('ALERT_WEBHOOK_URL must use HTTPS in production when set');
-  if (config.alertWebhookUrl && !config.alertWebhookToken) throw new Error('ALERT_WEBHOOK_TOKEN must be set when ALERT_WEBHOOK_URL is configured');
+  if (!config.alertWebhookUrl) throw new Error('ALERT_WEBHOOK_URL must be set in production');
+  let alertWebhookEndpoint;
+  try {
+    alertWebhookEndpoint = new URL(config.alertWebhookUrl);
+  } catch {
+    throw new Error('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production');
+  }
+  if (alertWebhookEndpoint.protocol !== 'https:' || !alertWebhookEndpoint.hostname || alertWebhookEndpoint.username || alertWebhookEndpoint.password) {
+    throw new Error('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production');
+  }
+  if (Buffer.byteLength(config.alertWebhookToken, 'utf8') < 32) throw new Error('ALERT_WEBHOOK_TOKEN must be at least 32 bytes in production');
   if (!config.allowedCorsOrigins.length || config.allowedCorsOrigins.includes('*') || config.allowedCorsOrigins.some((origin) => origin.includes('*'))) throw new Error('ALLOWED_CORS_ORIGINS must explicitly list non-wildcard origins in production');
   for (const origin of config.allowedCorsOrigins) {
     let parsed;

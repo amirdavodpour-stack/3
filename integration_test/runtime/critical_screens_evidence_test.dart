@@ -1159,13 +1159,40 @@ Future<void> _captureRuntimeScreenshot(
         skipOffstage: false,
       );
       try {
-        await tester.scrollUntilVisible(
-          auditedTarget,
-          selectedState.position.viewportDimension * 0.68,
-          scrollable: scrollableFinder,
-          maxScrolls: 30,
-        );
-        await tester.pump();
+        if (shouldRevealProfileTarget) {
+          // Use the same safe multi-offset swipe strategy that already proves
+          // this Profile ListView can reach its scroll end. A single centered
+          // drag can land on an interactive settings control and never advance.
+          var profileRevealSweeps = 0;
+          var profileRevealSwipes = 0;
+          while (auditedTarget.evaluate().isEmpty &&
+              selectedState.position.extentAfter > 1.0 &&
+              profileRevealSweeps < 30) {
+            profileRevealSweeps++;
+            final advanced = await _dragScrollableTowardEndWithFallbackOffsets(
+              tester,
+              scrollableFinder,
+              selectedState,
+              recordSwipe: () => profileRevealSwipes++,
+            );
+            if (!advanced) break;
+            await tester.pump();
+          }
+          print(
+            'HOPE_T10_PROFILE_TARGET_REVEAL:$marker:'
+            'sweeps=$profileRevealSweeps:swipes=$profileRevealSwipes:'
+            'remaining=${selectedState.position.extentAfter}:'
+            'materialized=${auditedTarget.evaluate().isNotEmpty}',
+          );
+        } else {
+          await tester.scrollUntilVisible(
+            auditedTarget,
+            selectedState.position.viewportDimension * 0.68,
+            scrollable: scrollableFinder,
+            maxScrolls: 30,
+          );
+          await tester.pump();
+        }
       } catch (_) {
         await restoreAuditedTargetScroll();
         rethrow;
@@ -1721,9 +1748,17 @@ Future<void> _captureRuntimeScreen(
     expect(find.text(resetCopy.copy_full_name_c7448f1), findsNothing);
     expect(find.text(resetCopy.copy_password_656eabe), findsNothing);
 
-    // Pump one additional Flutter frame after target assertions so the raster
-    // surface presents the Reset route before native PixelCopy is requested.
+    final privacyNote =
+        find.byKey(const ValueKey('password-reset-privacy-note'));
+    expect(
+      privacyNote,
+      findsOneWidget,
+      reason: 'Password Reset must render its route-specific privacy surface.',
+    );
+    // Commit exactly one post-mount frame after both content and privacy
+    // assertions, before requesting the native PixelCopy capture.
     await tester.pump();
+    print('HOPE_RUNTIME_PASSWORD_RESET_FRAME_COMMITTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_TARGET_ASSERTED:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_CONTENT_READY:$marker');
     print('HOPE_RUNTIME_PASSWORD_RESET_DIRECT_CAPTURE:$marker');

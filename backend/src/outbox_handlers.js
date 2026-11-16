@@ -1,14 +1,16 @@
 import { config } from './config.js';
-import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
+import { claimOutboxEvent, completePaymentCreateHoldOutbox, completePaymentReleaseOutbox, completePaymentRefundOutbox, completeOutboxEvent, failOutboxEvent, listNotificationDevices, getUserEmail } from './repository.js';
 import { paymentProvider } from './payment_provider.js';
 import { deliverNotification } from './notification_provider.js';
-import { logEvent, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
+import { logEvent, logEventAndWait, recordOutboxFailed, recordOutboxProcessed, recordCategoryFailure } from './observability.js';
 import { completePayoutOutbox, failPayoutOutbox, markPayoutUnknown } from './repository/payouts.js';
 import { isInternalWalletPayoutEnabled } from './wallet_payout_policy.js';
+import { dispatchSecurityAlert } from './alerting.js';
 
 function failureCategory(event) {
   const type = event?.event_type || '';
   if (type.startsWith('PAYMENT_')) return 'payment';
+  if (type === 'AUTH_REFRESH_REUSE_ALERT' || type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL') return 'security';
   if (type === 'NOTIFICATION_DISPATCH') {
     const channel = event?.payload?.channel;
     if (channel === 'PUSH') return 'push';
@@ -104,6 +106,47 @@ export async function processOutboxEvent(event) {
       if (!completed?.completed) throw new Error(`OUTBOX_RELEASE_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
+    } else if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT') {
+      const delivered = await dispatchSecurityAlert(event);
+      if (!delivered?.dispatched) throw new Error('SECURITY_ALERT_NOT_DISPATCHED');
+      const completed = await completeOutboxEvent({eventId:event.id,leaseToken:event.lease_token});
+      if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
+      recordOutboxProcessed();
+      logEvent({
+        level:'warn',
+        action:'SECURITY_ALERT_DISPATCHED',
+        eventId:event.id,
+        alertCode:payload.alertCode,
+      });
+    } else if (event.event_type === 'SECURITY_ALERT_TERMINAL_FAILURE_SIGNAL') {
+      const sourceEventId=String(payload.sourceEventId || '');
+      const validUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (
+        event.aggregate_type !== 'outbox_event'
+        || String(event.aggregate_id || '') !== sourceEventId
+        || !validUuid.test(sourceEventId)
+        || payload.sourceEventType !== 'AUTH_REFRESH_REUSE_ALERT'
+        || !Number.isSafeInteger(Number(payload.attempts))
+        || Number(payload.attempts) < 1
+      ) {
+        throw new Error('SECURITY_ALERT_TERMINAL_SIGNAL_INVALID');
+      }
+
+      // Write before completing the durable signal. A crash after this write
+      // can cause a duplicate, so downstream collectors dedupe by signalId.
+      await logEventAndWait({
+        level:'error',
+        action:'OUTBOX_SECURITY_ALERT_TERMINAL_FAILURE',
+        eventId:sourceEventId,
+        signalId:event.id,
+        eventType:payload.sourceEventType,
+        attempts:Number(payload.attempts),
+        replayCount:Number(payload.replayCount || 0),
+        runbook:'docs/runbooks/auth-refresh-token-reuse.md',
+      });
+      const completed=await completeOutboxEvent({eventId:event.id,leaseToken:event.lease_token});
+      if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_SIGNAL_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
+      recordOutboxProcessed();
     } else if (event.event_type === 'NOTIFICATION_DISPATCH') {
       const channel = payload.channel;
       if (channel === 'IN_APP') {
@@ -140,10 +183,22 @@ export async function processOutboxEvent(event) {
     }
     return { processed:true };
   } catch (error) {
-    recordOutboxFailed();
-    const category = failureCategory(event);
-    if (category) recordCategoryFailure(category);
-    logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
-    return failOutboxEvent({ eventId:event.id, error:error?.message || error, maxAttempts:config.outboxMaxAttempts, leaseToken:event.lease_token });
+    // Metrics and log output are best-effort. A broken telemetry sink must
+    // never prevent the lease-checked durable outbox failure transition.
+    try {
+      recordOutboxFailed();
+      const category = failureCategory(event);
+      if (category) recordCategoryFailure(category);
+      logEvent({ level:'warn', action:'OUTBOX_FAILED', eventId:event.id, eventType:event.event_type, error:error?.message || String(error) });
+    } catch {
+      // The database outbox state and last_error remain the recovery authority.
+    }
+    const failureResult = await failOutboxEvent({
+      eventId:event.id,
+      error:error?.message || error,
+      maxAttempts:config.outboxMaxAttempts,
+      leaseToken:event.lease_token,
+    });
+    return failureResult;
   }
 }

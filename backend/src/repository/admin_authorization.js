@@ -20,6 +20,7 @@ export async function lockAuthorizedAdminActor(client, {
   verificationMinutes = 5,
   requiredScope = 'WRITE',
   requireStepUp = true,
+  requirePrimaryAdmin = false,
   primaryAdminEmail = DEFAULT_PRIMARY_ADMIN_EMAIL,
 } = {}) {
   const actor = String(actorId || '').trim();
@@ -47,6 +48,9 @@ export async function lockAuthorizedAdminActor(client, {
 
   const canonicalOwner = String(actorRow.email || '').trim().toLowerCase()
     === String(primaryAdminEmail || DEFAULT_PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
+  if (requirePrimaryAdmin && !canonicalOwner) {
+    fail('PRIMARY_ADMIN_ONLY', 'Only the verified primary administrator may perform this operation');
+  }
   if (canonicalOwner && !String(actorRow.google_subject || '').trim()) {
     fail('PRIMARY_ADMIN_IDENTITY_REQUIRED', 'Link a verified Google identity before administering HOPE');
   }

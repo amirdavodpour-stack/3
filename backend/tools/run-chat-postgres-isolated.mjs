@@ -43,6 +43,7 @@ try {
     'tests/postgres-storage-cleanup-integration.test.mjs',
     'tests/postgres-admin-mfa-integration.test.mjs',
     'tests/postgres-admin-application-wallet-integration.test.mjs',
+    'tests/postgres-security-alert-outbox-replay.test.mjs',
   ], {
     cwd: process.cwd(),
     env,

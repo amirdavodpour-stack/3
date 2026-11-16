@@ -6,8 +6,19 @@ export const migration = {
       ALTER TABLE refresh_tokens
         ADD COLUMN IF NOT EXISTS session_version INTEGER;
 
+      -- Legacy rows do not record which account generation issued them.
+      -- Never stamp them with a later generation: an earlier logout, refresh
+      -- reuse, password reset, suspension or role change may have invalidated
+      -- them while leaving another token family unrevoked. Generation zero
+      -- makes those sessions fail closed for every already-advanced account,
+      -- without marking them as refresh reuse (which would create a false page).
+      -- Accounts that have never advanced beyond generation zero retain their
+      -- existing sessions until normal expiry or replay detection.
       UPDATE refresh_tokens rt
-         SET session_version=u.session_version
+         SET session_version=CASE
+           WHEN COALESCE(u.session_version,0)>0 THEN 0
+           ELSE COALESCE(u.session_version,0)
+         END
         FROM users u
        WHERE u.id=rt.user_id
          AND rt.session_version IS NULL;

@@ -20,5 +20,6 @@ export function createAdminUseCases({ admin }) {
     shortlist: (id, options) => repository.transitionAdminJobApplication(id, 'PENDING', 'SHORTLISTED', options),
     forward: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'FORWARDED', options),
     reject: (id, options) => repository.transitionAdminJobApplication(id, ['PENDING', 'SHORTLISTED'], 'REJECTED', options),
+    replaySecurityAlert: (options) => repository.replaySecurityAlert(options),
   });
 }

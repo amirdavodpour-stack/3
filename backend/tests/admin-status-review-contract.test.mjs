@@ -37,7 +37,7 @@ test('legacy suspension review metadata persists through the supported user coll
   };
   const fixedNow = new Date('2026-11-06T01:00:00.000Z');
   const adapter=createAdminLegacyAdapter({db,findUser:(id)=>state.users.find((u)=>u.id===id),now:()=>fixedNow});
-  const reviewDueAt='2026-11-09T01:00:00.000Z';
+  const reviewDueAt = new Date(fixedNow.getTime() + 2 * 60 * 60 * 1000).toISOString();
   const suspended=adapter.setUserStatus(user.id,'SUSPENDED',{
     actorId:'legacy-admin-1',
     reason:'Temporary review required',

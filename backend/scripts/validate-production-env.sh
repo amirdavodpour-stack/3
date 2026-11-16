@@ -2,13 +2,16 @@
 set -eu
 
 # Unconditionally required in production.
-required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS GOOGLE_AUTH_ENABLED GOOGLE_OAUTH_CLIENT_ID ADMIN_MFA_ENCRYPTION_KEY'
+required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN ALERT_WEBHOOK_URL ALERT_WEBHOOK_TOKEN S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS GOOGLE_AUTH_ENABLED GOOGLE_OAUTH_CLIENT_ID ADMIN_MFA_ENCRYPTION_KEY'
 for name in $required; do
   eval "value=\${$name-}"
   [ -n "$value" ] || { echo "Missing required production variable: $name" >&2; exit 1; }
 done
 
 case "$PUBLIC_BASE_URL" in https://*) ;; *) echo 'PUBLIC_BASE_URL must use HTTPS.' >&2; exit 1;; esac
+case "$ALERT_WEBHOOK_URL" in https://*) ;; *) echo 'ALERT_WEBHOOK_URL must use HTTPS in production.' >&2; exit 1;; esac
+alert_token_bytes="$(printf '%s' "$ALERT_WEBHOOK_TOKEN" | wc -c | tr -d '[:space:]')"
+[ "$alert_token_bytes" -ge 32 ] || { echo 'ALERT_WEBHOOK_TOKEN must be at least 32 bytes in production.' >&2; exit 1; }
 [ "$GOOGLE_AUTH_ENABLED" = 'true' ] || { echo 'GOOGLE_AUTH_ENABLED=true is mandatory in production for primary-admin recovery.' >&2; exit 1; }
 
 mfa_key_bytes="$(printf '%s' "$ADMIN_MFA_ENCRYPTION_KEY" | wc -c | tr -d '[:space:]')"
@@ -47,6 +50,16 @@ const fail = (message) => {
   console.error(message);
   process.exit(1);
 };
+
+let alertEndpoint;
+try {
+  alertEndpoint = new URL(process.env.ALERT_WEBHOOK_URL || '');
+} catch {
+  fail('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production.');
+}
+if (alertEndpoint.protocol !== 'https:' || !alertEndpoint.hostname || alertEndpoint.username || alertEndpoint.password) {
+  fail('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production.');
+}
 
 const origins = String(process.env.ALLOWED_CORS_ORIGINS || '')
   .split(',')
