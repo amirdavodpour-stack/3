@@ -3,8 +3,9 @@ import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 
 process.env.NODE_ENV = 'test';
-// Use only the synthetic in-process wallet payout adapter in this isolated test database.
-process.env.PAYMENT_PROVIDER ||= 'internal';
+// This suite exercises the synthetic in-process wallet payout adapter. Keep its
+// configuration isolated from a parent CI job that may certify the webhook adapter.
+process.env.PAYMENT_PROVIDER = 'internal';
 const enabled = Boolean(process.env.DATABASE_URL);
 if (process.env.REQUIRE_INTEGRATION === '1' && !enabled) {
   throw new Error('REQUIRE_INTEGRATION=1 but DATABASE_URL is missing');
