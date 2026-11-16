@@ -25,9 +25,11 @@ void main() {
           tester.widget<CircularProgressIndicator>(
         find.byType(CircularProgressIndicator).first,
       );
-      final indeterminate =
-          tester.widget<CircularProgressIndicator>(
-        find.byKey(const ValueKey('indeterminate')),
+      final indeterminate = tester.widget<CircularProgressIndicator>(
+        find.descendant(
+          of: find.byKey(const ValueKey('indeterminate')),
+          matching: find.byType(CircularProgressIndicator),
+        ),
       );
 
       expect(isBlockingRuntimeProgressIndicator(determinate), isFalse);

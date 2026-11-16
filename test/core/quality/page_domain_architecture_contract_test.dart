@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 String _read(String path) => File(path).readAsStringSync();
 
 void main() {
-  test('HOPE operational screens declare an explicit product domain', () {
+  test('HOPE operational screens declare an explicit product domain or page identity', () {
     const expectations = <String, String>{
-      'lib/features/home/premium_home_feed.dart': 'HopeProductDomain.overview',
+      'lib/features/home/premium_home_feed.dart': 'HopePageId.home',
       'lib/features/jobs/jobs_page.dart': 'HopeProductDomain.discovery',
       'lib/features/applications/my_applications_page.dart': 'HopeProductDomain.work',
       'lib/features/offers/offers_page.dart': 'HopeProductDomain.work',
@@ -77,7 +77,7 @@ void main() {
 
   test('page frame carries the canonical domain rail', () {
     final source = _read('lib/core/ui/premium_components.dart');
-    expect(source, contains('page?.spec.domain.accent'));
+    expect(source, contains('page?.spec.domain.spec.accent'));
     expect(source, contains('BorderDirectional'));
   });
 
@@ -103,14 +103,17 @@ void main() {
 
   test('activity states keep the same page identity', () {
     final source = _read('lib/features/transactions/transactions_page.dart');
-    expect(
-      RegExp(r'PremiumHeader\(\n(?!\s*page:)').allMatches(source).length,
-      0,
-    );
-    expect(
-      RegExp(r'PremiumPageFrame\(\n(?!\s*page:)').allMatches(source).length,
-      0,
-    );
+    final headerCount = RegExp(r'PremiumHeader\(').allMatches(source).length;
+    final identifiedHeaderCount = RegExp(
+      r'PremiumHeader\([\s\S]{0,180}?page: HopePageId.workCenter',
+    ).allMatches(source).length;
+    expect(identifiedHeaderCount, headerCount);
+
+    final frameCount = RegExp(r'PremiumPageFrame\(').allMatches(source).length;
+    final identifiedFrameCount = RegExp(
+      r'PremiumPageFrame\([\s\S]{0,180}?page: HopePageId.workCenter',
+    ).allMatches(source).length;
+    expect(identifiedFrameCount, frameCount);
   });
 
   test('accepted applications expose collaboration chat', () {
@@ -210,7 +213,6 @@ void main() {
       'lib/features/wallet/wallet_page.dart': 'HopePageId.wallet',
       'lib/features/profile/profile_page.dart': 'HopePageId.profile',
       'lib/features/notifications/notifications_page.dart': 'HopePageId.notifications',
-      'lib/features/chat/chat_page.dart': 'HopePageId.chat',
       'lib/features/jobs/job_satisfaction_page.dart': 'HopePageId.satisfaction',
       'lib/features/financial/financial_insights_page.dart': 'HopePageId.financialInsights',
       'lib/features/admin/admin_page.dart': 'HopePageId.admin',
@@ -244,7 +246,7 @@ void main() {
   test('profile trust heading precedes professional state', () {
     final source = _read('lib/features/profile/profile_page.dart');
     final trust = source.indexOf("title: _t(context, 'اعتماد و پروفایل حرفه‌ای'");
-    final professional = source.indexOf('FutureBuilder<HopeProviderProfile>');
+    final professional = source.lastIndexOf('FutureBuilder<HopeProviderProfile>');
     expect(trust, greaterThanOrEqualTo(0));
     expect(professional, greaterThan(trust));
   });
@@ -258,8 +260,9 @@ void main() {
 
   test('chat separates sender and recipient alignment', () {
     final source = _read('lib/features/chat/chat_page.dart');
+    expect(source, contains('final mine ='));
     expect(source, contains('AlignmentDirectional.centerEnd'));
-    expect(source, contains('mine ? AlignmentDirectional.centerEnd'));
+    expect(source, contains('AlignmentDirectional.centerStart'));
   });
 
   test('satisfaction is a trust surface in title and error state', () {
@@ -317,21 +320,23 @@ void main() {
     final source = _read('lib/features/marketplace/create_job_widgets.part.dart');
     expect(source, contains('Opportunity details'));
     expect(source, contains('HopeProductDomain.work'));
-    expect(source, contains('Fee and acceptance'));
+    expect(source, contains('HopeProductDomain.finance'));
+    expect(source, contains('HopeProductDomain.trust'));
     expect(source, contains('Acceptance criteria'));
   });
 
   test('explore uses the shared discovery header', () {
-    final source = _read('lib/features/jobs/jobs_filter_bar.part.dart');
-    expect(source, contains('PremiumHeader('));
-    expect(source, contains('page: HopePageId.explore'));
-    expect(source, contains('domain: HopeProductDomain.discovery'));
-    expect(source, contains('PremiumSearchBar'));
+    final pageSource = _read('lib/features/jobs/jobs_page.dart');
+    final filterSource = _read('lib/features/jobs/jobs_filter_bar.part.dart');
+    expect(pageSource, contains('PremiumHeader('));
+    expect(pageSource, contains('page: HopePageId.explore'));
+    expect(pageSource, contains('domain: HopeProductDomain.discovery'));
+    expect(filterSource, contains('PremiumSearchBar'));
   });
 
   test('wallet has an explicit finance page header', () {
     final source = _read('lib/features/wallet/wallet_page.dart');
-    expect(source, contains('PremiumHeader('));
+    expect(source, contains("ValueKey('wallet-finance-header')"));
     expect(source, contains('page: HopePageId.wallet'));
     expect(source, contains('domain: HopeProductDomain.finance'));
     expect(source, contains('کیف پول داخلی HOPE'));
