@@ -171,6 +171,7 @@ class OpportunityCard extends StatelessWidget {
     required String? mediaUrl,
     required double? score,
     required bool featured,
+    bool showTitle = true,
   }) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final percent = score == null ? null : (score <= 1 ? score * 100 : score);
@@ -221,28 +222,29 @@ class OpportunityCard extends StatelessWidget {
                 inverse: true,
               ),
             ),
-            PositionedDirectional(
-              start: 14,
-              end: 14,
-              bottom: 9,
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.5,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black54,
-                      blurRadius: 8,
-                    ),
-                  ],
+            if (showTitle)
+              PositionedDirectional(
+                start: 14,
+                end: 14,
+                bottom: 9,
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16.5,
+                    height: 1.08,
+                    fontWeight: FontWeight.w900,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -443,7 +445,7 @@ class OpportunityCard extends StatelessWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Text(
-              '${_formatAmount(amount, context)} ${copy.copy_toman}',
+              _formatAmount(amount, context),
               maxLines: 2,
               overflow: TextOverflow.clip,
               softWrap: true,
@@ -530,7 +532,7 @@ class OpportunityCard extends StatelessWidget {
             final amountText = amount.isEmpty
                 ? null
                 : Text(
-                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
+                    _formatAmount(amount, context),
                     maxLines: narrowMeta ? 1 : 2,
                     overflow: TextOverflow.clip,
                     softWrap: true,
@@ -707,7 +709,7 @@ class OpportunityCard extends StatelessWidget {
     final score = job.recommendationScore;
     if (score == null) return null;
     final percent = score <= 1 ? score * 100 : score;
-    return "${percent.round()} ${_t(context, 'تطابق', 'match')}";
+    return "${percent.round()}% ${_t(context, 'تطابق', 'match')}";
   }
 
   Widget _scanStandard(
@@ -778,7 +780,7 @@ class OpportunityCard extends StatelessWidget {
         _metaText(
           context,
           HopeV2Icons.payments,
-          '${_formatAmount(amount, context)} ${copy.copy_toman}',
+          _formatAmount(amount, context),
           primary,
           emphasize: true,
         ),
@@ -859,7 +861,7 @@ class OpportunityCard extends StatelessWidget {
                   child: _metaText(
                     context,
                     HopeV2Icons.payments,
-                    '${_formatAmount(amount, context)} ${copy.copy_toman}',
+                    _formatAmount(amount, context),
                     primary,
                     emphasize: true,
                   ),
@@ -989,6 +991,7 @@ class OpportunityCard extends StatelessWidget {
           mediaUrl: mediaUrl,
           score: job.recommendationScore,
           featured: false,
+          showTitle: false,
         ),
         const SizedBox(height: HopeV2Spacing.md),
         Row(
@@ -1124,7 +1127,7 @@ class OpportunityCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatAmount(amount, context)} ${copy.copy_toman}',
+                        _formatAmount(amount, context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: HopeV2Type.metric(context).copyWith(

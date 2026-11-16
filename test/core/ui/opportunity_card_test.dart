@@ -354,7 +354,7 @@ void main() {
       if (gradient is! LinearGradient || gradient.colors.isEmpty) {
         return false;
       }
-      return gradient.colors.first == primary.withValues(alpha: .18);
+      return gradient.colors.first == primary.withValues(alpha: .10);
     });
 
     expect(focalGradientFound, isTrue);
@@ -546,7 +546,7 @@ void main() {
         'jobType': 'FIXED',
         'budgetMin': '1500000',
         'budgetMax': '2500000',
-        'kind': 'JOB',
+        'kind': 'MISSION',
         'visibility': 'PUBLIC',
         'status': 'OPEN',
         'city': 'تهران',
@@ -578,7 +578,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('1,500,000 – 2,500,000 تومان'), findsOneWidget);
+      expect(
+        find.textContaining('۱٬۵۰۰٬۰۰۰ تومان تا ۲٬۵۰۰٬۰۰۰ تومان'),
+        findsOneWidget,
+      );
       expect(find.text('تهران'), findsOneWidget);
       expect(
         tester.getSize(find.byType(OpportunityCard)).height,
