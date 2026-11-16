@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - fix/hopev2-outbox-event-reconciliation-visibility-20261114
+      - fix/hopev2-outbox-event-attestation-20261115
     paths:
       - ".github/workflows/hopev2-outbox-event-reconciliation-visibility.yml"
       - "backend/src/repository/reconciliation.js"
-      - "backend/src/db/migrations/055_reconciliation_case_events.js"
+      - "backend/src/db/migrations/059_reconciliation_case_events.js"
+      - "backend/src/db/migrations/060_reconciliation_event_attestation_and_disposition.js"
+      - "backend/openapi/openapi.yaml"
       - "backend/src/routes/admin_routes.js"
       - "backend/tests/admin-payout-reconciliation-contract.test.mjs"
       - "backend/tests/payment-payout-integrity-postgres.test.mjs"

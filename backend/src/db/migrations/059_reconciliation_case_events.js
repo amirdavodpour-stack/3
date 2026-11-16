@@ -1,5 +1,5 @@
 export const migration = {
-  version: 55,
+  version: 59,
   name: 'reconciliation_case_events',
   async up(client) {
     await client.query(`

@@ -421,6 +421,150 @@ paths:
         '404': {description: Security alert event not found}
         '409': {description: Event is not replayable or its one replay has already been used}
         '503': {description: PostgreSQL persistence or a valid HTTPS security-alert receiver is unavailable}
+  /admin/reconciliation-cases/outbox-events:
+    get:
+      security: [{bearerAuth: []}]
+      summary: List active Outbox-event reconciliation quarantines
+      description: Read-only. Requires admin.view_payouts and current-session READ step-up. Returns a versioned SHA-256 digest of the exact reconciliation-case and Outbox evidence snapshot; payloads and raw delivery errors are never returned.
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 512}}
+      responses:
+        '200':
+          description: Active event-scoped financial quarantines, including the opaque reviewed-evidence digest and investigation-only disposition state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cases, hasMore, nextCursor]
+                properties:
+                  cases:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, caseType, resourceType, resourceId, severity, status, caseEvidenceDigest, investigationStatus, reReviewRequired, hasCurrentDigestAttestation]
+                      properties:
+                        id: {type: string, format: uuid}
+                        caseType: {type: string}
+                        resourceType: {type: string, enum: [outbox_event]}
+                        resourceId: {type: string, format: uuid}
+                        severity: {type: string}
+                        status: {type: string, enum: [OPEN, INVESTIGATING]}
+                        expected: {type: object, additionalProperties: true}
+                        observed: {type: object, additionalProperties: true}
+                        eventType: {type: string, nullable: true}
+                        eventStatus: {type: string, nullable: true}
+                        aggregateType: {type: string, nullable: true}
+                        aggregateId: {type: string, nullable: true}
+                        caseEvidenceDigest: {type: string, pattern: '^[a-f0-9]{64}$', description: Version 1 SHA-256 digest of the case evidence and associated Outbox snapshot; submit unchanged when recording an attestation}
+                        investigationStatus: {type: string, enum: [NOT_STARTED, IN_PROGRESS, CLOSED_UNRESOLVED]}
+                        reReviewRequired: {type: boolean}
+                        hasCurrentDigestAttestation: {type: boolean}
+                  hasMore: {type: boolean}
+                  nextCursor: {type: string, nullable: true}
+        '400': {description: Invalid pagination cursor}
+        '403': {description: Requires admin.view_payouts and current-session READ step-up}
+  /admin/reconciliation-cases/outbox-events/{caseId}/investigation-notes:
+    get:
+      security: [{bearerAuth: []}]
+      summary: Read append-only investigation history for one Outbox event case
+      description: Requires admin.view_payouts and current-session READ step-up. Returns stable actor UUID and evidence provenance, but never session JTI, idempotency key, request hash, or raw provider payload.
+      parameters:
+        - {name: caseId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 25}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 512}}
+      responses:
+        '200': {description: Sanitized append-only evidence and disposition history}
+        '400': {description: Invalid pagination cursor}
+        '403': {description: Requires admin.view_payouts and current-session READ step-up}
+        '404': {description: Outbox event reconciliation case not found}
+    post:
+      security: [{bearerAuth: []}]
+      summary: Append a legacy investigation note to an Outbox event case
+      description: Requires admin.manage_reconciliation_cases and current-session WRITE step-up. Primary-admin-only. Evidence-only; an investigation note cannot resolve or dismiss the financial case. Closed investigations must be reopened through the attestation endpoint before another note can be appended.
+      parameters:
+        - {name: caseId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason, evidenceReference, verification, idempotencyKey]
+              properties:
+                reason: {type: string, minLength: 10, maxLength: 1000}
+                evidenceReference: {type: string, minLength: 8, maxLength: 500}
+                verification:
+                  type: object
+                  required: [eventIdentity, canonicalPayout, providerOutcome]
+                  properties:
+                    eventIdentity: {type: string, enum: [MISMATCH_CONFIRMED, UNRESOLVED]}
+                    canonicalPayout: {type: string, enum: [MATCHED, MISMATCHED, NOT_FOUND, NOT_VERIFIED]}
+                    providerOutcome: {type: string, enum: [SUCCEEDED_CONFIRMED, FAILED_CONFIRMED, UNKNOWN, NOT_CHECKED]}
+                idempotencyKey: {type: string, pattern: '^[A-Za-z0-9._:-]{16,128}$'}
+      responses:
+        '200': {description: Investigation note appended or same-session idempotent replay}
+        '400': {description: Invalid note fields}
+        '403': {description: Requires verified primary administrator and current-session WRITE step-up}
+        '404': {description: Active Outbox event reconciliation case not found}
+        '409': {description: Closed investigation, stale state, or idempotency conflict}
+  /admin/reconciliation-cases/outbox-events/{caseId}/investigation-attestations:
+    post:
+      security: [{bearerAuth: []}]
+      summary: Record an event-scoped evidence attestation or investigation disposition
+      description: Requires admin.manage_reconciliation_cases, verified Primary Admin identity, and current-session WRITE step-up. Revalidates actor/session inside the SQL transaction. The request must contain the exact caseEvidenceDigest returned by the active queue. Idempotency is actor-plus-key and semantic-payload based; every replay still requires fresh authorization. INVESTIGATION_CLOSED_UNRESOLVED and INVESTIGATION_REOPENED are investigation-only events: the financial reconciliation case stays OPEN/INVESTIGATING and quarantined. This endpoint never changes payout, wallet, Hold, journal, ledger, Outbox delivery state, or calls a provider.
+      parameters:
+        - {name: caseId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, reason, sourceType, issuer, evidenceReference, verification, reviewedCaseDigest, idempotencyKey]
+              properties:
+                action: {type: string, enum: [INVESTIGATION_ATTESTATION_RECORDED, INVESTIGATION_CLOSED_UNRESOLVED, INVESTIGATION_REOPENED]}
+                reason: {type: string, minLength: 10, maxLength: 1000}
+                sourceType: {type: string, enum: [BANK_STATEMENT, INTERNAL_LEDGER, OUTBOX_EVENT, OPERATOR_REPORT, PROVIDER_ARTIFACT, SUPPORT_TICKET, OTHER]}
+                issuer: {type: string, minLength: 2, maxLength: 160}
+                evidenceReference: {type: string, minLength: 8, maxLength: 500, description: Opaque reference only; the server never fetches URLs from this value}
+                artifactSha256: {type: string, pattern: '^[a-fA-F0-9]{64}$'}
+                sourceObservedAt: {type: string, format: date-time}
+                reviewedCaseDigest: {type: string, pattern: '^[a-fA-F0-9]{64}$'}
+                idempotencyKey: {type: string, pattern: '^[A-Za-z0-9._:-]{16,128}$'}
+                verification:
+                  type: object
+                  additionalProperties: false
+                  required: [eventIdentity, canonicalPayout, providerOutcome]
+                  properties:
+                    eventIdentity:
+                      type: object
+                      additionalProperties: false
+                      required: [result, verificationLevel]
+                      properties:
+                        result: {type: string, enum: [MATCHED, MISMATCH_CONFIRMED, UNRESOLVED, NOT_CHECKED]}
+                        verificationLevel: {type: string, enum: [OPERATOR_REPORTED, SOURCE_ARTIFACT_REVIEWED, INDEPENDENTLY_CORROBORATED, CONFLICTING, INCONCLUSIVE, NOT_CHECKED]}
+                    canonicalPayout:
+                      type: object
+                      additionalProperties: false
+                      required: [result, verificationLevel]
+                      properties:
+                        result: {type: string, enum: [MATCHED, MISMATCHED, NOT_FOUND, NOT_VERIFIED, NOT_CHECKED]}
+                        verificationLevel: {type: string, enum: [OPERATOR_REPORTED, SOURCE_ARTIFACT_REVIEWED, INDEPENDENTLY_CORROBORATED, CONFLICTING, INCONCLUSIVE, NOT_CHECKED]}
+                    providerOutcome:
+                      type: object
+                      additionalProperties: false
+                      required: [result, verificationLevel]
+                      properties:
+                        result: {type: string, enum: [SUCCEEDED_CONFIRMED, FAILED_CONFIRMED, UNKNOWN, NOT_CHECKED]}
+                        verificationLevel: {type: string, enum: [OPERATOR_REPORTED, SOURCE_ARTIFACT_REVIEWED, INDEPENDENTLY_CORROBORATED, CONFLICTING, INCONCLUSIVE, NOT_CHECKED]}
+      responses:
+        '200': {description: Immutable attestation/disposition appended, or same-actor semantic idempotent replay; financial quarantine remains active}
+        '400': {description: Invalid attestation fields or verification values}
+        '403': {description: Requires verified Primary Admin identity, dedicated permission and current-session WRITE step-up}
+        '404': {description: Exact active Outbox event reconciliation case not found}
+        '409': {description: Stale evidence digest, closed/not-closed investigation state, or idempotency conflict}
   /admin/jobs/{id}/moderate:
     post: {security: [{bearerAuth: []}], responses: {'200': {description: Opportunity moderation result}, '403': {description: Forbidden}, '409': {description: Opportunity is locked by lifecycle state}}}
   /admin/applications/{id}/shortlist:

@@ -27,7 +27,8 @@ const {
 } = payouts;
 const { processOutboxEvent } = await import('../src/outbox_handlers.js');
 const reconciliation = await import('../src/repository/reconciliation.js');
-const { migration: reconciliationCaseEventsMigration } = await import('../src/db/migrations/055_reconciliation_case_events.js');
+const { migration: reconciliationCaseEventsMigration } = await import('../src/db/migrations/059_reconciliation_case_events.js');
+const { migration: reconciliationEventAttestationMigration } = await import('../src/db/migrations/060_reconciliation_event_attestation_and_disposition.js');
 const { failOutboxEvent } = await import('../src/repository/outbox.js');
 const { paymentProvider } = await import('../src/payment_provider.js');
 
@@ -1085,7 +1086,7 @@ test('event-scoped investigation notes are audited and idempotent without changi
   );
   await assert.rejects(
     pool.query('DELETE FROM users WHERE id=$1', [verifiedActorId]),
-    (error) => error?.code === '23503',
+    (error) => ['23001','23503'].includes(error?.code),
   );
   await assert.rejects(
     reconciliationCaseEventsMigration.down(pool),
@@ -1212,5 +1213,275 @@ test('event-scoped investigation notes reject a stale primary-admin session JTI'
   assert.equal(
     (await pool.query('SELECT count(*)::int AS count FROM reconciliation_case_events WHERE case_id=$1', [caseId])).rows[0].count,
     0,
+  );
+});
+
+
+test('event-scoped attestations are digest-bound, append-only, replayable across fresh sessions, and never resolve the financial quarantine', { skip: !enabled }, async () => {
+  const owner = await insertFundedUser('outbox-event-attestation');
+  const reserved = await reservePayout(owner.userId, `event-attestation:${crypto.randomUUID()}`);
+  const args = { userIds:[owner.userId], payouts:[reserved], events:[reserved.event] };
+  const eventCase = await reconciliation.openReconciliationCase({
+    caseType:'PAYOUT_OUTBOX_INTEGRITY_MISMATCH',
+    resourceType:'outbox_event',
+    resourceId:reserved.event.id,
+    severity:'CRITICAL',
+    expected:{payoutId:crypto.randomUUID(),eventType:'PAYOUT_EXECUTE'},
+    observed:{reason:'EVENT_PAYOUT_IDENTITY_MISMATCH'},
+  });
+
+  const actorId = crypto.randomUUID();
+  const firstSessionJti = `attestation-session:${crypto.randomUUID()}`;
+  const { rows: admins } = await pool.query(
+    `INSERT INTO users(
+       id,email,password_hash,display_name,role,status,session_version,
+       google_subject,admin_panel_verified_at,
+       admin_panel_verified_session_jti,admin_panel_verified_scope,created_at
+     ) VALUES(
+       $1,'amir.davodpour@gmail.com','test','Primary Administrator','ADMIN','ACTIVE',0,
+       $2,NOW(),$3,'WRITE',NOW()
+     )
+     ON CONFLICT (email) DO UPDATE SET
+       role='ADMIN',status='ACTIVE',google_subject=EXCLUDED.google_subject,
+       admin_panel_verified_at=NOW(),
+       admin_panel_verified_session_jti=EXCLUDED.admin_panel_verified_session_jti,
+       admin_panel_verified_scope='WRITE'
+     RETURNING id`,
+    [actorId, `attestation-google-${actorId}`, firstSessionJti],
+  );
+  const verifiedActorId = admins[0].id;
+  const initial = await reconciliation.listActiveOutboxEventReconciliationCases({limit:100});
+  const listedCase = initial.cases.find((item) => item.id === eventCase.id);
+  assert.ok(listedCase, 'the active event-scoped quarantine must be visible');
+  assert.match(
+    listedCase.caseEvidenceDigest,
+    /^[a-f0-9]{64}$/,
+    'the queue must return a canonical SHA-256 digest for the exact case and Outbox evidence snapshot',
+  );
+
+  const before = await snapshot(args);
+  const common = {
+    caseId:eventCase.id,
+    actorId:verifiedActorId,
+    sessionJti:firstSessionJti,
+    verificationMinutes:5,
+    reason:'Compare the event identity with independently retained provider evidence.',
+    sourceType:'PROVIDER_ARTIFACT',
+    issuer:'Example Payment Provider',
+    evidenceReference:`provider-case:${crypto.randomUUID()}`,
+    artifactSha256:'a'.repeat(64),
+    sourceObservedAt:'2026-11-15T19:00:00.000Z',
+    verification:{
+      eventIdentity:{result:'MISMATCH_CONFIRMED',verificationLevel:'SOURCE_ARTIFACT_REVIEWED'},
+      canonicalPayout:{result:'NOT_VERIFIED',verificationLevel:'NOT_CHECKED'},
+      providerOutcome:{result:'NOT_CHECKED',verificationLevel:'NOT_CHECKED'},
+    },
+    reviewedCaseDigest:listedCase.caseEvidenceDigest,
+  };
+
+  await assert.rejects(
+    reconciliation.recordOutboxEventReconciliationAttestation({
+      ...common,
+      action:'INVESTIGATION_ATTESTATION_RECORDED',
+      idempotencyKey:`event-invalid-extra-field:${crypto.randomUUID()}`,
+      unexpectedProviderPayload:{providerSecret:'must not be accepted'},
+    }),
+    (error) => error?.code === 'INVALID_RECONCILIATION_ATTESTATION_FIELDS' && error?.status === 400,
+  );
+
+  const attestation = await reconciliation.recordOutboxEventReconciliationAttestation({
+    ...common,
+    action:'INVESTIGATION_ATTESTATION_RECORDED',
+    idempotencyKey:`event-attestation:${crypto.randomUUID()}`,
+  });
+  assert.equal(attestation.action,'INVESTIGATION_ATTESTATION_RECORDED');
+  assert.equal(attestation.caseId,eventCase.id);
+  assert.equal(attestation.eventId,reserved.event.id);
+  assert.equal(attestation.caseStatus,'INVESTIGATING');
+
+  const concurrentKey = `event-concurrent-attestation:${crypto.randomUUID()}`;
+  const concurrentCommand = {
+    ...common,
+    action:'INVESTIGATION_ATTESTATION_RECORDED',
+    reason:'Concurrent duplicate requests must append exactly one immutable event.',
+    idempotencyKey:concurrentKey,
+  };
+  const concurrentResults = await Promise.all([
+    reconciliation.recordOutboxEventReconciliationAttestation(concurrentCommand),
+    reconciliation.recordOutboxEventReconciliationAttestation(concurrentCommand),
+  ]);
+  assert.equal(concurrentResults[0].id,concurrentResults[1].id);
+  assert.equal(concurrentResults.filter((item) => item.replayed === false).length,1);
+  assert.equal(concurrentResults.filter((item) => item.replayed === true).length,1);
+  const { rows: concurrentRows } = await pool.query(
+    `SELECT id FROM reconciliation_case_events
+      WHERE actor_id=$1 AND idempotency_key=$2`,
+    [verifiedActorId,concurrentKey],
+  );
+  assert.equal(concurrentRows.length,1,
+    'same-key concurrent submissions serialize to one immutable event');
+
+  await assert.rejects(
+    reconciliation.recordOutboxEventReconciliationAttestation({
+      ...concurrentCommand,
+      reason:'Changed semantic payload must not reuse an existing idempotency key.',
+    }),
+    (error) => error?.code === 'IDEMPOTENCY_CONFLICT' && error?.status === 409,
+  );
+
+  const closureInput = {
+    ...common,
+    action:'INVESTIGATION_CLOSED_UNRESOLVED',
+    reason:'No independently corroborated financial outcome is available; retain quarantine.',
+    idempotencyKey:`event-close-unresolved:${crypto.randomUUID()}`,
+  };
+  const closed = await reconciliation.recordOutboxEventReconciliationAttestation(closureInput);
+  assert.equal(closed.action,'INVESTIGATION_CLOSED_UNRESOLVED');
+  assert.equal(closed.caseStatus,'INVESTIGATING',
+    'closing the investigation must not mark the financial reconciliation case RESOLVED or DISMISSED');
+
+  const closedPage = await reconciliation.listActiveOutboxEventReconciliationCases({limit:100});
+  const closedCase = closedPage.cases.find((item) => item.id === eventCase.id);
+  assert.ok(closedCase, 'a closed investigation must remain in the active financial quarantine queue');
+  assert.equal(closedCase.status,'INVESTIGATING');
+  assert.equal(closedCase.investigationStatus,'CLOSED_UNRESOLVED');
+  assert.equal(closedCase.reReviewRequired,false);
+
+  await pool.query(
+    `UPDATE reconciliation_cases
+        SET expected=$2::jsonb,updated_at=NOW()
+      WHERE id=$1`,
+    [eventCase.id, JSON.stringify({payoutId:reserved.payout.id,eventType:'PAYOUT_EXECUTE',revision:2})],
+  );
+  await assert.rejects(
+    reconciliation.recordOutboxEventReconciliationAttestation({
+      ...common,
+      action:'INVESTIGATION_REOPENED',
+      reason:'Attempt to reopen using the obsolete evidence snapshot must be rejected.',
+      idempotencyKey:`event-reopen-stale:${crypto.randomUUID()}`,
+    }),
+    (error) => error?.code === 'RECONCILIATION_EVIDENCE_STALE' && error?.status === 409,
+  );
+
+  const changedPage = await reconciliation.listActiveOutboxEventReconciliationCases({limit:100});
+  const changedCase = changedPage.cases.find((item) => item.id === eventCase.id);
+  assert.notEqual(changedCase.caseEvidenceDigest,listedCase.caseEvidenceDigest);
+  assert.equal(changedCase.investigationStatus,'CLOSED_UNRESOLVED');
+  assert.equal(changedCase.reReviewRequired,true,
+    'a new case-evidence revision after closure must visibly require re-review');
+
+  const reopenInput = {
+    ...common,
+    sessionJti:firstSessionJti,
+    action:'INVESTIGATION_REOPENED',
+    reason:'New case evidence has arrived; reopen the investigation while keeping the quarantine.',
+    reviewedCaseDigest:changedCase.caseEvidenceDigest,
+    idempotencyKey:`event-reopen-current:${crypto.randomUUID()}`,
+  };
+  const reopened = await reconciliation.recordOutboxEventReconciliationAttestation(reopenInput);
+  assert.equal(reopened.action,'INVESTIGATION_REOPENED');
+  assert.equal(reopened.caseStatus,'INVESTIGATING');
+
+  const refreshedPage = await reconciliation.listActiveOutboxEventReconciliationCases({limit:100});
+  const refreshedCase = refreshedPage.cases.find((item) => item.id === eventCase.id);
+  assert.equal(refreshedCase.investigationStatus,'IN_PROGRESS');
+  assert.equal(refreshedCase.reReviewRequired,false);
+
+  const nextSessionJti = `attestation-retry-session:${crypto.randomUUID()}`;
+  await pool.query(
+    `UPDATE users
+        SET admin_panel_verified_at=NOW(),
+            admin_panel_verified_session_jti=$2,
+            admin_panel_verified_scope='WRITE'
+      WHERE id=$1`,
+    [verifiedActorId,nextSessionJti],
+  );
+  await assert.rejects(
+    reconciliation.recordOutboxEventReconciliationAttestation({
+      ...reopenInput,
+      sessionJti:firstSessionJti,
+    }),
+    (error) => error?.code === 'ADMIN_PANEL_LOCKED' && error?.status === 403,
+    'an idempotent replay must still reject the original session after its WRITE step-up has been replaced',
+  );
+  const replay = await reconciliation.recordOutboxEventReconciliationAttestation({
+    ...reopenInput,
+    sessionJti:nextSessionJti,
+    verificationMinutes:30,
+  });
+  assert.equal(replay.id,reopened.id);
+  assert.equal(replay.replayed,true,
+    'same actor/key and semantic payload must replay across a fresh session and verification TTL');
+
+  const history = await reconciliation.listOutboxEventReconciliationNotes({caseId:eventCase.id,limit:20});
+  const reopenedEvent = history.notes.find((item) => item.id === reopened.id);
+  assert.ok(reopenedEvent);
+  assert.equal(reopenedEvent.actorId,verifiedActorId,
+    'restricted Admin history must preserve the stable actor UUID');
+  assert.equal(reopenedEvent.actorSessionJti,undefined);
+  assert.equal(reopenedEvent.sourceType,'PROVIDER_ARTIFACT');
+  assert.equal(reopenedEvent.issuer,'Example Payment Provider');
+  assert.equal(reopenedEvent.artifactSha256,'a'.repeat(64));
+  assert.equal(reopenedEvent.sourceObservedAt,'2026-11-15T19:00:00.000000Z');
+  assert.equal(reopenedEvent.reviewedCaseDigest,changedCase.caseEvidenceDigest);
+  assert.equal(reopenedEvent.createdAt.length > 20,true,
+    'server record time remains distinct from source-observed time');
+
+  const { rows: stored } = await pool.query(
+    `SELECT actor_session_jti,request_hash,action,reviewed_case_digest
+       FROM reconciliation_case_events
+      WHERE id=$1`,
+    [reopened.id],
+  );
+  assert.equal(stored.length,1);
+  assert.equal(stored[0].actor_session_jti,firstSessionJti,
+    'replay in a new session must not overwrite original-session provenance');
+  assert.match(stored[0].request_hash,/^[a-f0-9]{64}$/);
+  assert.equal(stored[0].action,'INVESTIGATION_REOPENED');
+
+  await assert.rejects(
+    pool.query(
+      'UPDATE reconciliation_case_events SET reason=$2 WHERE id=$1',
+      [reopened.id,'tampered attestation must remain immutable'],
+    ),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+  await assert.rejects(
+    pool.query('DELETE FROM reconciliation_case_events WHERE id=$1',[reopened.id]),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+  await assert.rejects(
+    pool.query('TRUNCATE reconciliation_case_events'),
+    (error) => error?.code === 'P0001' && error?.message.includes('RECONCILIATION_CASE_EVENTS_APPEND_ONLY'),
+  );
+
+  const { rows: audit } = await pool.query(
+    `SELECT action,actor_id,entity_id
+       FROM audit_logs
+      WHERE entity_type='reconciliation_case' AND entity_id=$1
+        AND action IN (
+          'OUTBOX_EVENT_RECONCILIATION_ATTESTED',
+          'OUTBOX_EVENT_RECONCILIATION_CLOSED_UNRESOLVED',
+          'OUTBOX_EVENT_RECONCILIATION_REOPENED'
+        )
+      ORDER BY action`,
+    [eventCase.id],
+  );
+  assert.equal(audit.length,4,'each accepted attestation/disposition must have a same-transaction audit entry, including exactly one row for the concurrent replay key');
+  assert.ok(audit.every((item) => item.actor_id === verifiedActorId));
+
+  const after = await snapshot(args);
+  for (const field of ['wallets','payouts','holds','operations','journals','walletEntries','ledgerEntries','outbox']) {
+    assert.deepEqual(after[field],before[field],
+      `attestation, close, reopen, replay and evidence reads must not change ${field}`);
+  }
+  assert.equal(after.reconciliationCases.length,1);
+  assert.equal(after.reconciliationCases[0].resource_type,'outbox_event');
+  assert.equal(after.reconciliationCases[0].status,'INVESTIGATING',
+    'the underlying financial quarantine must remain active after investigation closure/reopening');
+  await assert.rejects(
+    reconciliationEventAttestationMigration.down(pool),
+    /Cannot rollback event attestation migration while attestation or disposition evidence exists/,
+    'migration rollback must refuse to erase immutable attestation/disposition evidence',
   );
 });

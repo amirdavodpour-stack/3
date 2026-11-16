@@ -785,7 +785,7 @@ test('terminal signal failure telemetry cannot prevent durable FAILED transition
     }
 
     const {rows:afterRows}=await pool.query(
-      'SELECT status,attempts,locked_at,lease_token,last_error FROM outbox_events WHERE id=$1',
+      'SELECT status,attempts,locked_at,lease_token,last_error,last_error_code,last_error_category,last_error_retryable,last_error_http_status FROM outbox_events WHERE id=$1',
       [signal.id],
     );
     assert.equal(terminalSignalWriteRejected,true,'the terminal signal stdout callback failure must be injected');
@@ -797,7 +797,11 @@ test('terminal signal failure telemetry cannot prevent durable FAILED transition
     assert.equal(Number(afterRows[0].attempts),1);
     assert.equal(afterRows[0].locked_at,null);
     assert.equal(afterRows[0].lease_token,null);
-    assert.equal(afterRows[0].last_error,'injected terminal signal stdout callback failure');
+    assert.equal(afterRows[0].last_error,null,'raw callback failure text must never be persisted');
+    assert.equal(afterRows[0].last_error_code,'OUTBOX_PROCESSING_FAILED');
+    assert.equal(afterRows[0].last_error_category,'security');
+    assert.equal(afterRows[0].last_error_retryable,false);
+    assert.equal(afterRows[0].last_error_http_status,null);
 
     const {rows:recursiveSignals}=await pool.query(
       `SELECT id FROM outbox_events

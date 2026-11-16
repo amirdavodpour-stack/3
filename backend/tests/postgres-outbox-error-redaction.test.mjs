@@ -58,8 +58,8 @@ async function createPayoutFixture() {
   );
   await pool.query(
     `INSERT INTO financial_operations(id,operation_type,actor_type,actor_id,status,idempotency_key)
-     VALUES($1,'PAYOUT','SYSTEM',NULL,'PROCESSING',$2)`,
-    [operationId,idempotencyKey],
+     VALUES($1,'PAYOUT','USER',$2,'PROCESSING',$3)`,
+    [operationId,userId,idempotencyKey],
   );
   await pool.query(
     `INSERT INTO journals(operation_id,journal_type,currency,status)
