@@ -2,7 +2,7 @@
 set -eu
 
 # Unconditionally required in production.
-required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN ALERT_WEBHOOK_URL ALERT_WEBHOOK_TOKEN S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS GOOGLE_AUTH_ENABLED GOOGLE_OAUTH_CLIENT_ID ADMIN_MFA_ENCRYPTION_KEY'
+required='ACCESS_TOKEN_SECRET REFRESH_TOKEN_SECRET DATABASE_URL PUBLIC_BASE_URL METRICS_TOKEN ALERT_WEBHOOK_URL ALERT_WEBHOOK_TOKEN ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON ALERT_EGRESS_MODE ALERT_DIRECT_EGRESS_ACKNOWLEDGED S3_BUCKET RESET_TOKEN_DELIVERY_SECRET ALLOWED_CORS_ORIGINS GOOGLE_AUTH_ENABLED GOOGLE_OAUTH_CLIENT_ID ADMIN_MFA_ENCRYPTION_KEY'
 for name in $required; do
   eval "value=\${$name-}"
   [ -n "$value" ] || { echo "Missing required production variable: $name" >&2; exit 1; }
@@ -12,6 +12,8 @@ case "$PUBLIC_BASE_URL" in https://*) ;; *) echo 'PUBLIC_BASE_URL must use HTTPS
 case "$ALERT_WEBHOOK_URL" in https://*) ;; *) echo 'ALERT_WEBHOOK_URL must use HTTPS in production.' >&2; exit 1;; esac
 alert_token_bytes="$(printf '%s' "$ALERT_WEBHOOK_TOKEN" | wc -c | tr -d '[:space:]')"
 [ "$alert_token_bytes" -ge 32 ] || { echo 'ALERT_WEBHOOK_TOKEN must be at least 32 bytes in production.' >&2; exit 1; }
+[ "$ALERT_EGRESS_MODE" = 'direct' ] || { echo 'ALERT_EGRESS_MODE=direct is required in production.' >&2; exit 1; }
+[ "$ALERT_DIRECT_EGRESS_ACKNOWLEDGED" = 'true' ] || { echo 'ALERT_DIRECT_EGRESS_ACKNOWLEDGED=true is required in production.' >&2; exit 1; }
 [ "$GOOGLE_AUTH_ENABLED" = 'true' ] || { echo 'GOOGLE_AUTH_ENABLED=true is mandatory in production for primary-admin recovery.' >&2; exit 1; }
 
 mfa_key_bytes="$(printf '%s' "$ADMIN_MFA_ENCRYPTION_KEY" | wc -c | tr -d '[:space:]')"
@@ -51,6 +53,8 @@ const fail = (message) => {
   process.exit(1);
 };
 
+import { assertAllowedAlertEndpoint } from './src/alert_egress.js';
+
 let alertEndpoint;
 try {
   alertEndpoint = new URL(process.env.ALERT_WEBHOOK_URL || '');
@@ -59,6 +63,17 @@ try {
 }
 if (alertEndpoint.protocol !== 'https:' || !alertEndpoint.hostname || alertEndpoint.username || alertEndpoint.password) {
   fail('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production.');
+}
+let allowedAlertEndpoints;
+try {
+  allowedAlertEndpoints = JSON.parse(process.env.ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON || '');
+} catch {
+  fail('ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON must be a JSON array of exact endpoint URLs.');
+}
+try {
+  assertAllowedAlertEndpoint(process.env.ALERT_WEBHOOK_URL || '', allowedAlertEndpoints);
+} catch {
+  fail('ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON must contain the exact canonical ALERT_WEBHOOK_URL endpoint in production.');
 }
 
 const origins = String(process.env.ALLOWED_CORS_ORIGINS || '')
