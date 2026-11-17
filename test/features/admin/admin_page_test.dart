@@ -313,10 +313,6 @@ class _FakeAdmin implements AdminRepository {
     if (failVerificationAfterCapture) throw Exception('test stops before navigation');
     return {'verified': true, 'scope': scope};
   }
-  @override Future<void> lockPanel() async {}
-  @override Future<List<Map<String, dynamic>>> listDisputes() async => const [];
-  @override Future<Map<String, dynamic>> getDispute(String id) async => const {};
-  @override Future<Map<String, dynamic>> resolveDispute(String id, {required String resolution, String? reason}) async => const {};
 }
 
 HopeJob _job(String id,
