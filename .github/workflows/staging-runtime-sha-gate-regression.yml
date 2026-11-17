@@ -44,3 +44,11 @@ jobs:
       - name: Runtime SHA contract regression
         working-directory: backend
         run: node --test tests/staging-runtime-sha-gate-contract.test.mjs
+
+      - name: Backend static checks
+        working-directory: backend
+        run: npm run check
+
+      - name: Backend fast regression suite
+        working-directory: backend
+        run: npm run test:fast
