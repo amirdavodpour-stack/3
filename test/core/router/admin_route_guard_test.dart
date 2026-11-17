@@ -34,6 +34,7 @@ Future<void> _pushAndAssertRestricted(
         home: Builder(
           builder: (context) => Scaffold(
             body: FilledButton(
+              key: const ValueKey('admin-route-guard-open'),
               onPressed: () => Navigator.push(context, route()),
               child: const Text('open'),
             ),
@@ -43,7 +44,10 @@ Future<void> _pushAndAssertRestricted(
     ),
   );
 
-  await tester.tap(find.text('open'));
+  await tester.pumpAndSettle();
+  final openButton = find.byKey(const ValueKey('admin-route-guard-open'));
+  expect(openButton, findsOneWidget);
+  await tester.tap(openButton);
   await tester.pumpAndSettle();
 
   expect(find.text('Admin access is restricted.'), findsOneWidget);

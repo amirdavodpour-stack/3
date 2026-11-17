@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_l10n.dart';
@@ -76,6 +78,16 @@ class _AdminPageState extends State<AdminPage>
     }
   }
 
+  void _observeFuture<T>(Future<T> future) {
+    // FutureBuilder subscribes during the next build. Attach an observer now
+    // so a fast failed request is not reported as unhandled before that frame;
+    // the original Future is still passed to FutureBuilder unchanged.
+    unawaited(future.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stackTrace) {},
+    ));
+  }
+
   void _reload() {
     final repository = context.read<AdminRepository>();
     _summary = repository.getSummary();
@@ -83,6 +95,11 @@ class _AdminPageState extends State<AdminPage>
     _applications = repository.listApplications();
     _users = repository.listUsers();
     _audit = repository.listAudit();
+    _observeFuture(_summary);
+    _observeFuture(_jobs);
+    _observeFuture(_applications);
+    _observeFuture(_users);
+    _observeFuture(_audit);
     if (mounted) setState(() {});
   }
 
