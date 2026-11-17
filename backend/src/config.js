@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertAllowedAlertEndpoint } from './alert_egress.js';
 
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pubspecPath = path.join(backendRoot, 'pubspec.yaml');
@@ -159,6 +160,13 @@ if (process.env.NODE_ENV === 'production') {
   if (alertWebhookEndpoint.protocol !== 'https:' || !alertWebhookEndpoint.hostname || alertWebhookEndpoint.username || alertWebhookEndpoint.password) {
     throw new Error('ALERT_WEBHOOK_URL must be a valid HTTPS URL without embedded credentials in production');
   }
+  try {
+    assertAllowedAlertEndpoint(config.alertWebhookUrl, config.alertWebhookAllowedEndpoints);
+  } catch {
+    throw new Error('ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON must contain the exact canonical ALERT_WEBHOOK_URL endpoint in production');
+  }
+  if (config.alertWebhookEgressMode !== 'direct') throw new Error('ALERT_EGRESS_MODE=direct is required in production');
+  if (config.alertWebhookDirectEgressAcknowledged !== true) throw new Error('ALERT_DIRECT_EGRESS_ACKNOWLEDGED=true is required in production');
   if (Buffer.byteLength(config.alertWebhookToken, 'utf8') < 32) throw new Error('ALERT_WEBHOOK_TOKEN must be at least 32 bytes in production');
   if (!config.allowedCorsOrigins.length || config.allowedCorsOrigins.includes('*') || config.allowedCorsOrigins.some((origin) => origin.includes('*'))) throw new Error('ALLOWED_CORS_ORIGINS must explicitly list non-wildcard origins in production');
   for (const origin of config.allowedCorsOrigins) {
