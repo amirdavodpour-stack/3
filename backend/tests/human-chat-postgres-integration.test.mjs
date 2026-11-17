@@ -361,13 +361,14 @@ test('admin dispute HOLD cancels pending release events but refuses a provider o
     assert.equal(held?.cancelledReleaseEvents,1);
 
     const { rows: pendingState } = await pool.query(
-      'SELECT p.status AS payment_status,o.status AS outbox_status,o.last_error ' +
+      'SELECT p.status AS payment_status,o.status AS outbox_status,o.last_error,o.last_error_code ' +
         'FROM payments p JOIN outbox_events o ON o.id=$2 WHERE p.id=$1',
       [pendingPaymentId,pendingEventId],
     );
     assert.equal(pendingState[0]?.payment_status,'HELD');
     assert.equal(pendingState[0]?.outbox_status,'DONE');
-    assert.equal(pendingState[0]?.last_error,'CANCELLED_BY_ADMIN_DISPUTE_HOLD');
+    assert.equal(pendingState[0]?.last_error,null,'raw cancellation text must not be persisted');
+    assert.equal(pendingState[0]?.last_error_code,'CANCELLED_BY_ADMIN_DISPUTE_HOLD');
 
     const leaseToken = crypto.randomUUID();
     await pool.query(
@@ -1973,7 +1974,7 @@ test('refund supersedes every pending or failed release event and transitions pa
       'SELECT p.status AS payment_status,r.status AS refund_status,' +
         "COUNT(o.id) FILTER (WHERE o.event_type='PAYMENT_RELEASE' AND o.status='DONE')::int AS release_done_count," +
         "COUNT(o.id) FILTER (WHERE o.event_type='PAYMENT_REFUND' AND o.status='PENDING')::int AS refund_pending_count," +
-        "COUNT(o.id) FILTER (WHERE o.last_error='SUPERSEDED_BY_REFUND')::int AS superseded_count " +
+        "COUNT(o.id) FILTER (WHERE o.last_error_code='SUPERSEDED_BY_REFUND')::int AS superseded_count " +
         'FROM payments p LEFT JOIN refunds r ON r.payment_id=p.id ' +
         'LEFT JOIN outbox_events o ON o.aggregate_id=p.id ' +
         'WHERE p.id=$1 GROUP BY p.id,r.id',
@@ -4108,11 +4109,12 @@ test('production outbox refuses an already-reserved synthetic internal payout an
     assert.equal(reversal.metadata?.failureCode, 'PAYOUT_PROVIDER_NOT_ENABLED');
 
     const { rows: outboxRows } = await pool.query(
-      'SELECT status,last_error FROM outbox_events WHERE id=$1',
+      'SELECT status,last_error,last_error_code FROM outbox_events WHERE id=$1',
       [outboxEventId],
     );
     assert.equal(outboxRows[0]?.status, 'FAILED');
-    assert.match(outboxRows[0]?.last_error || '', /PAYOUT_PROVIDER_NOT_ENABLED/);
+    assert.equal(outboxRows[0]?.last_error,null,'raw provider diagnostics must not be persisted');
+    assert.equal(outboxRows[0]?.last_error_code,'PAYOUT_PROVIDER_NOT_ENABLED');
   } finally {
     appConfig.paymentProvider = previousProvider;
     if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
@@ -5463,7 +5465,6 @@ test('PostgreSQL outbox worker delivers refresh-reuse security alerts and comple
   const eventId = crypto.randomUUID();
   const leaseToken = crypto.randomUUID();
   const tokenFamilyId = crypto.randomUUID();
-  const previousFetch = globalThis.fetch;
   const previousUrl = appConfig.alertWebhookUrl;
   const previousToken = appConfig.alertWebhookToken;
   const previousTimeout = appConfig.alertWebhookTimeoutMs;
@@ -5472,9 +5473,18 @@ test('PostgreSQL outbox worker delivers refresh-reuse security alerts and comple
   appConfig.alertWebhookUrl = 'https://alerts.integration.test/security';
   appConfig.alertWebhookToken = 'integration-only-webhook-token';
   appConfig.alertWebhookTimeoutMs = 1000;
-  globalThis.fetch = async (url, options) => {
-    request = { url: String(url), options };
-    return { ok: true, status: 202 };
+  const securityAlertEgressOptions = {
+    allowedEndpoints: [appConfig.alertWebhookUrl],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: async (hostname) => {
+      assert.equal(hostname, 'alerts.integration.test');
+      return [{ address: '8.8.8.8', family: 4 }];
+    },
+    requestImpl: async (endpoint, options) => {
+      request = { url: endpoint.href, options };
+      return { ok: true, statusCode: 202 };
+    },
   };
 
   try {
@@ -5483,12 +5493,14 @@ test('PostgreSQL outbox worker delivers refresh-reuse security alerts and comple
       leaseToken,
       tokenFamilyId,
     });
-    await processOutboxEvent(event);
+    await processOutboxEvent(event, { securityAlertEgressOptions });
 
     assert.ok(request, 'the outbox worker must invoke the configured receiver');
     assert.equal(request.url, 'https://alerts.integration.test/security');
     assert.equal(request.options.method, 'POST');
-    assert.equal(request.options.redirect, 'error');
+    assert.ok(request.options.agent, 'the HTTPS transport must use the pinned TLS agent');
+    assert.ok(request.options.signal, 'the HTTPS transport must receive an abort signal');
+    assert.ok(request.options.timeoutMs <= 1000 && request.options.timeoutMs > 0);
     assert.equal(request.options.headers.authorization, 'Bearer integration-only-webhook-token');
     assert.equal(request.options.headers['idempotency-key'], `hope-outbox:${eventId}`);
 
@@ -5520,7 +5532,6 @@ test('PostgreSQL outbox worker delivers refresh-reuse security alerts and comple
     assert.equal(rows[0].lease_token, null);
     assert.equal(rows[0].last_error, null);
   } finally {
-    globalThis.fetch = previousFetch;
     appConfig.alertWebhookUrl = previousUrl;
     appConfig.alertWebhookToken = previousToken;
     appConfig.alertWebhookTimeoutMs = previousTimeout;
@@ -5536,18 +5547,28 @@ test('PostgreSQL outbox worker retains a refresh-reuse alert for retry after rec
   const eventId = crypto.randomUUID();
   const leaseToken = crypto.randomUUID();
   const tokenFamilyId = crypto.randomUUID();
-  const previousFetch = globalThis.fetch;
   const previousUrl = appConfig.alertWebhookUrl;
   const previousToken = appConfig.alertWebhookToken;
   const previousTimeout = appConfig.alertWebhookTimeoutMs;
   let requestCount = 0;
+  let request = null;
 
   appConfig.alertWebhookUrl = 'https://alerts.integration.test/security';
   appConfig.alertWebhookToken = 'integration-only-webhook-token';
   appConfig.alertWebhookTimeoutMs = 1000;
-  globalThis.fetch = async () => {
-    requestCount += 1;
-    return { ok: false, status: 503 };
+  const securityAlertEgressOptions = {
+    allowedEndpoints: [appConfig.alertWebhookUrl],
+    egressMode: 'direct',
+    directEgressAcknowledged: true,
+    resolveHost: async (hostname) => {
+      assert.equal(hostname, 'alerts.integration.test');
+      return [{ address: '8.8.8.8', family: 4 }];
+    },
+    requestImpl: async (endpoint, options) => {
+      requestCount += 1;
+      request = { url: endpoint.href, options };
+      return { ok: false, statusCode: 503 };
+    },
   };
 
   try {
@@ -5556,15 +5577,19 @@ test('PostgreSQL outbox worker retains a refresh-reuse alert for retry after rec
       leaseToken,
       tokenFamilyId,
     });
-    const outcome = await processOutboxEvent(event);
+    const outcome = await processOutboxEvent(event, { securityAlertEgressOptions });
 
     assert.equal(requestCount, 1);
+    assert.equal(request?.url, 'https://alerts.integration.test/security');
+    assert.equal(request?.options.method, 'POST');
+    assert.equal(request?.options.headers.authorization, 'Bearer integration-only-webhook-token');
     assert.equal(outcome?.terminal, false,
       'a transient receiver error must return the outbox event to bounded retry');
     assert.equal(outcome?.attempts, 1);
 
     const { rows } = await pool.query(
-      `SELECT status,attempts,available_at,locked_at,lease_token,last_error
+      `SELECT status,attempts,available_at,locked_at,lease_token,last_error,last_error_code,
+              last_error_http_status,last_error_category,last_error_retryable
          FROM outbox_events WHERE id=$1`,
       [eventId],
     );
@@ -5575,9 +5600,12 @@ test('PostgreSQL outbox worker retains a refresh-reuse alert for retry after rec
       'retry must be scheduled for a future attempt');
     assert.equal(rows[0].locked_at, null);
     assert.equal(rows[0].lease_token, null);
-    assert.equal(rows[0].last_error, 'SECURITY_ALERT_WEBHOOK_HTTP_503');
+    assert.equal(rows[0].last_error, null, 'raw webhook diagnostics must not be persisted');
+    assert.equal(rows[0].last_error_code, 'SECURITY_ALERT_WEBHOOK_HTTP_ERROR');
+    assert.equal(rows[0].last_error_http_status, 503);
+    assert.equal(rows[0].last_error_category, 'security');
+    assert.equal(rows[0].last_error_retryable, true);
   } finally {
-    globalThis.fetch = previousFetch;
     appConfig.alertWebhookUrl = previousUrl;
     appConfig.alertWebhookToken = previousToken;
     appConfig.alertWebhookTimeoutMs = previousTimeout;

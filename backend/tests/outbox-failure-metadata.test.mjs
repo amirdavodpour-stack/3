@@ -78,3 +78,21 @@ test('an HTTP-like status property without an exact recognized provider error is
   assert.equal(metadata.httpStatus, null);
   assert.equal(metadata.code, 'OUTBOX_PROCESSING_FAILED');
 });
+
+test('normalizes refresh-reuse security webhook HTTP failures without storing raw diagnostics', () => {
+  assert.equal(importError, null, 'outbox failure metadata normalizer must be implemented');
+  const secret = 'SECURITY_ALERT_WEBHOOK_HTTP_503 Bearer private-token';
+  const metadata = normalizeOutboxFailureMetadata({
+    eventType:'AUTH_REFRESH_REUSE_ALERT',
+    payload:{},
+    error:new Error('SECURITY_ALERT_WEBHOOK_HTTP_503'),
+    retryable:true,
+  });
+  assert.deepEqual(metadata, {
+    code:'SECURITY_ALERT_WEBHOOK_HTTP_ERROR',
+    category:'security',
+    retryable:true,
+    httpStatus:503,
+  });
+  assert.equal(JSON.stringify(metadata).includes(secret), false);
+});
