@@ -54,7 +54,10 @@ class _TypeHero extends StatelessWidget {
                 ),
               ];
 
-              if (constraints.maxWidth < 320) {
+              // The form and hero cards already consume horizontal padding.
+              // Keep both choices side by side at common 360px phone widths;
+              // only stack when the actual inner card width is too narrow.
+              if (constraints.maxWidth < 240) {
                 return Column(
                   children: [
                     tiles[0],
