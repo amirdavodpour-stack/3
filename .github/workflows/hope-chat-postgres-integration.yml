@@ -1,6 +1,9 @@
 name: HOPE PostgreSQL integration
 
 on:
+  push:
+    branches:
+      - fix/hopev2-alert-egress-production-config-20261117
   pull_request:
     branches:
       - feat/ui-v2-wave-1-execution-2026-10-07
