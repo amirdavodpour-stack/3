@@ -118,8 +118,10 @@ void main() {
 
   testWidgets('auth surfaces keep the hero compact for a denser first fold',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     for (final screen in [
       const LoginPage(),
       const RegisterPage(),
@@ -141,7 +143,8 @@ void main() {
     final panelWidth = tester.getSize(find.byType(PremiumPanel)).width;
     final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
 
-    expect(buttonWidth, closeTo(panelWidth - 40, 1));
+    // PremiumPanel uses 14px horizontal content padding plus a 1px border.
+    expect(buttonWidth, closeTo(panelWidth - 30, 1));
   });
 
   testWidgets('password reset renders an email form', (tester) async {
