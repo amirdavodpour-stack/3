@@ -248,8 +248,7 @@ void main() {
       find.byType(RefreshIndicator).first,
     );
     final onRefresh = refreshIndicator.onRefresh;
-    expect(onRefresh, isNotNull);
-    await onRefresh!();
+    await onRefresh();
     await tester.pumpAndSettle();
 
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
