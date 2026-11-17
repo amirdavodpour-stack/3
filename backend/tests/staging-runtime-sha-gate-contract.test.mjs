@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const app = fs.readFileSync(path.join(root, 'backend/src/app.js'), 'utf8');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
+const regressionWorkflow = fs.readFileSync(path.join(root, '.github/workflows/staging-runtime-sha-gate-regression.yml'), 'utf8');
 
 test('runtime commit identity is exposed only by the authenticated metrics endpoint', () => {
   const metricsBlock = app.match(
@@ -26,6 +27,20 @@ test('runtime commit identity is exposed only by the authenticated metrics endpo
   )?.[0] || '';
   assert.ok(liveBlock, 'liveness route block must be found');
   assert.doesNotMatch(liveBlock, /RAILWAY_GIT_COMMIT_SHA|commitSha|build\.commit/);
+});
+
+test('Staging SHA regression workflow runs on pushes to this isolated child branch', () => {
+  const pushBlock = regressionWorkflow.match(/push:\s*\n\s*branches:\s*\n([\s\S]*?)\n\s*paths:/)?.[1] || '';
+  assert.match(pushBlock, /fix\/hopev2-staging-runtime-sha-redirect-guard-20261117/);
+});
+
+test('Staging SHA probe rejects redirects before forwarding the metrics credential', () => {
+  const fetchStart = workflow.indexOf('const response = await fetch(metricsUrl, {');
+  assert.ok(fetchStart >= 0, 'the authenticated runtime identity request must be present');
+  const fetchEnd = workflow.indexOf('          });', fetchStart);
+  assert.ok(fetchEnd > fetchStart, 'the metrics request options must be present');
+  const requestOptions = workflow.slice(fetchStart, fetchEnd);
+  assert.match(requestOptions, /redirect:\s*['\"]error['\"]/);
 });
 
 test('Staging fails closed on a deployed-SHA mismatch before any data or provider side effects', () => {

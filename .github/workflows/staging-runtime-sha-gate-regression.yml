@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - fix/hopev2-staging-runtime-sha-gate-20261117
+      - fix/hopev2-staging-runtime-sha-redirect-guard-20261117
     paths:
       - '.github/workflows/staging-certification.yml'
       - 'backend/src/app.js'
