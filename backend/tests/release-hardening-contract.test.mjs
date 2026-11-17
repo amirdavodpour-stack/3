@@ -485,3 +485,13 @@ test('Android screenshot runner passes consumed batch controls and omits the rem
   assert.doesNotMatch(runner, /--dart-define=HOPE_CAPTURE_MODE=/);
   assert.doesNotMatch(integration, /HOPE_CAPTURE_MODE/);
 });
+
+
+test('refreshed route registry has one Home destination and preserves downstream chat and candidate routes', () => {
+  const routes = fs.readFileSync(path.join(root, 'lib/core/router/app_routes.dart'), 'utf8');
+  assert.equal((routes.match(/static Route<void> home\(\)/g) || []).length, 1);
+  assert.equal((routes.match(/import 'app_router\.dart';/g) || []).length, 1);
+  assert.equal((routes.match(/static Route<void> chats\(\)/g) || []).length, 1);
+  assert.equal((routes.match(/static Route<void> chatConversation\(String conversationId\)/g) || []).length, 1);
+  assert.equal((routes.match(/static Route<void> candidateMatches\(\{/g) || []).length, 1);
+});

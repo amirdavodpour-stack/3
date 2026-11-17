@@ -4,7 +4,6 @@ import 'app_router.dart';
 import 'package:provider/provider.dart';
 
 import 'auth_return_intent.dart';
-import 'app_router.dart';
 
 import '../../features/about/about_page.dart';
 import '../../features/recommendation/recommendation_onboarding_page.dart';
@@ -64,7 +63,6 @@ abstract final class HopeRoutes {
   static Route<void> profile() => _page(const ProfilePage());
   static Route<void> myApplications() => _page(const MyApplicationsPage());
   static Route<void> savedSearches() => _page(const SavedSearchesPage());
-  static Route<void> home() => _page(const AppRouter());
   static Route<void> jobs() => _page(const JobsPage());
   static Route<void> transactions() => _page(const TransactionsPage());
 
