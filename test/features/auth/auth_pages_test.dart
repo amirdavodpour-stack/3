@@ -11,9 +11,13 @@ import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/auth/password_reset_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
+  @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
   @override
   Future<AuthSession> login(String email, String password) async =>
       const AuthSession(accessToken: 'a', refreshToken: 'r', user: {'id': 'u'});
@@ -62,10 +66,20 @@ void main() {
     await tester.pumpWidget(await _screen(const LoginPage()));
     await tester.pumpAndSettle();
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(find.text('فعلاً به‌عنوان مهمان ادامه بده'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('ادامه به‌عنوان مهمان'), 250,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.byType(PremiumHero), findsOneWidget);
+    expect(find.byType(PremiumPageFrame), findsOneWidget);
+    expect(find.text('ادامه به‌عنوان مهمان'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('ساخت حساب'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('ساخت حساب'), findsOneWidget);
+  });
+
+  testWidgets('login keeps the auth surface free of backdrop blur', (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+    expect(find.byType(BackdropFilter), findsNothing);
   });
 
   testWidgets('guest action changes authentication state without credentials',
@@ -75,7 +89,9 @@ void main() {
     final auth = Provider.of<AuthController>(
         tester.element(find.byType(LoginPage)),
         listen: false);
-    await tester.tap(find.text('فعلاً به‌عنوان مهمان ادامه بده'));
+    await tester.scrollUntilVisible(find.text('ادامه به‌عنوان مهمان'), 250,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('ادامه به‌عنوان مهمان'));
     await tester.pumpAndSettle();
     expect(auth.isGuest, isTrue);
     expect(auth.isAuthenticated, isFalse);
@@ -86,6 +102,49 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(RegisterPage), findsOneWidget);
     expect(find.byType(TextField), findsAtLeastNWidgets(3));
+  });
+
+  testWidgets('auth entry surfaces use the canonical PremiumHero owner', (tester) async {
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      expect(find.byType(PremiumHero), findsOneWidget);
+    }
+  });
+
+  testWidgets('auth surfaces keep the hero compact for a denser first fold',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final screen in [
+      const LoginPage(),
+      const RegisterPage(),
+      const PasswordResetPage(),
+    ]) {
+      await tester.pumpWidget(await _screen(screen));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSize(find.byType(PremiumHero)).height,
+        lessThanOrEqualTo(180),
+      );
+    }
+  });
+
+  testWidgets('login primary action spans the form content width', (tester) async {
+    await tester.pumpWidget(await _screen(const LoginPage()));
+    await tester.pumpAndSettle();
+
+    final panelWidth = tester.getSize(find.byType(PremiumPanel)).width;
+    final buttonWidth = tester.getSize(find.byType(FilledButton)).width;
+
+    // PremiumPanel uses 14px horizontal content padding plus a 1px border.
+    expect(buttonWidth, closeTo(panelWidth - 30, 1));
   });
 
   testWidgets('password reset renders an email form', (tester) async {

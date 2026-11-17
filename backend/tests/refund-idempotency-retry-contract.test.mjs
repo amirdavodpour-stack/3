@@ -12,6 +12,8 @@ test('refund idempotency reopens a terminally failed refund instead of returning
   assert.match(source, /refundRow\?\.status === 'FAILED'/);
   assert.match(source, /UPDATE refunds SET status='PENDING',provider_ref=NULL/);
   assert.match(source, /UPDATE payments SET status='REFUND_PENDING'/);
+  assert.match(source, /payment\.status.*HELD.*RELEASE_PENDING.*RELEASE_FAILED|\['HELD','RELEASE_PENDING','RELEASE_FAILED'\]/);
+  assert.match(source, /PAYMENT_RELEASE.*SUPERSEDED_BY_REFUND|SUPERSEDED_BY_REFUND/);
   assert.match(source, /PAYMENT_REFUND:\$\{paymentId\}/);
 });
 

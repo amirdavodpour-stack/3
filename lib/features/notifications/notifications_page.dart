@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/ui/hope_display_formatters.dart';
 import '../../core/ui/hope_l10n.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/notifications/notification.dart';
 import '../../core/application/application_registry.dart';
 import '../../core/application/application_registry_context.dart';
 import '../../core/network/api_error_presenter.dart';
-
+import '../../core/ui/components.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_async_state.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/transactions/transaction_repository.dart';
 import '../../core/uploads/upload_queue.dart';
@@ -25,6 +28,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   String? error;
   HopeNotificationPreferences? preferences;
   bool preferencesLoading = false;
+  int _loadRequestId = 0;
+  String? _preferenceBusyKey;
 
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
@@ -36,20 +41,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingItems = items.isNotEmpty;
     setState(() {
-      loading = true;
       error = null;
+      if (!hasExistingItems) loading = true;
     });
     try {
       final page =
           await _applicationRegistry(context).listNotifications();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         items = page.items;
         loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         error = apiErrorMessage(e,
             fallback:
@@ -96,12 +104,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   const SizedBox(height: 8),
                   Text(_t('کانال‌ها و دسته‌بندی اعلان‌ها را کنترل کنید.', 'Control notification channels and categories.')),
                   const SizedBox(height: 12),
-                  _preferenceSwitch(_t('اعلان داخل برنامه', 'In-app notifications'), current.inApp, (value) async { current = await _savePreference('inApp', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch('Push', current.push, (value) async { current = await _savePreference('push', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('ایمیل', 'Email'), current.email, (value) async { current = await _savePreference('email', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('به‌روزرسانی درخواست‌ها', 'Application updates'), current.applicationUpdates, (value) async { current = await _savePreference('applicationUpdates', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('به‌روزرسانی پرداخت‌ها', 'Payment updates'), current.paymentUpdates, (value) async { current = await _savePreference('paymentUpdates', value, current); setSheetState(() {}); }),
-                  _preferenceSwitch(_t('بازاریابی', 'Marketing'), current.marketing, (value) async { current = await _savePreference('marketing', value, current); setSheetState(() {}); }),
+                  _preferenceSwitch(_t('اعلان داخل برنامه', 'In-app notifications'), current.inApp, (value) async { await _changePreference('inApp', () async { current = await _savePreference('inApp', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch('Push', current.push, (value) async { await _changePreference('push', () async { current = await _savePreference('push', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch(_t('ایمیل', 'Email'), current.email, (value) async { await _changePreference('email', () async { current = await _savePreference('email', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch(_t('به‌روزرسانی درخواست‌ها', 'Application updates'), current.applicationUpdates, (value) async { await _changePreference('applicationUpdates', () async { current = await _savePreference('applicationUpdates', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch(_t('به‌روزرسانی پرداخت‌ها', 'Payment updates'), current.paymentUpdates, (value) async { await _changePreference('paymentUpdates', () async { current = await _savePreference('paymentUpdates', value, current); setSheetState(() {}); }); }),
+                  _preferenceSwitch(_t('بازاریابی', 'Marketing'), current.marketing, (value) async { await _changePreference('marketing', () async { current = await _savePreference('marketing', value, current); setSheetState(() {}); }); }),
                 ],
               ),
             ),
@@ -123,12 +131,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Widget _preferenceSwitch(String title, bool value, Future<void> Function(bool) onChanged) =>
+  Future<void> _changePreference(
+      String key, Future<void> Function() action) async {
+    if (_preferenceBusyKey != null || !mounted) return;
+    setState(() => _preferenceBusyKey = key);
+    try {
+      await action();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiErrorMessage(
+                error,
+                fallback: _t(
+                  'ذخیره تنظیمات اعلان‌ها ناموفق بود.',
+                  'Could not save notification settings.',
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _preferenceBusyKey = null);
+    }
+  }
+
+  Widget _preferenceSwitch(
+      String title, bool value, Future<void> Function(bool) onChanged) =>
       SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
         title: Text(title),
         value: value,
-        onChanged: (next) { onChanged(next); },
+        onChanged: _preferenceBusyKey != null
+            ? null
+            : (next) => onChanged(next),
       );
 
   Future<HopeNotificationPreferences> _savePreference(
@@ -179,139 +217,252 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
     await _load();
   }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-            title: Text(HopeCopy.of(context).copy_notifications_370b4a1),
-            actions: [
-              IconButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    HopeRoutes.notificationDevices(),
+  Widget _notificationCard(HopeNotification n) {
+    final unread = n.isUnread;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumPanel(
+        key: ValueKey('notification-card-${n.id}'),
+        padding: const EdgeInsets.all(15),
+        quiet: !unread,
+        highlight: unread,
+        semanticLabel: n.title,
+        child: InkWell(
+          onTap: n.hasAction || unread ? () => _openNotification(n) : null,
+          borderRadius: BorderRadius.circular(18),
+          onLongPress: unread ? () => _read(n.id) : null,
+          child: Semantics(
+            button: unread,
+            label: unread
+                ? '${n.title}، ${n.hasAction ? n.actionLabel : HopeCopy.of(context).copy_tap_to_mark_as_read_5c9917a}'
+                : n.title,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIconTile(
+                  unread
+                      ? HopeV2Icons.notifications
+                      : HopeV2Icons.notifications,
+                  filled: unread,
+                  color: unread
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              n.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          if (unread) ...[
+                            const SizedBox(width: 8),
+                            PremiumTag(
+                              label: _t('جدید', 'New'),
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        n.body,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      if (n.hasAction) ...[
+                        const SizedBox(height: 10),
+                        FilledButton.tonalIcon(
+                          onPressed: () => _openNotification(n),
+                          icon: const HopeIcon(HopeV2Icons.arrowRight, size: 18),
+                          label: Text(n.actionLabel),
+                        ),
+                      ],
+                      const SizedBox(height: 7),
+                      Text(
+                        HopeDisplayFormatter.relativeDateTime(
+                              n.createdAt,
+                              locale: Localizations.localeOf(context).languageCode,
+                            ) ?? '',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ],
                   ),
-                  icon: const Icon(Icons.devices_rounded),
-                  tooltip: _t('دستگاه‌های اعلان', 'Notification devices')),
-              IconButton(
-                  onPressed: _openPreferences,
-                  icon: const Icon(Icons.tune_rounded),
-                  tooltip: _t('تنظیمات اعلان‌ها', 'Notification settings')),
-              IconButton(
-                  onPressed: items.isEmpty ? null : _readAll,
-                  icon: const Icon(Icons.done_all_rounded),
-                  tooltip: HopeCopy.of(context).copy_mark_all_read_500a31c)
-            ]),
-        body: PremiumPageFrame(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: loading
-                ? ListView(children: const [
-                    SizedBox(height: 280),
-                    Center(child: CircularProgressIndicator())
-                  ])
-                : error != null
-                    ? ListView(padding: const EdgeInsets.all(24), children: [
-                        Text(HopeCopy.of(context)
-                            .copy_could_not_load_notifications_a904a88),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                            onPressed: _load,
-                            child:
-                                Text(HopeCopy.of(context).copy_retry_49f3eba))
-                      ])
-                    : items.isEmpty
-                        ? ListView(
-                            padding: const EdgeInsets.all(24),
-                            children: [
-                                const SizedBox(height: 80),
-                                const Icon(Icons.notifications_none_rounded,
-                                    size: 64),
-                                const SizedBox(height: 16),
-                                Center(
-                                    child: Text(HopeCopy.of(context)
-                                        .copy_you_have_no_new_notifications_45f9685))
-                              ])
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final n = items[index];
-                              final unread = n.isUnread;
-                              return PremiumPanel(
-                                  padding: const EdgeInsets.all(16),
-                                  highlight: unread,
-                                  semanticLabel: n.title,
-                                  child: InkWell(
-                                      onTap: n.hasAction || unread ? () => _openNotification(n) : null,
-                                      borderRadius: BorderRadius.circular(18),
-                                      // Notification actions both acknowledge the event and
-                                      // route the user to the relevant project when available.
-                                      onLongPress: unread ? () => _read(n.id) : null,
-                                      child: Semantics(
-                                          button: unread,
-                                          label: unread
-                                              ? '${n.title}، ${n.hasAction ? n.actionLabel : HopeCopy.of(context).copy_tap_to_mark_as_read_5c9917a}'
-                                              : n.title,
-                                          child: Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Icon(unread
-                                                        ? Icons
-                                                            .notifications_active_rounded
-                                                        : Icons
-                                                            .notifications_none_rounded),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                        child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                          Text(n.title,
-                                                              style: Theme.of(
-                                                                      context)
-                                                                  .textTheme
-                                                                  .titleMedium
-                                                                  ?.copyWith(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w800)),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(n.body),
-                                                          if (n.hasAction) ...[
-                                                            const SizedBox(height: 10),
-                                                            Align(
-                                                              alignment: AlignmentDirectional.centerStart,
-                                                              child: FilledButton.tonalIcon(
-                                                                onPressed: () => _openNotification(n),
-                                                                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                                                                label: Text(n.actionLabel),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                          if (unread) ...[
-                                                            const SizedBox(
-                                                                height: 7),
-                                                            Text(
-                                                                HopeCopy.of(
-                                                                        context)
-                                                                    .copy_tap_to_mark_as_read_5c9917a,
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .labelMedium)
-                                                          ]
-                                                        ]))
-                                                  ])))));
-                            }),
+                ),
+              ],
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = items.where((item) => item.isUnread).length;
+    return Scaffold(
+      body: SafeArea(
+        child: PremiumPageFrame(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Column(
+            children: [
+              PremiumHeader(
+                page: HopePageId.notifications,
+                domain: HopeProductDomain.communication,
+                dense: true,
+                eyebrow: _t('اعلان‌ها', 'NOTIFICATIONS'),
+                title: _t('اعلان‌ها', 'Notifications'),
+                subtitle: unreadCount > 0
+                    ? _t(
+                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • $unreadCount اعلان جدید',
+                        'Updates for applications, work, and payments • $unreadCount new',
+                      )
+                    : _t(
+                        'به‌روزرسانی درخواست‌ها، کارها و پرداخت‌ها • همه خوانده شده‌اند',
+                        'Updates for applications, work, and payments • All caught up',
+                      ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PopupMenuButton<String>(
+                      tooltip: _t('اقدامات اعلان', 'Notification actions'),
+                      icon: const HopeIcon(HopeV2Icons.menu),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'settings':
+                            _openPreferences();
+                            break;
+                          case 'devices':
+                            Navigator.push(
+                              context,
+                              HopeRoutes.notificationDevices(),
+                            );
+                            break;
+                          case 'read':
+                            if (unreadCount > 0) _readAll();
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'settings',
+                          child: Text(
+                            _t(
+                              'تنظیمات اعلان‌ها',
+                              'Notification settings',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'devices',
+                          child: Text(
+                            _t(
+                              'دستگاه‌های اعلان',
+                              'Notification devices',
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'read',
+                          enabled: unreadCount > 0,
+                          child: Text(
+                            HopeCopy.of(context).copy_mark_all_read_500a31c,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: HopeV2Spacing.md),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _load,
+                  child: loading
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            const SizedBox(height: 120),
+                            HopeAsyncState(
+                              kind: HopeStateKind.loading,
+                              title: _t(
+                                'در حال بارگذاری اعلان‌ها',
+                                'Loading notifications',
+                              ),
+                              message: _t(
+                                'آخرین به‌روزرسانی‌های حساب و کارهای شما در حال دریافت است.',
+                                'The latest account and work updates are loading.',
+                              ),
+                            ),
+                          ],
+                        )
+                      : error != null
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.only(top: 24),
+                              children: [
+                                HopeAsyncState(
+                                  kind: HopeStateKind.error,
+                                  title: _t(
+                                    'اعلان‌ها در دسترس نیستند',
+                                    'Notifications unavailable',
+                                  ),
+                                  message: error!,
+                                  action: FilledButton.icon(
+                                    onPressed: loading ? null : _load,
+                                    icon: const HopeIcon(
+                                      HopeV2Icons.refresh,
+                                      size: 19,
+                                    ),
+                                    label: Text(
+                                      HopeCopy.of(context).copy_retry_49f3eba,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : items.isEmpty
+                              ? ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.only(top: 24),
+                                  children: [
+                                    EmptyState(
+                                      icon: HopeV2Icons.notifications,
+                                      title: _t(
+                                        'اعلانی وجود ندارد',
+                                        'No notifications',
+                                      ),
+                                      message: HopeCopy.of(context)
+                                          .copy_you_have_no_new_notifications_45f9685,
+                                    ),
+                                  ],
+                                )
+                              : ListView(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  children: [
+                                    ...items.map(_notificationCard),
+                                  ],
+                                ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

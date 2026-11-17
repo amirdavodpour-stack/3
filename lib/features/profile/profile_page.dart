@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:provider/provider.dart';
 import '../../core/ui/hope_async_state.dart';
 
 import '../../core/auth/auth_controller.dart';
-import '../../core/marketplace/application.dart';
 import '../../core/profile/profile_repository.dart';
-import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'profile_controller.dart';
 
 import '../../core/ui/premium_components.dart';
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    this.showPrimaryNavigation = true,
+  });
+
+  final bool showPrimaryNavigation;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -35,7 +38,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<HopeProviderProfile>? profile;
-  Future<List<HopeApplication>>? applications;
   String? _loadedUserId;
 
   @override
@@ -46,17 +48,46 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadedUserId = id;
     if (id == null) {
       profile = null;
-      applications = null;
       return;
     }
     // Keep backend errors observable so the UI can communicate an unknown
     // verification/trust state instead of silently presenting empty data.
     profile = _controller.loadProfile();
-    applications = _controller.loadApplications();
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 4,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 4) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        HopeRoutes.home(),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final auth = context.watch<AuthController>();
     final settings = context.watch<HopeSettingsController>();
     final theme = context.watch<ThemeController>();
@@ -69,57 +100,59 @@ class _ProfilePageState extends State<ProfilePage> {
     final name = '${user['displayName'] ?? 'HOPE'}';
     final initial = name.isEmpty ? 'H' : name.characters.first.toUpperCase();
 
-    return Material(
-      color: Colors.transparent,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 920),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
-            children: [
+    return PremiumPageFrame(
+      maxWidth: 920,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 122),
+      child: ListView(
+        key: const ValueKey('profile-content-scroll'),
+        padding: EdgeInsets.zero,
+        children: [
           PremiumHeader(
+            page: HopePageId.profile,
+            domain: HopeProductDomain.account,
+            dense: true,
             eyebrow: HopeCopy.of(context).copy_profile_8b081d3,
-            title: '${HopeCopy.of(context).copy_hello_fc7ef4a}, $name',
-            subtitle: HopeCopy.of(context)
-                .copy_professional_identity_preferences_and_acco_7f164ce,
-            trailing: const HopeMark(size: 42, showText: false),
+            title: name,
+            subtitle: user['email']?.toString().trim().isEmpty == true
+                ? null
+                : user['email']?.toString(),
+            trailing: CircleAvatar(
+              radius: 32,
+              backgroundColor:
+                  HopeV2Colors.primary.withValues(alpha: .14),
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: HopeV2Spacing.sm),
           PremiumPanel(
-            highlight: true,
-            padding: const EdgeInsets.all(18),
+            key: const ValueKey('profile-account-summary'),
+            quiet: true,
+            padding: const EdgeInsets.fromLTRB(15, 11, 15, 11),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 31,
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                const HopeIconTile(
+                  HopeV2Icons.secure,
+                  filled: true,
+                  size: 40,
                 ),
-                const SizedBox(width: 13),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      Text(
-                        '${user['email'] ?? ''}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 7),
-                      StatusPill(
-                        HopeCopy.of(context).copy_active_account_bef80da,
-                        color: AppColors.success,
-                        icon: Icons.person_outline_rounded,
+                      PremiumTag(
+                        icon: HopeV2Icons.completed,
+                        label: _t(context, 'حساب فعال', 'Active account'),
+                        color: HopeV2Colors.secondaryStrong,
                       ),
                     ],
                   ),
@@ -127,15 +160,27 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
-          const SizedBox(height: 19),
-          SectionTitle(
+          const SizedBox(height: 26),
+          PremiumSectionHeader(
             title: HopeCopy.of(context).copy_personal_settings_4ecc5fa,
-            subtitle: HopeCopy.of(context)
-                .copy_controls_that_make_hope_fit_you_better_ace4c0c,
+            subtitle: MediaQuery.sizeOf(context).width < 500
+                ? null
+                : HopeCopy.of(context)
+                    .copy_controls_that_make_hope_fit_you_better_ace4c0c,
           ),
           const SizedBox(height: 10),
           _settingsCard(context, settings, theme),
           const SizedBox(height: 19),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.trust,
+            title: _t(context, 'اعتماد و پروفایل حرفه‌ای', 'Trust & professional profile'),
+            subtitle: _t(
+              context,
+              'وضعیت تأیید و شاخص‌های کاری مستقل از تنظیمات حساب.',
+              'Verification and work signals are kept separate from account settings.',
+            ),
+          ),
+          const SizedBox(height: 10),
           FutureBuilder<HopeProviderProfile>(
             future: profile,
             builder: (context, snapshot) {
@@ -148,32 +193,43 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () => setState(() {
                       profile = _controller.loadProfile();
                     }),
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
                     label: Text(_t(context, 'تلاش دوباره', 'Retry')),
                   ),
                 );
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const PremiumPanel(
-                  child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator())),
+                return HopeAsyncState(
+                  kind: HopeStateKind.loading,
+                  title: _t(
+                    context,
+                    'در حال بارگذاری اطلاعات حرفه‌ای',
+                    'Loading professional profile',
+                  ),
+                  message: _t(
+                    context,
+                    'وضعیت تأیید و شاخص‌های اعتماد در حال دریافت است.',
+                    'Verification and trust signals are loading.',
+                  ),
                 );
               }
               final data = snapshot.data;
 
               return PremiumPanel(
-                padding: const EdgeInsets.all(16),
+                quiet: true,
+padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const HopeIconTile(
-                        Icons.work_history_outlined,
+                        HopeV2Icons.job,
                       ),
                       title: Text(
                         HopeCopy.of(context).copy_work_profile_885ecac,
                       ),
                       subtitle: Text(
-                        '${data?.providerType.isNotEmpty == true ? data!.providerType : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? data!.capacity : HopeCopy.of(context).copy_open_to_work_aa59263}',
+                        '${data?.providerType.isNotEmpty == true ? _providerTypeLabel(context, data!.providerType) : HopeCopy.of(context).copy_professional_user_54818b8} • ${data?.capacity.isNotEmpty == true ? _capacityLabel(context, data!.capacity) : HopeCopy.of(context).copy_open_to_work_aa59263}',
                       ),
                     ),
                     const Divider(height: 1),
@@ -184,11 +240,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            _trustMetric(context, Icons.verified_rounded, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : AppColors.muted),
-                            if (data.providerType.isNotEmpty) _trustMetric(context, Icons.work_outline_rounded, data.providerType, Theme.of(context).colorScheme.secondary),
-                            if (data.capacity.isNotEmpty) _trustMetric(context, Icons.timelapse_rounded, data.capacity, AppColors.warning),
-                            if (data.completedJobs > 0) _trustMetric(context, Icons.task_alt_rounded, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', AppColors.success),
-                            if (data.activeJobs > 0) _trustMetric(context, Icons.play_circle_outline_rounded, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
+                            _trustMetric(context, HopeV2Icons.verified, data.isVerified ? _t(context, 'تأییدشده', 'Verified') : _t(context, 'تأیید نشده', 'Not verified'), data.isVerified ? Theme.of(context).colorScheme.primary : HopeV2Colors.muted),
+                            if (data.capacity.isNotEmpty)
+                              _trustMetric(
+                                context,
+                                HopeV2Icons.pending,
+                                _capacityLabel(context, data.capacity),
+                                Theme.of(context).colorScheme.secondary,
+                              ),
+                            if (data.completedJobs > 0) _trustMetric(context, HopeV2Icons.completed, '${data.completedJobs} ${_t(context, 'کار تکمیل‌شده', 'completed')}', HopeV2Colors.success),
+                            if (data.activeJobs > 0) _trustMetric(context, HopeV2Icons.activity, '${data.activeJobs} ${_t(context, 'فعال', 'active')}', Theme.of(context).colorScheme.primary),
                           ],
                         ),
                       ),
@@ -197,14 +258,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const HopeIconTile(
-                        Icons.admin_panel_settings_outlined,
+                        HopeV2Icons.secure,
                       ),
                       title: Text(
                         HopeCopy.of(context).copy_verification_c45fea9,
                       ),
                       subtitle: Text(
                         data?.verificationStatus.isNotEmpty == true
-                            ? data!.verificationStatus
+                            ? _verificationStatusLabel(
+                                context, data!.verificationStatus)
                             : HopeCopy.of(context).copy_not_completed_f8a6746,
                       ),
                     ),
@@ -213,135 +275,96 @@ class _ProfilePageState extends State<ProfilePage> {
               );
             },
           ),
-          const SizedBox(height: 14),
-          FutureBuilder<List<HopeApplication>>(
-            future: applications,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return HopeAsyncState(
-                  kind: HopeStateKind.error,
-                  title: _t(context, 'درخواست‌ها در دسترس نیستند', 'Applications unavailable'),
-                  message: _t(context, 'امکان دریافت وضعیت درخواست‌ها وجود ندارد.', 'Application status could not be loaded.'),
-                  action: OutlinedButton.icon(
-                    onPressed: () => setState(() {
-                      applications = _controller.loadApplications();
-                    }),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: Text(_t(context, 'تلاش دوباره', 'Retry')),
-                  ),
-                );
-              }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const PremiumPanel(
-                  child: SizedBox(height: 96, child: Center(child: CircularProgressIndicator())),
-                );
-              }
-              final list = snapshot.data ?? const <HopeApplication>[];
-
-              if (list.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              return PremiumPanel(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      HopeCopy.of(context).copy_my_job_applications_90701f0,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 10),
-                    ...list.take(6).map<Widget>((a) {
-                      final status = a.status;
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: HopeIconTile(
-                          status == 'ACCEPTED'
-                              ? Icons.check_circle_rounded
-                              : Icons.work_outline_rounded,
-                          filled: status == 'ACCEPTED',
-                        ),
-                        title: Text(
-                          a.jobTitle.isEmpty
-                              ? HopeCopy.of(context).copy_job_ce2feba
-                              : a.jobTitle,
-                        ),
-                        subtitle: Text(a.statusLabel),
-                        trailing: a.canWithdraw
-                            ? IconButton(
-                                onPressed: () async {
-                                  try {
-                                    await _controller.withdrawApplication(a.id);
-                                    if (!mounted) return;
-                                    setState(() {
-                                      applications = _controller
-                                          .loadApplications()
-                                          .catchError(
-                                              (_) => const <HopeApplication>[]);
-                                    });
-                                  } catch (error) {
-                                    if (!mounted || !context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(apiErrorMessage(error,
-                                              fallback: HopeCopy.of(context)
-                                                  .copy_operation_failed_eb38c4c))),
-                                    );
-                                  }
-                                },
-                                tooltip:
-                                    HopeCopy.of(context).copy_cancel_9955c4b,
-                                icon: const Icon(Icons.undo_rounded),
-                              )
-                            : null,
-                      );
-                    }),
-                  ],
+          PremiumSectionHeader(
+            domain: HopeProductDomain.work,
+            title: _t(context, 'مرکز کار', 'Work center'),
+            subtitle: _t(
+              context,
+              'درخواست‌های شغلی مسیر مستقل خودشان را دارند.',
+              'Job applications have their own dedicated workspace.',
+            ),
+          ),
+          const SizedBox(height: 10),
+          PremiumQuickActionStrip(
+            domain: HopeProductDomain.work,
+            quiet: true,
+            title: _t(context, 'درخواست‌های کاری', 'Work destinations'),
+            actions: [
+              PremiumQuickAction(
+                label: _t(context, 'درخواست‌های من', 'My applications'),
+                icon: HopeV2Icons.mission,
+                primary: true,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.myApplications(),
                 ),
-              );
-            },
+              ),
+              PremiumQuickAction(
+                label: _t(context, 'پیشنهادها', 'Offers'),
+                icon: HopeV2Icons.featured,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.offers(),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
-          SectionTitle(
+          PremiumSectionHeader(
+            domain: HopeProductDomain.discovery,
+            title: _t(context, 'جست‌وجو و کشف', 'Discovery'),
+            subtitle: _t(
+              context,
+              'فیلترهای ذخیره‌شده را در فضای کاوش مدیریت کنید.',
+              'Manage saved filters in the discovery workspace.',
+            ),
+          ),
+          const SizedBox(height: 10),
+          PremiumQuickActionStrip(
+            domain: HopeProductDomain.discovery,
+            title: _t(context, 'دسترسی‌های کاوش', 'Discovery destinations'),
+            actions: [
+              PremiumQuickAction(
+                label: _t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches'),
+                icon: HopeV2Icons.savedSearches,
+                primary: true,
+                onPressed: () => Navigator.push(
+                  context,
+                  HopeRoutes.savedSearches(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.account,
             title: _t(context, 'مرکز کنترل حساب', 'Account control center'),
-            subtitle: _t(context, 'حریم خصوصی، دستگاه‌ها و درخواست‌های کاری را یکجا مدیریت کن.', 'Manage privacy, devices, and your work applications in one place.'),
+            subtitle: _t(
+              context,
+              'حریم خصوصی، دستگاه‌ها و تنظیمات خود حساب را مدیریت کنید.',
+              'Manage privacy, devices, and account settings in one place.',
+            ),
           ),
           const SizedBox(height: 10),
           PremiumPanel(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            glass: true,
+padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
                 ListTile(
-                  leading: const HopeIconTile(Icons.assignment_rounded, filled: true),
-                  title: Text(_t(context, 'درخواست‌های من', 'My applications')),
-                  subtitle: Text(_t(context, 'پیگیری مرحله‌به‌مرحله همه درخواست‌های شغلی', 'Track every job application through its workflow')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.push(context, HopeRoutes.myApplications()),
-                ),
-                const Divider(height: 1, indent: 72),
-                ListTile(
-                  leading: const HopeIconTile(Icons.devices_rounded, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'دستگاه‌های اعلان', 'Notification devices')),
                   subtitle: Text(_t(context, 'مدیریت دستگاه‌های فعال برای Push', 'Manage devices enabled for Push notifications')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.notificationDevices()),
                 ),
                 const Divider(height: 1, indent: 72),
                 ListTile(
-                  leading: const HopeIconTile(Icons.privacy_tip_outlined, filled: true),
+                  leading: const HopeIconTile(HopeV2Icons.secure, filled: true),
                   title: Text(_t(context, 'حریم خصوصی و داده‌ها', 'Privacy & data')),
                   subtitle: Text(_t(context, 'دریافت خروجی اطلاعات یا حذف حساب', 'Export your data or delete your account')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: const HugeIcon(icon: HopeV2Icons.arrowRight, size: 19),
                   onTap: () => Navigator.push(context, HopeRoutes.privacyCenter()),
-                ),
-                ListTile(
-                  leading: const HopeIconTile(Icons.bookmark_rounded, filled: true),
-                  title: Text(_t(context, 'جست‌وجوهای ذخیره‌شده', 'Saved searches')),
-                  subtitle: Text(_t(context, 'ویرایش و مدیریت فیلترهای ذخیره‌شده', 'Edit and manage saved-search filters')),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.push(context, HopeRoutes.savedSearches()),
                 ),
               ],
             ),
@@ -350,7 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (auth.user?['role'] == 'ADMIN')
             FilledButton.tonalIcon(
               onPressed: () => Navigator.push(context, HopeRoutes.admin()),
-              icon: const Icon(Icons.admin_panel_settings_rounded),
+              icon: const HopeIcon(HopeV2Icons.secure, size: 19),
               label: Text(
                 HopeCopy.of(context).copy_open_admin_panel_39f3cb8,
               ),
@@ -358,34 +381,32 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => Navigator.push(context, HopeRoutes.about()),
-            icon: const Icon(Icons.info_outline_rounded),
+            icon: const HopeIcon(HopeV2Icons.insights, size: 19),
             label: Text(HopeCopy.of(context).copy_about_hope_f8ee86b),
           ),
           const SizedBox(height: 10),
           ListTile(
             leading: const HopeIconTile(
-              Icons.logout_rounded,
-              color: AppColors.danger,
+              HopeV2Icons.transferOut,
+              color: HopeV2Colors.danger,
             ),
             title: Text(
               HopeCopy.of(context).copy_log_out_04a94c7,
               style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.dangerDark
-                    : AppColors.danger,
+                    ? HopeV2Colors.dangerDark
+                    : HopeV2Colors.danger,
                 fontWeight: FontWeight.w800,
               ),
             ),
             onTap: auth.logout,
           ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _trustMetric(BuildContext context, IconData icon, String label, Color color) {
+  Widget _trustMetric(BuildContext context, Object icon, String label, Color color) {
     return Container(
       constraints: const BoxConstraints(minHeight: HopeV2Touch.minimum),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -397,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: color),
+          HopeIcon(icon, size: 18, color: color, strokeWidth: 1.9),
           const SizedBox(width: 7),
           Text(label, style: TextStyle(fontWeight: FontWeight.w800, color: color)),
         ],
@@ -407,6 +428,47 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _t(BuildContext context, String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
+
+  String _providerTypeLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'INDIVIDUAL':
+      case 'FREELANCER':
+        return _t(context, 'مجری مستقل', 'Independent provider');
+      case 'BUSINESS':
+        return _t(context, 'کسب‌وکار', 'Business');
+      default:
+        return HopeCopy.of(context).copy_professional_user_54818b8;
+    }
+  }
+
+  String _capacityLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'OPEN':
+        return HopeCopy.of(context).copy_open_to_work_aa59263;
+      case 'FULL_TIME':
+        return HopeCopy.of(context).copy_full_time_1e4bd4e;
+      case 'PART_TIME':
+        return HopeCopy.of(context).copy_part_time_086787b;
+      case 'PART_FULL_TIME':
+      case 'FULL_TIME_PART_TIME':
+        return HopeCopy.of(context).copy_part_full_time_4d952a9;
+      default:
+        return value;
+    }
+  }
+
+  String _verificationStatusLabel(BuildContext context, String value) {
+    switch (value.trim().toUpperCase()) {
+      case 'VERIFIED':
+        return _t(context, 'تأییدشده', 'Verified');
+      case 'UNVERIFIED':
+        return _t(context, 'تأیید نشده', 'Not verified');
+      case 'PENDING':
+        return _t(context, 'در انتظار بررسی', 'Pending review');
+      default:
+        return _t(context, 'نیازمند بررسی', 'Needs review');
+    }
+  }
 
   Widget _guest(
     BuildContext context,
@@ -431,13 +493,13 @@ class _ProfilePageState extends State<ProfilePage> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 18),
-          GradientHero(
+          PremiumHero(
             eyebrow: HopeCopy.of(context).copy_hope_account_4ba3966,
             title: HopeCopy.of(context)
                 .copy_a_home_for_your_professional_path_52dbb09,
             message: HopeCopy.of(context)
                 .copy_keep_your_profile_opportunities_transactio_39f443d,
-            icon: Icons.person_rounded,
+            icon: HopeV2Icons.profile,
             action: Row(
               children: [
                 Expanded(
@@ -446,7 +508,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Navigator.push(context, HopeRoutes.register()),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: HopeV2Colors.primary,
                     ),
                     child: Text(
                       HopeCopy.of(context).copy_create_account_bfa3517,
@@ -482,67 +544,154 @@ class _ProfilePageState extends State<ProfilePage> {
     HopeSettingsController settings,
     ThemeController theme,
   ) {
-    return HopeSurface(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(15, 15, 15, 8),
-            child: Row(
-              children: [
-                const HopeIconTile(
-                  Icons.tune_rounded,
-                  filled: true,
-                  size: 42,
+    final compact = MediaQuery.sizeOf(context).width < 500;
+    return PremiumPanel(
+      key: const ValueKey('profile-settings-panel'),
+      glass: true,
+      child: ListTileTheme(
+        data: ListTileThemeData(
+          dense: compact,
+          visualDensity: compact
+              ? const VisualDensity(horizontal: -2, vertical: -2)
+              : VisualDensity.standard,
+        ),
+        child: Column(
+          children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                return const SizedBox(height: 4);
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(15, 15, 15, 8),
+                child: Row(
+                  children: [
+                    const HopeIconTile(
+                      HopeV2Icons.insights,
+                      filled: true,
+                      size: 42,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      HopeCopy.of(context).copy_settings_a8a6c67,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  HopeCopy.of(context).copy_settings_a8a6c67,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
+              );
+            },
           ),
-          ListTile(
-            leading: const HopeIconTile(Icons.translate_rounded),
-            title: Text(
-              HopeCopy.of(context).copy_app_language_789c9c4,
-            ),
-            subtitle: Text(
-              settings.language == 'fa'
-                  ? HopeCopy.of(context).copy_language_persian_3ffcd3e
-                  : HopeCopy.of(context).copy_language_english_d9f5a4a,
-            ),
-            trailing: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'fa',
-                  label: Text(
-                    HopeCopy.of(context).copy_persian_62775b3,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final selector = SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'fa',
+                    label: Text(
+                      HopeCopy.of(context).copy_persian_62775b3,
+                    ),
                   ),
-                ),
-                ButtonSegment(
-                  value: 'en',
-                  label: Text(
-                    HopeCopy.of(context).copy_english_8396fe3,
+                  ButtonSegment(
+                    value: 'en',
+                    label: Text(
+                      HopeCopy.of(context).copy_english_8396fe3,
+                    ),
                   ),
+                ],
+                selected: {settings.language},
+                onSelectionChanged: (value) => settings.setLanguage(value.first),
+              );
+
+              final details = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(HopeV2Icons.translate),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
                 ),
-              ],
-              selected: {settings.language},
-              onSelectionChanged: (value) => settings.setLanguage(value.first),
-            ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+              );
+
+              if (constraints.maxWidth < 500) {
+                if (constraints.maxWidth >= 360) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: details),
+                        const SizedBox(width: 8),
+                        selector,
+                      ],
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      details,
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 8),
+                          child: selector,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                leading: const HopeIconTile(HopeV2Icons.translate),
+                title: Text(
+                  HopeCopy.of(context).copy_app_language_789c9c4,
+                ),
+                subtitle: Text(
+                  settings.language == 'fa'
+                      ? HopeCopy.of(context).copy_language_persian_3ffcd3e
+                      : HopeCopy.of(context).copy_language_english_d9f5a4a,
+                ),
+                trailing: selector,
+              );
+            },
+          ),
+          const Divider(height: 1),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 500;
+              return ListTile(
+                dense: compact,
+                visualDensity: compact
+                    ? const VisualDensity(horizontal: -2, vertical: -2)
+                    : null,
+                leading: const HopeIconTile(HopeV2Icons.secure),
+                title: Text(
+                  HopeCopy.of(context).copy_appearance_c90f540,
+                ),
+                subtitle: compact
+                    ? null
+                    : Text(_themeLabel(context, theme.mode)),
+                trailing: compact
+                    ? PremiumTag(
+                        icon: HopeV2Icons.secure,
+                        label: _themeLabel(context, theme.mode),
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                onTap: () => _pickTheme(context, settings, theme),
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const HopeIconTile(Icons.dark_mode_outlined),
-            title: Text(
-              HopeCopy.of(context).copy_appearance_c90f540,
-            ),
-            subtitle: Text(_themeLabel(context, theme.mode)),
-            onTap: () => _pickTheme(context, settings, theme),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const HopeIconTile(Icons.location_on_outlined),
+            leading: const HopeIconTile(HopeV2Icons.location),
             title: Text(
               HopeCopy.of(context).copy_location_city_46ccc39,
             ),
@@ -551,17 +700,45 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             trailing: Switch(
               value: settings.locationEnabled,
-              onChanged: (value) async {
+              onChanged: settings.locationBusy
+                  ? null
+                  : (value) async {
                 if (value) {
                   final ok = await settings.enableLocation();
                   if (!ok && mounted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          HopeCopy.of(context)
-                              .copy_location_permission_was_not_enabled_you_ca_ba53b81,
+                    final reason = settings.lastLocationFailure;
+                    final message = switch (reason) {
+                      LocationFailureReason.serviceDisabled => _t(
+                          context,
+                          'مکان‌یابی دستگاه خاموش است.',
+                          'Device location services are turned off.',
                         ),
-                      ),
+                      LocationFailureReason.permissionDenied => _t(
+                          context,
+                          'اجازه مکان‌یابی برای HOPE فعال نیست.',
+                          'HOPE does not have location permission.',
+                        ),
+                      LocationFailureReason.positionUnavailable => _t(
+                          context,
+                          'دریافت موقعیت انجام نشد. دوباره تلاش کنید.',
+                          'Could not get your current location. Try again.',
+                        ),
+                      _ => HopeCopy.of(context)
+                          .copy_location_permission_was_not_enabled_you_ca_ba53b81,
+                    };
+                    final action = switch (reason) {
+                      LocationFailureReason.serviceDisabled => SnackBarAction(
+                          label: _t(context, 'تنظیمات مکان', 'Location settings'),
+                          onPressed: () => settings.openLocationSettings(),
+                        ),
+                      LocationFailureReason.permissionDenied => SnackBarAction(
+                          label: _t(context, 'تنظیمات برنامه', 'App settings'),
+                          onPressed: () => settings.openAppSettings(),
+                        ),
+                      _ => null,
+                    };
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(message), action: action),
                     );
                   }
                 } else {
@@ -571,79 +748,160 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           ListTile(
-            leading: const HopeIconTile(Icons.map_outlined),
+            leading: const HopeIconTile(HopeV2Icons.location),
             title: Text(
               HopeCopy.of(context).copy_choose_another_city_1375095,
             ),
             onTap: () => _pickCity(context, settings),
           ),
           const Divider(height: 1),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(
-              Icons.notifications_none_rounded,
-            ),
-            title: Text(
-              HopeCopy.of(context).copy_notifications_370b4a1,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context)
-                  .copy_new_opportunities_and_application_updates_d3e84aa,
-            ),
-            value: settings.notifications,
-            onChanged: settings.setNotifications,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(
-              Icons.auto_awesome_outlined,
-            ),
-            title: Text(
-              HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context)
-                  .copy_based_on_city_and_professional_interests_e0ba2f1,
-            ),
-            value: settings.personalizedRecommendations,
-            onChanged: settings.setPersonalizedRecommendations,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(Icons.bedtime_outlined),
-            title: Text(
-              HopeCopy.of(context).copy_quiet_hours_02885b4,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_limit_notifications_during_rest_b5e0db3,
-            ),
-            value: settings.quietHours,
-            onChanged: settings.setQuietHours,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15),
-            secondary: const HopeIconTile(Icons.view_agenda_outlined),
-            title: Text(
-              HopeCopy.of(context).copy_compact_cards_71ed24c,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_fit_more_information_on_a_page_aedc497,
-            ),
-            value: settings.compactCards,
-            onChanged: settings.setCompactCards,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                final itemWidth = (constraints.maxWidth - 10) / 2;
+
+                Widget compactToggle({
+                  required Object icon,
+                  required String title,
+                  required bool value,
+                  required ValueChanged<bool> onChanged,
+                }) {
+                  return SizedBox(
+                    width: itemWidth,
+                    child: SwitchListTile.adaptive(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      secondary: HopeIconTile(icon, size: 36),
+                      title: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      value: value,
+                      onChanged: onChanged,
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 2, 4, 6),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      compactToggle(
+                        icon: HopeV2Icons.notifications,
+                        title: HopeCopy.of(context).copy_notifications_370b4a1,
+                        value: settings.notifications,
+                        onChanged: settings.setNotifications,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.featured,
+                        title: HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
+                        value: settings.personalizedRecommendations,
+                        onChanged: settings.setPersonalizedRecommendations,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.pending,
+                        title: HopeCopy.of(context).copy_quiet_hours_02885b4,
+                        value: settings.quietHours,
+                        onChanged: settings.setQuietHours,
+                      ),
+                      compactToggle(
+                        icon: HopeV2Icons.activity,
+                        title: HopeCopy.of(context).copy_compact_cards_71ed24c,
+                        value: settings.compactCards,
+                        onChanged: settings.setCompactCards,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(
+                                HopeV2Icons.notifications,
+                              ),
+                              title: Text(
+                                HopeCopy.of(context).copy_notifications_370b4a1,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context)
+                                    .copy_new_opportunities_and_application_updates_d3e84aa,
+                              ),
+                              value: settings.notifications,
+                              onChanged: settings.setNotifications,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(
+                                HopeV2Icons.featured,
+                              ),
+                              title: Text(
+                                HopeCopy.of(context).copy_personalized_recommendations_a4e4411,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context)
+                                    .copy_based_on_city_and_professional_interests_e0ba2f1,
+                              ),
+                              value: settings.personalizedRecommendations,
+                              onChanged: settings.setPersonalizedRecommendations,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(HopeV2Icons.pending),
+                              title: Text(
+                                HopeCopy.of(context).copy_quiet_hours_02885b4,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context).copy_limit_notifications_during_rest_b5e0db3,
+                              ),
+                              value: settings.quietHours,
+                              onChanged: settings.setQuietHours,
+                            ),
+                            SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                              secondary: const HopeIconTile(HopeV2Icons.activity),
+                              title: Text(
+                                HopeCopy.of(context).copy_compact_cards_71ed24c,
+                              ),
+                              subtitle: Text(
+                                HopeCopy.of(context).copy_fit_more_information_on_a_page_aedc497,
+                              ),
+                              value: settings.compactCards,
+                              onChanged: settings.setCompactCards,
+                            ),
+                  
+                ],
+              );
+            },
           ),
           const Divider(height: 1),
-          ListTile(
-            leading: const HopeIconTile(Icons.info_outline_rounded),
-            title: Text(
-              HopeCopy.of(context).copy_about_hope_f8ee86b,
-            ),
-            subtitle: Text(
-              HopeCopy.of(context).copy_mission_jobs_fees_and_privacy_a947037,
-            ),
-            onTap: () => Navigator.push(context, HopeRoutes.about()),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 500) {
+                return const SizedBox.shrink();
+              }
+              return ListTile(
+                leading: const HopeIconTile(HopeV2Icons.insights),
+                title: Text(
+                  HopeCopy.of(context).copy_about_hope_f8ee86b,
+                ),
+                subtitle: Text(
+                  HopeCopy.of(context)
+                      .copy_mission_jobs_fees_and_privacy_a947037,
+                ),
+                onTap: () => Navigator.push(context, HopeRoutes.about()),
+              );
+            },
           ),
         ],
+        ),
       ),
     );
   }
@@ -716,7 +974,7 @@ class _ProfilePageState extends State<ProfilePage> {
             (value) => ListTile(
               title: Text(value),
               trailing: value == settings.city
-                  ? const Icon(Icons.check_rounded)
+                  ? const HopeIcon(HopeV2Icons.completed, size: 18)
                   : null,
               onTap: () => Navigator.pop(context, value),
             ),

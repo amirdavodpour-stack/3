@@ -82,12 +82,13 @@ class HopePaymentFees {
     required this.currency,
   });
 
-  final num? baseAmount;
-  final num? employerFee;
-  final num? workerFee;
-  final num? platformFee;
-  final num? employerCharge;
-  final num? providerPayout;
+  /// Exact API amount retained as a string; do not coerce to double.
+  final String? baseAmount;
+  final String? employerFee;
+  final String? workerFee;
+  final String? platformFee;
+  final String? employerCharge;
+  final String? providerPayout;
   final String policyVersion;
   final String currency;
 
@@ -102,11 +103,16 @@ class HopePaymentFees {
         currency: '${map['currency'] ?? 'TOMAN'}'.toUpperCase(),
       );
 
-  static num? _money(dynamic value) {
+  static String? _money(dynamic value) {
     if (value == null) return null;
-    if (value is num) return value;
-    if (value is String) return num.tryParse(value.trim());
-    return num.tryParse('$value');
+    if (value is String) {
+      final raw = value.trim();
+      return num.tryParse(raw) == null ? null : raw;
+    }
+    if (value is int) return value.toString();
+    if (value is num && value.isFinite) return value.toString();
+    final raw = '$value'.trim();
+    return num.tryParse(raw) == null ? null : raw;
   }
 
 }

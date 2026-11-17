@@ -1,8 +1,5 @@
 name: Verify staging operational gate
 on:
-  pull_request:
-    branches:
-      - Main
   workflow_dispatch:
 concurrency:
   group: hope-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

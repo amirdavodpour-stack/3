@@ -1,3 +1,4 @@
+import { closeJobChatForJob } from './human_chat.js';
 import crypto from 'node:crypto';
 import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
@@ -6,7 +7,12 @@ import { normalizeFinancialAmount, fundingJournal, releaseJournal, payoutJournal
 import { jobFromRow, offerFromRow, paymentFromRow } from './mappers.js';
 import { postInternalPaymentRefundWithClient } from '../wallet_ledger.js';
 
-export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt}) {
+export function refundablePaymentStateAllowed(status, allowPendingRelease = false) {
+  const allowed = allowPendingRelease ? ['HELD','RELEASE_PENDING','RELEASE_FAILED'] : ['HELD'];
+  return allowed.includes(String(status || '').toUpperCase());
+}
+
+export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idempotencyKey,createdAt,allowPendingRelease=false}) {
   return withSqlTransaction(async(client)=>{
     if (idempotencyKey) {
       await client.query(`SELECT pg_advisory_xact_lock(hashtextextended($1, 918273645))`, [`refund:${paymentId}:${idempotencyKey}`]);
@@ -16,7 +22,32 @@ export async function createRefundAtomic({jobId,paymentId,ownerId,amount,id,idem
     if(jr[0].owner_id!==ownerId){const e=new Error('FORBIDDEN');e.code='FORBIDDEN';throw e;}
     const {rows:pr}=await client.query(`SELECT * FROM payments WHERE id=$1 AND job_id=$2 FOR UPDATE`,[paymentId,jobId]);
     const payment=pr[0]; if(!payment){const e=new Error('PAYMENT_NOT_FOUND');e.code='PAYMENT_NOT_FOUND';throw e;}
-    if(payment.status!=='HELD'){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
+    if(!refundablePaymentStateAllowed(payment.status, allowPendingRelease)){const e=new Error('INVALID_PAYMENT_STATE');e.code='INVALID_PAYMENT_STATE';throw e;}
+    if (allowPendingRelease && ['RELEASE_PENDING', 'RELEASE_FAILED'].includes(payment.status)) {
+      const releaseEvent = await client.query(
+        `SELECT id,status FROM outbox_events
+          WHERE aggregate_type='payment' AND aggregate_id=$1
+            AND event_type='PAYMENT_RELEASE'
+            AND status IN ('PENDING','FAILED','PROCESSING')
+          ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        [paymentId],
+      );
+      const release = releaseEvent.rows[0];
+      if (release?.status === 'PROCESSING') {
+        const e = new Error('PAYMENT_RELEASE_IN_PROGRESS');
+        e.code = 'PAYMENT_RELEASE_IN_PROGRESS';
+        throw e;
+      }
+      if (release && ['PENDING', 'FAILED'].includes(release.status)) {
+        await client.query(
+          `UPDATE outbox_events
+             SET status='DONE', processed_at=COALESCE(processed_at,NOW()),
+                 locked_at=NULL, last_error='SUPERSEDED_BY_REFUND'
+           WHERE id=$1`,
+          [release.id],
+        );
+      }
+    }
     const refundCurrency=String(payment.currency || config.paymentCurrency).toUpperCase(); const refundAmount=normalizeFinancialAmount(refundCurrency, amount || payment.amount); if(String(refundAmount)!==String(normalizeFinancialAmount(refundCurrency, payment.amount))){const e=new Error('PARTIAL_REFUND_UNSUPPORTED');e.code='PARTIAL_REFUND_UNSUPPORTED';throw e;}
     let refundRow = null;
     if (idempotencyKey) {
@@ -59,6 +90,7 @@ export async function completePaymentRefundOutbox({eventId,jobId,paymentId,refun
     await client.query(`UPDATE refunds SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[refundId,providerRef]);
     await client.query(`UPDATE payments SET status='REFUNDED',provider_ref=$2,updated_at=NOW() WHERE id=$1`,[paymentId,payment.provider_ref]);
     await client.query(`UPDATE jobs SET status=CASE WHEN provider_id IS NULL THEN 'PUBLISHED' ELSE 'ASSIGNED' END,updated_at=NOW() WHERE id=$1`,[jobId]);
+    await closeJobChatForJob(jobId, client);
     if (config.paymentProvider === 'internal') {
       if (breakdown.currency !== 'TOMAN') {
         const e = new Error('INTERNAL_CURRENCY_MISMATCH'); e.code = 'INTERNAL_CURRENCY_MISMATCH'; throw e;

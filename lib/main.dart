@@ -6,18 +6,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/auth/auth_controller.dart';
 import 'core/auth/auth_repository.dart';
+import 'core/auth/google_sign_in_service.dart';
+import 'core/chat/chat_repository.dart';
 import 'core/account/account_privacy_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/settings/settings_controller.dart';
 import 'core/storage/secure_store.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/telemetry/telemetry_service.dart';
+import 'core/recommendation/recommendation_profile_repository.dart';
+import 'core/opportunity/opportunity_agent_repository.dart';
+import 'core/marketplace/employer_candidate_matching_repository.dart';
+import 'core/financial/financial_insights_repository.dart';
+import 'core/jobs/job_satisfaction_repository.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/notifications/notification_repository.dart';
 import 'core/profile/profile_repository.dart';
 import 'core/uploads/upload_queue.dart';
+import 'core/theme/vazirmatn_loader.dart';
 import 'dart:ui';
 import 'core/theme/app_theme.dart';
+import 'core/ui/premium_components.dart';
 import 'core/router/app_router.dart';
 import 'core/marketplace/marketplace_repository.dart';
 import 'core/marketplace/saved_search_repository.dart';
@@ -30,12 +39,15 @@ import 'core/application/application_registry.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await loadVazirmatnFont();
   final settings = HopeSettingsController();
   await settings.load();
 
   final store = SecureStore();
   final api = ApiClient(store);
   final authRepository = ApiAuthRepository(api);
+  final googleSignIn = GoogleSignInService();
+  await googleSignIn.initialize();
   final profileRepository = ApiProfileRepository(api);
   final notificationRepository = ApiNotificationRepository(api);
   final telemetry = TelemetryService(store, baseUrl: api.baseUrl);
@@ -73,7 +85,14 @@ Future<void> main() async {
       ChangeNotifierProvider(create: (_) => ThemeController(settings)),
       ChangeNotifierProvider.value(value: auth),
       Provider<AuthRepository>.value(value: authRepository),
+      Provider<GoogleSignInService>.value(value: googleSignIn),
       Provider<ProfileRepository>.value(value: profileRepository),
+      Provider<RecommendationProfileRepository>(create: (_) => ApiRecommendationProfileRepository(api)),
+      Provider<OpportunityAgentRepository>(create: (_) => ApiOpportunityAgentRepository(api)),
+      Provider<EmployerCandidateMatchingRepository>(create: (_) => ApiEmployerCandidateMatchingRepository(api)),
+      Provider<ChatRepository>(create: (_) => ApiChatRepository(api)),
+      Provider<FinancialInsightsRepository>(create: (_) => ApiFinancialInsightsRepository(api)),
+      Provider<JobSatisfactionRepository>(create: (_) => ApiJobSatisfactionRepository(api)),
       Provider<NotificationRepository>.value(value: notificationRepository),
       Provider<MarketplaceRepository>(
           create: (_) => OfflineMarketplaceRepository(ApiMarketplaceRepository(api)),
@@ -100,6 +119,7 @@ Future<void> main() async {
           auth: context.read<AuthRepository>(),
           notifications: context.read<NotificationRepository>(),
           profile: context.read<ProfileRepository>(),
+          opportunityAgent: context.read<OpportunityAgentRepository>(),
           savedSearches: context.read<SavedSearchRepository>(),
         ),
       ),
@@ -159,6 +179,9 @@ class WorkMarketplaceApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
+        builder: (context, child) => PremiumAppCanvas(
+          child: child!,
+        ),
         home: Directionality(
           textDirection: isEn ? TextDirection.ltr : TextDirection.rtl,
           child: const AppRouter(),

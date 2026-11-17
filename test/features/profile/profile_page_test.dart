@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,11 +11,16 @@ import 'package:hope_mobile/core/settings/settings_controller.dart';
 import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/features/profile/profile_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/ui/hope_async_state.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
+  @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
   @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
@@ -29,18 +36,40 @@ class _ProfileRepo implements ProfileRepository {
   @override
   Future<HopeProviderProfile> getProviderProfile() async =>
       const HopeProviderProfile(
-          providerType: 'INDIVIDUAL',
-          capacity: '3',
-          verificationStatus: 'VERIFIED',
-          trustSignals: {'verified': true});
+        providerType: 'INDIVIDUAL',
+        capacity: 'OPEN',
+        verificationStatus: 'VERIFIED',
+        trustSignals: {'verified': true},
+      );
+
   @override
-  Future<List<HopeApplication>> listApplications() async => const [];
+  Future<List<HopeApplication>> listApplications() =>
+      throw UnimplementedError();
+
   @override
   Future<HopeApplication> withdrawApplication(String applicationId) =>
       throw UnimplementedError();
 }
 
-Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
+class _PendingProfileRepo extends _ProfileRepo {
+  final Completer<HopeProviderProfile> profileCompleter =
+      Completer<HopeProviderProfile>();
+
+  @override
+  Future<HopeProviderProfile> getProviderProfile() => profileCompleter.future;
+}
+
+Future<void> _pump(
+  WidgetTester tester, {
+  bool authenticated = false,
+  double width = 900,
+  ProfileRepository? repository,
+  bool settle = true,
+}) async {
+  tester.view.physicalSize = Size(width, 2400);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({});
   final settings = HopeSettingsController();
   await settings.load();
@@ -66,34 +95,116 @@ Future<void> _pump(WidgetTester tester, {bool authenticated = false}) async {
           ChangeNotifierProvider.value(value: settings),
           ChangeNotifierProvider(create: (_) => ThemeController(settings)),
           ChangeNotifierProvider.value(value: auth),
-          Provider<ProfileRepository>.value(value: _ProfileRepo()),
+          Provider<ProfileRepository>.value(value: repository ?? _ProfileRepo()),
         ],
         child: const ProfilePage(),
       ),
     ),
   ));
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
+  testWidgets(
+    'profile professional loading uses the canonical async state',
+    (tester) async {
+      final repo = _PendingProfileRepo();
+      await _pump(
+        tester,
+        authenticated: true,
+        repository: repo,
+        settle: false,
+      );
+
+      expect(find.byType(HopeAsyncState), findsOneWidget);
+      expect(find.text('در حال بارگذاری اطلاعات حرفه‌ای'), findsOneWidget);
+
+      repo.profileCompleter.complete(
+        const HopeProviderProfile(
+          providerType: 'INDIVIDUAL',
+          capacity: 'OPEN',
+          verificationStatus: 'VERIFIED',
+          trustSignals: {'verified': true},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('مجری مستقل'), findsOneWidget);
+    },
+  );
+
   testWidgets('guest profile explains sign-in requirement', (tester) async {
     await _pump(tester);
     expect(find.byType(ProfilePage), findsOneWidget);
     expect(find.textContaining('ورود'), findsWidgets);
   });
 
+  testWidgets('profile stays stable across the compact-to-medium device matrix',
+      (tester) async {
+    for (final width in const [320.0, 360.0, 390.0, 412.0, 600.0]) {
+      await _pump(tester, authenticated: true, width: width);
+
+      expect(find.text('کاربر'), findsWidgets, reason: 'profile missing at $width dp');
+      expect(find.text('فارسی'), findsOneWidget, reason: 'Persian control missing at $width dp');
+      expect(find.text('انگلیسی'), findsOneWidget, reason: 'English control missing at $width dp');
+      expect(tester.takeException(), isNull, reason: 'render exception at $width dp');
+    }
+  });
+
+  testWidgets('authenticated profile compresses secondary settings on narrow screens', (tester) async {
+    await _pump(tester, authenticated: true, width: 390);
+
+    final compactPanel = find.byKey(const ValueKey('profile-settings-panel'));
+    expect(compactPanel, findsOneWidget);
+    final compactHeight = tester.getSize(compactPanel).height;
+
+    await _pump(tester, authenticated: true, width: 600);
+    final expandedPanel = find.byKey(const ValueKey('profile-settings-panel'));
+    expect(expandedPanel, findsOneWidget);
+    final expandedHeight = tester.getSize(expandedPanel).height;
+
+    expect(compactHeight, lessThan(expandedHeight));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('authenticated profile uses a compact account summary',
+      (tester) async {
+    await _pump(tester, authenticated: true, width: 390);
+
+    final header = tester.widget<PremiumHeader>(
+      find.byType(PremiumHeader).first,
+    );
+    expect(header.dense, isTrue);
+
+    final summary = find.byKey(const ValueKey('profile-account-summary'));
+    expect(summary, findsOneWidget);
+    expect(tester.getSize(summary).height, lessThan(112));
+    expect(find.text('حساب فعال'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: summary,
+        matching: find.text('مجری مستقل'),
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('authenticated profile displays account and provider data',
       (tester) async {
     await _pump(tester, authenticated: true);
-    expect(find.text('کاربر'), findsOneWidget);
-    final individual = find.text('INDIVIDUAL');
-    var attempts = 0;
-    while (attempts < 6 && individual.evaluate().isEmpty) {
-      await tester.drag(find.byType(ListView), const Offset(0, -200));
-      await tester.pump();
-      attempts++;
-    }
-    expect(individual, findsOneWidget);
-    expect(find.textContaining('VERIFIED'), findsOneWidget);
+    expect(find.byType(PremiumPageFrame), findsOneWidget);
+    expect(find.text('کاربر'), findsWidgets);
+    expect(find.text('سلام، کاربر'), findsNothing);
+
+    expect(find.textContaining('مجری مستقل'), findsOneWidget);
+    expect(find.text('آماده همکاری'), findsWidgets);
+    expect(find.text('OPEN'), findsNothing);
+    expect(find.text('INDIVIDUAL'), findsNothing);
+    expect(find.text('تأییدشده'), findsWidgets);
+    expect(find.textContaining('VERIFIED'), findsNothing);
   });
 }

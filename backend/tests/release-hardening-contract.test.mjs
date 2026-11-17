@@ -155,6 +155,21 @@ test('staging S3 probe never asserts HTTPS against a non-TLS endpoint', () => {
   if (!endpointIsHttps) assert.notEqual(requireHttpsMatch[1], '1');
 });
 
+test('Main CI performance smoke is opt-in and cannot target Production', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  const start = workflow.indexOf('  staging-performance:');
+  assert.ok(start >= 0, 'Main CI staging performance job must exist');
+  const job = workflow.slice(start);
+  assert.match(job, /vars\.HOPE_ENABLE_STAGING_PERF_SMOKE == 'true'/);
+  assert.match(job, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+  assert.match(job, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(job, /PERF_BASE_URL:\s*https:\/\/v2hope-production-7e9e\.up\.railway\.app/);
+  assert.match(job, /PERF_BASE_URL is required; production fallback is disabled/);
+  assert.match(job, /must use HTTPS/);
+  assert.match(job, /Production host is forbidden/);
+  assert.match(workflow, /name: Verify Main CI performance smoke isolation[\s\S]*?node --test --test-name-pattern='Main CI performance smoke is opt-in and cannot target Production' tests\/release-hardening-contract\.test\.mjs/);
+});
+
 test('staging certification requires a real external staging base URL and does not fall back to localhost', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
   assert.match(workflow, /secrets:\s*\n\s*STAGING_BASE_URL:/);

@@ -12,7 +12,7 @@ test('admin platform exposes summary, users, status, audit and moderation routes
   for (const marker of [
     "parts[1]==='summary'", "parts[1]==='users'", "parts[3]==='status'",
     "parts[1]==='audit'", "parts[3]==='moderate'", "requireAdmin(await authUser(req))",
-    "SELF_SUSPEND_FORBIDDEN", "JOB_LOCKED", "ADMIN_USER_STATUS", "ADMIN_JOB_MODERATE"
+    "SELF_SUSPEND_FORBIDDEN", "JOB_LOCKED", "ADMIN_USER_STATUS", "ADMIN_JOB_MODERATE", "ADMIN_PERMISSION_DENIED", "/admin/admins/", "revoke-sessions"
   ]) assert.ok(source.includes(marker), `Missing admin control marker: ${marker}`);
 });
 

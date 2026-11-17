@@ -17,12 +17,12 @@ void main() {
     return settings;
   }
 
-  test('starts in ThemeMode.system, matching the settings default', () async {
+  test('starts in ThemeMode.dark, matching the dark-first HOPE default', () async {
     final settings = await loadedSettings();
     final theme = ThemeController(settings);
 
-    expect(theme.mode, ThemeMode.system);
-    expect(theme.isDark, isFalse);
+    expect(theme.mode, ThemeMode.dark);
+    expect(theme.isDark, isTrue);
   });
 
   test('picks up a persisted theme preference on construction', () async {
@@ -42,10 +42,10 @@ void main() {
       final settings = await loadedSettings();
       final theme = ThemeController(settings);
 
-      await theme.setMode(ThemeMode.dark);
+      await theme.setMode(ThemeMode.light);
 
-      expect(theme.mode, ThemeMode.dark);
-      expect(settings.theme, 'dark');
+      expect(theme.mode, ThemeMode.light);
+      expect(settings.theme, 'light');
     },
   );
 
@@ -57,24 +57,24 @@ void main() {
       var notifications = 0;
       theme.addListener(() => notifications++);
 
-      await theme.setMode(ThemeMode.system);
+      await theme.setMode(ThemeMode.dark);
 
       expect(notifications, 0);
     },
   );
 
   test(
-    'toggle flips between light and dark, treating system as light',
+    'toggle flips between dark and light, treating dark as the default',
     () async {
       final settings = await loadedSettings();
       final theme = ThemeController(settings);
-      expect(theme.mode, ThemeMode.system);
-
-      await theme.toggle();
       expect(theme.mode, ThemeMode.dark);
 
       await theme.toggle();
       expect(theme.mode, ThemeMode.light);
+
+      await theme.toggle();
+      expect(theme.mode, ThemeMode.dark);
     },
   );
 
@@ -84,9 +84,9 @@ void main() {
     final settings = await loadedSettings();
     final theme = ThemeController(settings);
 
-    await settings.setTheme('dark');
+    await settings.setTheme('light');
 
-    expect(theme.mode, ThemeMode.dark);
+    expect(theme.mode, ThemeMode.light);
   });
 
   test('dispose stops listening to settings without throwing', () async {
@@ -95,6 +95,6 @@ void main() {
     theme.dispose();
 
     // Should not throw or resurrect the disposed controller's listeners.
-    await settings.setTheme('dark');
+    await settings.setTheme('light');
   });
 }

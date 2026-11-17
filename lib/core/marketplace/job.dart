@@ -98,7 +98,26 @@ class HopeJob {
     return value is num ? value.toDouble() : double.tryParse('$value');
   }
 
-  bool get isRecommended => recommendationScore != null || recommendationReasons.isNotEmpty;
+  List<String> get aiRecommendationReasons {
+    final value = raw['aiRecommendationReasons'];
+    return value is List ? value.whereType<String>().toList(growable: false) : const [];
+  }
+
+  double? get aiRecommendationScore {
+    final value = raw['aiRecommendationScore'];
+    return value is num ? value.toDouble() : double.tryParse('$value');
+  }
+
+  double? get aiRecommendationConfidence {
+    final value = raw['aiRecommendationConfidence'];
+    return value is num ? value.toDouble() : double.tryParse('$value');
+  }
+
+  bool get isAiRecommended =>
+      raw['recommendationSource'] == 'HYBRID_AI' || aiRecommendationScore != null;
+
+  bool get isRecommended =>
+      recommendationScore != null || recommendationReasons.isNotEmpty;
 
   factory HopeJob.fromMap(Map<String, dynamic> map) {
     final kind =

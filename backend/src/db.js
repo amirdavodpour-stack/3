@@ -5,13 +5,13 @@ import { runMigrations } from './db/migrations.js';
 import { pool, getPool, withSqlTransaction, databaseHealth, closePool } from './db/runtime.js';
 import { CATEGORY_CATALOG } from './db/categories.js';
 
-const collections = ['users','providers','refreshTokens','resetTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches'];
+const collections = ['users','providers','refreshTokens','resetTokens','categories','jobs','offers','jobApplications','payments','ledgerEntries','settlements','refunds','paymentWebhooks','evidence','uploads','uploadIntents','audit','notifications','notificationPreferences','notificationDevices','analyticsEvents','crashReports','trustReports','savedSearches','recommendationProfiles'];
 const tableMap = {
   users: 'users', providers: 'providers', refreshTokens: 'refresh_tokens', resetTokens: 'reset_tokens',
   categories: 'categories', jobs: 'jobs', offers: 'offers', jobApplications: 'job_applications', payments: 'payments', evidence: 'evidence',
   uploads: 'uploads', uploadIntents: 'upload_intents', audit: 'audit_logs', ledgerEntries: 'ledger_entries', settlements: 'settlements', refunds: 'refunds', paymentWebhooks: 'payment_webhook_events',
   notifications: 'notifications', notificationPreferences: 'notification_preferences', notificationDevices: 'notification_devices',
-  analyticsEvents: 'analytics_events', crashReports: 'crash_reports', trustReports: 'trust_reports', savedSearches: 'saved_searches',
+  analyticsEvents: 'analytics_events', crashReports: 'crash_reports', trustReports: 'trust_reports', savedSearches: 'saved_searches', recommendationProfiles: 'recommendation_profiles',
 };
 const empty = Object.fromEntries(collections.map((name) => [name, []]));
 const isTestRuntime = process.env.NODE_ENV === 'test';

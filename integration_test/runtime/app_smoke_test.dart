@@ -14,6 +14,9 @@ import 'package:http/http.dart' as http;
 
 class _SmokeAuthRepository implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String email, String password) =>
       throw UnimplementedError();
   @override

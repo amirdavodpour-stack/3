@@ -92,9 +92,15 @@ class _FakeMarket implements MarketplaceRepository {
       const [];
 }
 
-Future<void> _pump(WidgetTester tester, _FakeMarket repo,
-    {HopeSettingsController? settings}) async {
-  tester.view.physicalSize = const Size(900, 3400);
+Future<void> _pump(
+  WidgetTester tester,
+  _FakeMarket repo, {
+  HopeSettingsController? settings,
+  double width = 900,
+  ThemeData? theme,
+  Locale locale = const Locale('en'),
+}) async {
+  tester.view.physicalSize = Size(width, 3400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -109,8 +115,8 @@ Future<void> _pump(WidgetTester tester, _FakeMarket repo,
       Provider<MarketplaceRepository>.value(value: repo),
     ],
     child: MaterialApp(
-      theme: ThemeData.light(),
-      locale: const Locale('en'),
+      theme: theme ?? ThemeData.light(),
+      locale: locale,
       supportedLocales: const [Locale('en'), Locale('fa')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -170,6 +176,48 @@ Future<void> _fillMissionForm(WidgetTester tester, {String? category}) async {
 }
 
 void main() {
+  testWidgets(
+      'selected type tile stays paint-safe in dark RTL runtime styling',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(
+      tester,
+      repo,
+      width: 390,
+      theme: ThemeData.dark(),
+      locale: const Locale('fa'),
+    );
+    await _open(tester);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'create job stays render-safe with keyboard inset and landscape orientation',
+      (tester) async {
+    final repo = _FakeMarket();
+
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 16);
+    addTearDown(tester.view.resetViewInsets);
+    addTearDown(tester.view.resetViewPadding);
+
+    await _pump(tester, repo, width: 360);
+    await _open(tester);
+    expect(tester.takeException(), isNull);
+
+    tester.view.resetViewInsets();
+    tester.view.physicalSize = const Size(800, 360);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(CreateJobPage), findsOneWidget);
+  });
+
   testWidgets('mission publish delegates create then publish and pops back',
       (tester) async {
     final repo = _FakeMarket();
@@ -199,8 +247,56 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Choose a professional category.'), findsOneWidget);
+    expect(find.text('Select a professional field.'), findsOneWidget);
     expect(repo.calls, isEmpty);
+  });
+
+  testWidgets(
+      'create opportunity type choices stay side by side at usable mobile width',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(tester, repo, width: 390);
+    await _open(tester);
+
+    final mission = find.text('Mission');
+    final job = find.text('Job');
+    expect(mission, findsOneWidget);
+    expect(job, findsOneWidget);
+    expect(
+      (tester.getTopLeft(job).dy - tester.getTopLeft(mission).dy).abs(),
+      lessThan(50),
+    );
+    expect(find.text('Step 1 of 5'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'compact create keeps type choices side by side while budget fields stack',
+      (tester) async {
+    final repo = _FakeMarket();
+    await _pump(tester, repo, width: 360);
+    await _open(tester);
+
+    expect(
+      (tester.getTopLeft(find.text('Job')).dy -
+              tester.getTopLeft(find.text('Mission')).dy)
+          .abs(),
+      lessThan(50),
+    );
+    expect(
+      tester.getTopLeft(find.text('Specialized')).dy,
+      greaterThan(tester.getBottomRight(find.text('Public')).dy),
+    );
+
+    final minField = find.widgetWithText(TextField, 'Minimum pay');
+    final maxField = find.widgetWithText(TextField, 'Maximum pay');
+    expect(minField, findsOneWidget);
+    expect(maxField, findsOneWidget);
+    expect(
+      tester.getTopLeft(maxField).dy,
+      greaterThan(tester.getBottomRight(minField).dy),
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('switching types swaps price fields, fee copy and job deadline',
@@ -238,7 +334,7 @@ void main() {
     await tester.tap(find.text('Publish opportunity'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Set an application deadline for jobs.'), findsOneWidget);
+    expect(find.text('Set the application deadline.'), findsOneWidget);
     expect(repo.calls, isEmpty);
 
     // With a deadline the job publishes.
@@ -293,7 +389,7 @@ void main() {
     await tester.tap(find.text('Publish opportunity'));
     await tester.pumpAndSettle();
 
-    expect(find.text('The server did not return data. Try again.'),
+    expect(find.text('No data was returned by the server. Please try again.'),
         findsOneWidget);
     // Still on the form: the pop only happens on success.
     expect(find.byType(CreateJobPage), findsOneWidget);

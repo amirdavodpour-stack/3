@@ -17,7 +17,7 @@ void main() {
       await settings.load();
       expect(settings.isLoading, isFalse);
       expect(settings.language, 'fa');
-      expect(settings.theme, 'system');
+      expect(settings.theme, 'dark');
       expect(settings.city, 'تهران');
       expect(settings.locationEnabled, isFalse);
       expect(settings.notifications, isTrue);

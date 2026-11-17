@@ -11,10 +11,15 @@ import 'package:hope_mobile/core/storage/secure_store.dart';
 import 'package:hope_mobile/core/theme/theme_controller.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/features/home/home_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
+import 'package:hope_mobile/core/branding/widgets/hope_logo.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepo implements AuthRepository {
+  @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
   @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
@@ -85,18 +90,82 @@ void main() {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('HOPE Pulse'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hope-menu-button')),
+      findsOneWidget,
+    );
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.byType(HopeNavigationGlyph), findsWidgets);
+    final selectedHome = tester.widget<HopeNavigationGlyph>(
+      find.byKey(const ValueKey('hope-nav-home-selected')),
+    );
+    expect(selectedHome.selected, isTrue);
+    final unselectedExplore = tester.widget<HopeNavigationGlyph>(
+      find.byKey(const ValueKey('hope-nav-explore')),
+    );
+    expect(unselectedExplore.selected, isFalse);
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('ثبت فرصت جدید'), findsNothing);
   });
 
   testWidgets(
-      'guest cannot open posting flow directly and is prompted to sign in',
+      'guest posting remains available from the drawer and is guarded by sign-in',
       (tester) async {
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
-    final fab = find.byType(FloatingActionButton);
-    expect(fab, findsOneWidget);
-    await tester.tap(fab);
+
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
     await tester.pumpAndSettle();
+
+    expect(find.text('ثبت فرصت جدید'), findsOneWidget);
+    await tester.tap(find.text('ثبت فرصت جدید'));
+    await tester.pumpAndSettle();
+    expect(find.text('ورود'), findsOneWidget);
+    expect(find.text('ساخت حساب'), findsOneWidget);
+  });
+
+  testWidgets('desktop home uses the premium navigation rail',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PremiumNavigationRail), findsOneWidget);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  testWidgets('wide desktop rail exposes the HOPE wordmark',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    final logo = tester.widget<HopeLogo>(find.byType(HopeLogo));
+    expect(logo.showWordmark, isTrue);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+
+  testWidgets('guest menu posting action is guarded by sign-in',
+      (tester) async {
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('hope-menu-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ثبت فرصت جدید'));
+    await tester.pumpAndSettle();
+
     expect(find.text('ورود'), findsOneWidget);
     expect(find.text('ساخت حساب'), findsOneWidget);
   });

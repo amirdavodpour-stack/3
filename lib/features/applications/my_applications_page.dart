@@ -6,7 +6,10 @@ import '../../core/application/application_registry_context.dart';
 import '../../core/marketplace/application.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/router/app_routes.dart';
+import '../../core/ui/hope_async_state.dart';
 import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_feedback.dart';
+import '../../core/theme/hope_v2_design.dart';
 
 class MyApplicationsPage extends StatefulWidget {
   const MyApplicationsPage({super.key});
@@ -18,6 +21,8 @@ class MyApplicationsPage extends StatefulWidget {
 class _MyApplicationsPageState extends State<MyApplicationsPage> {
   List<HopeApplication> _items = const [];
   bool _loading = true;
+  String? _loadError;
+  int _loadRequestId = 0;
   String _filter = 'ALL';
   String? _busyId;
 
@@ -26,6 +31,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   String _t(String fa, String en) =>
       Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
+  bool get _isEnglish =>
+      Localizations.localeOf(context).languageCode == 'en';
+
   @override
   void initState() {
     super.initState();
@@ -33,21 +41,33 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (!mounted) return;
+    final requestId = ++_loadRequestId;
+    final hasExistingItems = _items.isNotEmpty;
+    setState(() {
+      _loadError = null;
+      if (!hasExistingItems) _loading = true;
+    });
     try {
       final items = await _registry.listApplications();
-      if (!mounted) return;
+      if (!mounted || requestId != _loadRequestId) return;
       setState(() {
         _items = items;
         _loading = false;
+        _loadError = null;
       });
     } catch (error) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(error,
-            fallback: _t('درخواست‌ها قابل دریافت نیستند.', 'Could not load applications.')))),
-      );
+      if (!mounted || requestId != _loadRequestId) return;
+      setState(() {
+        _loading = false;
+        _loadError = apiErrorMessage(
+          error,
+          fallback: _t(
+            'درخواست‌ها قابل دریافت نیستند.',
+            'Could not load applications.',
+          ),
+        );
+      });
     }
   }
 
@@ -86,10 +106,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
       await _load();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(error,
-            fallback: _t('پس گرفتن درخواست ناموفق بود.', 'Could not withdraw application.')))),
-      );
+      HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('پس گرفتن درخواست ناموفق بود.', 'Could not withdraw application.')), tone: HopeFeedbackTone.error);
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -111,6 +128,121 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     }
   }
 
+  List<HopeApplication> _activeApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where(
+            (item) => const {
+              'PENDING',
+              'SHORTLISTED',
+              'FORWARDED',
+              'INTERVIEW',
+              'ACCEPTED',
+            }.contains(item.status.toUpperCase()),
+          )
+          .toList(growable: false);
+
+  List<HopeApplication> _decisionApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where((item) => item.status.toUpperCase() == 'OFFERED')
+          .toList(growable: false);
+
+  List<HopeApplication> _closedApplicationList(
+    List<HopeApplication> items,
+  ) =>
+      items
+          .where(
+            (item) => const {
+              'REJECTED',
+              'WITHDRAWN',
+            }.contains(item.status.toUpperCase()),
+          )
+          .toList(growable: false);
+
+  List<Widget> _applicationSections(
+    BuildContext context,
+    List<HopeApplication> items,
+  ) {
+    final activeApplications = _activeApplicationList(items);
+    final decisionApplications = _decisionApplicationList(items);
+    final closedApplications = _closedApplicationList(items);
+    final sections = <Widget>[];
+
+    void addSection(
+      String title,
+      String subtitle,
+      List<HopeApplication> rows,
+      HopeProductDomain domain,
+    ) {
+      if (rows.isEmpty) return;
+      if (sections.isNotEmpty) {
+        sections.add(const SizedBox(height: 10));
+      }
+      sections.add(
+        PremiumSectionHeader(
+          page: HopePageId.myApplications,
+          domain: domain,
+          title: title,
+          subtitle: subtitle,
+        ),
+      );
+      sections.add(const SizedBox(height: 10));
+      sections.addAll(rows.map(_applicationCard));
+    }
+
+    addSection(
+      _t('در حال پیگیری', 'In progress'),
+      _t(
+        'درخواست‌هایی که هنوز در چرخه انتخاب و همکاری هستند.',
+        'Applications still moving through selection and collaboration.',
+      ),
+      activeApplications,
+      HopeProductDomain.work,
+    );
+    addSection(
+      _t('نیازمند تصمیم', 'Needs decision'),
+      _t(
+        'پیشنهادهایی که به اقدام مستقیم شما نیاز دارند.',
+        'Offers that require a direct decision from you.',
+      ),
+      decisionApplications,
+      HopeProductDomain.work,
+    );
+    addSection(
+      _t('بسته‌شده', 'Closed'),
+      _t(
+        'درخواست‌هایی که دیگر اقدام کاری روی آن‌ها باز نیست.',
+        'Applications that no longer have an active work action.',
+      ),
+      closedApplications,
+      HopeProductDomain.work,
+    );
+
+    final known = {
+      ...activeApplications.map((item) => item.id),
+      ...decisionApplications.map((item) => item.id),
+      ...closedApplications.map((item) => item.id),
+    };
+    final uncategorized = items
+        .where((item) => !known.contains(item.id))
+        .toList(growable: false);
+    if (uncategorized.isNotEmpty) {
+      addSection(
+        _t('نیازمند بررسی', 'Needs review'),
+        _t(
+          'وضعیتی که در چرخهٔ استاندارد درخواست تعریف نشده است.',
+          'A status outside the standard application lifecycle.',
+        ),
+        uncategorized,
+        HopeProductDomain.work,
+      );
+    }
+    return sections;
+  }
+
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
@@ -120,22 +252,42 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_t('درخواست‌های من', 'My applications'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      body: PremiumPageFrame(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 72),
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: EdgeInsets.zero,
           children: [
             PremiumHeader(
-              eyebrow: _t('مسیر حرفه‌ای', 'PROFESSIONAL PATH'),
-              title: _t('همه درخواست‌ها در یک نما', 'Every application in one view'),
+              page: HopePageId.myApplications,
+              domain: HopeProductDomain.work,
+              dense: true,
+              eyebrow: _t('درخواست‌ها', 'APPLICATIONS'),
+              title: _t('درخواست‌های من', 'My applications'),
               subtitle: _t(
-                'وضعیت هر درخواست را دنبال کن و فقط در وضعیت‌های مجاز آن را پس بگیر.',
+                'وضعیت هر درخواست را بررسی کنید و فقط در وضعیت‌های مجاز آن را پس بگیرید.',
                 'Track every application and withdraw only while its workflow still allows it.',
               ),
-              trailing: const HopeIconTile(Icons.assignment_rounded, size: 50, filled: true),
+              trailing: Wrap(
+                spacing: 8,
+                children: [
+                  PremiumIconButton(
+                    icon: Localizations.localeOf(context).languageCode == 'en'
+                        ? HopeV2Icons.arrowLeft
+                        : HopeV2Icons.arrowRight,
+                    tooltip: _t('بازگشت', 'Back'),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  PremiumIconButton(
+                    icon: HopeV2Icons.refresh,
+                    tooltip: _t('بازخوانی', 'Refresh'),
+                    onPressed: _loading ? null : _load,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             if (!_loading)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -148,25 +300,49 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               id: '', jobId: '', jobTitle: '', jobCity: null,
                               jobKind: '', resumeText: '', skills: '',
                               status: s, createdAt: null, updatedAt: null,
-                            ).statusLabel, counts[s]!)),
+                            ).statusLabelFor(english: _isEnglish), counts[s]!)),
                   ],
                 ),
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (_loading)
-              const PremiumPanel(
-                child: SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
+              HopeAsyncState(
+                kind: HopeStateKind.loading,
+                title: _t(
+                  'در حال بارگذاری درخواست‌ها',
+                  'Loading applications',
+                ),
+                message: _t(
+                  'آخرین وضعیت درخواست‌ها و چرخه همکاری در حال دریافت است.',
+                  'The latest application and collaboration state is loading.',
+                ),
               )
+            else if (_loadError != null)
+              ...[
+                HopeAsyncState(
+                  kind: HopeStateKind.error,
+                  title: _t(
+                    'درخواست‌ها قابل دریافت نیستند.',
+                    'Could not load applications.',
+                  ),
+                  message: _loadError!,
+                  action: FilledButton(
+                    onPressed: _load,
+                    child: Text(_t('تلاش دوباره', 'Retry')),
+                  ),
+                ),
+                ..._applicationSections(context, visible),
+              ]
             else if (visible.isEmpty)
               PremiumPanel(
                 padding: const EdgeInsets.all(26),
                 child: Column(
                   children: [
-                    const Icon(Icons.inbox_outlined, size: 40),
+                    const HopeIcon(HopeV2Icons.mission, size: 40),
                     const SizedBox(height: 12),
                     Text(
                       _filter == 'ALL'
-                          ? _t('هنوز درخواستی ثبت نکرده‌ای.', 'You have not submitted any applications yet.')
+                          ? _t('هنوز درخواستی ثبت نکرده‌اید.', 'You have not submitted any applications yet.')
                           : _t('در این وضعیت درخواستی وجود ندارد.', 'No applications match this status.'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
@@ -175,8 +351,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               )
             else
-              ...visible.map(_applicationCard),
-          ],
+              ..._applicationSections(context, visible),
+            ],
+          ),
         ),
       ),
     );
@@ -185,10 +362,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _filterChip(String value, String label, int count) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
-      child: ChoiceChip(
+      child: PremiumFilterChip(
+        label: '$label  $count',
         selected: _filter == value,
-        label: Text('$label  $count'),
-        onSelected: (_) => setState(() => _filter = value),
+        onTap: () => setState(() => _filter = value),
+        color: _statusColor(context, value),
       ),
     );
   }
@@ -196,9 +374,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
   Widget _applicationCard(HopeApplication item) {
     final color = _statusColor(context, item.status);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: PremiumPanel(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -207,11 +385,11 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
               children: [
                 HopeIconTile(
                   item.status == 'ACCEPTED'
-                      ? Icons.check_circle_rounded
-                      : Icons.assignment_outlined,
+                      ? HopeV2Icons.completed
+                      : HopeV2Icons.mission,
                   filled: true,
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,10 +401,9 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                         spacing: 7,
                         runSpacing: 6,
                         children: [
-                          StatusPill(item.statusLabel, color: color, icon: Icons.circle),
+                          PremiumTag(icon: HopeV2Icons.activity, label: item.statusLabelFor(english: _isEnglish), color: color),
                           if (item.jobCity?.isNotEmpty == true)
-                            StatusPill(item.jobCity!, color: Theme.of(context).colorScheme.outline,
-                                icon: Icons.location_on_outlined),
+                            PremiumTag(icon: HopeV2Icons.location, label: item.jobCity!, color: Theme.of(context).colorScheme.outline),
                         ],
                       ),
                     ],
@@ -234,9 +411,24 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 9),
             _timeline(item),
-            const SizedBox(height: 10),
+            if (item.status.toUpperCase() == 'ACCEPTED' &&
+                item.jobId.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    HopeRoutes.jobChat(item.jobId),
+                  ),
+                  icon: const HopeIcon(HopeV2Icons.message, size: 19),
+                  label: Text(_t('گفتگوی همکاری', 'Collaboration chat')),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -250,24 +442,22 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                               Navigator.push(context, HopeRoutes.jobDetail(job));
                             } catch (error) {
                               if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(apiErrorMessage(error,
-                                    fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')))),
-                              );
+                              HopeFeedback.show(context, apiErrorMessage(error, fallback: _t('فرصت در دسترس نیست.', 'Opportunity is unavailable.')), tone: HopeFeedbackTone.error);
                             }
                           },
-                    icon: const Icon(Icons.open_in_new_rounded),
+                    icon: const HopeIcon(HopeV2Icons.arrowRight, size: 19),
                     label: Text(_t('مشاهده فرصت', 'View opportunity')),
                   ),
                 ),
                 if (item.canWithdraw) ...[
                   const SizedBox(width: 8),
                   IconButton(
+                    key: ValueKey('application-withdraw-${item.id}'),
                     tooltip: _t('پس گرفتن', 'Withdraw'),
                     onPressed: _busyId == item.id ? null : () => _withdraw(item),
                     icon: _busyId == item.id
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.undo_rounded),
+                        : const HopeIcon(HopeV2Icons.transferOut, size: 19),
                   ),
                 ],
               ],

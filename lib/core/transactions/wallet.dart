@@ -8,6 +8,10 @@ class HopeWallet {
     required this.status,
     this.createdAt,
     this.updatedAt,
+    this.escrowBalance = 0,
+    this.pendingWithdrawalBalance = 0,
+    this.otherLockedBalance = 0,
+    this.totalBalanceFromServer,
   });
 
   final String id;
@@ -18,8 +22,12 @@ class HopeWallet {
   final String status;
   final String? createdAt;
   final String? updatedAt;
+  final int escrowBalance;
+  final int pendingWithdrawalBalance;
+  final int otherLockedBalance;
+  final int? totalBalanceFromServer;
 
-  int get totalBalance => availableBalance + lockedBalance;
+  int get totalBalance => totalBalanceFromServer ?? (availableBalance + lockedBalance);
   bool get isActive => status == 'ACTIVE';
 
   factory HopeWallet.fromMap(Map<String, dynamic> map) => HopeWallet(
@@ -31,6 +39,10 @@ class HopeWallet {
         status: '${map['status'] ?? 'ACTIVE'}'.toUpperCase(),
         createdAt: map['createdAt'] == null ? null : '${map['createdAt']}',
         updatedAt: map['updatedAt'] == null ? null : '${map['updatedAt']}',
+        escrowBalance: _integer(map['escrowBalance']),
+        pendingWithdrawalBalance: _integer(map['pendingWithdrawalBalance']),
+        otherLockedBalance: _integer(map['otherLockedBalance']),
+        totalBalanceFromServer: map['totalBalance'] == null ? null : _integer(map['totalBalance']),
       );
 
   static int _integer(dynamic value) {

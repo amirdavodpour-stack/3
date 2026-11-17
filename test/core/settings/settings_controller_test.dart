@@ -11,7 +11,7 @@ void main() {
 
   group('load', () {
     test(
-      'starts in a loading state and flips to loaded with defaults',
+      'starts in a loading state and flips to loaded with dark-first defaults',
       () async {
         final settings = HopeSettingsController();
         expect(settings.isLoading, isTrue);
@@ -20,7 +20,7 @@ void main() {
 
         expect(settings.isLoading, isFalse);
         expect(settings.language, 'fa');
-        expect(settings.theme, 'system');
+        expect(settings.theme, 'dark');
         expect(settings.city, 'تهران');
         expect(settings.locationEnabled, isFalse);
         expect(settings.notifications, isTrue);
@@ -160,7 +160,6 @@ void main() {
 
   group('nearestCity', () {
     test('returns the city whose coordinates are closest', () {
-      // Tehran's own coordinates should resolve to Tehran itself.
       expect(HopeSettingsController.nearestCity(35.6892, 51.3890), 'تهران');
     });
 

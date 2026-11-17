@@ -2,7 +2,7 @@ import { withSqlTransaction } from '../db.js';
 import { requirePool } from './context.js';
 import { userFromRow } from './mappers.js';
 
-const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt"`;
+const userSelect = `id,email,password_hash,password_hash AS "passwordHash",display_name AS "displayName",role,status,session_version,created_at AS "createdAt",google_subject AS "googleSubject"`;
 export async function insertRefreshToken(token) {
   const { rows } = await requirePool().query(`INSERT INTO refresh_tokens(id,user_id,token_hash,family_id,expires_at,created_at,revoked_at,replaced_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`, [token.id,token.userId,token.tokenHash,token.familyId,token.expiresAt,token.createdAt,token.revokedAt,token.replacedBy]);
   return { id:rows[0].id, userId:rows[0].user_id, tokenHash:rows[0].token_hash, familyId:rows[0].family_id, expiresAt:rows[0].expires_at?.toISOString?.() ?? rows[0].expires_at, createdAt:rows[0].created_at?.toISOString?.() ?? rows[0].created_at, revokedAt:rows[0].revoked_at ? (rows[0].revoked_at.toISOString?.() ?? rows[0].revoked_at) : null, replacedBy:rows[0].replaced_by };

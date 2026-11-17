@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/hope_v2_design.dart';
-import '../theme/app_theme.dart';
 import 'premium_components.dart';
+import 'components.dart';
 
 class PremiumLifecycleStep {
   const PremiumLifecycleStep({
@@ -14,7 +14,7 @@ class PremiumLifecycleStep {
   });
 
   final String label;
-  final IconData icon;
+  final Object icon;
   final bool active;
   final bool complete;
   final String? caption;
@@ -26,19 +26,22 @@ class PremiumLifecycle extends StatelessWidget {
     required this.steps,
     this.title,
     this.subtitle,
+    this.compact = false,
   });
 
   final List<PremiumLifecycleStep> steps;
   final String? title;
   final String? subtitle;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     if (steps.isEmpty) return const SizedBox.shrink();
     return PremiumPanel(
       semanticLabel: title,
-      padding: const EdgeInsets.all(HopeV2Spacing.lg),
+      padding: EdgeInsets.all(compact ? HopeV2Spacing.md : HopeV2Spacing.lg),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[
@@ -47,12 +50,12 @@ class PremiumLifecycle extends StatelessWidget {
               const SizedBox(height: HopeV2Spacing.xs),
               Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
             ],
-            const SizedBox(height: HopeV2Spacing.lg),
+            SizedBox(height: compact ? 6 : HopeV2Spacing.lg),
           ],
           ...List.generate(steps.length, (index) {
             final step = steps[index];
             final last = index == steps.length - 1;
-            return _StepRow(step: step, last: last);
+            return _StepRow(step: step, last: last, compact: compact);
           }),
         ],
       ),
@@ -61,27 +64,32 @@ class PremiumLifecycle extends StatelessWidget {
 }
 
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step, required this.last});
+  const _StepRow({required this.step, required this.last, required this.compact});
 
   final PremiumLifecycleStep step;
   final bool last;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final highlighted = step.active || step.complete;
-    final iconColor = highlighted ? AppColors.primary : AppColors.muted;
+    final iconColor = step.complete
+        ? HopeV2Colors.success
+        : step.active
+            ? Theme.of(context).colorScheme.primary
+            : HopeV2Colors.muted;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 38,
+          width: compact ? 30 : 38,
           child: Column(
             children: [
               Semantics(
                 label: step.label,
                 child: Container(
-                  width: 34,
-                  height: 34,
+                  width: compact ? 22 : 34,
+                  height: compact ? 22 : 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: highlighted
@@ -93,9 +101,9 @@ class _StepRow extends StatelessWidget {
                           : Theme.of(context).dividerColor,
                     ),
                   ),
-                  child: Icon(
+                  child: HopeIcon(
                     step.complete ? Icons.check_rounded : step.icon,
-                    size: 18,
+                    size: compact ? 13 : 18,
                     color: iconColor,
                   ),
                 ),
@@ -103,17 +111,17 @@ class _StepRow extends StatelessWidget {
               if (!last)
                 Container(
                   width: 2,
-                  height: 34,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  height: compact ? 8 : 34,
+                  margin: EdgeInsets.symmetric(vertical: compact ? 1 : 4),
                   color: Theme.of(context).dividerColor,
                 ),
             ],
           ),
         ),
-        const SizedBox(width: HopeV2Spacing.md),
+        SizedBox(width: compact ? HopeV2Spacing.sm : HopeV2Spacing.md),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: HopeV2Spacing.lg),
+            padding: EdgeInsets.only(bottom: compact ? 2 : HopeV2Spacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

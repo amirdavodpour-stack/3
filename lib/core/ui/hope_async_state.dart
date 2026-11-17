@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../network/api_client.dart';
 import '../theme/hope_v2_design.dart';
 
 enum HopeStateKind {
@@ -22,6 +23,20 @@ enum HopeStateKind {
   success,
 }
 
+HopeStateKind hopeStateKindForError(Object error) {
+  if (error is ApiException) {
+    return switch (error.code) {
+      'UNAUTHENTICATED' || 'INVALID_TOKEN' => HopeStateKind.unauthorized,
+      'FORBIDDEN' => HopeStateKind.forbidden,
+      'VALIDATION_ERROR' => HopeStateKind.validation,
+      'RATE_LIMITED' => HopeStateKind.rateLimited,
+      'NETWORK_ERROR' || 'TIMEOUT' => HopeStateKind.offline,
+      _ => HopeStateKind.error,
+    };
+  }
+  return HopeStateKind.error;
+}
+
 /// Shared semantic state presentation for async/product surfaces.
 /// Screens should provide truthful copy and an action only when one exists.
 class HopeAsyncState extends StatelessWidget {
@@ -40,6 +55,7 @@ class HopeAsyncState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final config = switch (kind) {
       HopeStateKind.initial => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.onSurfaceVariant),
       HopeStateKind.loading => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
@@ -55,13 +71,14 @@ class HopeAsyncState extends StatelessWidget {
       HopeStateKind.rateLimited => (Icons.hourglass_top_rounded, Theme.of(context).colorScheme.secondary),
       HopeStateKind.retrying => (Icons.sync_rounded, Theme.of(context).colorScheme.primary),
       HopeStateKind.permission => (Icons.lock_outline_rounded, Theme.of(context).colorScheme.secondary),
-      HopeStateKind.pending => (Icons.schedule_rounded, Colors.orange.shade700),
+      HopeStateKind.pending => (Icons.schedule_rounded, HopeV2SemanticColors.warning(context)),
       HopeStateKind.submitting => (Icons.hourglass_empty_rounded, Theme.of(context).colorScheme.primary),
       HopeStateKind.success => (Icons.check_circle_outline_rounded, Theme.of(context).colorScheme.tertiary),
     };
     return Semantics(
       liveRegion: true,
       container: true,
+      explicitChildNodes: true,
       label: '$title. $message',
       child: Center(
         child: ConstrainedBox(
@@ -71,7 +88,11 @@ class HopeAsyncState extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (kind == HopeStateKind.loading || kind == HopeStateKind.refreshing || kind == HopeStateKind.retrying || kind == HopeStateKind.submitting)
+                if (!reduceMotion &&
+                    (kind == HopeStateKind.loading ||
+                        kind == HopeStateKind.refreshing ||
+                        kind == HopeStateKind.retrying ||
+                        kind == HopeStateKind.submitting))
                   const SizedBox(
                     width: 28,
                     height: 28,

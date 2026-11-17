@@ -11,6 +11,7 @@ import '../profile/profile_repository.dart';
 import '../transactions/transaction_repository.dart';
 import '../transactions/wallet_repository.dart';
 import '../marketplace/saved_search_repository.dart';
+import '../opportunity/opportunity_agent_repository.dart';
 
 /// Resolves the application registry from the widget tree.
 ///
@@ -30,6 +31,7 @@ ApplicationRegistry applicationRegistryOf(BuildContext context) {
     auth: context.read<AuthRepository?>(),
     notifications: context.read<NotificationRepository?>(),
     profile: context.read<ProfileRepository?>(),
+    opportunityAgent: context.read<OpportunityAgentRepository?>(),
     savedSearches: context.read<SavedSearchRepository?>(),
   );
 }

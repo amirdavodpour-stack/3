@@ -48,6 +48,9 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get --enforce-lockfile
 
+      - name: Verify HOPE design/runtime guardrails
+        run: bash tools/verify-design-quality.sh
+
       - name: Resolve staging host for Android guest fallback
         id: resolve_staging_host
         shell: bash

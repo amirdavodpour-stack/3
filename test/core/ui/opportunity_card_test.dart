@@ -1,0 +1,603 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hope_mobile/core/marketplace/job.dart';
+import 'package:hope_mobile/core/ui/opportunity_card.dart';
+import 'package:hope_mobile/l10n/generated/app_localizations.dart';
+
+void main() {
+  testWidgets(
+      'standard opportunity cards expose the Wave F 2.0 decision anatomy',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-standard-v2',
+      'title': 'طراحی اپ محصول',
+      'description': 'این توضیح در کارت اسکن نمایش داده نمی‌شود.',
+      'categoryId': 'design',
+      'category': 'طراحی محصول',
+      'jobType': 'FIXED',
+      'budgetMin': '1000000',
+      'budgetMax': '1500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'distanceKm': 1.5,
+      'recommendationScore': 0.91,
+      'companyName': 'استودیو هُپ',
+      'workMode': 'REMOTE',
+      'imageUrl': 'https://example.com/opportunity.jpg',
+      'recommendationReasons': ['SKILL_MATCH', 'CATEGORY_MATCH'],
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.standard,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('طراحی اپ محصول'), findsOneWidget);
+    expect(find.text('استودیو هُپ'), findsOneWidget);
+    expect(find.text('91% تطابق'), findsOneWidget);
+    expect(find.text('دورکاری'), findsOneWidget);
+    expect(find.text('تهران'), findsOneWidget);
+    expect(find.text('1.5 km'), findsOneWidget);
+    expect(find.text('۱٬۰۰۰٬۰۰۰ تومان تا ۱٬۵۰۰٬۰۰۰ تومان'), findsOneWidget);
+    expect(find.text('طراحی محصول'), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-card-cta')), findsOneWidget);
+    expect(find.text('دلایل تطابق'), findsNothing);
+    expect(find.text('این توضیح در کارت اسکن نمایش داده نمی‌شود.'), findsNothing);
+    expect(
+      tester.getSize(find.byType(OpportunityCard)).height,
+      lessThan(280),
+    );
+  });
+
+  testWidgets('featured opportunity media header gets an editorial focal height on mobile',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-editorial',
+      'title': 'طراحی رابط کاربری',
+      'description': 'Editorial focal surface contract.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.94,
+      'imageUrl': 'https://example.com/editorial.jpg',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.featured,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      tester.getSize(find.byKey(const ValueKey('opportunity-media-header'))).height,
+      greaterThanOrEqualTo(100),
+    );
+  });
+
+  testWidgets('featured opportunity metadata stays overflow-safe at narrow card width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-narrow',
+      'title': 'طراحی رابط موبایل حرفه‌ای',
+      'description': 'Narrow featured metadata regression.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 224,
+              child: OpportunityCard(
+                job: job,
+                variant: OpportunityCardVariant.featured,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'discovery featured scan card keeps the focal accent without expanding first-fold height',
+    (tester) async {
+      final job = HopeJob.fromMap({
+        'id': 'job-featured-scan',
+        'title': 'توسعه‌دهنده Flutter',
+        'description': 'Discovery featured scan contract.',
+        'categoryId': 'software',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'kind': 'JOB',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'recommendationScore': 0.94,
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.featuredScan,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('توسعه‌دهنده Flutter'), findsOneWidget);
+      expect(find.text('94% تطابق'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(OpportunityCard)).height,
+        lessThan(280),
+      );
+    },
+  );
+
+  testWidgets('standard opportunity metadata stays overflow-safe at narrow card width',
+      (tester) async {
+    tester.view.physicalSize = const Size(440, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final job = HopeJob.fromMap({
+      'id': 'job-standard-narrow',
+      'title': 'توسعه Flutter برای محصول جدید',
+      'description': 'Narrow standard metadata regression.',
+      'categoryId': 'software',
+      'category': 'نرم افزار',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'budgetMax': '2500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'city': 'تهران',
+      'recommendationScore': 0.87,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: OpportunityCard(job: job),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('recommended opportunity exposes its real match score signal',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-match-score',
+      'title': 'Product designer',
+      'description': 'A real recommendation signal test.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'HOURLY',
+      'budgetMin': '1000000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(body: OpportunityCard(job: job)),
+      ),
+    );
+
+    expect(find.text('94% match'), findsOneWidget);
+  });
+
+  testWidgets('featured job opportunity uses the HOPE purple focal accent',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-featured-job-accent',
+      'title': 'Product designer',
+      'description': 'Featured accent contract.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '1500000',
+      'kind': 'JOB',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+      'recommendationScore': 0.94,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(brightness: Brightness.dark),
+        home: Scaffold(
+          body: OpportunityCard(
+            job: job,
+            variant: OpportunityCardVariant.featured,
+          ),
+        ),
+      ),
+    );
+
+    const primary = Color(0xFF6366F1);
+    final focalGradientFound = tester.widgetList<Container>(
+      find.byType(Container),
+    ).any((container) {
+      final decoration = container.decoration;
+      if (decoration is! BoxDecoration) return false;
+      final gradient = decoration.gradient;
+      if (gradient is! LinearGradient || gradient.colors.isEmpty) {
+        return false;
+      }
+      return gradient.colors.first == primary.withValues(alpha: .10);
+    });
+
+    expect(focalGradientFound, isTrue);
+  });
+  testWidgets('opportunity card groups large Toman amounts for readability',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-2',
+      'title': 'طراحی اپ',
+      'description': 'یک توضیح کافی برای نمایش فرصت.',
+      'categoryId': 'design',
+      'category': 'طراحی',
+      'jobType': 'FIXED',
+      'budgetMin': '1000000',
+      'budgetMax': '1500000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: OpportunityCard(job: job),
+        ),
+      ),
+    );
+
+    final amountTexts = find
+        .byWidgetPredicate(
+          (widget) =>
+              widget is Text && (widget.data?.contains('تومان') ?? false),
+        )
+        .evaluate()
+        .map((element) => (element.widget as Text).data)
+        .whereType<String>()
+        .toList();
+    expect(amountTexts, contains('۱٬۰۰۰٬۰۰۰ تومان تا ۱٬۵۰۰٬۰۰۰ تومان'));
+  });
+
+  testWidgets('opportunity card labels mission budget in Toman',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-1',
+      'title': 'طراحی صفحه',
+      'description': 'یک توضیح کافی برای نمایش فرصت.',
+      'categoryId': 'design',
+      'category': 'طراحی',
+      'jobType': 'FIXED',
+      'budgetMin': '100000',
+      'budgetMax': '200000',
+      'kind': 'MISSION',
+      'visibility': 'PUBLIC',
+      'status': 'OPEN',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: Scaffold(
+          body: OpportunityCard(job: job),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('تومان'), findsOneWidget);
+  });
+
+
+  testWidgets('opportunity card localizes canonical labels in both locales',
+      (tester) async {
+    final job = HopeJob.fromMap({
+      'id': 'job-localized-card',
+      'title': '',
+      'description': 'Localized card test.',
+      'categoryId': 'design',
+      'category': 'Design',
+      'jobType': 'FIXED',
+      'budgetMin': '100000',
+      'budgetMax': '200000',
+      'kind': 'MISSION',
+      'visibility': 'SPECIALIZED',
+      'status': 'OPEN',
+      'recommendationReasons': [
+        'SKILL_MATCH',
+        'CATEGORY_MATCH',
+        'VERY_NEAR',
+        'NEARBY',
+        'REMOTE',
+        'WORK_MODE_MATCH',
+        'SALARY_FIT',
+        'BEHAVIOR_MATCH',
+        'GENERAL_MATCH',
+      ],
+    });
+
+    final expected = {
+      'fa': const [
+        'بدون عنوان',
+        'ماموریت',
+        'تخصصی',
+        'بودجه ماموریت',
+        'دلایل تطابق',
+        'مهارت مرتبط',
+        'دسته‌بندی مرتبط',
+        'خیلی نزدیک',
+        'آنلاین',
+        'مشاهده و اقدام برای ماموریت',
+      ],
+      'en': const [
+        'Untitled',
+        'Mission',
+        'Specialized',
+        'Mission budget',
+        'Match signals',
+        'Skill match',
+        'Category match',
+        'Very near',
+        'Remote',
+        'View and act on mission',
+      ],
+    };
+
+    for (final locale in const [Locale('fa'), Locale('en')]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: locale,
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: OpportunityCard(
+              job: job,
+              variant: OpportunityCardVariant.expanded,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final label in expected[locale.languageCode]!) {
+        expect(find.text(label), findsOneWidget,
+            reason: 'missing ${locale.languageCode} localization: $label');
+      }
+
+      expect(
+        find.textContaining(
+          locale.languageCode == 'fa' ? 'تومان' : 'Toman',
+        ),
+        findsOneWidget,
+        reason: 'missing ${locale.languageCode} currency label',
+      );
+
+    }
+  });
+  testWidgets(
+    'featured scan card compresses secondary metadata into one compact row on phone widths',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final job = HopeJob.fromMap({
+        'id': 'job-featured-scan-compact-density',
+        'title': 'طراحی رابط موبایل حرفه‌ای',
+        'description': 'Compact discovery density contract.',
+        'categoryId': 'design',
+        'category': 'Software',
+        'jobType': 'FIXED',
+        'budgetMin': '1500000',
+        'budgetMax': '2500000',
+        'kind': 'MISSION',
+        'visibility': 'PUBLIC',
+        'status': 'OPEN',
+        'city': 'تهران',
+        'recommendationScore': 0.94,
+        'workMode': 'REMOTE',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fa'),
+          supportedLocales: const [Locale('fa'), Locale('en')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(brightness: Brightness.dark),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OpportunityCard(
+                  job: job,
+                  variant: OpportunityCardVariant.featuredScan,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('۱٬۵۰۰٬۰۰۰ تومان تا ۲٬۵۰۰٬۰۰۰ تومان'),
+        findsOneWidget,
+      );
+      expect(find.text('تهران'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(OpportunityCard)).height,
+        lessThan(235),
+      );
+    },
+  );
+
+}

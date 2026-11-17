@@ -121,4 +121,9 @@ void main() {
     expect(page.job.id, 'j1');
     expect(page.job.title, 'طراحی اپ');
   });
+  test('HopeRoutes registers job and admin chat destinations', () {
+    expect(HopeRoutes.jobChat('job-1'), isA<Route<void>>());
+    expect(HopeRoutes.adminChat(), isA<Route<void>>());
+  });
+
 }

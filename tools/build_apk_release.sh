@@ -16,6 +16,7 @@ VERSION_CODE="${APP_VERSION##*+}"
 [[ "$APP_VERSION" == *+* ]] || { echo "ERROR: pubspec version must be name+code (got $APP_VERSION)." >&2; exit 1; }
 
 BUILD_PROFILE="${BUILD_PROFILE:-pilot}"
+GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}"
 case "$BUILD_PROFILE" in
   pilot|production) ;;
   *) echo 'ERROR: BUILD_PROFILE must be production or pilot.' >&2; exit 1 ;;
@@ -174,6 +175,7 @@ flutter build apk --release --no-pub \
   --dart-define=POSTHOG_HOST="$POSTHOG_HOST" \
   --dart-define=API_BASE_URL_B64="$API_BASE_URL_B64" \
   --dart-define=BUILD_PROFILE_B64="$BUILD_PROFILE_B64" \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID" \
   --verbose
 
 mapfile -t APKS < <(

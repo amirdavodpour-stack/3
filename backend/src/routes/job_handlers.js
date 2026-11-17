@@ -1,11 +1,12 @@
 import { URL } from 'node:url';
+import { rankEmployerCandidates } from '../services/employer_candidate_matching.js';
 
 export async function handleList(ctx, req, res, parts, user) {
   // Only the fields this handler actually uses are pulled from ctx (was a
   // 29-field destructure shared verbatim across every handler in this file).
   const {
     legacyJobs, repo, jobUseCases, sendJson, HttpError, textField, enumField,
-    JOB_KINDS, JOB_VISIBILITY, categoryBy, jobView, buildOfferCountMap,
+    JOB_KINDS, JOB_VISIBILITY, categoryBy, jobView, buildOfferCountMap, recordAnalyticsEvent,
   } = ctx;
   const searchParams = new URL(req.url, `http://${req.headers.host || 'localhost'}`).searchParams;
   const status = searchParams.get('status') || 'PUBLISHED';
@@ -14,6 +15,13 @@ export async function handleList(ctx, req, res, parts, user) {
   const cityFilter = searchParams.get('city') ? textField(searchParams.get('city'), 'city', { min: 1, max: 120 }) : null;
   const categoryFilter = searchParams.get('categoryId') ? String(searchParams.get('categoryId')).trim() : null;
   const searchQuery = searchParams.get('q') ? textField(searchParams.get('q'), 'q', { min: 1, max: 120 }) : null;
+  if (user && status === 'PUBLISHED') {
+    await recordAnalyticsEvent({
+      eventName: 'search_viewed',
+      platform: 'UNKNOWN',
+      properties: { query: searchQuery || '', city: cityFilter || null, categoryId: categoryFilter || null, kind: kindFilter || null },
+    }, user.id, `search_viewed:${user.id}:${Date.now()}`).catch(() => {});
+  }
   if (status !== 'PUBLISHED' && !user) {
     throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required to view private job states');
   }
@@ -102,7 +110,7 @@ export async function handleMine(ctx, req, res, parts, user) {
 export async function handleJobActions(ctx, req, res, parts, job) {
   const {
     authUser, id, repo, legacyJobs, jobUseCases, readBody, sendJson, HttpError, requireFields,
-    textField, jobView, enforceJobState, createAudit, now,
+    textField, jobView, enforceJobState, createAudit, now, notifyUser, NOTIFICATION_TYPES,
   } = ctx;
   const user = req.headers.authorization ? await authUser(req) : null;
   if (req.method === 'POST' && parts[2] === 'publish') {
@@ -171,6 +179,26 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     if (process.env.DATABASE_URL) {
       const result = await jobUseCases.accept(job.id, now());
       await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
+      await notifyUser({
+        userId: job.ownerId,
+        type: NOTIFICATION_TYPES.MISSION_UPDATE,
+        title: 'گزارش رضایت همکاری',
+        body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+        data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+        dedupeKey: `job:${job.id}:satisfaction:owner`,
+        channels: ['IN_APP', 'PUSH'],
+      });
+      if (job.providerId) {
+        await notifyUser({
+          userId: job.providerId,
+          type: NOTIFICATION_TYPES.MISSION_UPDATE,
+          title: 'گزارش رضایت همکاری',
+          body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+          data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+          dedupeKey: `job:${job.id}:satisfaction:worker`,
+          channels: ['IN_APP', 'PUSH'],
+        });
+      }
       await sendJson(res, 200, await jobView(result.job, me.id));
       return true;
     }
@@ -181,6 +209,26 @@ export async function handleJobActions(ctx, req, res, parts, job) {
     legacyJobs.touch('jobs', 'payments');
     await legacyJobs.save();
     await createAudit('JOB_ACCEPT', me.id, 'job', job.id);
+    await notifyUser({
+      userId: job.ownerId,
+      type: NOTIFICATION_TYPES.MISSION_UPDATE,
+      title: 'گزارش رضایت همکاری',
+      body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+      data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+      dedupeKey: `job:${job.id}:satisfaction:owner`,
+      channels: ['IN_APP', 'PUSH'],
+    });
+    if (job.providerId) {
+      await notifyUser({
+        userId: job.providerId,
+        type: NOTIFICATION_TYPES.MISSION_UPDATE,
+        title: 'گزارش رضایت همکاری',
+        body: `کار «${job.title}» تکمیل شد؛ گزارش رضایت خود را ثبت کنید.`,
+        data: { jobId: job.id, action: 'SATISFACTION_REPORT' },
+        dedupeKey: `job:${job.id}:satisfaction:worker`,
+        channels: ['IN_APP', 'PUSH'],
+      });
+    }
     await sendJson(res, 200, await jobView(job, me.id));
     return true;
   }
@@ -237,7 +285,7 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
   const {
     authUser, db, repo, legacyJobs, readBody, sendJson, HttpError, textField, id,
     createAudit, now, findUser, publicUser, notifyApplicationCandidate,
-    NOTIFICATION_TYPES,
+    NOTIFICATION_TYPES, ensureJobChat,
   } = ctx;
   if (req.method === 'POST' && parts[2] === 'candidates' && parts[4] === 'compare') {
     const me = await authUser(req);
@@ -274,6 +322,72 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
     await sendJson(res, 201, { id: created.id, status: created.status });
     return true;
   }
+  if (req.method === 'GET' && parts[2] === 'candidate-matches') {
+    const me = await authUser(req);
+    if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the job owner can view candidate matches');
+
+    let candidates;
+    if (process.env.DATABASE_URL) {
+      candidates = await repo.listCandidatesForEmployerMatching(job.id);
+    } else {
+      const kind = String(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB')).toUpperCase();
+      if (kind === 'MISSION') {
+        candidates = legacyJobs.listOffers(job.id).map((offer) => ({
+          userId: offer.providerId,
+          displayName: offer.provider?.displayName || '',
+          profile: null,
+          offer,
+          completedJobs: [],
+          applicationHistory: [],
+        }));
+      } else {
+        candidates = legacyJobs.selectedCandidates(job.id).map((application) => ({
+          userId: application.candidateId,
+          displayName: application.displayName || '',
+          profile: null,
+          application,
+          completedJobs: [],
+          applicationHistory: [],
+        }));
+      }
+    }
+
+    const ranked = rankEmployerCandidates(job, candidates);
+    return sendJson(res, 200, {
+      jobId: job.id,
+      kind: String(job.kind || (job.jobType === 'FIXED' ? 'MISSION' : 'JOB')).toUpperCase(),
+      candidateCount: ranked.length,
+      candidates: ranked.map((candidate) => ({
+        rank: candidate.rank,
+        userId: candidate.userId,
+        displayName: candidate.displayName || '',
+        score: candidate.score,
+        matchReasons: candidate.matchReasons,
+        matchComponents: candidate.matchComponents,
+        application: candidate.application
+          ? {
+              id: candidate.application.id,
+              status: candidate.application.status,
+              resumeHighlights: String(candidate.application.resumeText || '').slice(0, 600),
+              skills: String(candidate.application.skills || '').slice(0, 800),
+              createdAt: candidate.application.createdAt,
+              updatedAt: candidate.application.updatedAt,
+            }
+          : null,
+        offer: candidate.offer
+          ? {
+              id: candidate.offer.id,
+              status: candidate.offer.status,
+              price: String(candidate.offer.price ?? '0'),
+              message: String(candidate.offer.message || '').slice(0, 800),
+              createdAt: candidate.offer.createdAt,
+              updatedAt: candidate.offer.updatedAt,
+            }
+          : null,
+      })),
+    });
+  }
+
   if (req.method === 'GET' && parts[2] === 'candidates') {
     const me = await authUser(req);
     if (job.ownerId !== me.id) throw new HttpError(403, 'FORBIDDEN', 'Only the job owner can view forwarded candidates');
@@ -374,6 +488,7 @@ export async function handleCandidateRoutes(ctx, req, res, parts, job) {
     if (!process.env.DATABASE_URL) await legacyJobs.save();
     await notifyApplicationCandidate(changed.id, NOTIFICATION_TYPES.APPLICATION_ACCEPTED, 'استخدام شدید', `برای شغل «${job.title}» انتخاب شده‌اید.`);
     await createAudit('JOB_APPLICATION_HIRE', me.id, 'job_application', parts[3], { jobId: job.id });
+    if (process.env.DATABASE_URL && typeof ensureJobChat === 'function') await ensureJobChat(job.id);
     await sendJson(res, 200, { id: changed.id, status: changed.status });
     return true;
   }

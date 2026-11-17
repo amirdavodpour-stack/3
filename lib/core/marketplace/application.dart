@@ -34,18 +34,32 @@ class HopeApplication {
   };
   bool get canWithdraw => _withdrawable.contains(status.toUpperCase());
 
-  String get statusLabel {
-    switch (status.toUpperCase()) {
-      case 'PENDING': return 'در انتظار بررسی';
-      case 'SHORTLISTED': return 'منتخب اولیه';
-      case 'FORWARDED': return 'ارسال شده برای بررسی';
-      case 'INTERVIEW': return 'مصاحبه';
-      case 'OFFERED': return 'پیشنهاد همکاری';
-      case 'ACCEPTED': return 'پذیرفته شد';
-      case 'REJECTED': return 'رد شد';
-      case 'WITHDRAWN': return 'پس گرفته شد';
-      default: return status;
-    }
+  String get statusLabel => statusLabelFor(english: false);
+
+  String statusLabelFor({required bool english}) {
+    final labels = english
+        ? const <String, String>{
+            'PENDING': 'Pending',
+            'SHORTLISTED': 'Shortlisted',
+            'FORWARDED': 'Forwarded for review',
+            'INTERVIEW': 'Interview',
+            'OFFERED': 'Offer received',
+            'ACCEPTED': 'Accepted',
+            'REJECTED': 'Rejected',
+            'WITHDRAWN': 'Withdrawn',
+          }
+        : const <String, String>{
+            'PENDING': 'در انتظار بررسی',
+            'SHORTLISTED': 'منتخب اولیه',
+            'FORWARDED': 'ارسال شده برای بررسی',
+            'INTERVIEW': 'مصاحبه',
+            'OFFERED': 'پیشنهاد همکاری',
+            'ACCEPTED': 'پذیرفته شد',
+            'REJECTED': 'رد شد',
+            'WITHDRAWN': 'پس گرفته شد',
+          };
+    return labels[status.toUpperCase()] ??
+        (english ? 'Needs review' : 'نیازمند بررسی');
   }
 
   bool get isTerminal => const {'ACCEPTED', 'REJECTED', 'WITHDRAWN'}.contains(status.toUpperCase());
@@ -75,6 +89,8 @@ class HopeOffer {
     required this.status,
     this.createdAt,
     this.updatedAt,
+    this.jobTitle,
+    this.counterpartyName,
   });
 
   final String id;
@@ -85,6 +101,8 @@ class HopeOffer {
   final String status;
   final String? createdAt;
   final String? updatedAt;
+  final String? jobTitle;
+  final String? counterpartyName;
 
   factory HopeOffer.fromMap(Map<String, dynamic> map) => HopeOffer(
     id: '${map['id'] ?? ''}',
@@ -95,6 +113,8 @@ class HopeOffer {
     status: '${map['status'] ?? 'PENDING'}'.toUpperCase(),
     createdAt: map['createdAt'] == null ? null : '${map['createdAt']}',
     updatedAt: map['updatedAt'] == null ? null : '${map['updatedAt']}',
+    jobTitle: map['jobTitle'] == null ? null : '${map['jobTitle']}',
+    counterpartyName: map['counterpartyName'] == null ? null : '${map['counterpartyName']}',
   );
 
   bool get isPending => status == 'PENDING';

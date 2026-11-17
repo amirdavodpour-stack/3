@@ -6,6 +6,7 @@ import '../marketplace/job_detail_repository.dart';
 import '../marketplace/marketplace_repository.dart';
 import '../marketplace/job.dart';
 import '../marketplace/saved_search_repository.dart';
+import '../opportunity/opportunity_agent_repository.dart';
 import '../transactions/transaction_repository.dart';
 import '../transactions/wallet_repository.dart';
 import 'use_cases.dart';
@@ -21,6 +22,7 @@ class ApplicationRegistry {
     this.notifications,
     this.profile,
     SavedSearchRepository? savedSearches,
+    this.opportunityAgent,
   }) : _savedSearches = savedSearches;
 
   final MarketplaceRepository? marketplace;
@@ -31,6 +33,7 @@ class ApplicationRegistry {
   final AuthRepository? auth;
   final NotificationRepository? notifications;
   final ProfileRepository? profile;
+  final OpportunityAgentRepository? opportunityAgent;
   final SavedSearchRepository? _savedSearches;
 
   T _require<T>(T? value, String name) =>
@@ -45,6 +48,7 @@ class ApplicationRegistry {
   NotificationRepository get notificationsOrThrow => _require(notifications, 'notifications');
   ProfileRepository get profileOrThrow => _require(profile, 'profile');
   SavedSearchRepository get savedSearches => _require(_savedSearches, 'savedSearches');
+  OpportunityAgentRepository get opportunityAgentOrThrow => _require(opportunityAgent, 'opportunityAgent');
 
   CreateOpportunityUseCase get createOpportunity => CreateOpportunityUseCase(marketplaceOrThrow);
   ListCategoriesUseCase get listCategories => ListCategoriesUseCase(marketplaceOrThrow);

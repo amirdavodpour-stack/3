@@ -129,13 +129,13 @@ class ApiClient {
   static const Duration _retryBaseDelay = Duration(milliseconds: 250);
 
   Future<http.Response> _sendChecked(String method, String path,
-      {Object? body, required bool auth}) async {
+      {Object? body, required bool auth, Map<String, String>? headers}) async {
     final normalizedMethod = method.toUpperCase();
     final canRetry = normalizedMethod == 'GET';
     Object? lastError;
     for (var attempt = 0; attempt <= (canRetry ? _maxIdempotentRetries : 0); attempt++) {
       try {
-        final response = await _send(normalizedMethod, path, body: body, auth: auth);
+        final response = await _send(normalizedMethod, path, body: body, auth: auth, headers: headers);
         if (canRetry && _isRetryableStatus(response.statusCode) && attempt < _maxIdempotentRetries) {
           await _delayBeforeRetry(attempt);
           continue;
@@ -164,13 +164,13 @@ class ApiClient {
 
 
   Future<dynamic> request(String method, String path,
-      {Object? body, bool auth = false}) async {
-    final response = await _sendChecked(method, path, body: body, auth: auth);
+      {Object? body, bool auth = false, Map<String, String>? headers}) async {
+    final response = await _sendChecked(method, path, body: body, auth: auth, headers: headers);
     final decoded = response.body.isEmpty ? null : _decodeBody(response.body);
     if (response.statusCode == 401 && auth) {
       final refreshed = await _refreshAccessToken();
       if (refreshed) {
-        final retry = await _sendChecked(method, path, body: body, auth: true);
+        final retry = await _sendChecked(method, path, body: body, auth: true, headers: headers);
         if (retry.statusCode == 401) {
           await _handleUnauthorized();
         }
@@ -186,31 +186,32 @@ class ApiClient {
   }
 
   Future<http.Response> _send(String method, String path,
-      {Object? body, required bool auth}) async {
-    final headers = <String, String>{
+      {Object? body, required bool auth, Map<String, String>? headers}) async {
+    final requestHeaders = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      ...?headers,
     };
     if (auth) {
       final token = await store.accessToken;
-      if (token != null) headers['Authorization'] = 'Bearer $token';
+      if (token != null) requestHeaders['Authorization'] = 'Bearer $token';
     }
     final uri = Uri.parse('$baseUrl$path');
     final encoded = body == null ? null : jsonEncode(body);
     const timeout = Duration(seconds: 20);
     switch (method.toUpperCase()) {
       case 'GET':
-        return http.get(uri, headers: headers).timeout(timeout);
+        return http.get(uri, headers: requestHeaders).timeout(timeout);
       case 'POST':
-        return http.post(uri, headers: headers, body: encoded).timeout(timeout);
+        return http.post(uri, headers: requestHeaders, body: encoded).timeout(timeout);
       case 'PUT':
-        return http.put(uri, headers: headers, body: encoded).timeout(timeout);
+        return http.put(uri, headers: requestHeaders, body: encoded).timeout(timeout);
       case 'PATCH':
         return http
-            .patch(uri, headers: headers, body: encoded)
+            .patch(uri, headers: requestHeaders, body: encoded)
             .timeout(timeout);
       case 'DELETE':
-        return http.delete(uri, headers: headers).timeout(timeout);
+        return http.delete(uri, headers: requestHeaders).timeout(timeout);
       default:
         throw UnsupportedError('Unsupported HTTP method: $method');
     }

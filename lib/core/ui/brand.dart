@@ -18,7 +18,7 @@ class HopeMark extends StatelessWidget {
     return HopeLogo(
       size: size,
       showWordmark: showText,
-      subtitle: showText ? 'Jobs • Missions' : null,
+      subtitle: null,
     );
   }
 }

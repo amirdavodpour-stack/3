@@ -8,42 +8,73 @@ class _TypeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HopeSurface(
+    return PremiumPanel(
       highlight: true,
       padding: const EdgeInsets.all(17),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            HopeCopy.of(context)
-                .copy_first_choose_what_kind_of_opportunity_you__f035ca9,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _tile(
+                child: Text(
+                  HopeCopy.of(context)
+                      .copy_first_choose_what_kind_of_opportunity_you__f035ca9,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              PremiumTag(
+                icon: HopeV2Icons.route,
+                label: Localizations.localeOf(context).languageCode == 'en'
+                    ? 'Step 1 of 5'
+                    : 'مرحله ۱ از ۵',
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tiles = [
+                _tile(
                   context,
                   'MISSION',
-                  Icons.bolt_rounded,
+                  HopeV2Icons.mission,
                   HopeCopy.of(context).copy_mission_fb4c5e1,
                   HopeCopy.of(context)
                       .copy_a_defined_task_with_defined_pay_77b1068,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _tile(
+                _tile(
                   context,
                   'JOB',
-                  Icons.business_center_rounded,
+                  HopeV2Icons.job,
                   HopeCopy.of(context).copy_job_ce2feba,
                   HopeCopy.of(context)
                       .copy_part_full_time_with_monthly_pay_abd5afd,
                 ),
-              ),
-            ],
+              ];
+
+              // The form and hero cards already consume horizontal padding.
+              // Keep both choices side by side at common 360px phone widths;
+              // only stack when the actual inner card width is too narrow.
+              if (constraints.maxWidth < 240) {
+                return Column(
+                  children: [
+                    tiles[0],
+                    const SizedBox(height: 10),
+                    tiles[1],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: tiles[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: tiles[1]),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -53,7 +84,7 @@ class _TypeHero extends StatelessWidget {
   Widget _tile(
     BuildContext context,
     String value,
-    IconData icon,
+    Object icon,
     String title,
     String sub,
   ) {
@@ -63,40 +94,66 @@ class _TypeHero extends StatelessWidget {
       onTap: () => onChanged(value),
       semanticLabel: '$title. $sub',
       child: Container(
-        padding: const EdgeInsets.all(13),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: selected
-              ? const LinearGradient(
-                  colors: [Color(0xFF6C4DFF), Color(0xFF22B8A7)],
-                )
-              : null,
-          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(HopeV2Radii.md),
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: .12)
+              : HopeV2Surfaces.panel(context),
+          border: Border.all(
+            color: selected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: .35)
+                : Theme.of(context).dividerColor.withValues(alpha: .75),
+            width: selected ? 1.2 : 1,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Icon(
-              icon,
-              color: selected ? Colors.white : AppColors.primary,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                color: selected ? Colors.white : null,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HopeIcon(
+                    icon,
+                    color: selected ? Colors.white : AppColors.primary,
+                    size: 25,
+                    strokeWidth: 2.0,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: selected ? Colors.white : null,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: selected ? Colors.white70 : null,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              sub,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.35,
-                color: selected ? Colors.white70 : null,
+            if (selected)
+              PositionedDirectional(
+                start: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -114,7 +171,7 @@ class _VisibilityCard extends StatelessWidget {
     required this.onSelected,
   });
 
-  final IconData icon;
+  final Object icon;
   final String title;
   final String sub;
   final String value;
@@ -126,7 +183,7 @@ class _VisibilityCard extends StatelessWidget {
     return PressableScale(
       onTap: () => onSelected(value),
       semanticLabel: '$title. $sub',
-      child: HopeSurface(
+      child: PremiumPanel(
         highlight: selected,
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -223,40 +280,110 @@ class _CreateJobForm extends StatelessWidget {
             kind: kind,
             onChanged: onKindChanged,
           ),
-          const SizedBox(height: 18),
-          SectionTitle(
+          const SizedBox(height: 10),
+          Theme(
+            data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+            ),
+            child: ExpansionTile(
+              key: const ValueKey('opportunity-live-preview-peek'),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 2),
+              childrenPadding: EdgeInsets.zero,
+              initiallyExpanded: false,
+              leading: const HopeIconTile(
+                HopeV2Icons.insights,
+                size: 38,
+                filled: true,
+              ),
+              title: Text(
+                translate('پیش‌نمایش زنده', 'Live preview'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              subtitle: Text(
+                translate(
+                  'برای بررسی خلاصه فرصت باز کنید.',
+                  'Open to review the opportunity summary.',
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              children: [
+                HopeOpportunityLivePreview(
+                  kind: kind,
+                  visibility: visibility,
+                  schedule: schedule,
+                  city: city,
+                  titleController: title,
+                  descriptionController: description,
+                  minBudgetController: minBudget,
+                  maxBudgetController: maxBudget,
+                  salaryController: salary,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          PremiumSectionHeader(
+            domain: HopeProductDomain.work,
             title: HopeCopy.of(context).copy_audience_visibility_5a0ddcb,
             subtitle:
                 HopeCopy.of(context).copy_make_it_public_or_specialized_e890215,
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _VisibilityCard(
-                  icon: Icons.public_rounded,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = [
+                _VisibilityCard(
+                  icon: HopeV2Icons.insights,
                   title: HopeCopy.of(context).copy_public_21e97be,
                   sub: HopeCopy.of(context).copy_for_everyone_ebc769c,
                   value: 'PUBLIC',
                   selected: visibility == 'PUBLIC',
                   onSelected: onVisibilityChanged,
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _VisibilityCard(
-                  icon: Icons.auto_awesome_rounded,
+                _VisibilityCard(
+                  icon: HopeV2Icons.featured,
                   title: HopeCopy.of(context).copy_specialized_5d1ca04,
                   sub: HopeCopy.of(context).copy_for_a_specific_field_9b79bd6,
                   value: 'SPECIALIZED',
                   selected: visibility == 'SPECIALIZED',
                   onSelected: onVisibilityChanged,
                 ),
-              ),
-            ],
+              ];
+
+              if (constraints.maxWidth < 500) {
+                return Column(
+                  children: [
+                    cards[0],
+                    const SizedBox(height: 10),
+                    cards[1],
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 10),
+                  Expanded(child: cards[1]),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
-          HopeSurface(
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.work,
+            title: translate('اطلاعات فرصت', 'Opportunity details'),
+            subtitle: translate(
+              'عنوان، توضیحات، دسته‌بندی و موقعیت همکاری.',
+              'Title, description, category, and collaboration location.',
+            ),
+          ),
+          const SizedBox(height: 10),
+          PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -264,7 +391,7 @@ class _CreateJobForm extends StatelessWidget {
                   controller: title,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_title_d4694a2,
-                    prefixIcon: const Icon(Icons.title_rounded),
+                    prefixIcon: const HopeIcon(HopeV2Icons.job, size: 20),
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -275,7 +402,7 @@ class _CreateJobForm extends StatelessWidget {
                     labelText:
                         HopeCopy.of(context).copy_full_description_c4dea43,
                     alignLabelWithHint: true,
-                    prefixIcon: const Icon(Icons.notes_rounded),
+                    prefixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -283,11 +410,11 @@ class _CreateJobForm extends StatelessWidget {
                   future: categoriesFuture,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return HopeSurface(
+                      return PremiumPanel(
                         padding: const EdgeInsets.all(14),
                         child: Row(
                           children: [
-                            const Icon(Icons.cloud_off_rounded),
+                            const HopeIcon(HopeV2Icons.pending, size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(translate(
@@ -298,7 +425,7 @@ class _CreateJobForm extends StatelessWidget {
                             IconButton(
                               tooltip: HopeCopy.of(context).copy_retry_49f3eba,
                               onPressed: () => onRetryCategories(),
-                              icon: const Icon(Icons.refresh_rounded),
+                              icon: const HugeIcon(icon: HopeV2Icons.refresh, size: 19),
                             ),
                           ],
                         ),
@@ -312,13 +439,14 @@ class _CreateJobForm extends StatelessWidget {
                     }
                     final categories = snapshot.data ?? const <HopeCategory>[];
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: categoryId,
                       decoration: InputDecoration(
                         labelText: HopeCopy.of(context)
                             .copy_professional_category_a8c7c42,
                         hintText:
                             HopeCopy.of(context).copy_choose_a_category_b77d860,
-                        prefixIcon: const Icon(Icons.category_outlined),
+                        prefixIcon: const HopeIcon(HopeV2Icons.category, size: 20),
                       ),
                       items: categories.map((category) {
                         final depth = category.parentId == null ? 0 : 1;
@@ -335,10 +463,11 @@ class _CreateJobForm extends StatelessWidget {
                 ),
                 const SizedBox(height: 11),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: city,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_city_3d7dc3e,
-                    prefixIcon: const Icon(Icons.location_on_outlined),
+                    prefixIcon: const HopeIcon(HopeV2Icons.location, size: 20),
                   ),
                   items: [
                     ...HopeSettingsController.cities.map(
@@ -354,7 +483,7 @@ class _CreateJobForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          SectionTitle(
+          PremiumSectionHeader(
             title: kind == 'MISSION'
                 ? HopeCopy.of(context).copy_price_time_4d31a36
                 : HopeCopy.of(context).copy_salary_schedule_bab0cb3,
@@ -366,34 +495,55 @@ class _CreateJobForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (kind == 'MISSION')
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final fields = [
+                  TextField(
                     controller: minBudget,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_minimum_pay_38cc5ec,
-                      prefixIcon: const Icon(Icons.payments_outlined),
-                      suffixText: translate('تومان', 'TOMAN'),
+                      prefixIcon: const HopeIcon(HopeV2Icons.payments, size: 20),
+                      suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
+                  TextField(
                     controller: maxBudget,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(16),
+                    ],
                     decoration: InputDecoration(
                       labelText: HopeCopy.of(context).copy_maximum_pay_b51ad57,
-                      prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                      suffixText: translate('تومان', 'TOMAN'),
+                      prefixIcon: const HopeIcon(HopeV2Icons.wallet, size: 20),
+                      suffixText: translate('تومان', 'Toman'),
                     ),
                   ),
-                ),
-              ],
+                ];
+
+                if (constraints.maxWidth < 500) {
+                  return Column(
+                    children: [
+                      fields[0],
+                      const SizedBox(height: 11),
+                      fields[1],
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: fields[0]),
+                    const SizedBox(width: 10),
+                    Expanded(child: fields[1]),
+                  ],
+                );
+              },
             )
           else
             TextField(
@@ -402,8 +552,8 @@ class _CreateJobForm extends StatelessWidget {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(16)],
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_monthly_salary_1d770dc,
-                prefixIcon: const Icon(Icons.payments_rounded),
-                suffixText: translate('تومان', 'TOMAN'),
+                prefixIcon: const HopeIcon(HopeV2Icons.payments, size: 20),
+                suffixText: translate('تومان', 'Toman'),
               ),
             ),
           const SizedBox(height: 11),
@@ -413,17 +563,18 @@ class _CreateJobForm extends StatelessWidget {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: HopeCopy.of(context).copy_duration_hours_f4ca1cf,
-                prefixIcon: const Icon(Icons.schedule_rounded),
+                prefixIcon: const HopeIcon(HopeV2Icons.pending, size: 20),
               ),
             )
           else
             Column(
               children: [
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: schedule,
                   decoration: InputDecoration(
                     labelText: HopeCopy.of(context).copy_schedule_3af1939,
-                    prefixIcon: const Icon(Icons.timelapse_rounded),
+                    prefixIcon: const HopeIcon(HopeV2Icons.pending, size: 20),
                   ),
                   items: [
                     DropdownMenuItem(
@@ -451,14 +602,24 @@ class _CreateJobForm extends StatelessWidget {
                     labelText:
                         HopeCopy.of(context).copy_application_deadline_782fb61,
                     hintText: 'YYYY-MM-DD',
-                    prefixIcon: const Icon(Icons.event_outlined),
-                    suffixIcon: const Icon(Icons.calendar_month_rounded),
+                    prefixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
+                    suffixIcon: const HopeIcon(HopeV2Icons.activity, size: 20),
                   ),
                 ),
               ],
             ),
           const SizedBox(height: 20),
-          HopeSurface(
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.finance,
+            title: translate('کارمزد HOPE', 'HOPE fee'),
+            subtitle: translate(
+              'هزینه‌های مرتبط با این نوع همکاری قبل از انتشار مشخص است.',
+              'The applicable collaboration fee is stated before publishing.',
+            ),
+          ),
+          const SizedBox(height: 10),
+          PremiumPanel(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +640,17 @@ class _CreateJobForm extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
+          PremiumSectionHeader(
+            page: HopePageId.createOpportunity,
+            domain: HopeProductDomain.trust,
+            title: translate('معیار پذیرش', 'Acceptance criteria'),
+            subtitle: translate(
+              'شرایطی که مبنای بررسی و تکمیل این همکاری خواهد بود.',
+              'The conditions used to review and complete this collaboration.',
+            ),
+          ),
+          const SizedBox(height: 10),
           TextField(
             controller: acceptanceCriteria,
             maxLines: 3,
@@ -487,13 +658,13 @@ class _CreateJobForm extends StatelessWidget {
               labelText: HopeCopy.of(context)
                   .copy_acceptance_selection_criteria_a061aef,
               alignLabelWithHint: true,
-              prefixIcon: const Icon(Icons.fact_check_outlined),
+              prefixIcon: const HopeIcon(HopeV2Icons.completed, size: 20),
             ),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: busy ? null : onSubmit,
-            icon: const Icon(Icons.rocket_launch_rounded),
+            icon: const HugeIcon(icon: HopeV2Icons.featured, size: 20),
             label: busy
                 ? const SizedBox(
                     width: 22,

@@ -7,7 +7,7 @@ import '../../core/transactions/payment.dart';
 import '../../core/marketplace/job.dart';
 import '../../core/auth/auth_controller.dart';
 import '../../core/ui/components.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
 import '../../core/uploads/upload_queue.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/application/application_registry.dart';
@@ -15,10 +15,17 @@ import '../../core/application/application_registry.dart';
 import '../../core/ui/premium_components.dart';
 import '../../core/ui/premium_lifecycle.dart';
 import '../../core/ui/premium_payment_summary.dart';
+import '../../core/ui/hope_async_state.dart';
 
 class TransactionsPage extends StatefulWidget {
-  const TransactionsPage({super.key, this.repository});
+  const TransactionsPage({
+    super.key,
+    this.repository,
+    this.showPrimaryNavigation = true,
+  });
+
   final TransactionRepository? repository;
+  final bool showPrimaryNavigation;
   @override
   State<TransactionsPage> createState() => _TransactionsPageState();
 }
@@ -26,6 +33,8 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage> {
   Future<List<HopeJob>>? future;
   String? loadedUserId;
+  String? _reloadError;
+  int _reloadRequestId = 0;
   final Map<String, Future<HopePayment?>> _paymentFutures =
       <String, Future<HopePayment?>>{};
   @override
@@ -34,6 +43,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final id = context.read<AuthController>().user?['id']?.toString();
     if (id != loadedUserId) {
       loadedUserId = id;
+      _reloadError = null;
       final ApplicationRegistry registry = applicationRegistryOf(context);
       final source = widget.repository;
       future = id == null
@@ -45,11 +55,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   Future<void> reload() async {
     if (!mounted) return;
+    final requestId = ++_reloadRequestId;
     final source = widget.repository ?? applicationRegistryOf(context).transactionsOrThrow;
     final next = source.listMyJobs();
-    _paymentFutures.clear();
-    setState(() => future = next);
-    await next.catchError((_) => const <HopeJob>[]);
+    try {
+      final items = await next;
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _reloadError = null;
+        future = Future<List<HopeJob>>.value(items);
+      });
+      _paymentFutures.clear();
+    } catch (_) {
+      if (!mounted || requestId != _reloadRequestId) return;
+      setState(() {
+        _reloadError = HopeCopy.of(context).copy_could_not_load_activity_335b923;
+      });
+    }
   }
 
   Future<HopePayment?> _tryGetPayment(String jobId) {
@@ -87,8 +109,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
       'RELEASED': 'تسویه شده',
       'SETTLED': 'تسویه شده',
     };
-    return labels[rawStatus.toUpperCase()] ?? rawStatus;
+    return labels[rawStatus.toUpperCase()] ??
+        _t('نیازمند بررسی', 'Needs review');
   }
+
+  bool _isWorkCenterActive(String status) => const {
+        'ASSIGNED',
+        'IN_PROGRESS',
+        'DELIVERED',
+        'UNDER_REVIEW',
+        'COMPLETED',
+      }.contains(status.toUpperCase());
+
+  bool _isWorkCenterSettled(String status) => const {
+        'RELEASED',
+        'SETTLED',
+      }.contains(status.toUpperCase());
+
+  int _countWorkCenterActive(List<HopeJob> items) =>
+      items.where((job) => _isWorkCenterActive(job.status ?? '')).length;
+
+  int _countWorkCenterSettled(List<HopeJob> items) =>
+      items.where((job) => _isWorkCenterSettled(job.status ?? '')).length;
+
+  String _t(String fa, String en) =>
+      Localizations.localeOf(context).languageCode == 'en' ? en : fa;
 
   List<PremiumLifecycleStep> _stepsForStatus(String rawStatus) {
     final status = rawStatus.toUpperCase();
@@ -96,8 +141,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
     var index = order.indexOf(status);
     if (index < 0 && {'RELEASED', 'SETTLED'}.contains(status)) index = order.length - 1;
     if (index < 0) index = 0;
-    const labels = <String>['منتشر شده', 'تخصیص داده شده', 'در حال انجام', 'تحویل شده', 'تکمیل شده'];
-    const icons = <IconData>[Icons.campaign_outlined, Icons.assignment_ind_outlined, Icons.play_circle_outline_rounded, Icons.upload_file_outlined, Icons.check_circle_outline_rounded];
+    final labels = <String>[
+      _t('منتشر شده', 'Published'),
+      _t('تخصیص داده شده', 'Assigned'),
+      _t('در حال انجام', 'In progress'),
+      _t('تحویل شده', 'Delivered'),
+      _t('تکمیل شده', 'Completed'),
+    ];
+    const icons = <Object>[Icons.campaign_rounded, Icons.assignment_ind_rounded, Icons.play_circle_rounded, Icons.file_upload_rounded, HopeV2Icons.completed];
     return List.generate(order.length, (i) => PremiumLifecycleStep(
       label: labels[i],
       icon: icons[i],
@@ -106,22 +157,281 @@ class _TransactionsPageState extends State<TransactionsPage> {
     ));
   }
 
+  Widget _activityNavigation(BuildContext context) {
+    final copy = HopeCopy.of(context);
+    return PremiumQuickActionStrip(
+      domain: HopeProductDomain.work,
+      glass: false,
+      quiet: true,
+      title: _t('دسترسی سریع', 'Quick access'),
+      subtitle: _t(
+        'درخواست‌ها، پیشنهادها و اعلان‌ها را بدون باز کردن منوی کناری در دسترس داشته باشید.',
+        'Reach applications, offers, and notifications without opening the side menu.',
+      ),
+      actions: [
+        PremiumQuickAction(
+          label: copy.copy_applications_6655869,
+          icon: HopeV2Icons.mission,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.myApplications(),
+          ),
+          primary: true,
+        ),
+        PremiumQuickAction(
+          label: copy.copy_offers,
+          icon: HopeV2Icons.featured,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.offers(),
+          ),
+        ),
+        PremiumQuickAction(
+          label: copy.copy_notifications_370b4a1,
+          icon: HopeV2Icons.notifications,
+          onPressed: () => Navigator.push(
+            context,
+            HopeRoutes.notifications(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _workCenterMetric({
+    required String label,
+    required String value,
+    required Object icon,
+    required Color accent,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 76),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: .055),
+        borderRadius: BorderRadius.circular(HopeV2Radii.md),
+        border: Border.all(color: accent.withValues(alpha: .13)),
+      ),
+      child: Row(
+        children: [
+          HopeIconTile(
+            icon,
+            size: 30,
+            filled: true,
+            color: accent,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: HopeV2Colors.muted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _workItemCard(HopeJob job) {
+    final status = job.status ?? '—';
+    final settled = _isWorkCenterSettled(status);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: PremiumPanel(
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < HopeV2Breakpoints.compact ? 14 : 17,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HopeIconTile(
+                  settled ? HopeV2Icons.completed : HopeV2Icons.pending,
+                  color: settled ? HopeV2Colors.success : HopeV2Colors.primary,
+                  filled: true,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 6,
+                        children: [
+                          PremiumTag(
+                            icon: HopeV2Icons.activity,
+                            label: _jobStatusLabel(context, status),
+                            color: settled
+                                ? HopeV2Colors.success
+                                : HopeV2Colors.primary,
+                          ),
+                          if (job.city?.isNotEmpty == true)
+                            PremiumTag(
+                              icon: HopeV2Icons.location,
+                              label: job.city!,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            PremiumLifecycle(
+              compact: true,
+              steps: _stepsForStatus(status),
+              title: _t('مسیر همکاری', 'Work flow'),
+              subtitle: _t(
+                'وضعیت فعلی همکاری را در یک نگاه دنبال کنید.',
+                'Follow the current collaboration state at a glance.',
+              ),
+            ),
+            FutureBuilder<HopePayment?>(
+              future: _tryGetPayment(job.id),
+              builder: (context, paymentSnap) {
+                if (paymentSnap.connectionState != ConnectionState.done ||
+                    paymentSnap.data == null) {
+                  return const SizedBox.shrink();
+                }
+                final payment = paymentSnap.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 10),
+                    PremiumPaymentSummary(payment: payment),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        HopeRoutes.transaction(
+                          repository: context.read<TransactionRepository>(),
+                          uploadQueue: context.read<UploadQueue>(),
+                          jobId: job.id,
+                        ),
+                      ),
+                      icon: const HopeIcon(
+                        HopeV2Icons.arrowRight,
+                        size: 19,
+                      ),
+                      label: Text(
+                        HopeCopy.of(context).copy_view_transaction_a91f1e6,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final content = _buildContent(context);
+    if (!widget.showPrimaryNavigation) return content;
+    return PremiumPrimaryNavigationScaffold(
+      selectedIndex: 2,
+      onDestinationSelected: (index) => _navigatePrimary(context, index),
+      child: content,
+    );
+  }
+
+  void _navigatePrimary(BuildContext context, int index) {
+    if (index == 2) return;
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        HopeRoutes.home(),
+        (_) => false,
+      );
+      return;
+    }
+    final route = switch (index) {
+      1 => HopeRoutes.jobs(),
+      2 => HopeRoutes.transactions(),
+      3 => HopeRoutes.walletFromContext(context),
+      4 => HopeRoutes.profile(),
+      _ => null,
+    };
+    if (route != null) {
+      Navigator.of(context).pushReplacement(route);
+    }
+  }
+
+  Widget _buildContent(BuildContext context) {
     final auth = context.watch<AuthController>();
     if (auth.isGuest) {
-      return Center(
-          child: EmptyState(
-              icon: Icons.lock_outline_rounded,
-              title: HopeCopy.of(context).copy_your_activity_is_private_1363766,
-              message: HopeCopy.of(context)
+      return PremiumPageFrame(
+                page: HopePageId.workCenter,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+        child: ListView(
+          children: [
+            PremiumHeader(
+              page: HopePageId.workCenter,
+              domain: HopeProductDomain.work,
+              eyebrow: _t('مرکز کار', 'WORK CENTER'),
+              title: _t('مرکز کار خصوصی شما', 'Your private work center'),
+              subtitle: HopeCopy.of(context)
                   .copy_sign_in_to_view_your_projects_and_payments_32a2bc2,
-              action: FilledButton.icon(
-                  onPressed: () => Navigator.push(context, HopeRoutes.login()),
-                  icon: const Icon(Icons.login_rounded),
-                  label: Text(HopeCopy.of(context).copy_log_in_b4c960b))));
+              trailing: const HopeIconTile(
+                HopeV2Icons.secure,
+                size: 42,
+                filled: true,
+              ),
+            ),
+            const SizedBox(height: 20),
+            PremiumPanel(
+              padding: const EdgeInsets.all(20),
+              child: FilledButton.icon(
+                onPressed: () =>
+                    Navigator.push(context, HopeRoutes.login()),
+                icon: const HopeIcon(HopeV2Icons.login, size: 19),
+                label: Text(HopeCopy.of(context).copy_log_in_b4c960b),
+              ),
+            ),
+          ],
+        ),
+      );
     }
-    if (future == null) return const Center(child: CircularProgressIndicator());
+    if (future == null) {
+      return const PremiumPageFrame(
+                page: HopePageId.workCenter,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
     return FutureBuilder<List<HopeJob>>(
         future: future,
         builder: (context, snap) {
@@ -130,163 +440,289 @@ class _TransactionsPageState extends State<TransactionsPage> {
           }
           if (snap.hasError) {
             return RefreshIndicator(
-                onRefresh: reload,
-                child: ListView(children: [
-                  const SizedBox(height: 220),
-                  EmptyState(
-                      icon: Icons.cloud_off_rounded,
-                      title: HopeCopy.of(context)
-                          .copy_could_not_load_activity_335b923,
-                      message: HopeCopy.of(context)
-                          .copy_pull_down_to_try_again_c41d215)
-                ]));
+              onRefresh: reload,
+              child: PremiumPageFrame(
+                page: HopePageId.workCenter,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                child: ListView(
+                  children: [
+                    PremiumHeader(
+              dense: true,
+              page: HopePageId.workCenter,
+              domain: HopeProductDomain.work,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('مرکز کار بارگذاری نشد', 'Work center could not be loaded'),
+                      subtitle: HopeCopy.of(context)
+                          .copy_pull_down_to_try_again_c41d215,
+                      trailing: const HopeIconTile(
+                        HopeV2Icons.pending,
+                        size: 42,
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(20),
+                      child: FilledButton.icon(
+                        onPressed: reload,
+                        icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                        label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final items = snap.data ?? const <HopeJob>[];
+          final activeItems =
+              items.where((job) => _isWorkCenterActive(job.status ?? '')).toList();
+          final settledItems =
+              items.where((job) => _isWorkCenterSettled(job.status ?? '')).toList();
+          final otherItems = items
+              .where((job) =>
+                  !_isWorkCenterActive(job.status ?? '') &&
+                  !_isWorkCenterSettled(job.status ?? ''))
+              .toList();
+          final activeCount = _countWorkCenterActive(items);
+          final settledCount = _countWorkCenterSettled(items);
           if (items.isEmpty) {
             return RefreshIndicator(
-                onRefresh: reload,
-                child: ListView(children: [
-                  const SizedBox(height: 220),
-                  EmptyState(
-                      icon: Icons.auto_graph_rounded,
-                      title: HopeCopy.of(context).copy_no_activity_yet_264ceb0,
-                      message: HopeCopy.of(context)
-                          .copy_your_projects_applications_and_payments_wi_bec5340)
-                ]));
+              onRefresh: reload,
+              child: PremiumPageFrame(
+                page: HopePageId.workCenter,
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 72),
+                child: ListView(
+                  children: [
+                    PremiumHeader(
+              dense: true,
+              page: HopePageId.workCenter,
+              domain: HopeProductDomain.work,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('هنوز کاری ثبت نشده است', 'No work activity yet'),
+                      subtitle: HopeCopy.of(context)
+                          .copy_your_projects_applications_and_payments_wi_bec5340,
+                      trailing: const HopeIconTile(
+                        HopeV2Icons.insights,
+                        size: 42,
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _activityNavigation(context),
+                    PremiumPanel(
+                      padding: const EdgeInsets.all(20),
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          HopeRoutes.jobs(),
+                        ),
+                        icon: const HopeIcon(HopeV2Icons.workshop, size: 19),
+                        label: Text(
+                          Localizations.localeOf(context).languageCode == 'en'
+                              ? 'Explore opportunities'
+                              : 'مشاهده فرصت‌ها',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           return RefreshIndicator(
               onRefresh: reload,
               child: PremiumPageFrame(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 48),
+                page: HopePageId.workCenter,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
                     PremiumHeader(
-                      eyebrow: HopeCopy.of(context).copy_activity_4b38716,
-                      title: HopeCopy.of(context).copy_latest_activity_a05277b,
-                      subtitle: HopeCopy.of(context)
-                          .copy_projects_progress_and_payments_at_a_glance_a0178c8,
-                      trailing: const HopeIconTile(
-                        Icons.swap_horizontal_circle_rounded,
-                        size: 50,
-                        filled: true,
+              dense: true,
+              page: HopePageId.workCenter,
+              domain: HopeProductDomain.work,
+                      eyebrow: _t('مرکز کار', 'WORK CENTER'),
+                      title: _t('مرکز مالی و همکاری‌ها', 'Work & finance center'),
+                      subtitle: _t(
+                        'همکاری‌های فعال، وضعیت اجرا و تسویه مالی را در یک نگاه دنبال کنید.',
+                        'Track active work, execution state, and financial settlement in one view.',
+                      ),                    ),
+                    const SizedBox(height: 10),
+                    if (_reloadError != null) ...[
+                      HopeAsyncState(
+                        kind: HopeStateKind.error,
+                        title: _reloadError!,
+                        message: HopeCopy.of(context).copy_pull_down_to_try_again_c41d215,
+                        action: FilledButton.icon(
+                          onPressed: reload,
+                          icon: const HopeIcon(HopeV2Icons.refresh, size: 19),
+                          label: Text(HopeCopy.of(context).copy_retry_49f3eba),
+                        ),
                       ),
+                      const SizedBox(height: 14),
+                    ],
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final metricWidth = (constraints.maxWidth - 16) / 3;
+                        final metrics = [
+                          _workCenterMetric(
+                            label: _t('همکاری‌ها', 'Collaborations'),
+                            value: '${items.length}',
+                            icon: HopeV2Icons.job,
+                            accent: Theme.of(context).colorScheme.primary,
+                          ),
+                          _workCenterMetric(
+                            label: _t('در حال اجرا', 'Active work'),
+                            value: '$activeCount',
+                            icon: HopeV2Icons.mission,
+                            accent: secondaryAccent(context),
+                          ),
+                          _workCenterMetric(
+                            label: _t('تسویه‌شده', 'Settled'),
+                            value: '$settledCount',
+                            icon: HopeV2Icons.completed,
+                            accent: HopeV2Colors.success,
+                          ),
+                        ];
+
+                        return Row(
+                          key: const ValueKey('work-center-metrics'),
+                          children: [
+                            for (var index = 0; index < metrics.length; index++) ...[
+                              SizedBox(
+                                width: metricWidth,
+                                child: KeyedSubtree(
+                                  key: ValueKey('work-center-metric-$index'),
+                                  child: metrics[index],
+                                ),
+                              ),
+                              if (index != metrics.length - 1)
+                                const SizedBox(width: 8),
+                            ],
+                          ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 18),
-                    Row(children: [
-                      Expanded(
-                          child: MetricTile(
-                              label: HopeCopy.of(context)
-                                  .copy_total_projects_78ce548,
-                              value: '${items.length}',
-                              icon: Icons.work_history_rounded)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                          child: MetricTile(
-                              label: HopeCopy.of(context).copy_status_b81f9c7,
-                              value: HopeCopy.of(context).copy_active_5726b26,
-                              icon: Icons.bolt_rounded,
-                              color: secondaryAccent(context)))
-                    ]),
-                    const SizedBox(height: 20),
-                    SectionTitle(
-                        title:
-                            HopeCopy.of(context).copy_latest_activity_a05277b,
-                        subtitle: HopeCopy.of(context)
-                            .copy_the_most_recent_project_updates_5e402d8),
                     const SizedBox(height: 12),
-                    ...items.map((job) {
-                      final status = job.status ?? '—';
-                      final released = status == 'RELEASED' ||
-                          status == 'COMPLETED' ||
-                          status == 'SETTLED';
-                      return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: PremiumPanel(
-                            padding: const EdgeInsets.all(17),
+                    PremiumPanel(
+                      key: const ValueKey('work-center-focus-strip'),
+                      glass: false,
+                      quiet: true,
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      child: Row(
+                        children: [
+                          HopeIconTile(
+                            activeItems.isNotEmpty
+                                ? HopeV2Icons.activity
+                                : HopeV2Icons.completed,
+                            size: 38,
+                            filled: true,
+                            color: activeItems.isNotEmpty
+                                ? Theme.of(context).colorScheme.primary
+                                : HopeV2Colors.success,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    HopeIconTile(
-                                      released
-                                          ? Icons.check_rounded
-                                          : Icons.hourglass_top_rounded,
-                                      color: released
-                                          ? AppColors.success
-                                          : AppColors.primary,
-                                      filled: true,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            job.title,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context).textTheme.titleMedium,
-                                          ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            '${HopeCopy.of(context).copy_work_status_eb2d6f2}: ${_jobStatusLabel(context, job.status ?? '—')}',
-                                            style: Theme.of(context).textTheme.bodyMedium,
-                                          ),
-                                        ],
+                                Text(
+                                  activeItems.isNotEmpty
+                                      ? _t('تمرکز فعلی', 'Current focus')
+                                      : _t('وضعیت مالی', 'Financial status'),
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: HopeV2Colors.muted,
+                                        fontWeight: FontWeight.w800,
                                       ),
-                                    ),
-                                    const SizedBox(width: 7),
-                                    StatusPill(
-                                      released
-                                          ? HopeCopy.of(context).copy_completed_4ab501b
-                                          : HopeCopy.of(context).copy_in_progress_ed61091,
-                                      color: released ? AppColors.success : AppColors.primary,
-                                    ),
-                                  ],
                                 ),
-                                const SizedBox(height: 10),
-                                PremiumLifecycle(
-                                  steps: _stepsForStatus(status),
-                                  title: Localizations.localeOf(context).languageCode == 'en' ? 'Project flow' : 'مسیر پروژه',
-                                  subtitle: Localizations.localeOf(context).languageCode == 'en' ? 'Follow the latest project state at a glance.' : 'وضعیت کار را در یک نگاه دنبال کنید.',
-                                ),
-                                FutureBuilder<HopePayment?>(
-                                  future: _tryGetPayment(job.id),
-                                  builder: (context, paymentSnap) {
-                                    if (paymentSnap.connectionState != ConnectionState.done ||
-                                        paymentSnap.data == null) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    final payment = paymentSnap.data!;
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        const SizedBox(height: 10),
-                                        PremiumPaymentSummary(payment: payment),
-                                        const SizedBox(height: 10),
-                                        OutlinedButton.icon(
-                                          onPressed: () => Navigator.push(
-                                            context,
-                                            HopeRoutes.transaction(
-                                              repository: context.read<TransactionRepository>(),
-                                              uploadQueue: context.read<UploadQueue>(),
-                                              jobId: job.id,
-                                            ),
-                                          ),
-                                          icon: const Icon(Icons.open_in_new_rounded),
-                                          label: Text(HopeCopy.of(context).copy_view_transaction_a91f1e6),
+                                const SizedBox(height: 2),
+                                Text(
+                                  activeItems.isNotEmpty
+                                      ? _t(
+                                          '$activeCount همکاری در جریان است',
+                                          '$activeCount active collaborations',
+                                        )
+                                      : _t(
+                                          '$settledCount همکاری تسویه شده است',
+                                          '$settledCount collaborations settled',
                                         ),
-                                      ],
-                                    );
-                                  },
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                 ),
                               ],
                             ),
                           ),
-                        );
-                    }),
+                          if (settledItems.isNotEmpty)
+                            PremiumTag(
+                              icon: HopeV2Icons.completed,
+                              label: '$settledCount ${_t('تسویه', 'settled')}',
+                              color: HopeV2Colors.success,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (activeItems.isNotEmpty || settledItems.isNotEmpty) ...[
+                      PremiumSectionHeader(
+                        page: HopePageId.workCenter,
+                        domain: HopeProductDomain.work,
+                        title: _t('جریان همکاری‌ها', 'Work stream'),
+                        subtitle: _t(
+                          'وضعیت جاری را جدا از همکاری‌های تسویه‌شده دنبال کنید.',
+                          'Track current work separately from financially settled collaborations.',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (activeItems.isNotEmpty) ...[
+                      PremiumSectionHeader(
+                        page: HopePageId.workCenter,
+                        domain: HopeProductDomain.work,
+                        title: _t('در حال اجرا', 'Active work'),
+                        subtitle: _t(
+                          'همکاری‌هایی که هنوز در چرخهٔ اجرا یا بررسی هستند.',
+                          'Collaborations still in execution or review.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...activeItems.map(_workItemCard),
+                    ],
+                    if (otherItems.isNotEmpty) ...[
+                      if (activeItems.isNotEmpty)
+                        const SizedBox(height: 8),
+                      PremiumSectionHeader(
+                        page: HopePageId.workCenter,
+                        domain: HopeProductDomain.work,
+                        title: _t('سایر وضعیت‌ها', 'Other work'),
+                        subtitle: _t(
+                          'وضعیت‌هایی که هنوز در مسیر نهایی مالی نیستند.',
+                          'Other collaboration states before final settlement.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...otherItems.map(_workItemCard),
+                    ],
+                    if (settledItems.isNotEmpty) ...[
+                      if (activeItems.isNotEmpty || otherItems.isNotEmpty)
+                        const SizedBox(height: 8),
+                      PremiumSectionHeader(
+                        page: HopePageId.workCenter,
+                        domain: HopeProductDomain.finance,
+                        title: _t('تسویه‌شده', 'Settled'),
+                        subtitle: _t(
+                          'همکاری‌هایی که چرخهٔ مالی آن‌ها پایان یافته است.',
+                          'Collaborations whose financial lifecycle is complete.',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...settledItems.map(_workItemCard),
+                    ],
+                    const SizedBox(height: 12),
+                    _activityNavigation(context),
                   ],
                 ),
               ));

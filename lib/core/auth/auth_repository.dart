@@ -33,6 +33,7 @@ class AuthSession {
 
 abstract interface class AuthRepository {
   Future<AuthSession> login(String email, String password);
+  Future<AuthSession> loginWithGoogle(String idToken);
   Future<AuthSession> register(
       String email, String password, String displayName);
   Future<void> logout();
@@ -59,6 +60,14 @@ class ApiAuthRepository implements AuthRepository {
       'email': email,
       'password': password,
       'displayName': displayName,
+    });
+    return AuthSession.fromResponse(data);
+  }
+
+  @override
+  Future<AuthSession> loginWithGoogle(String idToken) async {
+    final data = await _api.request('POST', '/auth/google', body: {
+      'idToken': idToken,
     });
     return AuthSession.fromResponse(data);
   }

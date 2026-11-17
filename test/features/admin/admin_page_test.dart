@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,15 +14,18 @@ import 'package:provider/provider.dart';
 /// in-memory AdminRepository fake, so tests are order-independent and touch
 /// no real network or shared global state.
 class _FakeAdmin implements AdminRepository {
-  _FakeAdmin({this.failJobs = false});
+  _FakeAdmin({this.failJobs = false, this.primaryAdmin = false});
 
   /// Only [listJobs] can fail (it powers the initially-active tab, whose
   /// FutureBuilder observes the error future from the very first frame, so
   /// no unobserved async error can be raised).
   bool failJobs = false;
+  final bool primaryAdmin;
 
   /// When true the next state-mutating action throws (error-path coverage).
   bool failNextAction = false;
+  bool holdNextAction = false;
+  final Completer<void> actionGate = Completer<void>();
 
   final List<String> calls = [];
 
@@ -68,6 +73,7 @@ class _FakeAdmin implements AdminRepository {
   @override
   Future<void> shortlistApplication(String id) async {
     calls.add('shortlist:$id');
+    if (holdNextAction) await actionGate.future;
     if (failNextAction) throw Exception('action boom');
   }
 
@@ -94,6 +100,63 @@ class _FakeAdmin implements AdminRepository {
     calls.add('status:$id:$status');
     if (failNextAction) throw Exception('action boom');
   }
+
+  @override
+  Future<Map<String, dynamic>> grantAdminByEmail(String email) async {
+    calls.add('grant:$email');
+    return {
+      'id': 'u-new',
+      'email': email,
+      'displayName': 'New Admin',
+      'role': 'ADMIN',
+    };
+  }
+
+  @override
+  Future<void> revokeAdministrator(String id) async {
+    calls.add('revoke-admin:$id');
+  }
+
+  @override
+  Future<void> revokeUserSessions(String id) async {
+    calls.add('revoke-sessions:$id');
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPanelAccess() async => {
+        'verified': true,
+        'primaryAdmin': primaryAdmin,
+        'userId': primaryAdmin ? 'owner-1' : 'admin-1',
+        'permissions': [
+          'admin.manage_admins',
+        ],
+      };
+
+  @override
+  Future<Map<String, dynamic>> verifyPanelAccess(
+    String name,
+    String username,
+  ) async =>
+      const {'verified': true};
+
+  @override
+  Future<void> lockPanel() async {
+    calls.add('lock-panel');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listDisputes() async => const [];
+
+  @override
+  Future<Map<String, dynamic>> getDispute(String id) async => const {};
+
+  @override
+  Future<Map<String, dynamic>> resolveDispute(
+    String id, {
+    required String resolution,
+    String? reason,
+  }) async =>
+      {'id': id, 'resolution': resolution};
 
   @override
   Future<void> deleteJob(String id) async {
@@ -180,7 +243,126 @@ Future<void> _openTab(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
+
+
 void main() {
+
+  testWidgets('only the primary administrator sees administrator-management controls',
+      (tester) async {
+    final repo = _FakeAdmin(primaryAdmin: true)
+      ..users = [
+        const HopeAdminUser(
+          id: 'owner-1',
+          displayName: 'Owner',
+          email: 'amir.davodpour@gmail.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          primaryAdmin: true,
+        ),
+        const HopeAdminUser(
+          id: 'admin-1',
+          displayName: 'Ops',
+          email: 'ops@example.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+        ),
+      ];
+
+    await _pump(tester, repo);
+
+    expect(find.text('Administrator management'), findsWidgets);
+    expect(find.text('Add new administrator'), findsOneWidget);
+    expect(find.text('Owner'), findsOneWidget);
+    expect(find.text('Ops'), findsOneWidget);
+  });
+
+  // Adversarial permission fixture: even when the backend reports the
+  // management permission, UI controls stay owner-only.
+  testWidgets('operational administrators do not see administrator-management controls',
+      (tester) async {
+    final repo = _FakeAdmin(primaryAdmin: false)
+      ..users = [
+        const HopeAdminUser(
+          id: 'admin-1',
+          displayName: 'Ops',
+          email: 'ops@example.com',
+          role: 'ADMIN',
+          status: 'ACTIVE',
+        ),
+      ];
+
+    await _pump(tester, repo);
+
+    expect(find.text('Administrator management'), findsNothing);
+    expect(find.text('Add new administrator'), findsNothing);
+  });
+
+
+  testWidgets('admin presentation localizes backend enum fields', (tester) async {
+    final repo = _FakeAdmin()
+      ..jobs = [_job('j1', kind: 'MISSION', status: 'CANCELLED')]
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Mission',
+          'status': 'FORWARDED',
+        }),
+      ]
+      ..users = [
+        const HopeAdminUser(
+          id: 'u1',
+          displayName: 'Sara',
+          email: 'sara@example.com',
+          role: 'USER',
+          status: 'SUSPENDED',
+        ),
+      ];
+    await _pump(tester, repo);
+
+    expect(find.textContaining('Mission'), findsWidgets);
+    expect(find.textContaining('Cancelled'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Applications');
+    expect(find.textContaining('Forwarded'), findsOneWidget);
+    expect(find.textContaining('FORWARDED'), findsNothing);
+
+    await _openTab(tester, 'Users');
+    expect(find.textContaining('User'), findsWidgets);
+    expect(find.textContaining('Suspended'), findsOneWidget);
+    expect(find.textContaining('SUSPENDED'), findsNothing);
+  });
+
+testWidgets('admin action runner ignores duplicate submissions while busy',
+      (tester) async {
+    final repo = _FakeAdmin()
+      ..applications = [
+        HopeApplication.fromMap({
+          'id': 'a1',
+          'jobId': 'j1',
+          'jobTitle': 'Job',
+          'status': 'PENDING'
+        }),
+      ]
+      ..holdNextAction = true;
+    await _pump(tester, repo);
+    await _openTab(tester, 'Applications');
+
+    final shortlist = find.widgetWithText(OutlinedButton, 'Shortlist');
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    await tester.tap(shortlist);
+    await tester.pump();
+
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+
+    repo.actionGate.complete();
+    await tester.pumpAndSettle();
+    expect(repo.calls.where((call) => call == 'shortlist:a1'), hasLength(1));
+  });
+
   testWidgets('admin renders summary metrics and moderation actions',
       (tester) async {
     final repo = _FakeAdmin()
@@ -232,7 +414,8 @@ void main() {
 
     // Opportunities tab: draft rows offer the publish action.
     expect(find.text('Design a logo'), findsOneWidget);
-    expect(find.textContaining('DRAFT'), findsOneWidget);
+    expect(find.textContaining('Draft'), findsOneWidget);
+    expect(find.textContaining('DRAFT'), findsNothing);
     final publish = find.byTooltip('Publish');
     expect(publish, findsOneWidget);
     await tester.ensureVisible(publish);
@@ -260,7 +443,8 @@ void main() {
 
     // Audit log tab: system actor fallback for empty actor name.
     await _openTab(tester, 'Audit log');
-    expect(find.text('JOB_MODERATED'), findsOneWidget);
+    expect(find.text('Opportunity moderation'), findsOneWidget);
+    expect(find.text('JOB_MODERATED'), findsNothing);
     expect(find.textContaining('System'), findsOneWidget);
   });
 
@@ -275,7 +459,7 @@ void main() {
     expect(find.text('No applications'), findsOneWidget);
 
     await _openTab(tester, 'Users');
-    expect(find.text('The server did not return data. Try again.'),
+    expect(find.text('No data was returned by the server. Please try again.'),
         findsOneWidget);
   });
 

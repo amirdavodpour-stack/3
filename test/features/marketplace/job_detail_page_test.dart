@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hope_mobile/core/transactions/transaction_repository.dart';
 import 'package:hope_mobile/core/uploads/upload_queue.dart';
 import 'package:hope_mobile/features/marketplace/job_detail_page.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/transactions/transaction_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -25,10 +27,15 @@ import 'package:provider/provider.dart';
 /// candidate pipeline, owner transaction navigation, non-owner candidate
 /// suppression. Fresh fakes per test, no network.
 class _FakeDetail implements JobDetailRepository {
-  _FakeDetail({this.candidates = const []});
+  _FakeDetail({
+    this.candidates = const [],
+    this.compareResult = const {},
+  });
 
   List<HopeCandidate> candidates;
+  final Map<String, dynamic> compareResult;
   final List<String> calls = [];
+  Completer<void>? candidateGate;
 
   @override
   Future<List<HopeCandidate>> listCandidates(String jobId) async => candidates;
@@ -59,12 +66,13 @@ class _FakeDetail implements JobDetailRepository {
   Future<void> candidateAction(
       String jobId, String candidateId, String action) async {
     calls.add('candidate:$candidateId:$action');
+    if (candidateGate != null) await candidateGate!.future;
   }
 
   @override
   Future<Map<String, dynamic>> compareCandidates(
           String jobId, List<String> applicationIds) async =>
-      const {};
+      compareResult;
 
   @override
   Future<void> reportJob(String jobId,
@@ -82,12 +90,12 @@ class _FakeTx implements TransactionRepository {
         providerRef: 'r1',
         job: _job(kind: 'MISSION', ownerId: 'u1'),
         fees: const HopePaymentFees(
-          baseAmount: 1000000,
-          employerFee: 100000,
-          workerFee: 100000,
-          platformFee: 100000,
-          employerCharge: 1100000,
-          providerPayout: 900000,
+          baseAmount: '1000000',
+          employerFee: '100000',
+          workerFee: '100000',
+          platformFee: '100000',
+          employerCharge: '1100000',
+          providerPayout: '900000',
           policyVersion: 'v1',
           currency: 'TOMAN',
         ),
@@ -135,6 +143,9 @@ class _FakeQueue implements UploadQueue {
 
 class _AuthRepo implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String e, String p) => throw UnimplementedError();
   @override
   Future<AuthSession> register(String e, String p, String n) =>
@@ -151,10 +162,12 @@ HopeJob _job({
   String visibility = 'PUBLIC',
   String? ownerId = 'u1',
   String? city = 'Tehran',
+  String? title,
+  String status = 'PUBLISHED',
 }) =>
     HopeJob.fromMap({
       'id': id,
-      'title': kind == 'JOB' ? 'Flutter developer' : 'Design a logo',
+      'title': title ?? (kind == 'JOB' ? 'Flutter developer' : 'Design a logo'),
       'description': 'A clear, concise deliverable description for the page.',
       'categoryId': 'c1',
       'category': 'Design',
@@ -164,7 +177,7 @@ HopeJob _job({
       'budgetMax': '1500000',
       'duration': '8',
       'acceptanceCriteria': 'Acceptance criteria are listed here.',
-      'status': 'PUBLISHED',
+      'status': status,
       'ownerId': ownerId,
       'providerId': 'p1',
       'city': city,
@@ -176,6 +189,16 @@ HopeJob _job({
       'offerCount': 0,
       'isOwner': false,
       'distanceKm': null,
+      'isRecommended': true,
+      'recommendationScore': 94,
+      'recommendationReasons': ['SKILL_MATCH', 'WORK_MODE_MATCH', 'CATEGORY_MATCH'],
+       'recommendationComponents': {
+         'skills': 96,
+         'category': 100,
+         'location': 88,
+         'salary': 82,
+       },
+       'aiRecommendationConfidence': 0.92,
     });
 
 Future<void> _pump(
@@ -183,8 +206,10 @@ Future<void> _pump(
   required HopeJob job,
   _FakeDetail? detail,
   String userId = 'u9',
+  double width = 900,
+  double height = 3400,
 }) async {
-  tester.view.physicalSize = const Size(900, 3400);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -227,14 +252,14 @@ void main() {
   testWidgets('mission details render pricing, duration and action entry',
       (tester) async {
     await _pump(tester, job: _job());
-    expect(find.text('Mission details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Design a logo',
     );
-    expect(find.text('Mission budget'), findsOneWidget);
+    expect(find.text('Budget'), findsWidgets);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    expect(find.text('Duration'), findsOneWidget);
+    expect(find.text('Duration'), findsWidgets);
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
@@ -242,16 +267,88 @@ void main() {
   testWidgets('job details render monthly pay, deadline and admin banner',
       (tester) async {
     await _pump(tester, job: _job(kind: 'JOB'));
-    expect(find.text('Job details'), findsOneWidget);
+    expect(find.text('Job description'), findsOneWidget);
     expect(
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Flutter developer',
     );
     expect(find.text('Monthly pay'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    expect(find.textContaining('2026-09-30'), findsOneWidget);
+    expect(find.textContaining('2026-09-30'), findsWidgets);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
+  });
+
+  testWidgets('match breakdown compresses into a two-column decision grid on compact mobile',
+      (tester) async {
+    await _pump(tester, job: _job(), width: 390, height: 844);
+
+    final skills = find.byKey(const ValueKey('match-breakdown-skills'));
+    final category = find.byKey(const ValueKey('match-breakdown-category'));
+    final location = find.byKey(const ValueKey('match-breakdown-location'));
+    final salary = find.byKey(const ValueKey('match-breakdown-salary'));
+    expect(skills, findsOneWidget);
+    expect(category, findsOneWidget);
+    expect(location, findsOneWidget);
+    expect(salary, findsOneWidget);
+    expect(
+      (tester.getTopLeft(category).dy - tester.getTopLeft(skills).dy).abs(),
+      lessThan(90),
+    );
+    expect(
+      (tester.getTopLeft(salary).dy - tester.getTopLeft(location).dy).abs(),
+      lessThan(90),
+    );
+  });
+
+  testWidgets('opportunity hero preserves a stronger editorial focal height',
+      (tester) async {
+    await _pump(tester, job: _job());
+    final hero = find.byType(PremiumHero);
+    expect(hero, findsOneWidget);
+    expect(tester.getSize(hero).height, greaterThanOrEqualTo(180));
+  });
+
+  testWidgets(
+      'compact opportunity detail keeps a painted match surface in the tight runtime viewport',
+      (tester) async {
+    await _pump(tester, job: _job(), width: 274, height: 457);
+
+    final match = find.byKey(
+      const ValueKey('opportunity-match-intelligence-compact-surface'),
+    );
+    final hero = find.byType(PremiumHero);
+    expect(match, findsOneWidget);
+    final matchBoundary = find.byKey(
+      const ValueKey('opportunity-match-intelligence-compact-boundary'),
+    );
+    expect(matchBoundary, findsOneWidget);
+    expect(tester.getSize(matchBoundary).height, greaterThanOrEqualTo(160));
+    expect(tester.getSize(hero).height, lessThanOrEqualTo(176));
+    expect(find.text('94% Match'), findsOneWidget);
+    expect(find.text('Match intelligence'), findsOneWidget);
+    expect(tester.getTopLeft(match).dy, lessThan(280));
+    expect(tester.getSize(match).height, greaterThanOrEqualTo(160));
+    expect(tester.getSize(match).width, greaterThan(230));
+    expect(find.text('Match signals'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('long opportunity titles stay contained in the hero',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(
+        title:
+            'طراحی و پیاده‌سازی کامل رابط کاربری اپلیکیشن بازار کار برای موبایل',
+      ),
+    );
+
+    final title = find.textContaining('طراحی و پیاده‌سازی کامل');
+    expect(title, findsOneWidget);
+    final widget = tester.widget<Text>(title);
+    expect(widget.maxLines, 2);
+    expect(widget.overflow, TextOverflow.ellipsis);
   });
 
   testWidgets('owner job with forwarded candidates renders candidate actions',
@@ -282,6 +379,28 @@ void main() {
     expect(find.text('Interview'), findsOneWidget);
     expect(find.text('Hire'), findsOneWidget);
 
+    // A candidate action is serialized across the whole pipeline; another
+    // candidate cannot submit a concurrent transition while one is pending.
+    detail.candidateGate = Completer<void>();
+    await tester.ensureVisible(find.text('Interview'));
+    await tester.tap(find.text('Interview'));
+    await tester.pump();
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Interview')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Hire')).onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Compare')).onPressed,
+      isNull,
+    );
+    detail.candidateGate!.complete();
+    await tester.pumpAndSettle();
+    expect(detail.calls, contains('candidate:c1:interview'));
+
     await tester.ensureVisible(find.text('Interview'));
     await tester.tap(find.text('Interview'));
     await tester.pumpAndSettle();
@@ -291,6 +410,146 @@ void main() {
     await tester.tap(find.text('Hire'));
     await tester.pumpAndSettle();
     expect(detail.calls, contains('candidate:c2:hire'));
+  });
+
+  testWidgets('candidate comparison localizes backend status enums', (tester) async {
+    final detail = _FakeDetail(
+      candidates: const [
+        HopeCandidate(
+          id: 'c1',
+          skills: 'Flutter',
+          resumeText: 'Cross-platform experience.',
+          status: 'FORWARDED',
+        ),
+        HopeCandidate(
+          id: 'c2',
+          skills: 'Dart',
+          resumeText: 'Backend experience.',
+          status: 'OFFERED',
+        ),
+      ],
+      compareResult: {
+        'candidates': [
+          {
+            'skills': 'Flutter',
+            'resumeHighlights': 'Cross-platform experience.',
+            'status': 'OFFERED',
+          },
+        ],
+      },
+    );
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      detail: detail,
+      userId: 'u1',
+    );
+
+    await tester.ensureVisible(find.text('Compare'));
+    await tester.tap(find.text('Compare'));
+    await tester.pumpAndSettle();
+
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text('Offer sent'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('OFFERED'), findsNothing);
+  });
+
+  testWidgets(
+      'match intelligence exposes four visual breakdown bars and a trust note',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.byKey(const ValueKey('match-breakdown-skills')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-category')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-breakdown-salary')), findsOneWidget);
+    expect(find.text('92% confidence'), findsOneWidget);
+    expect(find.text('Match signals'), findsOneWidget);
+  });
+
+  testWidgets('match intelligence opens a detailed evidence sheet', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.text('Match intelligence'), findsOneWidget);
+    await tester.tap(
+      find.byKey(
+        const ValueKey('opportunity-match-intelligence'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Why this opportunity fits'), findsOneWidget);
+    final sheet = find.byType(BottomSheet);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Match signals')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Skill match')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Work mode fit')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text('Category match')),
+      findsOneWidget,
+    );
+    expect(find.text('94%'), findsWidgets);
+  });
+
+  testWidgets(
+      'opportunity snapshot renders as a compact flat fact strip',
+      (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1'),
+      userId: 'u9',
+    );
+
+    expect(find.byKey(const ValueKey('opportunity-snapshot-facts')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-budget')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-field')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-location')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opportunity-snapshot-fact-deadline')), findsOneWidget);
+  });
+
+  testWidgets('unknown job lifecycle status is presented safely', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('FUTURE_STATE'), findsNothing);
+  });
+  testWidgets('unknown lifecycle status does not mark a stage complete', (tester) async {
+    await _pump(
+      tester,
+      job: _job(kind: 'JOB', ownerId: 'u1', status: 'FUTURE_STATE'),
+      userId: 'u1',
+    );
+
+    final draft = tester.widget<Text>(find.text('Draft'));
+    expect(draft.style?.fontWeight, isNot(FontWeight.w800));
+    expect(find.text('Needs review'), findsOneWidget);
   });
 
   testWidgets('non-owner never sees the candidate pipeline', (tester) async {
@@ -322,4 +581,6 @@ void main() {
     // page renders the funded payment.
     expect(find.byType(TransactionPage), findsOneWidget);
   });
+
+  // Runtime certification trigger: Wave G-3A compact Match Intelligence.
 }

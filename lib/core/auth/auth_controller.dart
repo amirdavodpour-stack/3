@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'auth_repository.dart';
+import 'google_sign_in_service.dart';
 import '../network/api_error_presenter.dart';
 import '../storage/secure_store.dart';
 import '../telemetry/telemetry_service.dart';
@@ -57,6 +58,15 @@ class AuthController extends ChangeNotifier {
       final session = await LoginUseCase(repository)(email, password);
       await _applySession(session);
       await telemetry?.track('login_completed');
+    });
+  }
+
+  Future<void> loginWithGoogle(GoogleSignInService google) async {
+    await _auth(() async {
+      final idToken = await google.authenticate();
+      final session = await repository.loginWithGoogle(idToken);
+      await _applySession(session);
+      await telemetry?.track('google_login_completed');
     });
   }
 

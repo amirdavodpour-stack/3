@@ -67,7 +67,7 @@ void main() {
     final iconBox = tester.getSize(find.byType(IconButton));
     expect(iconBox.width, greaterThanOrEqualTo(48));
     expect(iconBox.height, greaterThanOrEqualTo(48));
-    expect(find.bySemanticsLabel("جست‌وجو کن..."), findsOneWidget);
+    expect(find.bySemanticsLabel("جست‌وجو..."), findsOneWidget);
   });
 }
 

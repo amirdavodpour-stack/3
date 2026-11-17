@@ -1,0 +1,305 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:hope_mobile/core/theme/app_theme.dart';
+import 'package:hope_mobile/core/theme/hope_v2_design.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
+
+void main() {
+  const destinations = <NavigationDestination>[
+    NavigationDestination(
+      icon: HugeIcon(icon: HopeV2Icons.home, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.homeSelected, size: 24),
+      label: 'خانه',
+    ),
+    NavigationDestination(
+      icon: HugeIcon(icon: HopeV2Icons.workshop, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.workshopSelected, size: 24),
+      label: 'کاوش',
+    ),
+    NavigationDestination(
+      icon: HugeIcon(icon: HopeV2Icons.activity, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.activitySelected, size: 24),
+      label: 'فعالیت',
+    ),
+    NavigationDestination(
+      icon: HugeIcon(icon: HopeV2Icons.wallet, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.walletSelected, size: 24),
+      label: 'کیف پول',
+    ),
+    NavigationDestination(
+      icon: HugeIcon(icon: HopeV2Icons.profile, size: 24),
+      selectedIcon: HugeIcon(icon: HopeV2Icons.profileSelected, size: 24),
+      label: 'پروفایل',
+    ),
+  ];
+
+  testWidgets('premium navigation preserves the five-tab shell contract',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumNavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.text('خانه'), findsOneWidget);
+    expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('فعالیت'), findsOneWidget);
+    expect(find.text('کیف پول'), findsOneWidget);
+    expect(find.text('پروفایل'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+      HopeV2Navigation.barHeight,
+    );
+  });
+
+  testWidgets('premium mobile navigation is a floating rounded surface',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumNavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+          ),
+        ),
+      ),
+    );
+
+    final dock = tester.widget<Container>(
+      find.byKey(const ValueKey('hope-navigation-dock')),
+    );
+    final decoration = dock.decoration! as BoxDecoration;
+    expect(decoration.borderRadius, BorderRadius.circular(HopeV2Navigation.dockRadius));
+  });
+
+  testWidgets('highlighted premium panels expose a restrained gradient layer',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: PremiumPanel(
+            highlight: true,
+            child: SizedBox(width: 120, height: 80),
+          ),
+        ),
+      ),
+    );
+
+    final panel = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(PremiumPanel),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = panel.decoration as BoxDecoration;
+    expect(decoration.gradient, isA<LinearGradient>());
+  });
+
+  testWidgets('premium desktop navigation rail preserves the shell contract',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumNavigationRail(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: destinations,
+            extended: true,
+          ),
+        ),
+      ),
+    );
+
+    final rail = tester.widget<NavigationRail>(
+      find.byType(NavigationRail),
+    );
+    expect(rail.destinations, hasLength(5));
+    expect(
+      tester.getSize(find.byType(PremiumNavigationRail)).width,
+      greaterThanOrEqualTo(210),
+    );
+  });
+
+  testWidgets('premium desktop navigation rail uses a direction-aware divider',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: PremiumNavigationRail(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              destinations: destinations,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final decorated = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byType(PremiumNavigationRail),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    expect(decorated.decoration, isA<BoxDecoration>());
+    final decoration = decorated.decoration as BoxDecoration;
+    expect(decoration.border, isA<BorderDirectional>());
+  });
+
+  testWidgets('premium icon button exposes a stable semantic identifier', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumIconButton(
+            icon: HopeV2Icons.refresh,
+            tooltip: 'Refresh',
+            semanticsIdentifier: 'home-refresh-action',
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsIdentifier('home-refresh-action'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('premium icon button keeps a 48dp target with a quiet surface',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumIconButton(
+            icon: HopeV2Icons.refresh,
+            tooltip: 'Refresh',
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    final button = find.byType(PremiumIconButton);
+    expect(tester.getSize(button).width, greaterThanOrEqualTo(48));
+    expect(tester.getSize(button).height, greaterThanOrEqualTo(48));
+    expect(find.byType(HugeIcon), findsOneWidget);
+    expect(find.byType(InkWell), findsOneWidget);
+  });
+
+  testWidgets('quick action strip keeps secondary destinations visible',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PremiumQuickActionStrip(
+            title: 'Quick access',
+            actions: const [
+              PremiumQuickAction(
+                label: 'Applications',
+                icon: HopeV2Icons.mission,
+              ),
+              PremiumQuickAction(
+                label: 'Offers',
+                icon: HopeV2Icons.featured,
+              ),
+              PremiumQuickAction(
+                label: 'Notifications',
+                icon: HopeV2Icons.notifications,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumQuickActionStrip), findsOneWidget);
+    expect(find.text('Applications'), findsOneWidget);
+    expect(find.text('Offers'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+  });
+
+
+  testWidgets('primary navigation shell uses one shared dock on compact screens',
+      (tester) async {
+    final taps = <int>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        locale: const Locale('fa'),
+        supportedLocales: const [Locale('fa'), Locale('en')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: PremiumPrimaryNavigationScaffold(
+          selectedIndex: 2,
+          onDestinationSelected: taps.add,
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
+    expect(find.text('خانه'), findsOneWidget);
+    expect(find.text('کاوش'), findsOneWidget);
+    expect(find.text('فعالیت'), findsOneWidget);
+    expect(find.text('کیف پول'), findsOneWidget);
+    expect(find.text('پروفایل'), findsOneWidget);
+
+    await tester.tap(find.text('کیف پول'));
+    await tester.pump();
+    expect(taps, [3]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('primary navigation shell switches to rail on wide screens',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        locale: const Locale('fa'),
+        home: PremiumPrimaryNavigationScaffold(
+          selectedIndex: 1,
+          onDestinationSelected: (_) {},
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+
+    expect(find.byType(PremiumNavigationRail), findsOneWidget);
+    expect(find.byKey(const ValueKey('hope-navigation-dock')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+}

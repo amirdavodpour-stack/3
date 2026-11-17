@@ -12,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _AuthRepository implements AuthRepository {
   @override
+  Future<AuthSession> loginWithGoogle(String _) =>
+      throw UnimplementedError();
+  @override
   Future<AuthSession> login(String email, String password) async =>
       const AuthSession(
           accessToken: 'runtime-access',

@@ -52,9 +52,10 @@ export function sendRateLimited(res, code, message, retryAfterSeconds) {
 
 export function sendError(res, error) {
   setSecurityHeaders(res);
-  const status = error instanceof HttpError ? error.status : 500;
-  const code = error instanceof HttpError ? error.code : 'INTERNAL_ERROR';
-  const message = error instanceof HttpError ? error.message : 'Internal server error';
+  const intentionalStatus = Number.isInteger(error?.status) && error.status >= 400 && error.status <= 599;
+  const status = error instanceof HttpError ? error.status : intentionalStatus ? error.status : 500;
+  const code = error instanceof HttpError ? error.code : intentionalStatus && error?.code ? String(error.code) : 'INTERNAL_ERROR';
+  const message = error instanceof HttpError ? error.message : intentionalStatus && error?.code ? String(error.message || error.code) : 'Internal server error';
   if (!res.getHeader('X-Request-Id')) res.setHeader('X-Request-Id', crypto.randomUUID());
   const body = JSON.stringify(toErrorEnvelope(
     { code, message, details: error?.details },

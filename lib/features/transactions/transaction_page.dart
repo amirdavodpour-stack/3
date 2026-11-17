@@ -8,10 +8,12 @@ import '../../core/transactions/transaction_repository.dart';
 import '../../core/transactions/payment.dart';
 import '../../core/network/api_error_presenter.dart';
 import '../../core/auth/auth_controller.dart';
-import '../../core/ui/brand.dart';
 import '../../core/ui/components.dart';
 import '../../core/ui/copy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/hope_v2_design.dart';
+import '../../core/ui/premium_components.dart';
+import '../../core/ui/hope_async_state.dart';
 import 'transaction_controller.dart';
 import '../../core/marketplace/job.dart';
 part 'transaction_evidence.part.dart';
@@ -35,6 +37,7 @@ class _TransactionPageState extends State<TransactionPage> {
   HopePayment? payment;
   bool loading = true;
   String? error;
+  int _refreshRequestId = 0;
   @override
   void initState() {
     super.initState();
@@ -42,21 +45,34 @@ class _TransactionPageState extends State<TransactionPage> {
   }
 
   Future<void> refresh() async {
+    final requestId = ++_refreshRequestId;
+    if (mounted) {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+    }
+
     try {
-      if (mounted) setState(() => error = null);
       final data = await TransactionController(
               repository: widget.repository, jobId: widget.jobId)
           .load();
-      if (mounted) {
-        setState(() => payment = data);
-      }
+      if (!mounted || requestId != _refreshRequestId) return;
+      setState(() {
+        payment = data;
+        error = null;
+        loading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => error = apiErrorMessage(e,
-            fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c));
-      }
+      if (!mounted || requestId != _refreshRequestId) return;
+      setState(() {
+        error = apiErrorMessage(
+          e,
+          fallback: HopeCopy.of(context).copy_operation_failed_eb38c4c,
+        );
+        loading = false;
+      });
     }
-    if (mounted) setState(() => loading = false);
   }
 
   Future<void> action(String operation) async {
@@ -89,6 +105,18 @@ class _TransactionPageState extends State<TransactionPage> {
   bool _isOwner(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.ownerId?.toString();
 
+  String _jobStatusLabel(String? raw) => switch (raw?.toUpperCase()) {
+        'DRAFT' => _t('پیش‌نویس', 'Draft'),
+        'PUBLISHED' => _t('منتشر شده', 'Published'),
+        'FUNDED' => _t('تأمین وجه شده', 'Funded'),
+        'IN_PROGRESS' => _t('در حال انجام', 'In progress'),
+        'DELIVERED' => _t('تحویل شده', 'Delivered'),
+        'UNDER_REVIEW' => _t('در حال بررسی', 'Under review'),
+        'COMPLETED' => _t('تکمیل شده', 'Completed'),
+        'CANCELLED' => _t('لغو شده', 'Cancelled'),
+        _ => _t('نیازمند بررسی', 'Needs review'),
+      };
+
   bool _isProvider(HopeJob? job) =>
       context.read<AuthController>().user?['id']?.toString() == job?.providerId?.toString();
 
@@ -101,13 +129,13 @@ class _TransactionPageState extends State<TransactionPage> {
     };
   }
 
-  IconData _statusIcon(String status) {
+  Object _statusIcon(String status) {
     return switch (status) {
-      'RELEASED' || 'REFUNDED' => Icons.check_circle_outline_rounded,
-      'HOLD_FAILED' || 'RELEASE_FAILED' => Icons.error_outline_rounded,
-      'HOLD_PENDING' || 'RELEASE_PENDING' || 'REFUND_PENDING' => Icons.schedule_rounded,
-      'HELD' => Icons.lock_clock_rounded,
-      _ => Icons.account_balance_wallet_outlined,
+      'RELEASED' || 'REFUNDED' => HopeV2Icons.completed,
+      'HOLD_FAILED' || 'RELEASE_FAILED' => HopeV2Icons.error,
+      'HOLD_PENDING' || 'RELEASE_PENDING' || 'REFUND_PENDING' => HopeV2Icons.pending,
+      'HELD' => HopeV2Icons.secure,
+      _ => HopeV2Icons.wallet,
     };
   }
 
@@ -134,7 +162,7 @@ class _TransactionPageState extends State<TransactionPage> {
         'RELEASE_PENDING' => _t('تسویه در حال انجام', 'Settlement pending'),
         'RELEASE_FAILED' => _t('تسویه ناموفق', 'Settlement needs retry'),
         'RELEASED' => _t('تسویه نهایی شد', 'Settled'),
-        _ => status,
+        _ => _t('نیازمند بررسی', 'Needs review'),
       };
 
   int _stepFor(HopeJob? job, String paymentStatus) {
@@ -217,12 +245,31 @@ class _TransactionPageState extends State<TransactionPage> {
   Widget build(BuildContext context) => _buildPage(context);
 }
 
-Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) => Padding(
+Widget _moneyRow(BuildContext context, String label, dynamic value, {bool strong = false}) =>
+    Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(child: Text(label)),
-        Text(moneyLabel(context, value ?? '—'),
-            style: TextStyle(
-                fontWeight: strong ? FontWeight.w800 : FontWeight.w500))
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              moneyLabel(context, value ?? '—'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: strong ? FontWeight.w800 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );

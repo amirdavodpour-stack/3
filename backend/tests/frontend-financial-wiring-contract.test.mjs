@@ -50,7 +50,7 @@ test('wallet UI is wired to repository mutations and wallet history controls', (
   assert.match(page, /_pendingKey\('TOP_UP'/);
   assert.match(page, /_pendingKey\('TRANSFER'/);
   assert.match(page, /_pendingKey\('PAYOUT'/);
-  assert.match(page, /ChoiceChip/);
+  assert.match(page, /PremiumFilterChip/);
   assert.match(page, /'CREDIT'/);
   assert.match(page, /'DEBIT'/);
   assert.match(page, /'HOLD'/);
@@ -79,7 +79,7 @@ test('job detail uses role-aware primary financial CTA and prevents duplicate ca
   assert.match(page, /String\? _candidateBusyId/);
   assert.match(page, /_candidateBusyId == candidate\.id/);
   assert.match(page, /FilteringTextInputFormatter\.digitsOnly/);
-  assert.match(page, /suffixText: 'TOMAN'/);
+  assert.match(page, /suffixText: _t\('تومان', 'Toman'\)/);
 });
 
 test('activity screen exposes a direct route from backend payment summary to transaction controls', () => {
@@ -91,6 +91,26 @@ test('activity screen exposes a direct route from backend payment summary to tra
   assert.match(page, /context\.read<UploadQueue>\(\)/);
 });
 
+
+test('financial insights and satisfaction UI are wired to scoped backend capabilities', () => {
+  const financialRepository = read('lib/core/financial/financial_insights_repository.dart');
+  const financialPage = read('lib/features/financial/financial_insights_page.dart');
+  const satisfactionRepository = read('lib/core/jobs/job_satisfaction_repository.dart');
+  const satisfactionPage = read('lib/features/jobs/job_satisfaction_page.dart');
+  const routes = read('lib/core/router/app_routes.dart');
+  const main = read('lib/main.dart');
+  assert.match(financialRepository, /financial-insights/);
+  assert.match(financialPage, /Monthly cash flow|جریان نقدی ماهانه/);
+  assert.match(financialPage, /Balance trend|روند موجودی/);
+  assert.match(financialPage, /Financial activity sources|منابع فعالیت مالی/);
+  assert.ok(satisfactionRepository.includes('/jobs/${_id(jobId)}/satisfaction'));
+  assert.match(satisfactionPage, /Work satisfaction report|گزارش رضایت همکاری/);
+  assert.match(satisfactionPage, /no general AI chat|هیچ چت عمومی/);
+  assert.match(routes, /financialInsights\(\)/);
+  assert.match(routes, /jobSatisfaction\(String jobId\)/);
+  assert.match(main, /FinancialInsightsRepository/);
+  assert.match(main, /JobSatisfactionRepository/);
+});
 
 test('shared financial summary keeps status and financial language localized', () => {
   const summary = read('lib/core/ui/premium_payment_summary.dart');
@@ -111,7 +131,7 @@ test('create opportunity UI preserves exact Toman input and recovers category/de
 
   assert.match(page, /FilteringTextInputFormatter\.digitsOnly/);
   assert.match(page, /LengthLimitingTextInputFormatter\(16\)/);
-  assert.match(page, /suffixText: (?:_t|translate)\('تومان', 'TOMAN'\)/);
+  assert.match(page, /suffixText: translate\('تومان', 'Toman'\)/);
   assert.match(page, /Future<void> _pickDeadline\(\)/);
   assert.match(page, /DateFormat\('yyyy-MM-dd'\)/);
   assert.match(page, /snapshot\.hasError/);
@@ -121,4 +141,22 @@ test('create opportunity UI preserves exact Toman input and recovers category/de
   assert.match(validator, /BigInt\.tryParse\(minRaw\)/);
   assert.match(validator, /min > max/);
   assert.match(validator, /9000000000000000/);
+});
+
+
+test('satisfaction UI surfaces the automatic dispute state without exposing free-form AI', () => {
+  const repository = read('lib/core/jobs/job_satisfaction_repository.dart');
+  const page = read('lib/features/jobs/job_satisfaction_page.dart');
+  assert.ok(repository.includes('dispute'));
+  assert.ok(page.includes('dispute') || page.includes('پرونده اختلاف'));
+  assert.ok(page.includes('تا تعیین تکلیف') || page.includes('until it is resolved'));
+});
+
+test('admin entry always goes through identity verification', () => {
+  const home = read('lib/features/home/home_page.dart');
+  const access = read('lib/features/admin/admin_access_page.dart');
+  const repository = read('lib/core/admin/admin_repository.dart');
+  assert.ok(home.includes('HopeRoutes.adminAccess()'));
+  assert.ok(access.includes('verifyPanelAccess'));
+  assert.ok(repository.includes("'/admin/access'"));
 });

@@ -14,7 +14,7 @@ import { calculatePaymentBreakdown, fundingJournal, releaseJournal, payoutJourna
 import { notifyUser, NOTIFICATION_TYPES } from './notifications.js';
 import { recordAnalyticsEvent, recordCrash, localProductFunnelSummary } from './analytics.js';
 import { getProductFunnelSummary } from './repository.js';
-import { buildCandidateProfile, scoreRecommendation } from './recommendation.js';
+import { buildCandidateProfile, scoreRecommendation, rerankWithAI } from './recommendation.js';
 import { JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, requireFields, stringField, textField, moneyField, tomanField, dateOnlyField, enumField, requireAdmin, readIdempotencyKey } from './policies/validation.js';
 import { createSessionService } from './services/session.js';
 import { sanitizeTelemetryProperties, anonymizedEmail, deletionCredential, buildDataExport } from './privacy.js';
@@ -49,6 +49,18 @@ import { createSessionLegacyAdapter } from './application/legacy/session_legacy.
 import { createOfferLegacyAdapter } from './application/legacy/offer_legacy.js';
 import { createStorageLegacyAdapter } from './application/legacy/storage_legacy.js';
 import { createAppLegacyAdapter } from './application/legacy/app_legacy.js';
+import { verifyGoogleIdToken } from './google_auth.js';
+import { createAiRoutes } from './routes/ai_routes.js';
+import { createRecommendationProfileRoutes } from './routes/recommendation_profile_routes.js';
+import { createOpportunityAgentRoutes } from './routes/opportunity_agent_routes.js';
+import { createJobSatisfactionRoutes } from './routes/job_satisfaction_routes.js';
+import { createFinancialInsightsRoutes } from './routes/financial_insights_routes.js';
+import { createJobDisputeRoutes } from './routes/job_dispute_routes.js';
+import { createHumanChatRoutes } from './routes/human_chat_routes.js';
+import { createConfigRoutes } from './routes/config_routes.js';
+import { buildOpportunityAgentState, parseOpportunityAgentState } from './services/opportunity_agent.js';
+import { askAI } from './services/ai.js';
+import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
 
 await initDatabase();
 await seedBaseData();
@@ -122,6 +134,10 @@ const adminRoutes = createAdminRoutes({
   notifyApplicationCandidate: (...args) => notifyApplicationCandidate(...args), URL,
   listUnknownPayouts: repo.listUnknownPayouts,
   resolvePayoutUnknown: repo.resolvePayoutUnknown,
+  processPaymentReleaseNow,
+  processPaymentRefundNow,
+  notifyUser,
+  NOTIFICATION_TYPES,
 });
 
 const accountRoutes = createAccountRoutes({
@@ -129,6 +145,32 @@ const accountRoutes = createAccountRoutes({
 });
 
 const walletRoutes = createWalletRoutes({ authUser, adminGuard: requireAdmin, readBody, sendJson, HttpError, config, walletRepo: repo });
+const aiRoutes = createAiRoutes({ authUser, readBody, sendJson, HttpError, askAI });
+const financialInsightsRoutes = createFinancialInsightsRoutes({ authUser, sendJson, HttpError, repo });
+const humanChatRoutes = createHumanChatRoutes({ authUser, readBody, sendJson, HttpError, repo });
+const configRoutes = createConfigRoutes({ sendJson, config });
+const jobSatisfactionRoutes = createJobSatisfactionRoutes({ authUser, readBody, sendJson, HttpError, repo, getJob, paymentUseCases, askAI, processPaymentReleaseNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
+const jobDisputeRoutes = createJobDisputeRoutes({ authUser, requireAdmin, readBody, sendJson, HttpError, repo, askAI, paymentUseCases, processPaymentReleaseNow, processPaymentRefundNow, createAudit: (...args) => createAudit(...args), notifyUser, NOTIFICATION_TYPES, now });
+const recommendationProfileRoutes = createRecommendationProfileRoutes({
+  authUser,
+  readBody,
+  sendJson,
+  HttpError,
+  repo,
+  enrichRecommendationProfile,
+  buildRecommendationInterviewPrompt,
+  parseInterviewResponse,
+  askAI,
+});
+
+const opportunityAgentRoutes = createOpportunityAgentRoutes({
+  authUser,
+  sendJson,
+  HttpError,
+  repo,
+  buildOpportunityAgentState: (input) => buildOpportunityAgentState(input),
+  parseOpportunityAgentState: (input) => parseOpportunityAgentState(input),
+});
 
 
 const {
@@ -145,7 +187,7 @@ const {
 const jobLegacy = createJobLegacyAdapter({ db, categoryBy, relatedJob, findUser, publicUser, now });
 
 const authRoutes = createAuthRoutes({
-  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount,
+  authUser, authUserView, getUserByEmail, issueSession, deliverPasswordReset, findUser, rateLimitAuthAccount, verifyGoogleIdToken,
   readBody, sendJson, HttpError, requireFields, repo, config, now, hashPassword,
   verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, createAudit, DUMMY_PASSWORD_HASH, logEvent, stringField,
   id: db.id, legacy: authLegacy,
@@ -158,11 +200,11 @@ const paymentRoutes = createPaymentRoutes({
   processPaymentReleaseNow, processPaymentRefundNow, notifyUser, NOTIFICATION_TYPES, logEvent, now,
 });
 
-const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES });
-const offerRoutes = createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy: offerLegacy, id: db.id, getJob, enforceJobState, createAudit, now, jobView });
+const jobRoutes = createJobRoutes({ getJob, authUser, id: db.id, repo, legacyJobs: jobLegacy, jobUseCases, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, enumField, JOB_TYPES, JOB_KINDS, JOB_VISIBILITY, JOB_SCHEDULES, BUDGET_TYPES, dateOnlyField, categoryBy, jobView, paymentView, buildOfferCountMap, relatedJob, enforceJobState, createAudit, now, findUser, publicUser, notifyApplicationCandidate, NOTIFICATION_TYPES, recordAnalyticsEvent, ensureJobChat: repo.ensureJobChat });
+const offerRoutes = createOfferRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, moneyField, tomanField, repo, legacy: offerLegacy, id: db.id, getJob, getUserById, enforceJobState, createAudit, now, jobView, ensureJobChat: repo.ensureJobChat });
 const savedSearchLegacy = createSavedSearchLegacy({ db, textField, now });
 const savedSearchRoutes = createSavedSearchRoutes({ authUser, repo, legacy: savedSearchLegacy, readBody, sendJson, HttpError, textField });
-const applicationRoutes = createApplicationRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, repo, applicationUseCases, legacy: applicationLegacy, id: db.id, getJob, createAudit, now, notifyUser, NOTIFICATION_TYPES });
+const applicationRoutes = createApplicationRoutes({ authUser, readBody, sendJson, HttpError, requireFields, textField, repo, applicationUseCases, legacy: applicationLegacy, id: db.id, getJob, createAudit, now, notifyUser, NOTIFICATION_TYPES, recordAnalyticsEvent });
 
 export async function handle(req, res) {
   const startedAt = process.hrtime.bigint();
@@ -227,7 +269,7 @@ export async function handle(req, res) {
   if (!isLive && !isHealth && !url.pathname.startsWith('/metrics') && !(await rateLimitGeneral(req, config.generalRateLimitMax, config.generalRateLimitWindowMs))) {
     return sendRateLimited(res, 'RATE_LIMITED', 'Too many requests', Math.ceil(config.generalRateLimitWindowMs / 1000));
   }
-  const parts = url.pathname.replace(/^\/api\/v1\/?/, '').split('/').filter(Boolean);
+  const parts = url.pathname.replace(/^\/api(?:\/v1)?\/?/, '').split('/').filter(Boolean);
   try {
     if (url.pathname === '/live' || url.pathname === '/api/v1/live') {
       return sendJson(res, 200, { alive: true, service: 'hope-api', version: process.env.HOPE_VERSION || HOPE_VERSION, time: now() });
@@ -242,6 +284,15 @@ export async function handle(req, res) {
       const ready = database.status === 'ok';
       return sendJson(res, ready ? 200 : 503, { ready, service: 'hope-api', database, time: now() });
     }
+    if (parts[0] === 'config') return await configRoutes(req, res, parts.slice(1));
+    if (parts[0] === 'chat') return await aiRoutes(req, res, parts);
+    if (parts[0] === 'messaging') return await humanChatRoutes(req, res, parts);
+    if (parts[0] === 'recommendation-profile') return await recommendationProfileRoutes(req, res, parts);
+    if (parts[0] === 'opportunity-agent') return await opportunityAgentRoutes(req, res, parts);
+    if (parts[0] === 'wallet' && parts[1] === 'financial-insights') return await financialInsightsRoutes(req, res, parts);
+    if (parts[0] === 'jobs' && parts[2] === 'satisfaction') return await jobSatisfactionRoutes(req, res, parts);
+    if (parts[0] === 'jobs' && parts[2] === 'satisfaction-history') return await jobSatisfactionRoutes(req, res, parts);
+    if (parts[0] === 'jobs' && parts[2] === 'dispute') return await jobDisputeRoutes(req, res, parts);
     if (parts[0] === 'auth') return await authRoutes(req, res, parts);
     if (parts[0] === 'account') return await accountRoutes(req, res, parts.slice(1));
     if (parts[0] === 'wallet') return await walletRoutes(req, res, parts);
@@ -324,8 +375,32 @@ async function recommendedJobs(req, res) {
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new HttpError(400, 'INVALID_COORDINATE', 'coordinates are out of range');
   }
   let applications = [];
-  if (user) applications = process.env.DATABASE_URL ? await repo.listCandidateApplications(user.id) : appLegacy.findApplicationsByCandidate(user.id).map(a => { const j=appLegacy.findJobById(a.jobId); return {...a,jobCity:j?.city||null,jobKind:j?.kind||'JOB',categoryId:j?.categoryId||null,monthlySalary:j?.monthlySalary||null}; });
-  const profile = buildCandidateProfile(applications);
+  let preferenceProfile = null;
+  let savedSearches = [];
+  let recommendationEvents = [];
+  let completedJobs = [];
+  if (user) {
+    if (process.env.DATABASE_URL) {
+      [applications, preferenceProfile, savedSearches, recommendationEvents, completedJobs] = await Promise.all([
+        repo.listCandidateApplications(user.id),
+        repo.getRecommendationProfile(user.id),
+        repo.listSavedSearches(user.id),
+        repo.listRecommendationEvents(user.id),
+        repo.listProviderWorkHistory(user.id),
+      ]);
+    } else {
+      applications = appLegacy.findApplicationsByCandidate(user.id).map(a => {
+        const j=appLegacy.findJobById(a.jobId);
+        return {...a,jobCity:j?.city||null,jobKind:j?.kind||'JOB',categoryId:j?.categoryId||null,monthlySalary:j?.monthlySalary||null};
+      });
+    }
+  }
+  const profile = buildCandidateProfile(applications, {
+    profile: preferenceProfile || {},
+    savedSearches,
+    events: recommendationEvents,
+    completedJobs,
+  });
   const rows = process.env.DATABASE_URL
     ? await repo.listJobViews({status:'PUBLISHED', kind, categoryId, city:null, visibility, search})
     : appLegacy.jobs().filter(j =>
@@ -345,8 +420,46 @@ async function recommendedJobs(req, res) {
     scored.push({...view, recommendationScore:match.score, distanceKm:match.distanceKm, recommendationReasons:match.reasons, recommendationComponents:match.componentScores});
   }
   scored.sort((a,b) => (b.recommendationScore-a.recommendationScore) || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
-  if (user) await recordAnalyticsEvent({eventName:'recommendation_served',platform:'UNKNOWN',properties:{count:Math.min(50,scored.length), personalized:applications.length>0}}, user.id, `recommendation_served:${user.id}:${new Date().toISOString().slice(0,13)}`).catch(()=>{});
+
+  let aiReranked = false;
+  if (user && scored.length > 1) {
+    const aiRankings = await rerankWithAI({
+      askAI,
+      profile,
+      jobs: scored.slice(0, 20),
+    });
+    if (aiRankings && aiRankings.length > 0) {
+      const byId = new Map(aiRankings.map((item) => [item.id, item]));
+      for (const job of scored.slice(0, 20)) {
+        const ai = byId.get(job.id);
+        if (!ai) continue;
+        const baseScore = Number(job.recommendationScore) || 0;
+        job.recommendationScore = Number((baseScore * 0.55 + ai.score * 0.45).toFixed(2));
+        job.aiRecommendationScore = ai.score;
+        job.aiRecommendationConfidence = ai.confidence;
+        job.aiRecommendationReasons = ai.reasons;
+        job.recommendationSource = 'HYBRID_AI';
+      }
+      aiReranked = true;
+      scored.sort((a,b) =>
+        (b.recommendationScore-a.recommendationScore) ||
+        String(b.updatedAt||'').localeCompare(String(a.updatedAt||''))
+      );
+    }
+  }
+
+  if (user) await recordAnalyticsEvent({
+    eventName:'recommendation_served',
+    platform:'UNKNOWN',
+    properties:{
+      count:Math.min(50,scored.length),
+      personalized:applications.length>0,
+      aiReranked,
+      aiCandidateCount:aiReranked ? Math.min(20,scored.length) : 0,
+    },
+  }, user.id, `recommendation_served:${user.id}:${new Date().toISOString().slice(0,13)}`).catch(()=>{});
   return sendJson(res, 200, scored.slice(0, 50));
 }
 
 export function createServer() { return http.createServer(handle); }
+

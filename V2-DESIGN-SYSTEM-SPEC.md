@@ -7,6 +7,7 @@ The product uses Persian-first RTL presentation for customer and worker experien
 ## Visual foundation
 
 - Material 3 composition with a restrained premium fintech visual language.
+- Default product presentation is dark-first; light mode remains explicitly supported.
 - Consistent spacing scale, corner radii, typography hierarchy, icon sizing, and elevation across feature surfaces.
 - Primary information is grouped into cards and sections; destructive actions are visually distinct and require an explicit confirmation state.
 - Avoid layout assumptions tied to a single handset width. Screens must remain usable in narrow, large, and text-expanded configurations.
