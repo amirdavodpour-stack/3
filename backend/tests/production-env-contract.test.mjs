@@ -54,6 +54,9 @@ const validProductionEnv = {
   METRICS_TOKEN: 'ci-metrics-token-0123456789012345',
   ALERT_WEBHOOK_URL: 'https://alerts.example.invalid/hope',
   ALERT_WEBHOOK_TOKEN: 'ci-alert-webhook-token-0123456789012345',
+  ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON: '["https://alerts.example.invalid/hope"]',
+  ALERT_EGRESS_MODE: 'direct',
+  ALERT_DIRECT_EGRESS_ACKNOWLEDGED: 'true',
   S3_BUCKET: 'hope-ci',
   PAYMENT_PROVIDER: 'internal',
   PAYMENT_CURRENCY: 'TOMAN',
@@ -77,6 +80,9 @@ const validProductionRuntimeEnv = {
   METRICS_TOKEN: 'ci-metrics-token-0123456789012345',
   ALERT_WEBHOOK_URL: 'https://alerts.example.invalid/hope',
   ALERT_WEBHOOK_TOKEN: 'ci-alert-webhook-token-0123456789012345',
+  ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON: '["https://alerts.example.invalid/hope"]',
+  ALERT_EGRESS_MODE: 'direct',
+  ALERT_DIRECT_EGRESS_ACKNOWLEDGED: 'true',
   ALLOWED_CORS_ORIGINS: 'https://example.invalid',
   STORAGE_BACKEND: 's3',
   S3_BUCKET: 'hope-ci',
@@ -164,6 +170,33 @@ test('production env validator requires an authenticated HTTPS security alert re
     assert.notEqual(result.status, 0, `invalid ${variable} must block production validation`);
     assert.match(result.stdout + '\n' + result.stderr, new RegExp(variable));
   }
+});
+
+test('production runtime and env validator require an exact alert allowlist and acknowledged direct egress', () => {
+  const cases = [
+    [{ ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON: '' }, 'ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON'],
+    [{ ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON: '{"endpoint":"https://alerts.example.invalid/hope"}' }, 'ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON'],
+    [{ ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON: '["https://alerts.example.invalid/other"]' }, 'ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON'],
+    [{ ALERT_EGRESS_MODE: 'proxy' }, 'ALERT_EGRESS_MODE'],
+    [{ ALERT_EGRESS_MODE: '' }, 'ALERT_EGRESS_MODE'],
+    [{ ALERT_DIRECT_EGRESS_ACKNOWLEDGED: 'false' }, 'ALERT_DIRECT_EGRESS_ACKNOWLEDGED'],
+    [{ ALERT_DIRECT_EGRESS_ACKNOWLEDGED: '' }, 'ALERT_DIRECT_EGRESS_ACKNOWLEDGED'],
+  ];
+
+  for (const [overrides, variable] of cases) {
+    const runtime = runProductionRuntimeConfig(overrides);
+    assert.notEqual(runtime.status, 0, 'runtime must reject invalid ' + variable);
+    assert.match(runtime.stdout + '\n' + runtime.stderr, new RegExp(variable));
+
+    const validator = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin', ...overrides });
+    assert.notEqual(validator.status, 0, 'release validator must reject invalid ' + variable);
+    assert.match(validator.stdout + '\n' + validator.stderr, new RegExp(variable));
+  }
+
+  const runtime = runProductionRuntimeConfig();
+  assert.equal(runtime.status, 0, runtime.stdout + '\n' + runtime.stderr);
+  const validator = runProductionEnvValidator({ ADMIN_PANEL_USERNAME: 'hope-admin' });
+  assert.equal(validator.status, 0, validator.stdout + '\n' + validator.stderr);
 });
 
 test('Production runtime requires an authenticated HTTPS security alert receiver', () => {
