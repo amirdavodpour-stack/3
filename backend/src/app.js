@@ -245,6 +245,7 @@ export async function handle(req, res) {
   });
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (url.pathname === '/metrics') {
+    let metricsTokenVerified = false;
     if (config.metricsToken) {
       const provided = String(req.headers['x-metrics-token'] || '');
       const expected = config.metricsToken;
@@ -255,8 +256,16 @@ export async function handle(req, res) {
         const metricsError = new HttpError(401, 'UNAUTHORIZED', 'Authentication required');
         return sendError(res, metricsError);
       }
+      metricsTokenVerified = true;
     }
-    const body = JSON.stringify(metricsSnapshot());
+    const snapshot = metricsSnapshot();
+    if (metricsTokenVerified) {
+      const runtimeCommitSha = String(process.env.RAILWAY_GIT_COMMIT_SHA || '').trim().toLowerCase();
+      snapshot.build = {
+        commitSha: /^[a-f0-9]{40}$/.test(runtimeCommitSha) ? runtimeCommitSha : null,
+      };
+    }
+    const body = JSON.stringify(snapshot);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     return res.end(body);
   }

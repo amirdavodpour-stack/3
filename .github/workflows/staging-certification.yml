@@ -171,6 +171,44 @@ jobs:
       - name: Verify Flutter lockfile
         run: bash tools/verify-pubspec-lock-fresh.sh
 
+      - name: Verify live Staging build SHA
+        id: verify_staging_runtime_sha
+        shell: bash
+        env:
+          STAGING_BASE_URL: ${{ env.STAGING_BASE_URL }}
+          STAGING_METRICS_TOKEN: ${{ env.STAGING_METRICS_TOKEN }}
+          EXPECTED_GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [ -n "${STAGING_BASE_URL:-}" ] || { echo 'STAGING_BASE_URL is required for runtime SHA verification.' >&2; exit 1; }
+          [ -n "${STAGING_METRICS_TOKEN:-}" ] || { echo 'STAGING_METRICS_TOKEN is required for authenticated runtime SHA verification.' >&2; exit 1; }
+          [[ "$STAGING_BASE_URL" =~ ^https://[^[:space:]]+$ ]] || { echo 'STAGING_BASE_URL must use HTTPS and contain no whitespace.' >&2; exit 1; }
+          [[ "$EXPECTED_GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Workflow commit SHA must be a full 40-character Git SHA.' >&2; exit 1; }
+          node --input-type=module - <<'NODE'
+          const metricsUrl = new URL('/metrics', process.env.STAGING_BASE_URL);
+          const response = await fetch(metricsUrl, {
+            headers: {
+              accept: 'application/json',
+              'X-Metrics-Token': process.env.STAGING_METRICS_TOKEN,
+            },
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!response.ok) {
+            throw new Error(`Authenticated Staging metrics request failed: HTTP ${response.status}`);
+          }
+          const body = await response.json();
+          const data = body?.data ?? body;
+          const actualSha = String(data?.build?.commitSha ?? '');
+          const expectedSha = String(process.env.EXPECTED_GITHUB_SHA ?? '');
+          if (!/^[a-f0-9]{40}$/.test(actualSha)) {
+            throw new Error('Staging metrics did not report a valid 40-character runtime commit SHA.');
+          }
+          if (actualSha !== expectedSha) {
+            throw new Error(`Staging runtime SHA mismatch: expected ${expectedSha}, received ${actualSha}.`);
+          }
+          console.log(`PASS: Staging API is serving exact GitHub commit ${actualSha}.`);
+          NODE
+
       - name: Staging external integration gate
         id: provider_integration
         continue-on-error: true
