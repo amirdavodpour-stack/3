@@ -154,6 +154,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
     expect(find.text("Secondary content"), findsOneWidget);
     expect(find.bySemanticsLabel("secondary surface"), findsOneWidget);
   });

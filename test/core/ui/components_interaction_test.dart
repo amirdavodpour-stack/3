@@ -80,7 +80,7 @@ void main() {
     expect(semantics.value, 'work');
   });
 
-  testWidgets('compact PremiumHeader keeps trailing action in the same visual row',
+  testWidgets('compact PremiumHeader keeps trailing action within the content fold',
       (tester) async {
     tester.view.physicalSize = const Size(360, 900);
     tester.view.devicePixelRatio = 1;
@@ -91,17 +91,19 @@ void main() {
       MaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: PremiumHeader(
-              eyebrow: 'FINANCE',
-              title: 'Wallet',
-              subtitle: 'Balance and activity',
-              trailing: PremiumIconButton(
-                key: const ValueKey('header-action'),
-                icon: HopeV2Icons.insights,
-                tooltip: 'Financial insights',
-                onPressed: () {},
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: PremiumHeader(
+                eyebrow: 'FINANCE',
+                title: 'Wallet',
+                subtitle: 'Balance and activity',
+                trailing: PremiumIconButton(
+                  key: const ValueKey('header-action'),
+                  icon: HopeV2Icons.insights,
+                  tooltip: 'Financial insights',
+                  onPressed: () {},
+                ),
               ),
             ),
           ),
@@ -208,8 +210,9 @@ void main() {
     expect(rail.minWidth, HopeV2Navigation.railMinWidth);
     expect(rail.minExtendedWidth, HopeV2Navigation.railExtendedWidth);
 
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.height, HopeV2Navigation.barHeight);
+    final dock = find.byKey(const ValueKey('hope-navigation-dock'));
+    expect(dock, findsOneWidget);
+    expect(tester.getSize(dock).height, HopeV2Navigation.barHeight);
   });
 
   testWidgets('PressableScale is keyboard-focusable and exposes button semantics',

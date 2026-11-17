@@ -55,8 +55,10 @@ void main() {
     expect(find.text('فعالیت'), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsOneWidget);
-    expect(tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
-        greaterThanOrEqualTo(64));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('hope-navigation-dock'))).height,
+      HopeV2Navigation.barHeight,
+    );
   });
 
   testWidgets('premium mobile navigation is a floating rounded surface',
@@ -260,7 +262,7 @@ void main() {
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.text('خانه'), findsOneWidget);
     expect(find.text('کاوش'), findsOneWidget);
-    expect(find.text('کار'), findsOneWidget);
+    expect(find.text('فعالیت'), findsOneWidget);
     expect(find.text('کیف پول'), findsOneWidget);
     expect(find.text('پروفایل'), findsOneWidget);
 

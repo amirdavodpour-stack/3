@@ -90,13 +90,9 @@ void main() {
 
   testWidgets('drawer opens for the guest shell', (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('منو');
-    if (menu.evaluate().isNotEmpty) {
-      await tester.tap(menu);
-    } else {
-      expect(find.byType(Drawer), findsOneWidget);
-      return;
-    }
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
+    expect(menu, findsOneWidget);
+    await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);
   });
@@ -105,7 +101,8 @@ void main() {
       'language can be changed from the drawer without replacing MaterialApp',
       (tester) async {
     await _pump(tester);
-    final menu = find.bySemanticsLabel('منو');
+    final menu = find.byKey(const ValueKey('hope-menu-button'));
+    expect(menu, findsOneWidget);
     await tester.tap(menu);
     await tester.pumpAndSettle();
     expect(find.byType(Drawer), findsOneWidget);

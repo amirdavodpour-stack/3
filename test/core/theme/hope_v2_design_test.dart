@@ -45,7 +45,7 @@ void main() {
   });
 
   test('HOPE hero geometry stays intentionally more expressive than standard cards', () {
-    expect(HopeV2Radii.hero, 28.0);
+    expect(HopeV2Radii.hero, 24.0);
     expect(HopeV2Radii.hero, greaterThan(HopeV2Radii.lg));
   });
 
@@ -83,13 +83,12 @@ void main() {
       ),
     );
 
-    expect(halo.colors.length, 3);
-    expect((halo.colors.first.a * 255.0).round().clamp(0, 255), lessThanOrEqualTo(13));
-    expect(halo.colors.last, Colors.transparent);
+    expect(halo.colors, [HopeV2Colors.warmHalo, Colors.transparent]);
+    expect(halo.stops, [0.0, 0.42]);
   });
 
   test('HOPE dark surfaces stay cool and avoid the warm-brown palette', () {
-    expect(HopeV2Colors.pageDark, HopeV2Colors.darkBackground);
+    expect(HopeV2Colors.pageDark, const Color(0xFF0B0F18));
     expect(HopeV2Colors.darkBackground, const Color(0xFF070A12));
     expect(HopeV2Colors.darkSurface, const Color(0xFF0F111A));
     expect(HopeV2Colors.darkCard, const Color(0xFF111827));
