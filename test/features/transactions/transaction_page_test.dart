@@ -446,6 +446,10 @@ void main() {
     expect(find.text('Amount'), findsOneWidget);
     expect(find.text('Reference'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey('transaction-provider-reference')),
+      findsOneWidget,
+    );
+    expect(
       find.text(
         'provider-reference-1234567890-abcdefghijklmnopqrstuvwxyz',
       ),

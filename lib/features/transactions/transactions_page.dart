@@ -590,7 +590,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           key: const ValueKey('work-center-metrics'),
                           children: [
                             for (var index = 0; index < metrics.length; index++) ...[
-                              SizedBox(width: metricWidth, child: metrics[index]),
+                              SizedBox(
+                                width: metricWidth,
+                                child: KeyedSubtree(
+                                  key: ValueKey('work-center-metric-$index'),
+                                  child: metrics[index],
+                                ),
+                              ),
                               if (index != metrics.length - 1)
                                 const SizedBox(width: 8),
                             ],

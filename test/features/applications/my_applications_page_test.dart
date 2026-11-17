@@ -15,17 +15,25 @@ class _FakeProfileRepository implements ProfileRepository {
   _FakeProfileRepository(this.application);
 
   final HopeApplication application;
+  Completer<HopeApplication>? withdrawResult;
+  bool failList = false;
+  int withdrawCalls = 0;
 
   @override
   Future<HopeProviderProfile> getProviderProfile() =>
       throw UnimplementedError();
 
   @override
-  Future<List<HopeApplication>> listApplications() async => [application];
+  Future<List<HopeApplication>> listApplications() async {
+    if (failList) throw StateError('applications unavailable');
+    return [application];
+  }
 
   @override
-  Future<HopeApplication> withdrawApplication(String applicationId) =>
-      throw UnimplementedError();
+  Future<HopeApplication> withdrawApplication(String applicationId) {
+    withdrawCalls += 1;
+    return withdrawResult?.future ?? Future<HopeApplication>.value(application);
+  }
 }
 
 class _SequencedProfileRepository implements ProfileRepository {
@@ -107,7 +115,90 @@ class _FailingProfileRepository implements ProfileRepository {
       throw UnimplementedError();
 }
 
+HopeApplication _pendingApplication() => const HopeApplication(
+      id: 'pending-app',
+      jobId: 'pending-job',
+      jobTitle: 'Pending application',
+      jobCity: 'Berlin',
+      jobKind: 'JOB',
+      resumeText: 'A concise resume.',
+      skills: 'Flutter',
+      status: 'PENDING',
+      createdAt: null,
+      updatedAt: null,
+    );
+
+Future<void> _pumpApplicationsPage(
+  WidgetTester tester,
+  ProfileRepository repository,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('fa'), Locale('en')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: Provider<ApplicationRegistry>.value(
+        value: ApplicationRegistry(profile: repository),
+        child: const MyApplicationsPage(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets(
+    'withdrawing an application disables the action until completion',
+    (tester) async {
+      final application = _pendingApplication();
+      final repository = _FakeProfileRepository(application)
+        ..withdrawResult = Completer<HopeApplication>();
+      await _pumpApplicationsPage(tester, repository);
+
+      final withdraw = find.byTooltip('Withdraw');
+      expect(withdraw, findsOneWidget);
+      await tester.tap(withdraw);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Withdraw'));
+      await tester.pump();
+
+      expect(repository.withdrawCalls, 1);
+      final button = tester.widget<IconButton>(withdraw);
+      expect(button.onPressed, isNull);
+
+      repository.withdrawResult!.complete(application);
+      await tester.pumpAndSettle();
+      expect(repository.withdrawCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'withdraw refresh failure keeps the existing application visible',
+    (tester) async {
+      final application = _pendingApplication();
+      final repository = _FakeProfileRepository(application)
+        ..withdrawResult = Completer<HopeApplication>();
+      await _pumpApplicationsPage(tester, repository);
+
+      await tester.tap(find.byTooltip('Withdraw'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Withdraw'));
+      await tester.pump();
+
+      repository.failList = true;
+      repository.withdrawResult!.complete(application);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Could not load applications.'), findsOneWidget);
+      expect(find.text('Pending application'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'applications loading uses the canonical async state',
     (tester) async {

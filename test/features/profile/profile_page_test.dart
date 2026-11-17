@@ -33,37 +33,22 @@ class _AuthRepo implements AuthRepository {
 }
 
 class _ProfileRepo implements ProfileRepository {
-  _ProfileRepo({this.applications = const []});
-
-  final List<HopeApplication> applications;
-  final Completer<HopeApplication> withdrawResult =
-      Completer<HopeApplication>();
-  int withdrawCalls = 0;
-
   @override
   Future<HopeProviderProfile> getProviderProfile() async =>
       const HopeProviderProfile(
-          providerType: 'INDIVIDUAL',
-          capacity: 'OPEN',
-          verificationStatus: 'VERIFIED',
-          trustSignals: {'verified': true});
-
-  bool failApplicationReload = false;
-
-  @override
-  Future<List<HopeApplication>> listApplications() async {
-    await Future<void>.delayed(Duration.zero);
-    if (failApplicationReload) {
-      throw StateError('applications unavailable');
-    }
-    return applications;
-  }
+        providerType: 'INDIVIDUAL',
+        capacity: 'OPEN',
+        verificationStatus: 'VERIFIED',
+        trustSignals: {'verified': true},
+      );
 
   @override
-  Future<HopeApplication> withdrawApplication(String applicationId) {
-    withdrawCalls += 1;
-    return withdrawResult.future;
-  }
+  Future<List<HopeApplication>> listApplications() =>
+      throw UnimplementedError();
+
+  @override
+  Future<HopeApplication> withdrawApplication(String applicationId) =>
+      throw UnimplementedError();
 }
 
 class _PendingProfileRepo extends _ProfileRepo {
@@ -147,79 +132,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('مجری مستقل'), findsOneWidget);
+      expect(find.textContaining('مجری مستقل'), findsOneWidget);
     },
   );
-
-testWidgets('withdrawing an application disables the action until completion',
-      (tester) async {
-    const application = HopeApplication(
-      id: 'a1',
-      jobId: 'j1',
-      jobTitle: 'Flutter developer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Flutter',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.ensureVisible(find.text('Flutter developer'));
-    await tester.pumpAndSettle();
-    final undo = find.byTooltip('انصراف');
-    expect(undo, findsOneWidget);
-
-    await tester.tap(undo);
-    await tester.pump();
-
-    expect(repo.withdrawCalls, 1);
-    final undoButton =
-        find.ancestor(of: undo, matching: find.byType(IconButton));
-    expect(undoButton, findsOneWidget);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
-
-    await tester.tap(undo);
-    await tester.pump();
-    expect(repo.withdrawCalls, 1);
-
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-    expect(repo.withdrawCalls, 1);
-  });
-
-  testWidgets('withdraw refresh failure stays visible instead of becoming empty',
-      (tester) async {
-    const application = HopeApplication(
-      id: 'a2',
-      jobId: 'j2',
-      jobTitle: 'Backend engineer',
-      jobCity: 'تهران',
-      jobKind: 'JOB',
-      resumeText: 'A concise resume with enough detail.',
-      skills: 'Dart',
-      status: 'PENDING',
-      createdAt: null,
-      updatedAt: null,
-    );
-    final repo = _ProfileRepo(applications: [application]);
-    await _pump(tester, authenticated: true, repository: repo);
-
-    await tester.ensureVisible(find.text('Backend engineer'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('انصراف'));
-    await tester.pump();
-    repo.failApplicationReload = true;
-    repo.withdrawResult.complete(application);
-    await tester.pumpAndSettle();
-
-    expect(find.text('درخواست‌ها در دسترس نیستند'), findsOneWidget);
-    expect(find.text('Backend engineer'), findsOneWidget);
-  });
 
   testWidgets('guest profile explains sign-in requirement', (tester) async {
     await _pump(tester);
@@ -285,7 +200,7 @@ testWidgets('withdrawing an application disables the action until completion',
     expect(find.text('کاربر'), findsWidgets);
     expect(find.text('سلام، کاربر'), findsNothing);
 
-    expect(find.text('مجری مستقل'), findsOneWidget);
+    expect(find.textContaining('مجری مستقل'), findsOneWidget);
     expect(find.text('آماده همکاری'), findsWidgets);
     expect(find.text('OPEN'), findsNothing);
     expect(find.text('INDIVIDUAL'), findsNothing);

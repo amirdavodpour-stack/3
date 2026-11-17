@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,7 +29,9 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
   @override
   void initState() {
     super.initState();
-    _startInterview();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_startInterview());
+    });
   }
 
   @override

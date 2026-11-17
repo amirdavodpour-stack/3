@@ -70,6 +70,7 @@ class _OpportunitySnapshot extends StatelessWidget {
     ];
 
     return PremiumPanel(
+      key: const ValueKey('opportunity-snapshot-panel'),
       padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
       semanticLabel: _t(context, 'خلاصه سریع فرصت', 'Opportunity snapshot'),
       child: Column(

@@ -132,7 +132,7 @@ void main() {
       (tester) async {
     final repo = _Transactions()..jobs = [];
     await _pump(tester, repo);
-    expect(find.textContaining('فعالیتی'), findsWidgets);
+    expect(find.text('هنوز کاری ثبت نشده است'), findsOneWidget);
   });
 
   testWidgets('activity metrics fit three compact cells on one narrow row',
@@ -143,15 +143,19 @@ void main() {
 
     final metrics = find.byKey(const ValueKey('work-center-metrics'));
     expect(metrics, findsOneWidget);
-    expect(
-      find.descendant(
-        of: metrics,
-        matching: find.byType(PremiumStatCard),
-      ),
-      findsNWidgets(3),
-    );
+    for (final index in [0, 1, 2]) {
+      expect(
+        find.descendant(
+          of: metrics,
+          matching: find.byKey(ValueKey('work-center-metric-$index')),
+        ),
+        findsOneWidget,
+      );
+    }
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('فعال'), findsOneWidget);
+    expect(find.text('همکاری‌ها'), findsOneWidget);
+    expect(find.text('در حال اجرا'), findsOneWidget);
+    expect(find.text('تسویه‌شده'), findsOneWidget);
     expect(tester.getSize(metrics).height, lessThan(120));
     expect(tester.takeException(), isNull);
   });
@@ -231,10 +235,12 @@ void main() {
     tester.view.physicalSize = const Size(390, 900);
     await tester.pump();
 
-    final refreshIndicator =
-        tester.widget<RefreshIndicator>(find.byType(RefreshIndicator));
-    await refreshIndicator.onRefresh();
+    await tester.drag(
+      find.byType(ListView).first,
+      const Offset(0, 320),
+    );
     await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     expect(find.text('دریافت فعالیت ناموفق بود'), findsOneWidget);
@@ -255,14 +261,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data == 'وضعیت کار: نیازمند بررسی',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('نیازمند بررسی'), findsOneWidget);
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

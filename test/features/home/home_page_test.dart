@@ -91,7 +91,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.text('HOPE Pulse'), findsOneWidget);
-    expect(find.bySemanticsLabel('App menu'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('hope-menu-button')),
+      findsOneWidget,
+    );
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.byType(HopeNavigationGlyph), findsWidgets);

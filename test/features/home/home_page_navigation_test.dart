@@ -21,6 +21,7 @@ import 'package:hope_mobile/features/auth/login_page.dart';
 import 'package:hope_mobile/features/transactions/transactions_page.dart';
 import 'package:hope_mobile/features/marketplace/create_job_page.dart';
 import 'package:hope_mobile/features/auth/register_page.dart';
+import 'package:hope_mobile/features/recommendation/recommendation_onboarding_page.dart';
 import 'package:hope_mobile/features/notifications/notifications_page.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -364,6 +365,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(RegisterPage), findsNothing);
+    expect(find.byType(RecommendationOnboardingPage), findsOneWidget);
+    await tester.tap(find.byTooltip('Skip'));
+    await tester.pumpAndSettle();
     expect(find.byType(CreateJobPage), findsOneWidget);
   });
 

@@ -215,9 +215,10 @@ void main() {
     expect(featuredFinder, findsOneWidget);
     final featuredRect = tester.getRect(featuredFinder);
 
-    expect(filterRect.top, closeTo(searchRect.top, 2));
-    expect(filterRect.bottom, lessThanOrEqualTo(searchRect.bottom + 2));
-    expect(featuredRect.top - searchRect.bottom, lessThan(40));
+    expect(filterRect.top, closeTo(searchRect.bottom + 10, 2));
+    expect(filterRect.bottom, greaterThan(searchRect.bottom));
+    expect(featuredRect.top, greaterThanOrEqualTo(filterRect.bottom));
+    expect(featuredRect.top - filterRect.bottom, lessThan(70));
     expect(tester.takeException(), isNull);
   });
 

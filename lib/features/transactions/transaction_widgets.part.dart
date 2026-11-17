@@ -561,6 +561,31 @@ extension on _TransactionPageState {
                         ),
                       ),
                     ],
+                    if (compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _t('شناسه مرجع', 'Reference'),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              payment!.providerRef!.trim(),
+                              key: const ValueKey('transaction-provider-reference'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (!compact && (payment?.providerRef?.trim().isNotEmpty ?? false)) ...[
                       const SizedBox(height: 10),
                       Row(

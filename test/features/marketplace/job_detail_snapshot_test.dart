@@ -127,21 +127,37 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Opportunity snapshot'), findsOneWidget);
     expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
+    final heroSize = tester.getSize(find.byType(PremiumHero).first);
+    expect(heroSize.height, lessThanOrEqualTo(180));
     expect(
       find.byKey(const ValueKey('opportunity-detail-hero-budget')),
       findsNothing,
+    );
+
+    final snapshot = find.byKey(
+      const ValueKey('opportunity-snapshot-panel'),
+    );
+    await tester.scrollUntilVisible(
+      snapshot,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(snapshot, findsOneWidget);
+    expect(
+      find.descendant(
+        of: snapshot,
+        matching: find.text('Opportunity snapshot'),
+      ),
+      findsOneWidget,
     );
     expect(find.text('Budget'), findsOneWidget);
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
 
-    final heroSize = tester.getSize(find.byType(PremiumHero).first);
-    expect(heroSize.height, lessThanOrEqualTo(180));
-
-    final snapshotTop = tester.getTopLeft(find.text('Opportunity snapshot')).dy;
+    final snapshotTop = tester.getTopLeft(snapshot).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
     expect(descriptionTop, lessThan(snapshotTop));
   });
