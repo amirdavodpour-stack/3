@@ -471,3 +471,17 @@ test('refreshed candidate Android Runtime push gate is scoped to the isolated in
   assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- integration\/hopev2-refreshed-candidate-20261117/);
   assert.match(workflow, /github\.event_name == 'push' && github\.ref == 'refs\/heads\/integration\/hopev2-refreshed-candidate-20261117'/);
 });
+
+
+test('Android screenshot runner passes consumed batch controls and omits the removed capture-mode define', () => {
+  const integration = fs.readFileSync(path.join(root, 'integration_test/runtime/critical_screens_evidence_test.dart'), 'utf8');
+  const runner = fs.readFileSync(path.join(root, 'tools/hope-wallet-runtime-evidence.sh'), 'utf8');
+  assert.match(integration, /bool.fromEnvironment\('HOPE_RESPONSIVE_ONLY', defaultValue: false\)/);
+  assert.match(integration, /String.fromEnvironment\('HOPE_BASELINE_BATCH', defaultValue: 'all'\)/);
+  assert.match(integration, /String.fromEnvironment\('HOPE_RESPONSIVE_BATCH', defaultValue: 'all'\)/);
+  assert.match(runner, /--dart-define=HOPE_BASELINE_BATCH="\$\{baseline_batch\}"/);
+  assert.match(runner, /--dart-define=HOPE_RESPONSIVE_ONLY="\$\{responsive_only\}"/);
+  assert.match(runner, /--dart-define=HOPE_RESPONSIVE_BATCH="\$\{responsive_batch\}"/);
+  assert.doesNotMatch(runner, /--dart-define=HOPE_CAPTURE_MODE=/);
+  assert.doesNotMatch(integration, /HOPE_CAPTURE_MODE/);
+});

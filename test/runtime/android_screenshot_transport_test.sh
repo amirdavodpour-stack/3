@@ -161,7 +161,13 @@ fi
 
 grep -Fq 'String.fromEnvironment' "$test_file"
 grep -Fq "String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '')" "$test_file"
-grep -Fq "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline')" "$test_file"
+grep -Fq "bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false)" "$test_file"
+grep -Fq "String.fromEnvironment('HOPE_BASELINE_BATCH', defaultValue: 'all')" "$test_file"
+grep -Fq "String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all')" "$test_file"
+if grep -Fq 'HOPE_CAPTURE_MODE' "$test_file"; then
+  echo "FAIL: runtime evidence must not declare the removed HOPE_CAPTURE_MODE define" >&2
+  exit 1
+fi
 grep -Fq 'IntegrationTestWidgetsFlutterBinding.ensureInitialized();' "$test_file"
 # Android screenshot surface preparation must follow the first target page pumpWidget.
 capture_fn_start="$(grep -nF 'Future<void> _captureRuntimeScreen(' "$test_file" | cut -d: -f1 | head -n1)"
@@ -179,7 +185,13 @@ if grep -Fq 'await _prepareRuntimeScreenshotSurface(tester);' <<<"$main_block"; 
   exit 1
 fi
 grep -Fq -- '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"' "$script_file"
-grep -Fq -- '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_BASELINE_BATCH="${baseline_batch}"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}"' "$script_file"
+grep -Fq -- '--dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}"' "$script_file"
+if grep -Fq -- '--dart-define=HOPE_CAPTURE_MODE=' "$script_file"; then
+  echo "FAIL: runtime runner must not pass the removed HOPE_CAPTURE_MODE define" >&2
+  exit 1
+fi
 grep -Fq -- '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"' "$script_file"
 
 grep -Fq 'run_host_batch_session responsive-a' "$script_file"
@@ -316,7 +328,13 @@ if [ -n "$workflow_level_concurrency_line" ]; then
   echo "FAIL: runtime concurrency is workflow-scoped; non-capture PR events can cancel an authorized capture." >&2
   exit 1
 fi
-runtime_job_if_line="$(grep -nF '    if: ${{ github.event_name == '\''workflow_dispatch'\'' || (github.event_name == '\''pull_request'\'' && github.event.action == '\''edited'\'' && github.event.changes.title.from != null' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
+runtime_job_if_line="$(grep -n '^    if: ' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
+if ! grep -Fq "github.event_name == 'workflow_dispatch'" "$workflow_file" ||
+   ! grep -Fq "github.event_name == 'push' && github.ref == 'refs/heads/integration/hopev2-refreshed-candidate-20261117'" "$workflow_file" ||
+   ! grep -Fq "github.event_name == 'pull_request'" "$workflow_file"; then
+  echo "FAIL: runtime job authorization must preserve manual dispatch, exact candidate push ref, and existing PR-title capture rules." >&2
+  exit 1
+fi
 runtime_job_concurrency_line="$(grep -n '^    concurrency:' "$workflow_file" | head -n 1 | cut -d: -f1 || true)"
 if [ -z "$runtime_job_if_line" ] || [ -z "$runtime_job_concurrency_line" ] || [ "$runtime_job_if_line" -ge "$runtime_job_concurrency_line" ]; then
   echo "FAIL: concurrency must be scoped to the runtime job after its authorization condition." >&2

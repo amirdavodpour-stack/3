@@ -406,7 +406,6 @@ run_host_batch_session() {
     --dart-define=HOPE_TALKBACK_REQUIRED=true \
     --dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}" \
     --dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}" \
-    --dart-define=HOPE_CAPTURE_MODE="${launch_mode}" \
     --dart-define=HOPE_BASELINE_BATCH="${baseline_batch}" \
     --dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}" \
     --dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}" \

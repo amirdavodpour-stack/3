@@ -97,7 +97,13 @@ require_line "$test_file" "HOPE_SCREENSHOT_SOURCE:native-primary:"
 require_line "$test_file" "HOPE_SCREENSHOT_READY:"
 require_line "$test_file" "IntegrationTestWidgetsFlutterBinding.ensureInitialized();"
 require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_LOCALE', defaultValue: '')"
-require_line "$test_file" "String.fromEnvironment('HOPE_CAPTURE_MODE', defaultValue: 'baseline')"
+require_line "$test_file" "bool.fromEnvironment('HOPE_RESPONSIVE_ONLY', defaultValue: false)"
+require_line "$test_file" "String.fromEnvironment('HOPE_BASELINE_BATCH', defaultValue: 'all')"
+require_line "$test_file" "String.fromEnvironment('HOPE_RESPONSIVE_BATCH', defaultValue: 'all')"
+if grep -Fq "HOPE_CAPTURE_MODE" "$test_file"; then
+  printf 'FAIL: runtime baseline still declares the removed HOPE_CAPTURE_MODE define.\n' >&2
+  exit 1
+fi
 require_line "$driver_file" "integrationDriver("
 require_line "$driver_file" "onScreenshot:"
 require_line "$driver_file" "writeAsBytes(image, flush: true)"
@@ -129,7 +135,13 @@ require_line "$runtime" 'bash tools/hope-disable-talkback.sh'
 require_line "$runtime" 'bash tools/hope-enable-talkback.sh'
 require_line "$runtime" '--dart-define=HOPE_T10_SEMANTICS_ONLY="${semantics_only}"'
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_LOCALE="${CAPTURE_LOCALE}"'
-require_line "$runtime" '--dart-define=HOPE_CAPTURE_MODE="${launch_mode}"'
+require_line "$runtime" '--dart-define=HOPE_BASELINE_BATCH="${baseline_batch}"'
+require_line "$runtime" '--dart-define=HOPE_RESPONSIVE_ONLY="${responsive_only}"'
+require_line "$runtime" '--dart-define=HOPE_RESPONSIVE_BATCH="${responsive_batch}"'
+if grep -Fq -- '--dart-define=HOPE_CAPTURE_MODE=' "$runtime"; then
+  printf 'FAIL: runtime baseline still passes the removed HOPE_CAPTURE_MODE define.\n' >&2
+  exit 1
+fi
 require_line "$runtime" '--dart-define=HOPE_CAPTURE_HOME_ONLY="${DART_CAPTURE_HOME_ONLY}"'
 if grep -Fq -- '--use-application-binary' "$runtime"; then
   printf 'FAIL: runtime baseline still bypasses flutter drive target compilation.\n' >&2
