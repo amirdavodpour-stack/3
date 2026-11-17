@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:hope_mobile/core/chat/chat_repository.dart';
+import 'package:hope_mobile/core/ui/premium_components.dart';
 import 'package:hope_mobile/features/chat/chat_page.dart';
 
 class FakeChatRepository implements ChatRepository {
@@ -68,7 +69,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'hello');
-    await tester.tap(find.byTooltip('Send'));
+    final sendButton = find.byWidgetPredicate(
+      (widget) => widget is PremiumIconButton && widget.tooltip == 'Send',
+    );
+    expect(sendButton, findsOneWidget);
+    await tester.tap(sendButton);
     await tester.pumpAndSettle();
 
     expect(repository.lastMessage, 'hello');
@@ -82,7 +87,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Send'));
+    final sendButton = find.byWidgetPredicate(
+      (widget) => widget is PremiumIconButton && widget.tooltip == 'Send',
+    );
+    expect(sendButton, findsOneWidget);
+    await tester.tap(sendButton);
     await tester.pump();
 
     expect(repository.lastMessage, isNull);
@@ -121,7 +130,12 @@ void main() {
 
     expect(find.text('Closed'), findsOneWidget);
     expect(find.text('This conversation is closed.'), findsOneWidget);
-    expect(find.byTooltip('Send'), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is PremiumIconButton && widget.tooltip == 'Send',
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('ChatPage renders message timestamps', (tester) async {

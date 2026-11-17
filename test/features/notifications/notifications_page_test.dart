@@ -214,11 +214,14 @@ void main() {
 
     expect(find.text('عنوان اعلان'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    final onRefresh = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
+    ).onRefresh;
+    final staleRequest = onRefresh();
     await tester.pump();
     expect(repo.listCalls, 2);
 
-    await tester.tap(find.byTooltip('بازخوانی'));
+    final latestRequest = onRefresh();
     await tester.pumpAndSettle();
 
     expect(repo.listCalls, 3);
@@ -241,6 +244,7 @@ void main() {
 
     expect(find.text('Fresh notification'), findsOneWidget);
     expect(find.text('عنوان اعلان'), findsNothing);
+    await Future.wait([staleRequest, latestRequest]);
   });
 
   testWidgets('notifications page renders unread content', (tester) async {
@@ -269,11 +273,15 @@ void main() {
     final repo = _Repo()..items = [];
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
-    final markAll = find.byTooltip('همه را خواندم');
-    expect(markAll, findsOneWidget);
-    final markAllButton =
-        find.ancestor(of: markAll, matching: find.byType(IconButton));
-    expect(markAllButton, findsOneWidget);
-    expect(tester.widget<IconButton>(markAllButton).onPressed, isNull);
+    await tester.tap(find.byTooltip('اقدامات اعلان'));
+    await tester.pumpAndSettle();
+    final markAllItem = find.byWidgetPredicate(
+      (widget) => widget is PopupMenuItem<String> && widget.value == 'read',
+    );
+    expect(markAllItem, findsOneWidget);
+    expect(
+      tester.widget<PopupMenuItem<String>>(markAllItem).enabled,
+      isFalse,
+    );
   });
 }

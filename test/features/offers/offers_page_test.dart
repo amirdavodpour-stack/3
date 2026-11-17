@@ -154,21 +154,31 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final onRefresh = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
+    ).onRefresh;
+    final staleRequest = onRefresh();
     await tester.pump();
     expect(repository.calls, 2);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final latestRequest = onRefresh();
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('offer-card-fresh')),
+      findsOneWidget,
+    );
 
     repository.staleRefresh.complete([repository.stale]);
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer fresh')), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('Offer stale')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('offer-card-fresh')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('offer-card-stale')), findsNothing);
+    await Future.wait([staleRequest, latestRequest]);
   });
 
   testWidgets('offer refresh failure preserves existing rows and shows retry state', (tester) async {
@@ -176,12 +186,21 @@ testWidgets('accepting an offer disables the financial action until completion',
     await tester.pumpWidget(_host(repository));
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('offer-card-existing')),
+      findsOneWidget,
+    );
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final onRefresh = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
+    ).onRefresh;
+    await onRefresh();
     await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel(RegExp('Offer existing')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('offer-card-existing')),
+      findsOneWidget,
+    );
     expect(find.text('Offers unavailable'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
