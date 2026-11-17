@@ -21,7 +21,7 @@ function failureCategory(event) {
   return null;
 }
 
-export async function processOutboxEvent(event) {
+export async function processOutboxEvent(event, { securityAlertEgressOptions = {} } = {}) {
   try {
     const payload = event.payload || {};
     if (event.event_type === 'PAYMENT_CREATE_HOLD') {
@@ -153,7 +153,10 @@ export async function processOutboxEvent(event) {
       recordOutboxProcessed();
       logEvent({ level:'info', action:'OUTBOX_PROCESSED', eventId:event.id, eventType:event.event_type });
     } else if (event.event_type === 'AUTH_REFRESH_REUSE_ALERT') {
-      const delivered = await dispatchSecurityAlert(event);
+      // A test-only transport seam keeps the real allowlist/DNS/TLS policy path
+      // under integration test while preventing injected transports in production.
+      const egressOptions = process.env.NODE_ENV === 'test' ? securityAlertEgressOptions : {};
+      const delivered = await dispatchSecurityAlert(event, { egressOptions });
       if (!delivered?.dispatched) throw new Error('SECURITY_ALERT_NOT_DISPATCHED');
       const completed = await completeOutboxEvent({eventId:event.id,leaseToken:event.lease_token});
       if (!completed?.completed) throw new Error(`OUTBOX_SECURITY_ALERT_COMMIT_FAILED:${completed?.reason || 'UNKNOWN'}`);
