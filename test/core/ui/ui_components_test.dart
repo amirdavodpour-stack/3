@@ -155,11 +155,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-    await tester.pump();
-    expect(find.text("Secondary content"), findsOneWidget);
-    final panelSemantics = tester.getSemantics(find.byType(PremiumPanel));
-    expect(panelSemantics.label, contains("secondary surface"));
+    try {
+      await tester.pump();
+      expect(find.text("Secondary content"), findsOneWidget);
+      final panelSemantics = tester.getSemantics(find.byType(PremiumPanel));
+      expect(panelSemantics.label, contains("secondary surface"));
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets("pressable scale exposes button semantics", (tester) async {
