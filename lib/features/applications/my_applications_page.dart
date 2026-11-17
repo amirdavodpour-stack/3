@@ -452,6 +452,7 @@ class _MyApplicationsPageState extends State<MyApplicationsPage> {
                 if (item.canWithdraw) ...[
                   const SizedBox(width: 8),
                   IconButton(
+                    key: ValueKey('application-withdraw-${item.id}'),
                     tooltip: _t('پس گرفتن', 'Withdraw'),
                     onPressed: _busyId == item.id ? null : () => _withdraw(item),
                     icon: _busyId == item.id

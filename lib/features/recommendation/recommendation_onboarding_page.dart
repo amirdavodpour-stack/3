@@ -152,6 +152,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       ? 'One question at a time. Your answers shape future opportunity recommendations.'
                       : 'هر بار یک سؤال کوتاه؛ پاسخ‌های شما پایه پیشنهادهای شغلی بعدی می‌شوند.',
                   trailing: PremiumIconButton(
+                    key: const ValueKey('recommendation-onboarding-skip'),
                     icon: HopeV2Icons.close,
                     tooltip: isEn ? 'Skip' : 'بعداً',
                     onPressed:

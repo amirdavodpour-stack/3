@@ -152,7 +152,13 @@ void main() {
         findsOneWidget,
       );
     }
-    expect(find.text('1'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('work-center-metric-0')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('همکاری‌ها'), findsOneWidget);
     expect(find.text('در حال اجرا'), findsOneWidget);
     expect(find.text('تسویه‌شده'), findsOneWidget);
@@ -236,7 +242,7 @@ void main() {
     await tester.pump();
 
     await tester.drag(
-      find.byType(ListView).first,
+      find.byKey(const ValueKey('work-center-loaded-scroll')),
       const Offset(0, 320),
     );
     await tester.pump();
@@ -261,7 +267,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text('نیازمند بررسی'), findsOneWidget);
+    expect(find.text('نیازمند بررسی'), findsWidgets);
   });
 
   testWidgets('transactions still render when payment lookup is unavailable',

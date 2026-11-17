@@ -366,7 +366,9 @@ void main() {
 
     expect(find.byType(RegisterPage), findsNothing);
     expect(find.byType(RecommendationOnboardingPage), findsOneWidget);
-    await tester.tap(find.byTooltip('Skip'));
+    await tester.tap(
+      find.byKey(const ValueKey('recommendation-onboarding-skip')),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(CreateJobPage), findsOneWidget);
   });

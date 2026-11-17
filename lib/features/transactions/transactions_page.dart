@@ -536,6 +536,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 page: HopePageId.workCenter,
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 48),
                 child: ListView(
+                  key: const ValueKey('work-center-loaded-scroll'),
                   padding: EdgeInsets.zero,
                   children: [
                     PremiumHeader(

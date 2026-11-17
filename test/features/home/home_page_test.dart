@@ -95,7 +95,7 @@ void main() {
       find.byKey(const ValueKey('hope-menu-button')),
       findsOneWidget,
     );
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(PremiumNavigationBar), findsOneWidget);
     expect(find.byKey(const ValueKey('hope-navigation-dock')), findsOneWidget);
     expect(find.byType(HopeNavigationGlyph), findsWidgets);
     final selectedHome = tester.widget<HopeNavigationGlyph>(

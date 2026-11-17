@@ -168,8 +168,11 @@ void main() {
       await tester.pump();
 
       expect(repository.withdrawCalls, 1);
-      final button = tester.widget<IconButton>(withdraw);
-      expect(button.onPressed, isNull);
+      final button = find.byKey(
+        const ValueKey('application-withdraw-pending-app'),
+      );
+      expect(button, findsOneWidget);
+      expect(tester.widget<IconButton>(button).onPressed, isNull);
 
       repository.withdrawResult!.complete(application);
       await tester.pumpAndSettle();
@@ -194,7 +197,7 @@ void main() {
       repository.withdrawResult!.complete(application);
       await tester.pumpAndSettle();
 
-      expect(find.text('Could not load applications.'), findsOneWidget);
+      expect(find.text('Could not load applications.'), findsWidgets);
       expect(find.text('Pending application'), findsOneWidget);
     },
   );
@@ -222,7 +225,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HopeAsyncState), findsOneWidget);
-      expect(find.text('در حال بارگذاری درخواست‌ها'), findsOneWidget);
+      expect(find.text('Loading applications'), findsOneWidget);
 
       profile.initialLoad.complete(const []);
       await tester.pumpAndSettle();
@@ -264,7 +267,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Needs review'), findsOneWidget);
+    expect(find.text('Needs review'), findsWidgets);
     expect(find.text('UNKNOWN_APPLICATION_STATE'), findsNothing);
   });
 

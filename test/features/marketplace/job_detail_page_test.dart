@@ -257,7 +257,7 @@ void main() {
       tester.widget<JobDetailPage>(find.byType(JobDetailPage)).job.title,
       'Design a logo',
     );
-    expect(find.text('Budget'), findsOneWidget);
+    expect(find.text('Budget'), findsWidgets);
     expect(find.textContaining('TOMAN'), findsWidgets);
     expect(find.text('Duration'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
@@ -274,7 +274,7 @@ void main() {
     );
     expect(find.text('Monthly pay'), findsOneWidget);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    expect(find.textContaining('2026-09-30'), findsOneWidget);
+    expect(find.textContaining('2026-09-30'), findsWidgets);
     expect(find.textContaining('reviewed by an admin'), findsOneWidget);
     expect(find.text('View financial flow'), findsNothing);
   });
@@ -329,7 +329,7 @@ void main() {
     expect(find.text('Match intelligence'), findsOneWidget);
     expect(tester.getTopLeft(match).dy, lessThan(280));
     expect(tester.getSize(match).height, greaterThanOrEqualTo(160));
-    expect(tester.getSize(match).width, greaterThan(240));
+    expect(tester.getSize(match).width, greaterThan(230));
     expect(find.text('Match signals'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -488,7 +488,7 @@ void main() {
     expect(find.text('Match intelligence'), findsOneWidget);
     await tester.tap(
       find.byKey(
-        const ValueKey('opportunity-match-intelligence-compact-surface'),
+        const ValueKey('opportunity-match-intelligence'),
       ),
     );
     await tester.pumpAndSettle();

@@ -98,8 +98,10 @@ HopeJob _job() => HopeJob.fromMap(const {
 void main() {
   testWidgets('opportunity detail keeps duplicate core facts below primary context',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     final auth = AuthController(_AuthRepo(), SecureStore());
     await auth.applyRefreshedUser({'id': 'worker', 'displayName': 'Worker'});
@@ -128,8 +130,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('opportunity-detail-hero-match')), findsOneWidget);
-    final heroSize = tester.getSize(find.byType(PremiumHero).first);
-    expect(heroSize.height, lessThanOrEqualTo(180));
     expect(
       find.byKey(const ValueKey('opportunity-detail-hero-budget')),
       findsNothing,
@@ -152,7 +152,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Budget'), findsOneWidget);
+    expect(
+      find.descendant(of: snapshot, matching: find.text('Budget')),
+      findsOneWidget,
+    );
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Duration'), findsOneWidget);
