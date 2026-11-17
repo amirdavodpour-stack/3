@@ -874,6 +874,123 @@ test('attachment ownership, voice consumption and private download are enforced 
   assert.equal(voiceRows[0].messages, 1, 'voice message and attachment must commit once, atomically');
 });
 
+test('PostgreSQL chat rolls back message and attachment together when attachment or voice persistence fails', { skip: !enabled }, async () => {
+  const pool = dbModule.getPool();
+  const suffix = crypto.randomUUID().replaceAll('-', '');
+  const triggerName = `r05_fail_chat_attachment_${suffix}`;
+  const functionName = `r05_fail_chat_attachment_${suffix}`;
+  const attachmentBody = `R05 attachment rollback ${suffix}`;
+  const startedAt = new Date();
+  const uploadIds = [];
+  let functionCreated = false;
+  let triggerCreated = false;
+
+  const makeUpload = async (contentType, filename) => {
+    const key = `r05/rollback/${suffix}/${filename}`;
+    const { rows } = await pool.query(
+      `INSERT INTO uploads(id,storage_key,uploaded_by,content_type,size,created_at)
+       VALUES(gen_random_uuid(),$1,$2,$3,32,NOW())
+       RETURNING id,storage_key`,
+      [key, fixture.ownerId, contentType],
+    );
+    uploadIds.push(rows[0].id);
+    return rows[0];
+  };
+
+  try {
+    const attachmentUpload = await makeUpload('application/pdf', 'attachment.pdf');
+    const voiceUpload = await makeUpload('audio/mpeg', 'voice-note.mp3');
+
+    // The repository inserts chat_messages before chat_message_attachments.
+    // Fail only the attachment INSERT so the test proves the transaction
+    // rolls back the already-inserted message as well.
+    await pool.query(`
+      CREATE FUNCTION ${functionName}() RETURNS trigger AS $body$
+      BEGIN
+        RAISE EXCEPTION 'R05_INJECTED_CHAT_ATTACHMENT_FAILURE';
+      END;
+      $body$ LANGUAGE plpgsql
+    `);
+    functionCreated = true;
+    await pool.query(
+      `CREATE TRIGGER ${triggerName}
+       BEFORE INSERT ON chat_message_attachments
+       FOR EACH ROW EXECUTE FUNCTION ${functionName}()`,
+    );
+    triggerCreated = true;
+
+    await assert.rejects(
+      postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', attachmentBody, {
+        messageType: 'ATTACHMENT',
+        attachments: [{ key: attachmentUpload.storage_key, filename: 'attachment.pdf' }],
+      }),
+      (error) => error?.message === 'R05_INJECTED_CHAT_ATTACHMENT_FAILURE',
+    );
+
+    const { rows: attachmentState } = await pool.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM chat_messages
+           WHERE conversation_id=$1 AND body=$2) AS message_count,
+         (SELECT COUNT(*)::int FROM chat_message_attachments
+           WHERE upload_id=$3) AS attachment_count`,
+      [fixture.conversationId, attachmentBody, attachmentUpload.id],
+    );
+    assert.equal(attachmentState[0].message_count, 0,
+      'the chat message inserted before the failing attachment must be rolled back');
+    assert.equal(attachmentState[0].attachment_count, 0,
+      'the failed attachment must not leave an attachment row');
+
+    await assert.rejects(
+      postChatMessage(fixture.conversationId, fixture.ownerId, 'USER', '', {
+        messageType: 'VOICE',
+        attachments: [{ key: voiceUpload.storage_key, filename: 'voice-note.mp3' }],
+      }),
+      (error) => error?.message === 'R05_INJECTED_CHAT_ATTACHMENT_FAILURE',
+    );
+
+    const { rows: voiceState } = await pool.query(
+      `SELECT COUNT(*)::int AS message_count
+         FROM chat_messages
+        WHERE conversation_id=$1 AND message_type='VOICE' AND created_at >= $2`,
+      [fixture.conversationId, startedAt],
+    );
+    const { rows: orphanedAttachments } = await pool.query(
+      'SELECT COUNT(*)::int AS attachment_count FROM chat_message_attachments WHERE upload_id=ANY($1::uuid[])',
+      [uploadIds],
+    );
+    const { rows: preservedUploads } = await pool.query(
+      'SELECT COUNT(*)::int AS upload_count FROM uploads WHERE id=ANY($1::uuid[])',
+      [uploadIds],
+    );
+    assert.equal(voiceState[0].message_count, 0,
+      'a VOICE message must roll back when its attachment row cannot be committed');
+    assert.equal(orphanedAttachments[0].attachment_count, 0,
+      'neither failed send may leave an orphan attachment');
+    assert.equal(preservedUploads[0].upload_count, 2,
+      'the transaction must preserve the original uploader-owned upload records');
+  } finally {
+    if (triggerCreated) {
+      await pool.query(`DROP TRIGGER IF EXISTS ${triggerName} ON chat_message_attachments`).catch(() => {});
+    }
+    if (functionCreated) {
+      await pool.query(`DROP FUNCTION IF EXISTS ${functionName}()`).catch(() => {});
+    }
+    if (uploadIds.length) {
+      await pool.query(
+        'DELETE FROM chat_message_attachments WHERE upload_id=ANY($1::uuid[])',
+        [uploadIds],
+      ).catch(() => {});
+      await pool.query(
+        `DELETE FROM chat_messages
+          WHERE conversation_id=$1
+            AND (body=$2 OR (message_type='VOICE' AND created_at >= $3))`,
+        [fixture.conversationId, attachmentBody, startedAt],
+      ).catch(() => {});
+      await pool.query('DELETE FROM uploads WHERE id=ANY($1::uuid[])', [uploadIds]).catch(() => {});
+    }
+  }
+});
+
 test('send waits for an in-flight close and rejects when CLOSED commits first', { skip: !enabled }, async () => {
   const pool = dbModule.getPool();
   const conversation = {
