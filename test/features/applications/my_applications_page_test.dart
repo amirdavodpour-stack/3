@@ -198,6 +198,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Could not load applications.'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Pending application'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Pending application'), findsOneWidget);
     },
   );

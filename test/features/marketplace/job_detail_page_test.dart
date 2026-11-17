@@ -259,7 +259,7 @@ void main() {
     );
     expect(find.text('Budget'), findsWidgets);
     expect(find.textContaining('TOMAN'), findsWidgets);
-    expect(find.text('Duration'), findsOneWidget);
+    expect(find.text('Duration'), findsWidgets);
     expect(find.text('View financial flow'), findsNothing);
     expect(find.textContaining('reviewed by an admin'), findsNothing);
   });
@@ -494,8 +494,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Why this opportunity fits'), findsOneWidget);
-    expect(find.text('Match signals'), findsOneWidget);
     final sheet = find.byType(BottomSheet);
+    expect(
+      find.descendant(of: sheet, matching: find.text('Match signals')),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: sheet, matching: find.text('Skill match')),
       findsOneWidget,

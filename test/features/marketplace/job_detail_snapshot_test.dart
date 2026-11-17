@@ -158,7 +158,10 @@ void main() {
     );
     expect(find.text('Field'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
-    expect(find.text('Duration'), findsOneWidget);
+    expect(
+      find.descendant(of: snapshot, matching: find.text('Duration')),
+      findsOneWidget,
+    );
 
     final snapshotTop = tester.getTopLeft(snapshot).dy;
     final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;

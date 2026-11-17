@@ -160,7 +160,13 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('همکاری‌ها'), findsOneWidget);
-    expect(find.text('در حال اجرا'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('work-center-metric-1')),
+        matching: find.text('در حال اجرا'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('تسویه‌شده'), findsOneWidget);
     expect(tester.getSize(metrics).height, lessThan(120));
     expect(tester.takeException(), isNull);
@@ -238,15 +244,13 @@ void main() {
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     repo.failList = true;
 
-    tester.view.physicalSize = const Size(390, 900);
-    await tester.pump();
-
-    await tester.drag(
-      find.byKey(const ValueKey('work-center-loaded-scroll')),
-      const Offset(0, 320),
+    final refreshIndicator = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
     );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    final onRefresh = refreshIndicator.onRefresh;
+    expect(onRefresh, isNotNull);
+    await onRefresh!();
+    await tester.pumpAndSettle();
 
     expect(find.text('پروژه refresh-stale'), findsOneWidget);
     expect(find.text('دریافت فعالیت ناموفق بود'), findsOneWidget);

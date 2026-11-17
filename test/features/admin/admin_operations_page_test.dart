@@ -155,6 +155,7 @@ void main() {
   testWidgets('trust report enum fields use localized presentation', (tester) async {
     final repository = _FakeAdminOperations();
     await tester.pumpWidget(_host(repository));
+    expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Trust & Safety'));
     await tester.pumpAndSettle();
