@@ -191,6 +191,7 @@ jobs:
               accept: 'application/json',
               'X-Metrics-Token': process.env.STAGING_METRICS_TOKEN,
             },
+            redirect: 'error',
             signal: AbortSignal.timeout(10_000),
           });
           if (!response.ok) {

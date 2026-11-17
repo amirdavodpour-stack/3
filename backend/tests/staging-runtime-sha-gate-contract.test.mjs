@@ -28,6 +28,15 @@ test('runtime commit identity is exposed only by the authenticated metrics endpo
   assert.doesNotMatch(liveBlock, /RAILWAY_GIT_COMMIT_SHA|commitSha|build\.commit/);
 });
 
+test('Staging SHA probe rejects redirects before forwarding the metrics credential', () => {
+  const fetchStart = workflow.indexOf('const response = await fetch(metricsUrl, {');
+  assert.ok(fetchStart >= 0, 'the authenticated runtime identity request must be present');
+  const fetchEnd = workflow.indexOf('          });', fetchStart);
+  assert.ok(fetchEnd > fetchStart, 'the metrics request options must be present');
+  const requestOptions = workflow.slice(fetchStart, fetchEnd);
+  assert.match(requestOptions, /redirect:\s*['\"]error['\"]/);
+});
+
 test('Staging fails closed on a deployed-SHA mismatch before any data or provider side effects', () => {
   const identityGate = workflow.indexOf('name: Verify live Staging build SHA');
   assert.ok(identityGate >= 0, 'an explicit live build SHA verification step is required');
