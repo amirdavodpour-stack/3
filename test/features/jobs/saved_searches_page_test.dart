@@ -190,11 +190,14 @@ void main() {
 
     expect(find.text('Initial search').first, findsOneWidget);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final onRefresh = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
+    ).onRefresh;
+    final staleRequest = onRefresh();
     await tester.pump();
     expect(repository.calls, 2);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final latestRequest = onRefresh();
     await tester.pumpAndSettle();
 
     expect(repository.calls, 3);
@@ -209,6 +212,7 @@ void main() {
 
     expect(find.text('Fresh search'), findsOneWidget);
     expect(find.text('Stale search'), findsNothing);
+    await Future.wait([staleRequest, latestRequest]);
   });
 
   testWidgets(

@@ -3,6 +3,11 @@ name: HOPE Free LLM Coding Agent
 on:
   workflow_dispatch:
     inputs:
+      target_ref:
+        description: "Feature branch to inspect or modify (must not be Main/master)"
+        required: true
+        default: "feat/google-sign-in-2026-09-20"
+        type: string
       task:
         description: "Task for the repository coding agent"
         required: true
@@ -28,7 +33,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: hope-free-llm-agent-${{ github.repository }}-${{ github.ref }}
+  group: hope-free-llm-agent-${{ github.repository }}-${{ inputs.target_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,10 +43,28 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout active branch
+      - name: Validate target ref
+        shell: bash
+        env:
+          TARGET_REF: ${{ inputs.target_ref }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TARGET_REF//[[:space:]]/}" ]]; then
+            echo "A feature target ref is required." >&2
+            exit 1
+          fi
+          case "${TARGET_REF,,}" in
+            main|master|refs/heads/main|refs/heads/master)
+              echo "Refusing to run the coding agent against protected branch: $TARGET_REF" >&2
+              exit 1
+              ;;
+          esac
+          git check-ref-format --branch "$TARGET_REF"
+
+      - name: Checkout target feature branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ inputs.target_ref }}
           fetch-depth: 0
           persist-credentials: true
 
@@ -70,6 +93,7 @@ jobs:
 
       - name: Run repository coding agent
         env:
+          TARGET_REF: ${{ inputs.target_ref }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -82,17 +106,24 @@ jobs:
           LLM_AGENT_TASK: ${{ inputs.task }}
         run: |
           set -euo pipefail
-          test "${GITHUB_REF_NAME,,}" != "main"
-          test "${GITHUB_REF_NAME,,}" != "master"
-          set -o pipefail
+          case "${TARGET_REF,,}" in
+            main|master|refs/heads/main|refs/heads/master)
+              echo "Refusing to run the coding agent against protected branch: $TARGET_REF" >&2
+              exit 1
+              ;;
+          esac
+          test -n "${OPENROUTER_API_KEY}${GROQ_API_KEY}${GEMINI_API_KEY}"
           node tools/free-llm-agent.mjs "$LLM_AGENT_TASK" 2>&1 | tee agent-output.txt
 
       - name: Capture final working-tree evidence
         if: ${{ always() }}
+        env:
+          TARGET_REF: ${{ inputs.target_ref }}
         run: |
           git status --short --branch | tee agent-git-status.txt
           git diff --binary --no-ext-diff > agent-diff.patch
           git diff --stat | tee agent-diff-stat.txt
+          printf 'TARGET_REF=%s\n' "$TARGET_REF" | tee agent-target-ref.txt
 
       - name: Upload agent evidence
         if: ${{ always() }}
@@ -102,6 +133,7 @@ jobs:
           path: |
             agent-output.txt
             agent-git-status.txt
+            agent-target-ref.txt
             agent-diff.patch
             agent-diff-stat.txt
           if-no-files-found: warn

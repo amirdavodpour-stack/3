@@ -39,6 +39,7 @@ Future<void> _pushAndAssertRestricted(
         home: Builder(
           builder: (context) => Scaffold(
             body: FilledButton(
+              key: const ValueKey('admin-route-guard-open'),
               onPressed: () => Navigator.push(context, route()),
               child: const Text('open'),
             ),
@@ -48,7 +49,10 @@ Future<void> _pushAndAssertRestricted(
     ),
   );
 
-  await tester.tap(find.text('open'));
+  await tester.pumpAndSettle();
+  final openButton = find.byKey(const ValueKey('admin-route-guard-open'));
+  expect(openButton, findsOneWidget);
+  await tester.tap(openButton);
   await tester.pumpAndSettle();
 
   expect(find.text('Admin access is restricted.'), findsOneWidget);
@@ -62,15 +66,23 @@ Future<void> _pushAndAssertRestricted(
 }
 
 void main() {
-  testWidgets('admin-only routes do not expose admin pages to guests', (tester) async {
-    for (final route in <Route<void> Function()>[
-      HopeRoutes.adminAccess,
-      HopeRoutes.admin,
-      HopeRoutes.adminOperations,
-      HopeRoutes.adminDisputes,
-      HopeRoutes.adminChat,
-    ]) {
-      await _pushAndAssertRestricted(tester, route);
-    }
+  testWidgets('admin access route remains restricted to guests', (tester) async {
+    await _pushAndAssertRestricted(tester, HopeRoutes.adminAccess);
+  });
+
+  testWidgets('admin control route remains restricted to guests', (tester) async {
+    await _pushAndAssertRestricted(tester, HopeRoutes.admin);
+  });
+
+  testWidgets('admin operations route remains restricted to guests', (tester) async {
+    await _pushAndAssertRestricted(tester, HopeRoutes.adminOperations);
+  });
+
+  testWidgets('admin disputes route remains restricted to guests', (tester) async {
+    await _pushAndAssertRestricted(tester, HopeRoutes.adminDisputes);
+  });
+
+  testWidgets('admin chat route remains restricted to guests', (tester) async {
+    await _pushAndAssertRestricted(tester, HopeRoutes.adminChat);
   });
 }

@@ -141,11 +141,14 @@ void main() {
     );
     expect(find.text('Android'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final onRefresh = tester.widget<RefreshIndicator>(
+      find.byType(RefreshIndicator).first,
+    ).onRefresh;
+    final staleRequest = onRefresh();
     await tester.pump();
     expect(repository.listCalls, 2);
 
-    await tester.tap(find.byTooltip('Refresh'));
+    final latestRequest = onRefresh();
     await tester.pumpAndSettle();
 
     expect(repository.listCalls, 3);
@@ -156,6 +159,7 @@ void main() {
 
     expect(find.text('iPhone / iPad'), findsOneWidget);
     expect(find.text('Android'), findsNothing);
+    await Future.wait([staleRequest, latestRequest]);
   });
   testWidgets(
     'notification device title retains usable width beside disable action at 1.5x',

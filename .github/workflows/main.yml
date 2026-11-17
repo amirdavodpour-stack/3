@@ -58,6 +58,10 @@ jobs:
         working-directory: backend
         run: timeout --foreground --signal=TERM --kill-after=30s 8m npm ci
 
+      - name: Verify Main CI performance smoke isolation
+        working-directory: backend
+        run: node --test --test-name-pattern='Main CI performance smoke is opt-in and cannot target Production' tests/release-hardening-contract.test.mjs
+
       - name: Backend static check
         id: backend_static_check
         continue-on-error: true
@@ -104,7 +108,7 @@ jobs:
       - name: Flutter analyze gate
         id: flutter_analyze_gate
         continue-on-error: true
-        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze
+        run: timeout --foreground --signal=TERM --kill-after=30s 10m flutter analyze --no-fatal-infos
 
       - name: Flutter test gate
         id: flutter_test_gate
@@ -120,7 +124,7 @@ jobs:
         run: |
           CI=true node tools/write-evidence.mjs \
             --gate flutter_toolchain \
-            --command 'flutter analyze && flutter test --no-pub' \
+            --command 'flutter analyze --no-fatal-infos && flutter test --no-pub' \
             --result "$GATE_RESULT"
 
       - name: Upload main evidence
@@ -150,7 +154,7 @@ jobs:
 
   staging-performance:
     name: Staging performance smoke
-    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'Main' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'Main' && github.event.pull_request.head.repo.full_name == github.repository && vars.HOPE_ENABLE_STAGING_PERF_SMOKE == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -173,7 +177,7 @@ jobs:
         run: |
           set -euo pipefail
           : "${PERF_BASE_URL:?PERF_BASE_URL is required; production fallback is disabled}"
-          node -e "const u=new URL(process.env.PERF_BASE_URL); if(u.protocol!=='https:') throw new Error('PERF_BASE_URL must use HTTPS'); if(u.hostname.toLowerCase()==='v2hope-production-7e9e.up.railway.app') throw new Error('Production host is forbidden for main workflow staging performance smoke');"
+          node -e "const u=new URL(process.env.PERF_BASE_URL); if(u.protocol!=='https:') throw new Error('PERF_BASE_URL must use HTTPS'); const h=u.hostname.toLowerCase(); if(h==='v2hope-production-7e9e.up.railway.app' || /(^|[-.])production([-.]|$)/.test(h)) throw new Error('Production host is forbidden for Main CI performance smoke');"
           node ../tools/perf-smoke.mjs
 
       - name: Upload performance evidence

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,7 +29,9 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
   @override
   void initState() {
     super.initState();
-    _startInterview();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_startInterview());
+    });
   }
 
   @override
@@ -176,6 +180,7 @@ class _RecommendationOnboardingPageState extends State<RecommendationOnboardingP
                       ? 'A few answers make recommendations more relevant.'
                       : 'با پاسخ به چند پرسش، پیشنهادها دقیق‌تر می‌شوند.',
                   trailing: PremiumIconButton(
+                    key: const ValueKey('recommendation-onboarding-skip'),
                     icon: HopeV2Icons.close,
                     tooltip: isEn ? 'Skip' : 'بعداً',
                     onPressed:

@@ -158,6 +158,21 @@ test('staging S3 probe never asserts HTTPS against a non-TLS endpoint', () => {
   if (!endpointIsHttps) assert.notEqual(requireHttpsMatch[1], '1');
 });
 
+test('Main CI performance smoke is opt-in and cannot target Production', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
+  const start = workflow.indexOf('  staging-performance:');
+  assert.ok(start >= 0, 'Main CI staging performance job must exist');
+  const job = workflow.slice(start);
+  assert.match(job, /vars\.HOPE_ENABLE_STAGING_PERF_SMOKE == 'true'/);
+  assert.match(job, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+  assert.match(job, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
+  assert.doesNotMatch(job, /PERF_BASE_URL:\s*https:\/\/v2hope-production-7e9e\.up\.railway\.app/);
+  assert.match(job, /PERF_BASE_URL is required; production fallback is disabled/);
+  assert.match(job, /must use HTTPS/);
+  assert.match(job, /Production host is forbidden/);
+  assert.match(workflow, /name: Verify Main CI performance smoke isolation[\s\S]*?node --test --test-name-pattern='Main CI performance smoke is opt-in and cannot target Production' tests\/release-hardening-contract\.test\.mjs/);
+});
+
 test('staging certification requires a real external staging base URL and does not fall back to localhost', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-certification.yml'), 'utf8');
   assert.match(workflow, /secrets:\s*\n\s*STAGING_BASE_URL:/);
@@ -190,13 +205,13 @@ test('manual staging diagnostics never fall back to production URLs or productio
 
 test('Main CI staging performance is staging-only and skips untrusted fork pull requests', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/main.yml'), 'utf8');
-  assert.match(workflow, /if:\s*\$\{\{\s*github\.event_name == 'pull_request'\s*&&\s*github\.base_ref == 'Main'\s*&&\s*github\.event\.pull_request\.head\.repo\.full_name == github\.repository\s*\}\}/);
+  assert.match(workflow, /if:\s*\$\{\{\s*github\.event_name == 'pull_request'\s*&&\s*github\.base_ref == 'Main'\s*&&\s*github\.event\.pull_request\.head\.repo\.full_name == github\.repository\s*&&\s*vars\.HOPE_ENABLE_STAGING_PERF_SMOKE == 'true'\s*\}\}/);
   const step = workflow.match(/name: Staging performance smoke[\s\S]*?run:\s*\|[\s\S]*?node \.\.\/tools\/perf-smoke\.mjs/)?.[0] || '';
   assert.ok(step, 'staging performance smoke step must exist');
   assert.match(step, /PERF_BASE_URL:\s*\$\{\{\s*secrets\.STAGING_BASE_URL\s*\|\|\s*secrets\.API_BASE_URL_STAGING\s*\}\}/);
   assert.doesNotMatch(step, /PERF_BASE_URL:\s*https:\/\/v2hope-production-7e9e\.up\.railway\.app/);
   assert.match(step, /PERF_BASE_URL is required; production fallback is disabled/);
-  assert.match(step, /Production host is forbidden for main workflow staging performance smoke/);
+  assert.match(step, /Production host is forbidden for Main CI performance smoke/);
 });
 
 test('CI Android toolchain is explicit and release builds enforce the lockfile', () => {
