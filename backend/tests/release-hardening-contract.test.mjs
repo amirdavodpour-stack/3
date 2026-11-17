@@ -458,3 +458,16 @@ test('production APK isolation prunes only the integration_test dependency tree 
     assert.match(apk, new RegExp(`["']${name}["']`));
   }
 });
+
+
+test('refreshed candidate one-shot CI is push-scoped to its isolated integration branch', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/one-shot-current-head-validation.yml'), 'utf8');
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- integration\/hopev2-refreshed-candidate-20261117/);
+});
+
+test('refreshed candidate Android Runtime push gate is scoped to the isolated integration branch', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/hope-ui-runtime-evidence.yml'), 'utf8');
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\n\s+- integration\/hopev2-refreshed-candidate-20261117/);
+  assert.match(workflow, /github\.event_name == 'push' && github\.ref == 'refs\/heads\/integration\/hopev2-refreshed-candidate-20261117'/);
+});

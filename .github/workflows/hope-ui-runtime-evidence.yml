@@ -33,6 +33,10 @@ on:
           - "1.25"
           - "1.5"
           - "2.0"
+  # Candidate-only push trigger; unrelated branches cannot launch emulator captures.
+  push:
+    branches:
+      - integration/hopev2-refreshed-candidate-20261117
 
   # Current-head visual validation bridge: 2026-10-03 UI architecture batch.
 # [runtime-capture] validate Wallet chunked settle diagnostic at exact current HEAD.
@@ -61,7 +65,7 @@ permissions:
 
 jobs:
   critical-screens-runtime-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16' || (github.head_ref == 'fix/hopev2-visual-audit-v1-v2-2026-10-20' && github.event.pull_request.number == 38) || (github.head_ref == 'fix/hopev2-auth-hardening-20261107' && github.event.pull_request.number == 47) || (github.head_ref == 'fix/hopev2-refresh-reuse-alerting-20261107' && github.event.pull_request.number == 49)) && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/integration/hopev2-refreshed-candidate-20261117') || (github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.title.from != null && (github.head_ref == 'feat/google-sign-in-2026-09-20' || github.head_ref == 'feat/ui-v2-wave-1-execution-2026-10-07' || github.head_ref == 'feat/hopev2-kinetic-editorial-2026-10-16' || (github.head_ref == 'fix/hopev2-visual-audit-v1-v2-2026-10-20' && github.event.pull_request.number == 38) || (github.head_ref == 'fix/hopev2-auth-hardening-20261107' && github.event.pull_request.number == 47) || (github.head_ref == 'fix/hopev2-refresh-reuse-alerting-20261107' && github.event.pull_request.number == 49)) && (contains(github.event.pull_request.title, '[runtime-capture-fa]') || contains(github.event.pull_request.title, '[runtime-capture-fa-home]') || contains(github.event.pull_request.title, '[runtime-capture-en-scale]'))) }}
     # Only an authorized runtime job acquires this lock. Skipped PR events cannot cancel capture.
     concurrency:
       group: hope-ui-runtime-evidence-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

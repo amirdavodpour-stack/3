@@ -1,6 +1,10 @@
 name: HOPE One-Shot Current HEAD Validation
 
 on:
+  # Candidate-only bridge for this isolated validation branch.
+  push:
+    branches:
+      - integration/hopev2-refreshed-candidate-20261117
   workflow_dispatch:
 
 concurrency:
