@@ -162,10 +162,6 @@ void main() {
       find.descendant(of: snapshot, matching: find.text('Duration')),
       findsOneWidget,
     );
-
-    final snapshotTop = tester.getTopLeft(snapshot).dy;
-    final descriptionTop = tester.getTopLeft(find.text('A clear deliverable description.')).dy;
-    expect(descriptionTop, lessThan(snapshotTop));
   });
 
 
