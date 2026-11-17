@@ -36,14 +36,14 @@ This document defines the supported environment variables and the policy by envi
 `PAYMENT_PROVIDER`, `PAYMENT_CURRENCY`, `PAYMENT_WEBHOOK_SECRET`, `PAYMENT_PROVIDER_TOKEN`, `PAYMENT_PROVIDER_CREATE_URL`, `PAYMENT_PROVIDER_RELEASE_URL`, `PAYMENT_PROVIDER_REFUND_URL`, `PAYMENT_PROVIDER_PAYOUT_STATUS_URL`, `PAYMENT_PROVIDER_TIMEOUT_MS`, `PAYMENT_PROVIDER_MAX_ATTEMPTS`, `PAYMENT_PROVIDER_RETRY_BASE_MS`, `PAYMENT_WEBHOOK_MAX_AGE_SECONDS`. Production accepts `internal` or `webhook`; `internal` requires `PAYMENT_CURRENCY=TOMAN` and does not require external PSP credentials/endpoints.
 
 ### Notifications / telemetry / alerts
-`NOTIFICATION_PUSH_URL`, `NOTIFICATION_EMAIL_URL`, `NOTIFICATION_PROVIDER_TOKEN`, `NOTIFICATION_MAX_ATTEMPTS`, `NOTIFICATION_RETRY_BASE_MS`, `NOTIFICATION_DELIVERY_TIMEOUT_MS`, `METRICS_TOKEN`, `ALERT_WEBHOOK_URL`, `ALERT_WEBHOOK_TOKEN`, `ALERT_WEBHOOK_TIMEOUT_MS`.
+`NOTIFICATION_PUSH_URL`, `NOTIFICATION_EMAIL_URL`, `NOTIFICATION_PROVIDER_TOKEN`, `NOTIFICATION_MAX_ATTEMPTS`, `NOTIFICATION_RETRY_BASE_MS`, `NOTIFICATION_DELIVERY_TIMEOUT_MS`, `METRICS_TOKEN`, `ALERT_WEBHOOK_URL`, `ALERT_WEBHOOK_TOKEN`, `ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON`, `ALERT_EGRESS_MODE`, `ALERT_DIRECT_EGRESS_ACKNOWLEDGED`, `ALERT_WEBHOOK_TIMEOUT_MS`.
 
 ### Workers / idempotency
 `OUTBOX_POLL_MS`, `OUTBOX_WORKER_CONCURRENCY`, `OUTBOX_MAX_ATTEMPTS`, `OUTBOX_LEASE_SECONDS`, `MAX_IDEMPOTENCY_KEY_LENGTH`.
 
 ## Secret rules
 
-Never commit real secret values. Production must reject placeholder authentication secrets, missing metrics token, missing payment/reset secrets, missing `ADMIN_PANEL_USERNAME` (runtime contract: 4–120 characters), disabled or unconfigured Google OAuth (required for canonical primary-admin recovery after identity-policy enforcement), missing or sub-32-byte `ADMIN_MFA_ENCRYPTION_KEY`, wildcard CORS, non-HTTPS external endpoints, non-PostgreSQL persistence, local storage, and simulator payments. External PSP credentials/endpoints are required only when `PAYMENT_PROVIDER=webhook`; internal ledger mode is explicitly allowed for the temporary non-bank-money phase.
+Never commit real secret values. Production must reject placeholder authentication secrets, missing metrics token, missing payment/reset secrets, missing `ADMIN_PANEL_USERNAME` (runtime contract: 4–120 characters), disabled or unconfigured Google OAuth (required for canonical primary-admin recovery after identity-policy enforcement), missing or sub-32-byte `ADMIN_MFA_ENCRYPTION_KEY`, wildcard CORS, non-HTTPS external endpoints, non-PostgreSQL persistence, local storage, and simulator payments. Security-alert delivery additionally requires an exact canonical endpoint in `ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON` that matches `ALERT_WEBHOOK_URL`, `ALERT_EGRESS_MODE=direct`, and `ALERT_DIRECT_EGRESS_ACKNOWLEDGED=true`. The endpoint and direct-egress policy must be owner-approved; the application and release validator fail closed when any part is missing or mismatched. External PSP credentials/endpoints are required only when `PAYMENT_PROVIDER=webhook`; internal ledger mode is explicitly allowed for the temporary non-bank-money phase.
 
 ## Machine validation
 
