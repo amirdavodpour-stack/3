@@ -208,13 +208,6 @@ class _FakeAdmin implements AdminRepository {
       };
 
   @override
-  Future<Map<String, dynamic>> verifyPanelAccess(
-    String name,
-    String username,
-  ) async =>
-      const {'verified': true};
-
-  @override
   Future<void> lockPanel() async {
     calls.add('lock-panel');
   }
