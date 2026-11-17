@@ -214,6 +214,15 @@ test('Production runtime requires an authenticated HTTPS security alert receiver
   }
 });
 
+test('both production release workflows provide approved alert egress policy variables', () => {
+  for (const [name, source] of [['production-release', workflow], ['release-validation', releaseValidationWorkflow]]) {
+    const block = source.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
+    assert.match(block, /ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON:\s*\$\{\{\s*vars\.ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON_PRODUCTION\s*\}\}/, name + ' must read the owner-approved alert endpoint allowlist variable');
+    assert.match(block, /ALERT_EGRESS_MODE:\s*\$\{\{\s*vars\.ALERT_EGRESS_MODE_PRODUCTION\s*\}\}/, name + ' must read the explicit alert egress mode');
+    assert.match(block, /ALERT_DIRECT_EGRESS_ACKNOWLEDGED:\s*\$\{\{\s*vars\.ALERT_DIRECT_EGRESS_ACKNOWLEDGED_PRODUCTION\s*\}\}/, name + ' must read the explicit direct-egress acknowledgement');
+  }
+});
+
 test('both production release workflows provide the required security alert receiver secrets', () => {
   for (const [name, source] of [['production-release', workflow], ['release-validation', releaseValidationWorkflow]]) {
     const block = source.match(/name: Validate production environment contract[\s\S]*?run: bash scripts\/validate-production-env\.sh/)?.[0] || '';
@@ -299,6 +308,11 @@ test('production-release workflow provides all runtime-required validator inputs
   for (const name of [
     'PUBLIC_BASE_URL',
     'METRICS_TOKEN',
+    'ALERT_WEBHOOK_URL',
+    'ALERT_WEBHOOK_TOKEN',
+    'ALERT_WEBHOOK_ALLOWED_ENDPOINTS_JSON',
+    'ALERT_EGRESS_MODE',
+    'ALERT_DIRECT_EGRESS_ACKNOWLEDGED',
     'PAYMENT_PROVIDER',
     'PAYMENT_CURRENCY',
     'STORAGE_BACKEND',
