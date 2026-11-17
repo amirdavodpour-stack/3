@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - integration/hopev2-refreshed-candidate-20261117
+      - fix/hopev2-alert-egress-production-config-20261117
   workflow_dispatch:
 
 concurrency:
