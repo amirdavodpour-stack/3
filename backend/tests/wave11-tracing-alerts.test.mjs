@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import { assertAllowedAlertEndpoint, isPublicAlertAddress, resolvePublicAlertAddresses, createPinnedHttpsAgent, dispatchAlertWebhook } from '../src/alert_egress.js';
 import assert from 'node:assert/strict';
 import { traceContext, makeTraceparent } from '../src/tracing.js';
@@ -68,6 +69,61 @@ test('operational alerts use the exact allowlisted pinned HTTPS transport', asyn
     assert.equal(captured.options.agent.options.keepAlive, false);
     assert.equal(captured.options.headers['idempotency-key'], 'hope-operational:HTTP_5XX_RATE_HIGH:critical');
   } finally {
+    config.alertWebhookUrl = previousUrl;
+    config.alertWebhookToken = previousToken;
+    config.alertWebhookTimeoutMs = previousTimeout;
+  }
+});
+
+
+test('operational alerts with multiple simultaneous alerts use a safe deterministic idempotency key', async () => {
+  const previousUrl = config.alertWebhookUrl;
+  const previousToken = config.alertWebhookToken;
+  const previousTimeout = config.alertWebhookTimeoutMs;
+  const url = 'https://alerts.example.test/operations';
+  const health = businessHealth({
+    requests: 100,
+    errors5xx: 1,
+    requestDurationBuckets: { lt50: 80, gte500: 20 },
+  });
+  assert.equal(health.alerts.length, 2);
+
+  const fingerprint = health.alerts
+    .map((alert) => alert.code + ':' + alert.severity)
+    .sort()
+    .join('|');
+  const expectedKey = 'hope-operational:' + createHash('sha256').update(fingerprint).digest('hex');
+  let captured;
+  config.alertWebhookUrl = url;
+  config.alertWebhookToken = 'test-operational-alert-token';
+  config.alertWebhookTimeoutMs = 500;
+  try {
+    const result = await dispatchOperationalAlerts({
+      health,
+      recentHealth: { requests: 100, errors5xx: 1 },
+      latency: { p95: 20, p99: 50 },
+    }, {
+      egressOptions: {
+        allowedEndpoints: [url],
+        egressMode: 'direct',
+        directEgressAcknowledged: true,
+        resolveHost: async () => [{ address: '8.8.8.8', family: 4 }],
+        requestImpl: async (endpoint, options) => {
+          captured = { url: endpoint.href, options };
+          return { ok: true, statusCode: 202 };
+        },
+      },
+    });
+
+    assert.deepEqual(result, { dispatched: true });
+    assert.equal(captured.url, url);
+    assert.equal(captured.options.headers['idempotency-key'], expectedKey);
+    assert.match(
+      captured.options.headers['idempotency-key'],
+      /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/,
+    );
+  } finally {
+    captured?.options.agent.destroy();
     config.alertWebhookUrl = previousUrl;
     config.alertWebhookToken = previousToken;
     config.alertWebhookTimeoutMs = previousTimeout;

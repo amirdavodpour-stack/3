@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { config } from './config.js';
 import { dispatchAlertWebhook } from './alert_egress.js';
 
@@ -7,6 +8,14 @@ const COOLDOWN_MS = 5 * 60 * 1000;
 
 function fingerprint(alerts) {
   return alerts.map((a) => a.code + ':' + a.severity).sort().join('|');
+}
+
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+
+function operationalIdempotencyKey(alertFingerprint) {
+  const legacyKey = 'hope-operational:' + alertFingerprint;
+  if (IDEMPOTENCY_KEY_PATTERN.test(legacyKey)) return legacyKey;
+  return 'hope-operational:' + createHash('sha256').update(alertFingerprint).digest('hex');
 }
 
 function getEgressOptions(overrides = {}) {
@@ -38,7 +47,7 @@ export async function dispatchOperationalAlerts(snapshot, { onDeliveryFailure, e
         recentHealth: snapshot.recentHealth,
         latency: snapshot.latency,
       }),
-      idempotencyKey: 'hope-operational:' + fp,
+      idempotencyKey: operationalIdempotencyKey(fp),
       ...getEgressOptions(egressOptions),
     });
     if (!response?.ok) throw new Error('ALERT_WEBHOOK_HTTP_' + (Number(response?.statusCode) || 0));
