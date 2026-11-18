@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/hopev2-outbound-alert-egress-20261110
+      - fix/hopev2-operational-alert-multikey-20261118
     paths:
       - ".github/workflows/hopev2-collector-node24.yml"
       - "backend/package.json"
