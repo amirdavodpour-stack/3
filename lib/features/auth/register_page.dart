@@ -446,6 +446,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: password,
+                          maxLength: 128,
                           obscureText: obscure,
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
@@ -466,7 +467,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: Text(
-                            Localizations.localeOf(context).languageCode == 'en' ? 'At least 12 characters' : 'حداقل ۱۲ نویسه',
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Password must be between 12 and 128 characters'
+                                : 'رمز عبور باید بین ۱۲ تا ۱۲۸ نویسه باشد.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),

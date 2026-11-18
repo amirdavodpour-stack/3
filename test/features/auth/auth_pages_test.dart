@@ -626,7 +626,7 @@ void main() {
           .toList();
       expect(passwordFields, hasLength(1));
       expect(passwordFields.single.maxLength, 128);
-      expect(find.text('حداقل ۱۲ نویسه'), findsOneWidget);
+      expect(find.text('رمز عبور باید بین ۱۲ تا ۱۲۸ نویسه باشد.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
