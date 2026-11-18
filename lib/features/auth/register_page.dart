@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hope_mobile/l10n/generated/app_localizations.dart';
 import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/password_input_formatters.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/router/auth_return_intent.dart';
 import '../../core/router/app_routes.dart';
@@ -17,52 +17,6 @@ import '../../core/ui/premium_components.dart';
 import '../../core/ui/hope_feedback.dart';
 import '../../core/theme/hope_v2_design.dart';
 import '../../core/ui/components.dart';
-
-class _Utf16CodeUnitLengthLimitingTextInputFormatter extends TextInputFormatter {
-  const _Utf16CodeUnitLengthLimitingTextInputFormatter({
-    required this.maxLength,
-  });
-
-  final int maxLength;
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.length <= maxLength) return newValue;
-
-    // Let an active IME composition finish; the committed value is bounded
-    // on the next formatter pass. This avoids interrupting CJK/Persian input.
-    if (newValue.composing.isValid && !newValue.composing.isCollapsed) {
-      return newValue;
-    }
-
-    var end = maxLength;
-    if (end > 0 && end < newValue.text.length) {
-      final beforeBoundary = newValue.text.codeUnitAt(end - 1);
-      final afterBoundary = newValue.text.codeUnitAt(end);
-      final splitsSurrogatePair =
-          beforeBoundary >= 0xD800 &&
-          beforeBoundary <= 0xDBFF &&
-          afterBoundary >= 0xDC00 &&
-          afterBoundary <= 0xDFFF;
-      if (splitsSurrogatePair) end--;
-    }
-
-    int clampOffset(int offset) => offset.clamp(0, end).toInt();
-    return newValue.copyWith(
-      text: newValue.text.substring(0, end),
-      selection: TextSelection(
-        baseOffset: clampOffset(newValue.selection.baseOffset),
-        extentOffset: clampOffset(newValue.selection.extentOffset),
-        affinity: newValue.selection.affinity,
-        isDirectional: newValue.selection.isDirectional,
-      ),
-      composing: TextRange.empty,
-    );
-  }
-}
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, this.returnIntent});
@@ -495,7 +449,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           controller: password,
                           maxLength: 128,
                           inputFormatters: const [
-                            _Utf16CodeUnitLengthLimitingTextInputFormatter(
+                            Utf16CodeUnitLengthLimitingTextInputFormatter(
                               maxLength: 128,
                             ),
                           ],
