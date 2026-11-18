@@ -630,6 +630,7 @@ void main() {
       final field = tester.widget<TextField>(passwordField);
       expect(field.controller!.text, List<String>.filled(64, '😀').join());
       expect(field.controller!.text.length, 128);
+      expect(find.text('128/128'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
