@@ -9,6 +9,8 @@ on:
       - integration/hopev2-combined-candidate-runtime-sdk-retry-20261118
     paths:
       - "lib/core/network/api_error_presenter.dart"
+      - "lib/core/auth/password_input_formatters.dart"
+      - "test/core/auth/password_input_formatters_test.dart"
       - "lib/features/auth/register_page.dart"
       - "lib/l10n/app_en.arb"
       - "lib/l10n/app_fa.arb"
