@@ -240,12 +240,13 @@ jobs:
           sudo apt-get install --yes --no-install-recommends libpulse0
           ldconfig -p | grep -F 'libpulse.so.0'
 
-      # Warm the latest emulator package with a bounded retry before the pinned
-      # action invokes sdkmanager itself; this recovers from truncated SDK archives.
-      - name: Prepare Android Emulator package with bounded retry
+      # Warm both the Emulator and the exact API 35 System Image before the
+      # pinned action invokes sdkmanager; retry truncated SDK archives as one unit.
+      - name: Prepare Android Emulator and System Image packages with bounded retry
         env:
           HOPE_ANDROID_EMULATOR_INSTALL_ATTEMPTS: '3'
           HOPE_ANDROID_EMULATOR_INSTALL_RETRY_DELAY_SECONDS: '5'
+          HOPE_ANDROID_SYSTEM_IMAGE_PACKAGE: 'system-images;android-35;default;x86_64'
         run: bash tools/install-android-emulator-retry.sh
 
       # Use the pinned runner that produced the fully green baseline certification; the full locale matrix is now 19 baseline + 7 responsive

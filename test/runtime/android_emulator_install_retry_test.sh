@@ -16,27 +16,33 @@ run_case() (
   export ANDROID_HOME="$tmp/sdk"
   export FAKE_STATE_FILE="$tmp/attempts"
   export FAKE_SUCCESS_AT="$success_at"
-  mkdir -p "$HOME/.android/cache" "$ANDROID_HOME/.temp" "$ANDROID_HOME/cmdline-tools/latest/bin"
+  export HOPE_ANDROID_SYSTEM_IMAGE_PACKAGE='system-images;android-35;default;x86_64'
+  export SYSTEM_IMAGE_PATH="$ANDROID_HOME/system-images/android-35/default/x86_64"
+  mkdir -p "$HOME/.android/cache" "$ANDROID_HOME/.temp" \
+    "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/platforms/android-35"
   printf 'stale-download-cache' > "$HOME/.android/cache/stale-package.zip"
-  printf 'partial-package' > "$ANDROID_HOME/.temp/package.partial"
+  printf 'partial-download' > "$ANDROID_HOME/.temp/package.partial"
+  printf 'preserve-installed-platform' > "$ANDROID_HOME/platforms/android-35/preserve.txt"
 
   cat > "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" <<'FAKE_SDKMANAGER'
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "$*" == *"--licenses"* ]]; then
-  exit 0
+if [[ "$*" == *"--licenses"* ]]; then exit 0; fi
+if [[ "$*" != *" emulator "* || "$*" != *"$HOPE_ANDROID_SYSTEM_IMAGE_PACKAGE"* ]]; then
+  echo "FAIL: bounded install must include Emulator and the configured System Image." >&2
+  exit 42
 fi
 
 attempt=0
-if [[ -f "$FAKE_STATE_FILE" ]]; then
-  attempt="$(cat "$FAKE_STATE_FILE")"
-fi
+if [[ -f "$FAKE_STATE_FILE" ]]; then attempt="$(cat "$FAKE_STATE_FILE")"; fi
 attempt=$((attempt + 1))
 printf '%s\n' "$attempt" > "$FAKE_STATE_FILE"
 
 if (( attempt >= FAKE_SUCCESS_AT )); then
-  mkdir -p "$ANDROID_HOME/emulator"
+  mkdir -p "$ANDROID_HOME/emulator" "$SYSTEM_IMAGE_PATH"
+  printf '<package />\n' > "$SYSTEM_IMAGE_PATH/package.xml"
+  printf 'system-image-stub\n' > "$SYSTEM_IMAGE_PATH/system.img"
   cat > "$ANDROID_HOME/emulator/emulator" <<'FAKE_EMULATOR'
 #!/usr/bin/env bash
 echo 'Android Emulator test-stub'
@@ -46,9 +52,9 @@ FAKE_EMULATOR
 fi
 
 mkdir -p "$HOME/.android/cache" "$ANDROID_HOME/.temp"
-printf 'corrupt zip' > "$HOME/.android/cache/truncated-emulator.zip"
-printf 'partial install' > "$ANDROID_HOME/.temp/emulator.partial"
-echo 'Error on ZipFile unknown archive.' >&2
+printf 'corrupt-system-image-zip' > "$HOME/.android/cache/truncated-system-image.zip"
+printf 'partial-system-image' > "$ANDROID_HOME/.temp/system-image.partial"
+echo 'Error reading Zip content from a SeekableByteChannel.' >&2
 exit 1
 FAKE_SDKMANAGER
   chmod +x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -61,26 +67,30 @@ FAKE_SDKMANAGER
     status=$?
   fi
 
-  attempts="$(cat "$FAKE_STATE_FILE")"
+  attempts=0
+  if [[ -f "$FAKE_STATE_FILE" ]]; then attempts="$(cat "$FAKE_STATE_FILE")"; fi
   if [[ "$status" != "$expected_status" || "$attempts" != "$expected_attempts" ]]; then
     cat "$tmp/output.log" >&2
     echo "FAIL: expected status=$expected_status attempts=$expected_attempts; got status=$status attempts=$attempts" >&2
     return 1
   fi
 
+  [[ -s "$ANDROID_HOME/platforms/android-35/preserve.txt" ]]
   if [[ "$expected_status" == "0" ]]; then
-    grep -Fq "HOPE_ANDROID_EMULATOR_INSTALL_PASS:attempt=$expected_attempts" "$tmp/output.log"
+    grep -Fq "HOPE_ANDROID_SYSTEM_IMAGE_INSTALL_PASS:package=$HOPE_ANDROID_SYSTEM_IMAGE_PACKAGE" "$tmp/output.log"
     grep -Fq "Android Emulator test-stub" "$tmp/output.log"
-    [[ ! -e "$HOME/.android/cache/truncated-emulator.zip" ]]
-    [[ ! -e "$ANDROID_HOME/.temp/emulator.partial" ]]
-    echo "PASS: corrupted package cache is cleared and install succeeds on retry"
+    [[ -s "$SYSTEM_IMAGE_PATH/package.xml" && -s "$SYSTEM_IMAGE_PATH/system.img" ]]
+    [[ ! -e "$HOME/.android/cache/truncated-system-image.zip" ]]
+    [[ ! -e "$ANDROID_HOME/.temp/system-image.partial" ]]
+    echo "PASS: corrupt System Image archive recovers within bounded retry; installed SDK components are preserved"
   else
-    grep -Fq "HOPE_ANDROID_EMULATOR_INSTALL_FAIL:attempts=3" "$tmp/output.log"
-    echo "PASS: emulator package install fails closed after the bounded retry count"
+    grep -Fq "HOPE_ANDROID_SDK_PACKAGES_INSTALL_FAIL:attempts=3" "$tmp/output.log"
+    echo "PASS: System Image retry fails closed after the bounded attempt count"
   fi
 )
 
 bash -n "$installer"
+run_case 1 0 1
 run_case 2 0 2
 run_case 99 1 3
-echo "PASS: Android Emulator installer retry contract"
+echo "PASS: Android Emulator + System Image installer retry contract"
