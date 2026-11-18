@@ -1,0 +1,61 @@
+name: HOPEv2 Registration Contract
+
+on:
+  push:
+    branches:
+      - fix/hopev2-registration-contract-20261118
+  pull_request:
+    branches:
+      - integration/hopev2-combined-candidate-runtime-sdk-retry-20261118
+    paths:
+      - "lib/core/network/api_error_presenter.dart"
+      - "lib/core/auth/password_input_formatters.dart"
+      - "test/core/auth/password_input_formatters_test.dart"
+      - "lib/features/auth/register_page.dart"
+      - "lib/l10n/app_en.arb"
+      - "lib/l10n/app_fa.arb"
+      - "lib/l10n/generated/**"
+      - "test/core/network/api_error_presenter_test.dart"
+      - "test/features/auth/auth_pages_test.dart"
+      - ".github/workflows/hopev2-registration-contract.yml"
+
+concurrency:
+  group: hopev2-registration-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  registration-contract:
+    name: Auth error mapping + registration password bounds
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: "3.47.2"
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter lockfile
+        run: bash tools/verify-pubspec-lock-fresh.sh
+
+      - name: Prepare Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Auth regression tests
+        timeout-minutes: 8
+        run: flutter test --no-pub test/core/network/api_error_presenter_test.dart test/features/auth/auth_pages_test.dart
+
+      - name: Full Flutter regression suite
+        timeout-minutes: 40
+        run: flutter test --no-pub
+
+      - name: Flutter analyzer
+        timeout-minutes: 5
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos

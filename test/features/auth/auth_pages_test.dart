@@ -614,4 +614,42 @@ void main() {
     },
   );
 
+  testWidgets(
+    'registration password input enforces the backend UTF-16 code-unit limit',
+    (tester) async {
+      await tester.pumpWidget(await _screen(const RegisterPage()));
+      await tester.pumpAndSettle();
+
+      final passwordField = find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.obscureText,
+      );
+      final pasted = List<String>.filled(65, '😀').join();
+      await tester.enterText(passwordField, pasted);
+      await tester.pump();
+
+      final field = tester.widget<TextField>(passwordField);
+      expect(field.controller!.text, List<String>.filled(64, '😀').join());
+      expect(field.controller!.text.length, 128);
+      expect(find.text('128/128'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'registration password field enforces the backend maximum of 128 characters',
+    (tester) async {
+      await tester.pumpWidget(await _screen(const RegisterPage()));
+      await tester.pumpAndSettle();
+
+      final passwordFields = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .where((field) => field.obscureText)
+          .toList();
+      expect(passwordFields, hasLength(1));
+      expect(passwordFields.single.maxLength, 128);
+      expect(find.text('رمز عبور باید بین ۱۲ تا ۱۲۸ نویسه باشد.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }

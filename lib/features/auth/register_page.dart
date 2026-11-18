@@ -6,6 +6,7 @@ import '../../core/ui/hope_l10n.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/backend_capabilities.dart';
 import '../../core/auth/auth_controller.dart';
+import '../../core/auth/password_input_formatters.dart';
 import '../../core/auth/google_sign_in_service.dart';
 import '../../core/router/auth_return_intent.dart';
 import '../../core/router/app_routes.dart';
@@ -446,6 +447,21 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: password,
+                          maxLength: 128,
+                          inputFormatters: const [
+                            Utf16CodeUnitLengthLimitingTextInputFormatter(
+                              maxLength: 128,
+                            ),
+                          ],
+                          buildCounter: (
+                            context, {
+                            required currentLength,
+                            required isFocused,
+                            maxLength,
+                          }) => Text(
+                            '${password.text.length}/128',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                           obscureText: obscure,
                           textDirection: TextDirection.ltr,
                           decoration: InputDecoration(
@@ -466,7 +482,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: Text(
-                            Localizations.localeOf(context).languageCode == 'en' ? 'At least 12 characters' : 'حداقل ۱۲ نویسه',
+                            Localizations.localeOf(context).languageCode == 'en'
+                                ? 'Password must be between 12 and 128 characters'
+                                : 'رمز عبور باید بین ۱۲ تا ۱۲۸ نویسه باشد.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
