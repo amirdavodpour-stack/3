@@ -614,4 +614,21 @@ void main() {
     },
   );
 
+  testWidgets(
+    'registration password field enforces the backend maximum of 128 characters',
+    (tester) async {
+      await tester.pumpWidget(await _screen(const RegisterPage()));
+      await tester.pumpAndSettle();
+
+      final passwordFields = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .where((field) => field.obscureText)
+          .toList();
+      expect(passwordFields, hasLength(1));
+      expect(passwordFields.single.maxLength, 128);
+      expect(find.text('حداقل ۱۲ نویسه'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
 }
