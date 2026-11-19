@@ -11,7 +11,11 @@ export async function cleanupExpiredUploadIntents({
   limit = config.uploadCleanupBatchSize,
   graceSeconds = config.uploadOrphanGraceSeconds,
   storageBackend = storage,
+  deleteTimeoutMs = 10000,
 } = {}) {
+  if (!Number.isSafeInteger(deleteTimeoutMs) || deleteTimeoutMs < 500 || deleteTimeoutMs > 30000) {
+    throw new RangeError('deleteTimeoutMs must be between 500 and 30000 milliseconds');
+  }
   if (!process.env.DATABASE_URL) return { scanned: 0, deletedObjects: 0, deletedIntents: 0, failedObjects: 0 };
   const cutoffIso = new Date(Date.now() - graceSeconds * 1000).toISOString();
   const intents = await listExpiredUploadIntents({ cutoffIso, limit });
@@ -22,7 +26,7 @@ export async function cleanupExpiredUploadIntents({
   let failedObjects = 0;
   for (const intent of intents) {
     try {
-      await storageBackend.delete({ key: intent.storageKey });
+      await storageBackend.delete({ key: intent.storageKey, timeoutMs: deleteTimeoutMs });
       deletedObjects += 1;
       cleanedIds.push(intent.id);
     } catch (error) {

@@ -1,0 +1,99 @@
+services:
+  - type: web
+    name: hopev2-staging-preview
+    runtime: node
+    plan: free
+    branch: integration/hopev2-free-staging-serverless-20261119
+    rootDir: backend
+    buildCommand: npm ci && npm run check && npm run check:migrations
+    startCommand: npm start
+    healthCheckPath: /ready
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: 24.17.0
+      - key: NODE_ENV
+        value: production
+      - key: HOPE_STAGING_MODE
+        value: "true"
+      - key: HOPE_STAGING_PROVIDER
+        value: render
+      - key: HOPE_STAGING_READONLY_STARTUP
+        value: "true"
+      - key: HOPE_SERVERLESS_MODE
+        value: "false"
+      - key: RATE_LIMIT_STORE
+        value: postgres
+      - key: PG_POOL_MAX
+        value: "4"
+      - key: OUTBOX_POLL_MS
+        value: "30000"
+      - key: OUTBOX_WORKER_CONCURRENCY
+        value: "1"
+      - key: RECONCILIATION_POLL_MS
+        value: "300000"
+      - key: RECONCILIATION_BATCH_SIZE
+        value: "1"
+      - key: UPLOAD_CLEANUP_INTERVAL_MS
+        value: "3600000"
+      - key: UPLOAD_CLEANUP_BATCH_SIZE
+        value: "10"
+
+      - key: TRUST_PROXY
+        value: "true"
+      - key: TRUST_PROXY_HEADER
+        value: cf-connecting-ip
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_BUCKET
+        value: v2hope-private
+      - key: S3_PREFIX
+        value: hope-staging
+      - key: S3_REGION
+        value: eu-west-1
+      - key: S3_ENDPOINT
+        value: https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: UPLOAD_INTENT_TTL_SECONDS
+        value: "300"
+      - key: PAYMENT_PROVIDER
+        value: internal
+      - key: PAYMENT_CURRENCY
+        value: TOMAN
+      - key: GOOGLE_AUTH_ENABLED
+        value: "true"
+      - key: ADMIN_MFA_REQUIRED
+        value: "true"
+      - key: INTERNAL_WALLET_USER_TOPUP_ENABLED
+        value: "false"
+      - key: INTERNAL_WALLET_ADMIN_CREDIT_ENABLED
+        value: "false"
+      - key: STAGING_ALLOW_INTERNAL_WALLET_TOPUP
+        value: "false"
+      - key: STAGING_ALLOW_INTERNAL_WALLET_PAYOUT
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+      - key: METRICS_TOKEN
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: ADMIN_PANEL_USERNAME
+        sync: false
+      - key: ADMIN_PANEL_ALLOWED_EMAIL
+        sync: false
+      - key: STAGING_RENDER_SERVICE_ID
+        sync: false
+      - key: ADMIN_MFA_ENCRYPTION_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

@@ -819,10 +819,12 @@ paths:
     post:
       security: [{bearerAuth: []}]
       description: >-
-        In S3 mode, the response includes `requiredHeaders` for the presigned
-        PUT. Send `If-None-Match: *` with that request. The condition makes the
-        URL single-write: subsequent PUTs to the same key fail instead of
-        replacing the object that was validated and attached to a message.
+        The response includes `requiredHeaders` for the exact presigned upload
+        mode. Send every listed header without modification. Generic S3 mode
+        uses `If-None-Match: *`; Supabase Storage uses its native signed-upload
+        URL with `x-upsert: false`. Existing objects must never be overwritten; the contract is single-write, with the first successful upload winning.
+        `intentExpiresIn` is the HOPE ownership/completion window; Supabase
+        signed URL tokens have a separate two-hour lifetime.
       responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}
   /storage/complete:
     post: {security: [{bearerAuth: []}], responses: {'201': {description: Completed upload}, '200': {description: Idempotent existing upload}, '403': {description: Invalid or unauthorized upload intent}, '410': {description: Expired intent}, '415': {description: Content type mismatch}}}
@@ -1319,10 +1321,12 @@ paths:
     post:
       security: [{bearerAuth: []}]
       description: >-
-        In S3 mode, the response includes `requiredHeaders` for the presigned
-        PUT. Send `If-None-Match: *` with that request. The condition makes the
-        URL single-write: subsequent PUTs to the same key fail instead of
-        replacing the object that was validated and attached to a message.
+        The response includes `requiredHeaders` for the exact presigned upload
+        mode. Send every listed header without modification. Generic S3 mode
+        uses `If-None-Match: *`; Supabase Storage uses its native signed-upload
+        URL with `x-upsert: false`. Existing objects must never be overwritten; the contract is single-write, with the first successful upload winning.
+        `intentExpiresIn` is the HOPE ownership/completion window; Supabase
+        signed URL tokens have a separate two-hour lifetime.
       responses: {'200': {description: Presigned upload intent}, '409': {description: Direct upload unsupported}}
   /storage/complete:
     post: {security: [{bearerAuth: []}], responses: {'201': {description: Completed upload}, '200': {description: Idempotent existing upload}, '403': {description: Invalid or unauthorized upload intent}, '410': {description: Expired intent}, '415': {description: Content type mismatch}}}

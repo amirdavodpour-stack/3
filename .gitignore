@@ -7,3 +7,6 @@ build/
 .packages
 android/local.properties
 ios/Runner/GeneratedPluginRegistrant.*
+
+# Node dependencies installed in isolated backend checkouts
+**/node_modules/

@@ -1,9 +1,16 @@
 import crypto from 'node:crypto';
+import { isIP } from 'node:net';
 
 const localWindows = new Map();
 
-function clientKey(req, trustProxy, trustedProxyIps = []) {
+function clientKey(req, trustProxy, trustedProxyIps = [], trustedProxyHeader = 'x-forwarded-for') {
   const remote = req.socket?.remoteAddress || 'unknown';
+  if (trustProxy && trustedProxyHeader === 'cf-connecting-ip') {
+    const candidate = String(req.headers?.['cf-connecting-ip'] || '').trim();
+    const rayId = String(req.headers?.['cf-ray'] || '').trim();
+    const trustedCloudflareRay = /^[a-f0-9]{16,32}-[a-z0-9]{3,6}$/i.test(rayId);
+    return isIP(candidate) && trustedCloudflareRay ? candidate : remote;
+  }
   if (trustProxy && trustedProxyIps.includes(remote)) {
     const chain = String(req.headers?.['x-forwarded-for'] || '')
       .split(',').map((v) => v.trim()).filter(Boolean);
@@ -15,8 +22,8 @@ function clientKey(req, trustProxy, trustedProxyIps = []) {
   return remote;
 }
 
-function stableKey(namespace, req, trustProxy, trustedProxyIps) {
-  return crypto.createHash('sha256').update(`${namespace}:${clientKey(req, trustProxy, trustedProxyIps)}`).digest('hex');
+function stableKey(namespace, req, trustProxy, trustedProxyIps, trustedProxyHeader) {
+  return crypto.createHash('sha256').update(`${namespace}:${clientKey(req, trustProxy, trustedProxyIps, trustedProxyHeader)}`).digest('hex');
 }
 
 function consumeLocal(key, limit, windowMs) {
@@ -31,9 +38,9 @@ function consumeLocal(key, limit, windowMs) {
   return current.count <= limit;
 }
 
-export function createRateLimiter({ pool, trustProxy, trustedProxyIps = [], onAuthLimited = () => {} } = {}) {
+export function createRateLimiter({ pool, trustProxy, trustedProxyIps = [], trustedProxyHeader = 'x-forwarded-for', onAuthLimited = () => {} } = {}) {
   async function consume(namespace, req, limit, windowMs) {
-    const key = stableKey(namespace, req, trustProxy, trustedProxyIps);
+    const key = stableKey(namespace, req, trustProxy, trustedProxyIps, trustedProxyHeader);
     return consumeKey(key, limit, windowMs);
   }
 

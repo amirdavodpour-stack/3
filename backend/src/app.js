@@ -2,13 +2,17 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 import { URL } from 'node:url';
 import { config, HOPE_VERSION } from './config.js';
-import { db, initDatabase, seedBaseData, databaseHealth, withTransaction } from './db.js';
+import { db, initDatabase, seedBaseData, databaseHealth, withTransaction, getPool } from './db.js';
+import { assertDatabaseSchemaCurrent } from './db/migrations.js';
+import { initializeDatabaseForRuntime } from './db/startup.js';
 import * as repo from './repository.js';
 import { hashPassword, verifyPassword, passwordNeedsRehash, PASSWORD_MAX_LENGTH, randomToken, sha256, signAccessToken, DUMMY_PASSWORD_HASH } from './security.js';
 import { HttpError, sendJson, sendError, sendRateLimited, setCors, readBody, readRawBody, readMultipartSingleFile } from './http.js';
 import { CITY_COORDS, haversineKm, parseCoordinate } from './application/geo.js';
 import { requestId, recordRequest, rateLimitAuth, rateLimitGeneral, rateLimitHealth, rateLimitAuthAccount, metricsSnapshot, logEvent } from './observability.js';
 import { traceContext, makeTraceparent } from './tracing.js';
+import { verifyMaintenanceSignature, MAINTENANCE_PATH } from './maintenance_auth.js';
+import { runStagingMaintenance } from './maintenance_service.js';
 import { processPaymentCreateHoldNow, processPaymentReleaseNow, processPaymentRefundNow } from './outbox_worker.js';
 import { calculatePaymentBreakdown, fundingJournal, releaseJournal, payoutJournal, refundJournal } from './financial.js';
 import { notifyUser, NOTIFICATION_TYPES } from './notifications.js';
@@ -62,8 +66,13 @@ import { buildOpportunityAgentState, parseOpportunityAgentState } from './servic
 import { askAI } from './services/ai.js';
 import { enrichRecommendationProfile, buildRecommendationInterviewPrompt, parseInterviewResponse } from './services/recommendation_profile.js';
 
-await initDatabase();
-await seedBaseData();
+await initializeDatabaseForRuntime({
+  env: process.env,
+  pool: getPool(),
+  initDatabase,
+  seedBaseData,
+  assertSchemaCurrent: assertDatabaseSchemaCurrent,
+});
 
 const now = () => new Date().toISOString();
 
@@ -282,6 +291,25 @@ export async function handle(req, res) {
   }
   const parts = url.pathname.replace(/^\/api(?:\/v1)?\/?/, '').split('/').filter(Boolean);
   try {
+    if (url.pathname === MAINTENANCE_PATH) {
+      if (req.method !== 'POST') throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Method not allowed');
+      if (process.env.VERCEL_ENV !== 'preview' || process.env.HOPE_STAGING_MODE !== 'true') {
+        throw new HttpError(404, 'NOT_FOUND', 'Route not found');
+      }
+      const authentication = verifyMaintenanceSignature({
+        method: req.method,
+        pathname: url.pathname,
+        timestamp: req.headers['x-hope-timestamp'],
+        requestId: req.headers['x-hope-request-id'],
+        signature: req.headers['x-hope-signature'],
+        secret: config.maintenanceHmacSecret,
+      });
+      if (!authentication.valid) throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required');
+      const result = await runStagingMaintenance({ requestId: authentication.requestId });
+      if (result.status === 'busy') return sendJson(res, 409, { status: 'busy' });
+      if (result.status === 'replay') return sendJson(res, 409, { status: 'replay' });
+      return sendJson(res, 200, result);
+    }
     if (url.pathname === '/live' || url.pathname === '/api/v1/live') {
       return sendJson(res, 200, { alive: true, service: 'hope-api', version: process.env.HOPE_VERSION || HOPE_VERSION, time: now() });
     }

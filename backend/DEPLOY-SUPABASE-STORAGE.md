@@ -21,9 +21,10 @@ Generate the S3 Access Key ID and Secret Access Key from the Supabase Storage S3
 ```dotenv
 AWS_ACCESS_KEY_ID=<server-side Supabase S3 access key>
 AWS_SECRET_ACCESS_KEY=<server-side Supabase S3 secret>
+SUPABASE_SERVICE_ROLE_KEY=<server-side Supabase service-role key>
 ```
 
-Never put either credential in Flutter, source control, or public build configuration.
+Never put any of these credentials in Flutter, source control, or public build configuration. The service-role key is used only by the backend to create a Supabase native signed upload URL; it is never returned to the client.
 
 ## Security boundary
 
@@ -33,7 +34,7 @@ The Storage bucket policies remain restrictive for non-server access. `v2hope-pr
 
 ## Supabase-specific compatibility
 
-Supabase Storage's S3 `PutObject` API does not support the `x-amz-server-side-encryption` request header. The backend therefore detects the Supabase Storage S3 endpoint and omits `ServerSideEncryption` from normal and presigned PUT requests.
+Supabase Storage's S3 `PutObject` API does not support the `x-amz-server-side-encryption` request header or a documented conditional `If-None-Match` on `PutObject`. For Supabase presigned uploads, the backend therefore uses the native Storage signed-upload endpoint (`/object/upload/sign`) with `upsert=false`, and the client must send `x-upsert: false`. Supabase rejects an existing object instead of overwriting it. The internal Upload Intent remains five minutes; Supabase's signed URL token itself is valid for two hours, but an expired intent cannot be completed or associated with a HOPE upload record. Generic S3 providers continue using a signed `If-None-Match: *` conditional PUT. The backend omits `ServerSideEncryption` for Supabase S3 operations.
 
 The direct storage hostname is used for the endpoint because Supabase recommends it for S3 traffic:
 
@@ -49,5 +50,6 @@ The repository currently has no Supabase S3 credentials in source control, and t
 - `S3_BUCKET=v2hope-private`
 - `S3_ENDPOINT=https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3`
 - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side only; used to mint native signed uploads with `upsert=false`)
 
 Once those secrets are configured, the existing `s3-integration.test.mjs` gate can exercise upload, HEAD, presign, signature validation, and deletion against the real Storage endpoint.

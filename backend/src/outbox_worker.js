@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { runBoundedBatch } from './bounded_batch.js';
 import { claimOutboxEvent } from './repository.js';
 import { processOutboxEvent } from './outbox_handlers.js';
 import { processPaymentReleaseNow as processPaymentReleaseEventNow } from './targeted_release_worker.js';
@@ -50,3 +51,19 @@ export async function processPaymentCreateHoldNow() { return processOne(); }
 export async function processPaymentRefundNow() { return processOne(); }
 
 export async function processPayoutNow() { return processOne(); }
+
+
+export async function runOutboxBatch({
+  maxEvents = config.maintenanceOutboxBatchSize,
+  maxDurationMs = config.maintenanceBatchMaxDurationMs,
+} = {}) {
+  if (!process.env.DATABASE_URL) {
+    return { claimed: 0, processed: 0, failed: 0, integrityBlocked: 0, empty: true, limitReached: false, durationMs: 0 };
+  }
+  return runBoundedBatch({
+    maxItems: maxEvents,
+    maxDurationMs,
+    claim: () => claimOutboxEvent(config.outboxLeaseSeconds),
+    process: (event) => processOutboxEvent(event),
+  });
+}

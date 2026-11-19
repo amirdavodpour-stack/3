@@ -3,6 +3,7 @@
   "providers": [],
   "refreshTokens": [],
   "resetTokens": [],
+  "emailVerificationTokens": [],
   "categories": [
     {
       "id": "683605b2-7c40-40f0-9392-0a0938ecc43d",
@@ -287,5 +288,6 @@
   "analyticsEvents": [],
   "crashReports": [],
   "trustReports": [],
-  "savedSearches": []
+  "savedSearches": [],
+  "recommendationProfiles": []
 }
