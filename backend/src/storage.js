@@ -3,6 +3,8 @@ import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { recordCategoryFailure } from './observability.js';
+import { createSupabaseSignedUpload } from './supabase_signed_upload.js';
+export { createSupabaseSignedUpload } from './supabase_signed_upload.js';
 
 let S3Client;
 let PutObjectCommand;
@@ -63,10 +65,13 @@ class S3Storage {
     this.bucket = config.s3Bucket;
     this.client = new S3Client({ region:config.s3Region, endpoint:config.s3Endpoint || undefined, forcePathStyle:config.s3ForcePathStyle });
   }
-  async send(command, label) {
+  async send(command, label, { timeoutMs = 10000 } = {}) {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 500 || timeoutMs > 30000) {
+      throw new RangeError('S3 timeoutMs must be between 500 and 30000 milliseconds');
+    }
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        return await this.client.send(command, { abortSignal: AbortSignal.timeout(10000) });
+        return await this.client.send(command, { abortSignal: AbortSignal.timeout(timeoutMs) });
       } catch (error) {
         recordCategoryFailure('s3');
         if (attempt < 3 && retryable(error)) {
@@ -87,8 +92,17 @@ class S3Storage {
     return { key:file.key };
   }
   async presignPut({ key, contentType, expiresIn }) {
-    // A presigned PUT is a reusable bearer URL until expiry. Signing this
-    // conditional header makes the first successful write final for this key.
+    if (isSupabaseS3Endpoint(config.s3Endpoint)) {
+      return createSupabaseSignedUpload({
+        endpoint: config.s3Endpoint,
+        bucket: this.bucket,
+        key,
+        contentType,
+        serviceKey: config.supabaseServiceRoleKey,
+        expiresIn,
+      });
+    }
+    // Generic S3 providers sign If-None-Match so the first successful write is final.
     const command = new PutObjectCommand({
       Bucket:this.bucket,
       Key:key,
@@ -113,8 +127,8 @@ class S3Storage {
     const result=await this.send(new GetObjectCommand({Bucket:this.bucket,Key:key}),'GET_OBJECT');
     return {body:result.Body,contentType:result.ContentType||'',size:Number(result.ContentLength||0)};
   }
-  async delete({ key }) {
-    await this.send(new DeleteObjectCommand({ Bucket:this.bucket, Key:key }), 'DELETE');
+  async delete({ key, timeoutMs = 10000 }) {
+    await this.send(new DeleteObjectCommand({ Bucket:this.bucket, Key:key }), 'DELETE', { timeoutMs });
   }
   async validateObject({ key, contentType }) {
     const result = await this.send(new GetObjectCommand({ Bucket:this.bucket, Key:key, Range:'bytes=0-4095' }), 'GET');

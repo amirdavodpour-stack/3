@@ -13,7 +13,7 @@ const metrics = { requests: 0, errors4xx: 0, errors5xx: 0, authRateLimited: 0, r
 // approximate P50/P95/P99. Capped so memory stays flat under sustained load.
 let latencySamples = [];
 let recentRequests = [];
-const rateLimiter = createRateLimiter({ pool: config.rateLimitStore === 'postgres' ? getPool() : null, trustProxy: config.trustProxy, trustedProxyIps: config.trustedProxyIps, onAuthLimited: () => { metrics.authRateLimited += 1; } });
+const rateLimiter = createRateLimiter({ pool: config.rateLimitStore === 'postgres' ? getPool() : null, trustProxy: config.trustProxy, trustedProxyIps: config.trustedProxyIps, trustedProxyHeader: config.trustedProxyHeader, onAuthLimited: () => { metrics.authRateLimited += 1; } });
 
 export function requestId(req) {
   const incoming = String(req.headers['x-request-id'] || '').trim();

@@ -158,3 +158,22 @@ export async function rollbackLastMigration(client) {
 }
 
 export { checksumMigration, loadMigrations };
+
+
+// Vercel Preview startup validates the already-applied schema without writes.
+export async function assertDatabaseSchemaCurrent(client) {
+  if (!client || typeof client.query !== 'function') throw new TypeError('A PostgreSQL client is required');
+  const migrations = await loadMigrations();
+  const { rows } = await client.query('SELECT version, name, checksum FROM schema_migrations ORDER BY version');
+  const current = rows.map((row) => ({ version: Number(row.version), name: String(row.name), checksum: String(row.checksum) }));
+  let mismatch = current.length !== migrations.length;
+  if (!mismatch) {
+    for (let index = 0; index < migrations.length; index += 1) {
+      const expected = migrations[index];
+      const actual = current[index];
+      if (actual.version !== expected.version || actual.name !== expected.name || actual.checksum !== checksumMigration(expected)) { mismatch = true; break; }
+    }
+  }
+  if (mismatch) throw new Error('Database schema is not current: expected migration head ' + (migrations.at(-1)?.version ?? 0) + ' with matching checksums');
+  return { applied: current.length, latestVersion: current.at(-1)?.version ?? 0 };
+}

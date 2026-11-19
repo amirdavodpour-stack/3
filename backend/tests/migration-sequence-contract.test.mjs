@@ -19,7 +19,7 @@ test('database migration filenames use a unique contiguous version sequence', ()
 test('combined Outbox and event-reconciliation migrations keep the canonical ordered slots 055-060', async () => {
   const { loadMigrations } = await import('../src/db/migrations.js');
   const migrations = await loadMigrations();
-  const tail = migrations.filter((migration) => migration.version >= 55)
+  const tail = migrations.filter((migration) => migration.version >= 55 && migration.version <= 60)
     .map(({ version, name, file }) => ({ version, name, file }));
   assert.deepEqual(tail, [
     { version: 55, name: 'outbox_terminal_clock', file: '055_outbox_terminal_clock.js' },
@@ -28,5 +28,17 @@ test('combined Outbox and event-reconciliation migrations keep the canonical ord
     { version: 58, name: 'outbox_retention_holds', file: '058_outbox_retention_holds.js' },
     { version: 59, name: 'reconciliation_case_events', file: '059_reconciliation_case_events.js' },
     { version: 60, name: 'reconciliation_event_attestation_and_disposition', file: '060_reconciliation_event_attestation_and_disposition.js' },
+  ]);
+});
+
+
+test('maintenance replay and lease migrations are appended after the preserved 055-060 slots', async () => {
+  const { loadMigrations } = await import('../src/db/migrations.js');
+  const migrations = await loadMigrations();
+  const tail = migrations.filter((migration) => migration.version >= 61)
+    .map(({ version, name, file }) => ({ version, name, file }));
+  assert.deepEqual(tail, [
+    { version: 61, name: 'serverless_maintenance_runs', file: '061_serverless_maintenance_runs.js' },
+    { version: 62, name: 'serverless_maintenance_lease', file: '062_serverless_maintenance_lease.js' },
   ]);
 });

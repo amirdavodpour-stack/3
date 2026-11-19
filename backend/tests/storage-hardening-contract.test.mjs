@@ -99,7 +99,7 @@ test('storage repository exposes safe expired-intent cleanup primitives', () => 
 
 test('storage cleanup worker deletes the object before deleting its DB intent', () => {
   assert.match(cleanupWorker, /listExpiredUploadIntents/);
-  assert.match(cleanupWorker, /await storageBackend\.delete\(\{ key: intent\.storageKey \}\)/);
+  assert.match(cleanupWorker, /await storageBackend\.delete\(\{ key: intent\.storageKey, timeoutMs: deleteTimeoutMs \}\)/);
   assert.match(cleanupWorker, /cleanedIds\.push\(intent\.id\)/);
   assert.match(cleanupWorker, /deleteUploadIntents\(cleanedIds\)/);
 });

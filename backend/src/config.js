@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertAllowedAlertEndpoint } from './alert_egress.js';
+import { isDesignatedRenderStagingService } from './staging_project_identity.js';
 
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pubspecPath = path.join(backendRoot, 'pubspec.yaml');
@@ -67,8 +68,9 @@ export const config = {
   rateLimitWindowMs: positiveIntegerEnv('RATE_LIMIT_WINDOW_MS', 60000, { min: 1000, max: 3600000 }),
   authRateLimitMax: positiveIntegerEnv('AUTH_RATE_LIMIT_MAX', 10, { min: 1, max: 1000 }),
   trustProxy: process.env.TRUST_PROXY === 'true',
+  trustedProxyHeader: process.env.TRUST_PROXY_HEADER || 'x-forwarded-for',
   trustedProxyIps: String(process.env.TRUSTED_PROXY_IPS || '').split(',').map((v) => v.trim()).filter(Boolean),
-  allowedCorsOrigins: String(process.env.ALLOWED_CORS_ORIGINS || '').split(',').map((v) => v.trim()).filter(Boolean),
+  allowedCorsOrigins: String(process.env.ALLOWED_CORS_ORIGINS || (process.env.HOPE_STAGING_MODE === 'true' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.HOPE_STAGING_MODE === 'true' && process.env.HOPE_STAGING_PROVIDER === 'render' ? process.env.RENDER_EXTERNAL_URL || '' : ''))).split(',').map((v) => v.trim()).filter(Boolean),
   metricsToken: process.env.METRICS_TOKEN || '',
   generalRateLimitWindowMs: positiveIntegerEnv('GENERAL_RATE_LIMIT_WINDOW_MS', 60000, { min: 1000, max: 3600000 }),
   generalRateLimitMax: positiveIntegerEnv('GENERAL_RATE_LIMIT_MAX', 120, { min: 1, max: 10000 }),
@@ -105,6 +107,13 @@ export const config = {
   outboxWorkerConcurrency: positiveIntegerEnv('OUTBOX_WORKER_CONCURRENCY', 4, { min: 1, max: 32 }),
   outboxMaxAttempts: positiveIntegerEnv('OUTBOX_MAX_ATTEMPTS', 8, { min: 1, max: 100 }),
   outboxLeaseSeconds: positiveIntegerEnv('OUTBOX_LEASE_SECONDS', 60, { min: 5, max: 3600 }),
+  maintenanceHmacSecret: process.env.HOPE_MAINTENANCE_HMAC_SECRET || '',
+  maintenanceBatchMaxDurationMs: positiveIntegerEnv('MAINTENANCE_BATCH_MAX_DURATION_MS', 10000, { min: 1000, max: 20000 }),
+  maintenanceOutboxBatchSize: positiveIntegerEnv('MAINTENANCE_OUTBOX_BATCH_SIZE', 3, { min: 1, max: 10 }),
+  maintenanceReconciliationBatchSize: positiveIntegerEnv('MAINTENANCE_RECONCILIATION_BATCH_SIZE', 1, { min: 1, max: 5 }),
+  maintenanceCleanupBatchSize: positiveIntegerEnv('MAINTENANCE_CLEANUP_BATCH_SIZE', 1, { min: 1, max: 10 }),
+  maintenanceStorageRequestTimeoutMs: positiveIntegerEnv('MAINTENANCE_STORAGE_REQUEST_TIMEOUT_MS', 2500, { min: 500, max: 10000 }),
+  maintenanceLeaseSeconds: positiveIntegerEnv('MAINTENANCE_LEASE_SECONDS', 120, { min: 60, max: 600 }),
   reconciliationPollMs: positiveIntegerEnv('RECONCILIATION_POLL_MS', 30000, { min: 1000, max: 3600000 }),
   reconciliationBatchSize: positiveIntegerEnv('RECONCILIATION_BATCH_SIZE', 25, { min: 1, max: 100 }),
   resetDeliveryMode: process.env.RESET_TOKEN_DELIVERY_MODE || 'console',
@@ -112,7 +121,7 @@ export const config = {
   resetDeliveryTimeoutMs: positiveIntegerEnv('RESET_TOKEN_DELIVERY_TIMEOUT_MS', 5000, { min: 500, max: 60000 }),
   resetDeliverySecret: process.env.RESET_TOKEN_DELIVERY_SECRET || '',
   paymentWebhookMaxAgeSeconds: positiveIntegerEnv('PAYMENT_WEBHOOK_MAX_AGE_SECONDS', 300, { min: 30, max: 3600 }),
-  publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+  publicBaseUrl: process.env.PUBLIC_BASE_URL || (process.env.HOPE_STAGING_MODE === 'true' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.HOPE_STAGING_MODE === 'true' && process.env.HOPE_STAGING_PROVIDER === 'render' ? process.env.RENDER_EXTERNAL_URL || '' : '')),
   storageBackend: process.env.STORAGE_BACKEND || 'local',
   s3Bucket: process.env.S3_BUCKET || '',
   s3Region: process.env.S3_REGION || 'us-east-1',
@@ -120,6 +129,7 @@ export const config = {
   s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
   s3Prefix: process.env.S3_PREFIX || 'uploads',
   s3ServerSideEncryption: process.env.S3_SERVER_SIDE_ENCRYPTION || 'AES256',
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   uploadIntentTtlSeconds: positiveIntegerEnv('UPLOAD_INTENT_TTL_SECONDS', 300, { min: 30, max: 86400 }),
   uploadOrphanGraceSeconds: positiveIntegerEnv('UPLOAD_ORPHAN_GRACE_SECONDS', 3600, { min: 60, max: 7 * 86400 }),
   uploadCleanupIntervalMs: positiveIntegerEnv('UPLOAD_CLEANUP_INTERVAL_MS', 15 * 60 * 1000, { min: 30 * 1000, max: 24 * 60 * 60 * 1000 }),
@@ -139,7 +149,67 @@ export const config = {
   alertWebhookDirectEgressAcknowledged: process.env.ALERT_DIRECT_EGRESS_ACKNOWLEDGED === 'true',
 };
 
-if (process.env.NODE_ENV === 'production') {
+const isHopeStagingPreview = process.env.VERCEL_ENV === 'preview' && process.env.HOPE_STAGING_MODE === 'true';
+const isHopeRenderStaging = process.env.HOPE_STAGING_PROVIDER === 'render' && process.env.HOPE_STAGING_MODE === 'true';
+const isHopeStagingRuntime = isHopeStagingPreview || isHopeRenderStaging;
+
+if (isHopeRenderStaging) {
+  if (process.env.RENDER !== 'true') throw new Error('Render Staging requires RENDER=true');
+  if (!isDesignatedRenderStagingService(process.env)) throw new Error('STAGING_RENDER_SERVICE_ID must exactly match RENDER_SERVICE_ID for this Render Staging service');
+  if (process.env.HOPE_STAGING_READONLY_STARTUP !== 'true' || process.env.HOPE_SERVERLESS_MODE === 'true') throw new Error('HOPE_STAGING_READONLY_STARTUP=true and HOPE_SERVERLESS_MODE unset are required for Render Staging');
+  let renderUrl;
+  try { renderUrl = new URL(process.env.RENDER_EXTERNAL_URL || ''); } catch { throw new Error('RENDER_EXTERNAL_URL must be a valid HTTPS onrender.com origin'); }
+  if (renderUrl.protocol !== 'https:' || !renderUrl.hostname.endsWith('.onrender.com') || renderUrl.username || renderUrl.password || renderUrl.pathname !== '/' || renderUrl.search || renderUrl.hash) {
+    throw new Error('RENDER_EXTERNAL_URL must be a valid HTTPS onrender.com origin');
+  }
+  if (config.publicBaseUrl !== renderUrl.origin) throw new Error('PUBLIC_BASE_URL must match RENDER_EXTERNAL_URL for Render Staging');
+  if (config.s3Prefix !== 'hope-staging') throw new Error('S3_PREFIX=hope-staging is required for Render Staging object isolation');
+  if (!config.trustProxy || config.trustedProxyHeader !== 'cf-connecting-ip') throw new Error('TRUST_PROXY=true and TRUST_PROXY_HEADER=cf-connecting-ip are required for Render Staging');
+  if (!process.env.ADMIN_PANEL_ALLOWED_EMAIL || !config.adminPanelAllowedEmail.includes('@')) throw new Error('ADMIN_PANEL_ALLOWED_EMAIL must be set for Render Staging owner recovery');
+}
+
+if (isHopeStagingPreview || isHopeRenderStaging) {
+  if (!config.databaseUrl) throw new Error('DATABASE_URL must be set for HOPE Staging Preview');
+  if (isHopeStagingPreview && process.env.HOPE_SERVERLESS_MODE !== 'true') throw new Error('HOPE_SERVERLESS_MODE=true is required for Vercel Preview; migrations must be applied before deployment');
+  if (config.rateLimitStore !== 'postgres') throw new Error('RATE_LIMIT_STORE=postgres is required for HOPE Staging Preview');
+  if (!config.publicBaseUrl.startsWith('https://')) throw new Error('PUBLIC_BASE_URL or deployment URL must provide HTTPS for HOPE Staging');
+  if (config.accessSecret.length < 32 || config.refreshSecret.length < 32 || config.accessSecret === config.refreshSecret) {
+    throw new Error('Distinct ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET of at least 32 bytes are required for HOPE Staging Preview');
+  }
+  if (!config.metricsToken || config.metricsToken.length < 24) throw new Error('METRICS_TOKEN must be set and sufficiently long for HOPE Staging Preview');
+  if (!config.allowedCorsOrigins.length || config.allowedCorsOrigins.includes('*') || config.allowedCorsOrigins.some((origin) => origin.includes('*'))) {
+    throw new Error('ALLOWED_CORS_ORIGINS must explicitly list non-wildcard origins for HOPE Staging Preview');
+  }
+  for (const origin of config.allowedCorsOrigins) {
+    let parsed;
+    try { parsed = new URL(origin); } catch { throw new Error('ALLOWED_CORS_ORIGINS must contain valid HTTPS origins for HOPE Staging Preview'); }
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+      throw new Error('ALLOWED_CORS_ORIGINS must contain HTTPS origins without credentials, paths, queries, or fragments for HOPE Staging Preview');
+    }
+  }
+  if (!config.googleAuthEnabled || !config.googleOAuthClientId) throw new Error('Google OAuth must be configured for HOPE Staging Preview primary-admin recovery');
+  if (!config.adminPanelUsername || config.adminPanelUsername.length < 4 || config.adminPanelUsername.length > 120) throw new Error('ADMIN_PANEL_USERNAME must be configured for HOPE Staging');
+  if (!config.adminMfaRequired || Buffer.byteLength(config.adminMfaEncryptionKey, 'utf8') < 32) {
+    throw new Error('Admin MFA and a 32-byte ADMIN_MFA_ENCRYPTION_KEY are required for HOPE Staging Preview');
+  }
+  if (isHopeStagingPreview && Buffer.byteLength(config.maintenanceHmacSecret, 'utf8') < 32) throw new Error('HOPE_MAINTENANCE_HMAC_SECRET must be at least 32 bytes for Vercel Preview Staging');
+  if (config.storageBackend !== 's3' || config.s3Bucket !== 'v2hope-private') {
+    throw new Error('HOPE Staging Preview must use the existing private v2hope-private Supabase bucket');
+  }
+  if (config.s3Endpoint !== 'https://oumueyftltvakimtbemj.storage.supabase.co/storage/v1/s3' || config.s3Region !== 'eu-west-1' || !config.s3ForcePathStyle) {
+    throw new Error('HOPE Staging Preview must use the existing Supabase S3 endpoint, eu-west-1, and path-style addressing');
+  }
+  if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) throw new Error('Server-side Supabase S3 credentials are required for HOPE Staging Preview');
+  if (Buffer.byteLength(config.supabaseServiceRoleKey, 'utf8') < 32) throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for private Supabase signed uploads in HOPE Staging');
+  if (config.paymentProvider !== 'internal' || config.paymentCurrency !== 'TOMAN') {
+    throw new Error('PAYMENT_PROVIDER=internal and PAYMENT_CURRENCY=TOMAN are required for HOPE Staging Preview');
+  }
+  if (config.alertWebhookUrl || config.notificationEmailUrl || config.notificationPushUrl || config.resetDeliveryMode === 'webhook') {
+    throw new Error('External alert, notification, and reset delivery are disabled in HOPE Staging Preview');
+  }
+}
+
+if (process.env.NODE_ENV === 'production' && !isHopeStagingRuntime) {
   if (config.accessSecret.startsWith('change-this') || config.refreshSecret.startsWith('change-this')) {
     throw new Error('ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must be set in production');
   }

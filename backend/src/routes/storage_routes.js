@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
+import { createUploadObjectKey } from '../storage_key.js';
 
 const MIME_EXTENSIONS = new Map([
   ['application/pdf', new Set(['.pdf'])],
@@ -68,7 +69,7 @@ export function createStorageRoutes({ authUser, storage, config, readBody, readM
       if (!MIME_EXTENSIONS.has(contentType)) throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported content type');
       validateFilenameForContentType(filename, contentType);
       const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180) || 'upload';
-      const key = `${config.s3Prefix}/${crypto.randomUUID()}-${safeName}`;
+      const key = createUploadObjectKey({ storageBackend: config.storageBackend, prefix: config.s3Prefix, fileId: crypto.randomUUID(), safeName });
       try {
         const result = await storage.presignPut({ key, contentType, expiresIn: config.uploadIntentTtlSeconds });
         const intentDraft = { id: id(), storageKey: key, uploadedBy: user.id, contentType, expiresAt: new Date(Date.now() + config.uploadIntentTtlSeconds * 1000).toISOString(), createdAt: now() };

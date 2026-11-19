@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createUploadObjectKey } from './storage_key.js';
 import { toErrorEnvelope } from './api/error_envelope.js';
 export { HttpError } from './api/http_error.js';
 import { HttpError } from './api/http_error.js';
@@ -223,7 +224,7 @@ export async function readMultipartSingleFile(req) {
     if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'audio/mp4', 'audio/mpeg', 'audio/wav'].includes(declaredType) || !signatureOk) {
       throw new HttpError(415, 'UNSUPPORTED_FILE', 'Unsupported or invalid file content');
     }
-    const key = `${crypto.randomUUID()}-${safeName}`;
+    const key = createUploadObjectKey({ storageBackend: config.storageBackend, prefix: config.s3Prefix, fileId: crypto.randomUUID(), safeName });
     // Reuse the already-created temp file for the extracted payload. This is
     // important: the object storage layer must receive the file bytes, not the
     // surrounding multipart envelope.
