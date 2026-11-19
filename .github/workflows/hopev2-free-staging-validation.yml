@@ -1,13 +1,7 @@
 name: HOPEv2 Free Staging validation
 
 on:
-  push:
-    branches:
-      - integration/hopev2-free-staging-serverless-20261119
-    paths:
-      - "backend/**"
-      - "render.yaml"
-      - ".github/workflows/hopev2-free-staging-validation.yml"
+  workflow_dispatch:
   pull_request:
     branches:
       - integration/hopev2-combined-candidate-runtime-sdk-retry-20261118
@@ -20,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: hopev2-free-staging-validation-${{ github.event.pull_request.head.sha || github.sha }}
+  group: hopev2-free-staging-validation-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:

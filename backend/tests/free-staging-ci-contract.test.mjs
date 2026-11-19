@@ -10,7 +10,8 @@ const workflowPath = path.join(root, '.github/workflows/hopev2-free-staging-vali
 test('Free Staging CI runs only on the isolated branch and PRs targeting its Candidate base', () => {
   assert.equal(fs.existsSync(workflowPath), true, 'dedicated Free Staging workflow must exist');
   const workflow = fs.readFileSync(workflowPath, 'utf8');
-  assert.match(workflow, /push:[\s\S]*branches:[\s\S]*integration\/hopev2-free-staging-serverless-20261119/);
+  assert.doesNotMatch(workflow, /^\s*push:/m, 'avoid duplicate push and pull_request runs for the same commit');
+  assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /pull_request:[\s\S]*branches:[\s\S]*integration\/hopev2-combined-candidate-runtime-sdk-retry-20261118/);
   assert.match(workflow, /backend\/\*\*/);
   assert.match(workflow, /render\.yaml/);
